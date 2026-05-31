@@ -305,48 +305,84 @@ async function loadInvoices() {
   } catch (e) { host.innerHTML = `<div class="empty">Couldn't load invoices.</div>`; }
 }
 
+// Job (contract) value, from the most authoritative contract on the project.
+function jobTotalCents() {
+  const ks = (state?.contracts || []).slice();
+  if (!ks.length) return null;
+  const rank = { fully_executed: 0, signed_by_customer: 1, sent: 2 };
+  ks.sort((a, b) => ((rank[a.status] ?? 3) - (rank[b.status] ?? 3)) || (b.id - a.id));
+  return ks[0].total_cents != null ? ks[0].total_cents : null;
+}
+
 function renderInvoices(host, invoices) {
   const m = SSCrm.fmtMoney, e = SSCrm.esc;
-  const rows = invoices.map((iv) => {
-    const st = INV_STATUS[iv.status] || { label: iv.status, cls: "" };
+  const phone = (state?.project?.contact_phone || "").replace(/[^0-9+]/g, "");
+
+  const open   = invoices.filter((iv) => iv.status === "open");
+  const paid   = invoices.filter((iv) => iv.status === "paid");
+  const voided = invoices.filter((iv) => iv.status === "void");
+
+  const paidCents = paid.reduce((s, iv) => s + (iv.amount_cents || 0), 0);
+  const openCents = open.reduce((s, iv) => s + (iv.amount_cents || 0), 0);
+  const jobTotal  = jobTotalCents();
+  const balanceDue = jobTotal != null ? Math.max(0, jobTotal - paidCents) : openCents;
+
+  const stat = (label, val, color) => `<div style="min-width:110px">
+      <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+      <div style="font-size:22px;font-weight:800;${color ? `color:${color}` : ""}">${val}</div></div>`;
+
+  const summary = `<div class="card" style="display:flex;gap:22px;flex-wrap:wrap;align-items:center">
+      ${stat("Job total", jobTotal != null ? m(jobTotal) : "—")}
+      ${stat("Paid", m(paidCents), "#10B981")}
+      ${stat("Balance due", m(balanceDue), balanceDue > 0 ? "#B45309" : "#10B981")}
+      <div style="flex:1;min-width:200px;text-align:right;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn secondary sm" onclick="createInvoiceUI('deposit')">+ Deposit</button>
+        <button class="btn secondary sm" onclick="createInvoiceUI('balance')">+ Balance</button>
+        <button class="btn primary sm" onclick="createInvoiceUI('custom')">+ Custom</button>
+      </div>
+    </div>`;
+
+  const sendBtns = (iv) => {
     const payUrl = `https://nationalclosetco.com/invoice/?t=${iv.view_token}`;
-    const actions = iv.status === "paid"
-      ? `<span class="muted" style="font-size:12px">Paid ${e(SSCrm.fmtDate(iv.paid_at))}${iv.paid_method ? " · " + e(iv.paid_method) : ""}</span>`
-      : iv.status === "void"
-      ? `<span class="muted" style="font-size:12px">Voided</span>`
-      : `<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-           <button class="btn ghost sm" onclick="copyPayLink('${e(payUrl)}')">Copy link</button>
-           <button class="btn ghost sm" onclick="resendInvoice(${iv.id})">Resend</button>
-           <button class="btn ghost sm" onclick="markInvoicePaid(${iv.id})">Mark paid</button>
-           <button class="btn ghost sm" onclick="voidInvoice(${iv.id})">Void</button>
-         </div>`;
-    return `<tr>
+    const smsBody = encodeURIComponent(`Here's your invoice (${iv.number}) from National Closet Company. Pay securely: ${payUrl}`);
+    return `<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn ghost sm" onclick="copyPayLink('${e(payUrl)}')">Copy link</button>
+        <button class="btn ghost sm" onclick="resendInvoice(${iv.id})">Email</button>
+        ${phone ? `<a class="btn ghost sm" href="sms:${e(phone)}?&body=${smsBody}">Text</a>` : ""}
+        <button class="btn ghost sm" onclick="markInvoicePaid(${iv.id})">Mark paid</button>
+        <button class="btn ghost sm" onclick="voidInvoice(${iv.id})">Void</button>
+      </div>`;
+  };
+
+  const openRows = open.map((iv) => `<tr>
       <td><strong>${e(iv.number)}</strong><div class="muted" style="font-size:12px">${e(INV_TYPE[iv.type] || iv.type)} · ${e(iv.description || "")}</div></td>
       <td class="money">${m(iv.amount_cents)}</td>
-      <td>${SSCrm.pill(st.cls || iv.status)}</td>
-      <td style="text-align:right">${actions}</td>
-    </tr>`;
-  }).join("");
+      <td style="text-align:right">${sendBtns(iv)}</td>
+    </tr>`).join("");
 
-  host.innerHTML = `
-    <div class="card">
-      <div class="card-head" style="display:flex;justify-content:space-between;align-items:center">
-        <h3>Invoices</h3>
-        <div style="display:flex;gap:8px">
-          <button class="btn secondary" onclick="createInvoiceUI('deposit')">+ Deposit</button>
-          <button class="btn secondary" onclick="createInvoiceUI('balance')">+ Balance</button>
-          <button class="btn primary" onclick="createInvoiceUI('custom')">+ Custom</button>
-        </div>
-      </div>
-      ${invoices.length ? `<div class="tbl" style="border:0"><table>
-        <thead><tr><th>Invoice</th><th class="money">Amount</th><th>Status</th><th></th></tr></thead>
-        <tbody>${rows}</tbody></table></div>`
-        : `<div class="empty">No invoices yet. Create a deposit or balance invoice — the customer pays by card online.</div>`}
-    </div>`;
-  // Re-apply friendly labels for the status pills we mapped to other keys.
-  host.querySelectorAll('.pill[data-s="completed"]').forEach((p) => p.textContent = "Paid");
-  host.querySelectorAll('.pill[data-s="lost"]').forEach((p) => p.textContent = "Void");
-  host.querySelectorAll('.pill[data-s="open"]').forEach((p) => p.textContent = "Awaiting payment");
+  const paidRows = paid.map((iv) => `<tr>
+      <td><strong>${e(iv.number)}</strong><div class="muted" style="font-size:12px">${e(INV_TYPE[iv.type] || iv.type)} · paid ${e(SSCrm.fmtDate(iv.paid_at))}${iv.paid_method ? ` · ${e(iv.paid_method)}` : ""}</div></td>
+      <td class="money">${m(iv.amount_cents)}</td>
+      <td style="text-align:right"><a class="btn ghost sm" href="https://nationalclosetco.com/invoice/?t=${e(iv.view_token)}" target="_blank" rel="noopener">View receipt</a></td>
+    </tr>`).join("");
+
+  const voidRows = voided.map((iv) => `<tr style="opacity:.55">
+      <td><strong>${e(iv.number)}</strong> <span class="muted" style="font-size:12px">${e(INV_TYPE[iv.type] || iv.type)}</span></td>
+      <td class="money">${m(iv.amount_cents)}</td>
+      <td style="text-align:right" class="muted">Voided</td>
+    </tr>`).join("");
+
+  const section = (title, rows, n, color) => rows ? `<div class="card">
+      <div class="card-head"><h3>${title} <span class="muted" style="font-weight:500">· ${n}</span></h3></div>
+      <div class="tbl" style="border:0"><table><tbody>${rows}</tbody></table></div>
+    </div>` : "";
+
+  host.innerHTML = invoices.length
+    ? summary
+      + section("Outstanding", openRows, open.length)
+      + section("Paid", paidRows, paid.length)
+      + section("Voided", voidRows, voided.length)
+    : summary + `<div class="card"><div class="empty">No invoices yet. Create a deposit or balance invoice — the customer pays by card online.</div></div>`;
 }
 
 async function createInvoiceUI(type) {

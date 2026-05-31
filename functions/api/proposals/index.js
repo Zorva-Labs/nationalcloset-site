@@ -2,8 +2,7 @@ import { requireAuth, json } from "../../_lib/auth.js";
 import { genToken, nextSequence, formatDocNumber } from "../../_lib/tokens.js";
 import { recordActivity } from "../../_lib/db.js";
 import { syncLeadQuotedFromProposal } from "../../_lib/lifecycle.js";
-
-const TIERS = ["good", "better"];
+import { proposalTiersForKind, defaultContractTypeForKind } from "../../_lib/proposal-tiers.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -43,23 +42,10 @@ export async function onRequestPost(context) {
 
   const intro = body.intro || tpl?.intro || "Thank you for the opportunity to design your custom closets. Below are two options: Option 1 installs your new system with the walls left as-is, and Option 2 adds patching and fresh paint of the area where your old shelving or cabinets were, before we install. Pick the one that fits.";
 
-  // Map the proposal kind to the contract type that should auto-attach on accept.
+  // Map the proposal kind to its option(s) + per-option contract type.
   const kind = body.proposal_kind || tpl?.subkind || "custom";
-  const contractByKind = { custom: "custom_order", install_only: "install_only", repair: "repair" };
-  const defaultContractType = contractByKind[kind] || "custom_order";
-
-  // Build the tiers from whichever tier titles the template defines (good/better/best).
-  // BYO and repair templates define only one; custom defines two. Falls back to the
-  // two-option custom layout if a template has no titles at all.
-  const tierDefs = [
-    { key: "good",   title: tpl?.tier_good_title },
-    { key: "better", title: tpl?.tier_better_title },
-    { key: "best",   title: tpl?.tier_best_title },
-  ].filter((t) => t.title && String(t.title).trim());
-  const tiers = tierDefs.length ? tierDefs : [
-    { key: "good",   title: "Option 1 · Design & Install (walls as-is)" },
-    { key: "better", title: "Option 2 · Design & Install + Wall Repair & Fresh Paint" },
-  ];
+  const tiers = proposalTiersForKind(kind, tpl);
+  const defaultContractType = defaultContractTypeForKind(kind);
 
   const r = await context.env.DB.prepare(
     `INSERT INTO proposals (project_id, number, view_token, status, intro, notes_internal, valid_until, default_contract_type, author_user_id)
@@ -67,7 +53,7 @@ export async function onRequestPost(context) {
   ).bind(body.project_id, number, token, intro, body.notes_internal || null, validUntil, defaultContractType, auth.id).first();
 
   for (const t of tiers) {
-    await context.env.DB.prepare(`INSERT INTO proposal_tiers (proposal_id, tier, title) VALUES (?1,?2,?3)`).bind(r.id, t.key, t.title).run();
+    await context.env.DB.prepare(`INSERT INTO proposal_tiers (proposal_id, tier, title, contract_type) VALUES (?1,?2,?3,?4)`).bind(r.id, t.key, t.title, t.contract_type).run();
   }
 
   // Tiers start empty — the admin adds closet line items from the catalog.

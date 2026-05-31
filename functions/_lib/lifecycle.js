@@ -36,12 +36,14 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
   const tier = await db.prepare(`SELECT * FROM proposal_tiers WHERE proposal_id=?1 AND tier=?2`).bind(proposal.id, tierKey).first();
   if (!tier) throw new Error(`Tier "${tierKey}" not found on proposal ${proposal.id}`);
 
-  // Use the contract type the admin chose on the proposal builder
-  // (defaults to 'custom_order' for proposals created before the column existed).
+  // Use the contract type tied to the SELECTED option (each proposal option maps
+  // to its own contract). Fall back to the proposal default, then custom_order.
   const validTypes = ["custom_order", "wallprep", "install_only", "repair"];
-  const contractType = validTypes.includes(proposal.default_contract_type)
-    ? proposal.default_contract_type
-    : "custom_order";
+  const contractType = validTypes.includes(tier.contract_type)
+    ? tier.contract_type
+    : validTypes.includes(proposal.default_contract_type)
+      ? proposal.default_contract_type
+      : "custom_order";
 
   // Load default template for this contract type
   const tpl = await db.prepare(`SELECT * FROM document_templates WHERE kind='contract' AND subkind=?1 AND is_default=1 ORDER BY id LIMIT 1`).bind(contractType).first();

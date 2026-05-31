@@ -13,6 +13,20 @@
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
 let state;
+const CONTRACT_LABEL = { custom_order: "Walls as-is contract", wallprep: "Wall repair & paint contract", install_only: "Install-only (BYO) contract", repair: "Repair / service contract" };
+
+// Switch the proposal type — rebuilds the options (and their contracts).
+async function retype(kind) {
+  if (!confirm("Change the proposal type? This rebuilds the options below and clears any line items you've added.")) {
+    render(); return; // revert the dropdown
+  }
+  try {
+    await SSCrm.fetchJSON("/api/proposals/" + id + "/retype", { method: "POST", body: JSON.stringify({ proposal_kind: kind }) });
+    state = await SSCrm.fetchJSON("/api/proposals/" + id);
+    render();
+    SSCrm.toast("Proposal type updated", "success");
+  } catch (e) { SSCrm.toast(e.message, "error"); render(); }
+}
 
 (async () => {
   const user = await SSCrm.mount({ title: "Proposal", actions: `<a class="btn ghost" href="/crm/proposals.html">← Proposals</a>` });
@@ -23,6 +37,9 @@ let state;
 
 function render() {
   const { proposal: p, tiers, comments } = state;
+  // Derive the proposal "kind" from its options' contract types.
+  const cts = (tiers || []).map((t) => t.contract_type);
+  const currentKind = cts.includes("install_only") ? "install_only" : cts.includes("repair") ? "repair" : "custom";
   document.getElementById("page-title").textContent = `${p.number} · ${p.project_name}`;
   const canSend = ["draft"].includes(p.status);
   const isAccepted = p.status === "accepted";
@@ -53,20 +70,22 @@ function render() {
     </div>
 
     <div class="card">
-      <div class="card-head"><h2>Customer intro &amp; contract</h2></div>
+      <div class="card-head"><h2>Proposal type &amp; intro</h2></div>
       <div class="form">
+        <label><span>Proposal type — sets the options below and the contract each one attaches</span>
+          <select id="proposal-kind" onchange="retype(this.value)" ${p.status !== "draft" ? "disabled" : ""}>
+            <option value="custom"       ${currentKind === "custom" ? "selected" : ""}>Custom closet — 2 options: walls as-is + wall repair &amp; paint</option>
+            <option value="install_only" ${currentKind === "install_only" ? "selected" : ""}>BYO install — customer-supplied closets (1 option)</option>
+            <option value="repair"       ${currentKind === "repair" ? "selected" : ""}>Repair / service (1 option)</option>
+          </select>
+        </label>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:-2px">
+          <p style="font-size:11px;color:var(--ink-muted);margin:0">Each option below auto-attaches its matching contract when the customer accepts. ${p.status !== "draft" ? "(Locked — proposal already sent.)" : ""}</p>
+          ${p.status === "draft" ? `<button class="btn ghost sm" type="button" onclick="retype(document.getElementById('proposal-kind').value)">↻ Rebuild options</button>` : ""}
+        </div>
         <label><span>This text appears at the top of the proposal page</span>
           <textarea id="intro" rows="3">${SSCrm.esc(p.intro || "")}</textarea>
         </label>
-        <label><span>Contract attached when customer accepts</span>
-          <select id="contract-type">
-            <option value="custom_order"  ${(p.default_contract_type || "custom_order") === "custom_order" ? "selected" : ""}>Design &amp; Install — walls as-is (no wall repair/paint)</option>
-            <option value="wallprep"      ${p.default_contract_type === "wallprep" ? "selected" : ""}>Design &amp; Install + Wall Repair &amp; Paint</option>
-            <option value="install_only"  ${p.default_contract_type === "install_only" ? "selected" : ""}>Install Only — customer-supplied product (no deposit, due on completion)</option>
-            <option value="repair"        ${p.default_contract_type === "repair" ? "selected" : ""}>Repair / Service Call (service-call fee + parts)</option>
-          </select>
-        </label>
-        <p style="font-size:11px;color:var(--ink-muted);margin:-4px 0 0">When the customer clicks "Accept" on the proposal page, this is the contract template that gets auto-created for them to sign.</p>
       </div>
     </div>
 
@@ -111,7 +130,10 @@ function autoGrowAllTitles() {
 function renderTier(t) {
   return `<div class="card" data-tier-id="${t.id}" data-tier="${t.tier}" style="${state.proposal.selected_tier === t.tier ? "border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)" : ""};min-width:0;overflow:hidden">
     <div class="card-head" style="display:block">
-      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;font-weight:600;color:var(--ink-soft);margin-bottom:4px">${SSCrm.esc(t.tier)}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+        <span style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;font-weight:600;color:var(--ink-soft)">${SSCrm.esc(t.tier)}</span>
+        ${t.contract_type ? `<span class="pill" style="font-size:10px;background:var(--accent-soft);color:var(--accent-ink);border-color:transparent">→ ${SSCrm.esc(CONTRACT_LABEL[t.contract_type] || t.contract_type)}</span>` : ""}
+      </div>
       <textarea class="t-title" data-f="title" rows="1" placeholder="Tier title" style="font-size:15px;font-weight:600;border:0;padding:4px 0;width:100%;box-sizing:border-box;resize:none;font-family:inherit;line-height:1.25;color:var(--ink);overflow:hidden;background:transparent" oninput="autoGrow(this)">${SSCrm.esc(t.title || "")}</textarea>
     </div>
     <textarea class="t-desc" data-f="description" rows="2" placeholder="Brief description (optional)" style="width:100%;border:1px solid var(--line-soft);padding:6px;border-radius:var(--r-sm);font-size:12px;margin-bottom:10px">${SSCrm.esc(t.description || "")}</textarea>
@@ -198,7 +220,6 @@ async function saveAll() {
   try {
     await SSCrm.fetchJSON("/api/proposals/" + id, { method: "PATCH", body: JSON.stringify({
       intro: document.getElementById("intro").value.trim(),
-      default_contract_type: document.getElementById("contract-type").value,
       tiers,
     })});
     SSCrm.toast("Saved", "success");

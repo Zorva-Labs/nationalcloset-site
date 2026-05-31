@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
 /* National Closet Company CRM — admin styles
    Shares brand fonts/palette with the public site for visual continuity */
 
@@ -781,3 +782,30 @@ button { font: inherit; cursor: pointer; }
 /* Buttons — adjust contrast */
 .btn-primary { color: #fff; }
 .btn-secondary, .btn-danger, .btn-ghost { font-weight: 600; }
+
+
+/* ===== National Closet Company brand theme — overrides ===== */
+:root {
+  --color-bg: #FAF9F6;
+  --color-bg-2: #EDECE8;
+  --color-bg-3: #E3E1DC;
+  --color-ink: #16140F;
+  --color-ink-2: #2B2622;
+  --color-ink-soft: #3A362F;
+  --color-muted: #6C665B;
+  --color-line: #E3E1DC;
+  --color-line-soft: #EDECE8;
+  --color-champagne: #F6E6DF;
+  --color-brass: #D2683F;
+  --color-brass-hot: #B9542F;
+  --color-espresso: #16140F;
+  --color-espresso-2: #2B2622;
+  --c-bg: var(--color-bg); --c-bg-2: var(--color-bg-2); --c-bg-3: var(--color-bg-3);
+  --c-ink: var(--color-ink); --c-ink-2: var(--color-ink-2); --c-ink-soft: var(--color-ink-soft);
+  --c-muted: var(--color-muted); --c-line: var(--color-line); --c-line-soft: var(--color-line-soft);
+  --c-brass: var(--color-brass); --c-brass-hot: var(--color-brass-hot); --c-champagne: var(--color-champagne);
+  --font-display: "Montserrat", Georgia, sans-serif;
+  --font-body: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.login__brand-logo { height: 42px; width: auto; display: block; margin: 0 auto; }
+.login__brand { display: flex; flex-direction: column; align-items: center; gap: 10px; }

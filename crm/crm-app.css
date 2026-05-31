@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap');
 /* ============================================================
    National Closet Company CRM — Tave-style application theme
    White background · slate text · single blue accent
@@ -835,3 +836,27 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
   .job__head { grid-template-columns: 1fr; }
   .job__status-actions { align-items: flex-start; flex-direction: row; }
 }
+
+
+/* ===== National Closet Company brand theme (Crisp Architectural) — overrides ===== */
+:root {
+  --bg: #FFFFFF;
+  --bg-alt: #FAF9F6;
+  --bg-soft: #F1F0EB;
+  --bg-hover: #EDECE8;
+  --ink: #16140F;
+  --ink-2: #2B2622;
+  --ink-soft: #3A362F;
+  --ink-muted: #6C665B;
+  --line: #E3E1DC;
+  --line-soft: #EDECE8;
+  --line-strong: #D8D6D0;
+  --accent: #D2683F;
+  --accent-hover: #B9542F;
+  --accent-soft: #F6E6DF;
+  --accent-ink: #B9542F;
+  --font: "Montserrat", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.tnav__brand-logo { height: 30px; width: auto; display: block; flex: none; }
+.tnav__brand { gap: 9px; font-family: var(--font); font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
+.tnav__brand:hover { color: var(--accent); }

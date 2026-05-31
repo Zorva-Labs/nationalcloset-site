@@ -8,12 +8,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc6" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc7" />
   <link rel="icon" href="/img/ncc-logo-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc6"></script>
-<script src="/crm/windows-editor.js?v=ncc6"></script>
+<script src="/crm/crm-app.js?v=ncc7"></script>
+<script src="/crm/windows-editor.js?v=ncc7"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -92,6 +92,7 @@ async function render() {
       </header>
 
       ${renderJobPipeline(project)}
+      ${renderJobActions(project)}
 
       <nav class="job__tabs" id="tabs">
         ${tab("overview", "Overview")}
@@ -117,33 +118,115 @@ function tab(key, label, count) {
 
 // Post-signature job pipeline. Once a contract is signed the project enters
 // 'contracted' (Booked) and advances Booked → Scheduled → Installing → Completed.
+// Each step routes to the appropriate workflow action so the stage is never set
+// without its prerequisite (e.g. "Scheduled" always captures an install date).
 const JOB_PIPELINE = [
-  { key: "contracted",        label: "Booked" },
-  { key: "scheduled_install", label: "Scheduled" },
-  { key: "installing",        label: "Installing" },
-  { key: "completed",         label: "Completed" },
+  { key: "contracted",        label: "Booked",     action: "quickStatus('contracted')" },
+  { key: "scheduled_install", label: "Scheduled",  action: "scheduleInstall()" },
+  { key: "installing",        label: "Installing", action: "quickStatus('installing')" },
+  { key: "completed",         label: "Completed",  action: "completeJob()" },
 ];
 function renderJobPipeline(project) {
   const keys = JOB_PIPELINE.map((s) => s.key);
   const cur = keys.indexOf(project.status);
   if (cur < 0) return ""; // Not a booked job yet — pre-contract projects don't show the job pipeline.
   return `
-    <div class="pipeline-bar" style="margin:0 0 18px">
+    <div class="pipeline-bar" style="margin:0 0 14px">
       ${JOB_PIPELINE.map((s, i) => {
         const stateCls = i < cur ? "done" : i === cur ? "current" : "future";
-        return `<button class="pipeline-step ${stateCls}" type="button" onclick="quickStatus('${s.key}')" title="Set status to ${s.label}">
+        return `<button class="pipeline-step ${stateCls}" type="button" onclick="${s.action}" title="${s.label}">
           <span class="pipeline-step__dot">${i + 1}</span>
           <span class="pipeline-step__label">${s.label}</span>
         </button>`;
       }).join("")}
     </div>`;
 }
+
+// Contextual action card under the pipeline — the single next step for the job.
+function renderJobActions(project) {
+  const s = project.status;
+  if (!["contracted", "scheduled_install", "installing", "completed"].includes(s)) return "";
+  const when = project.install_date ? SSCrm.fmtDate(project.install_date) : "";
+  let body = "";
+  if (s === "contracted") {
+    body = `
+      <div class="job-action__text"><strong>Job booked.</strong> Schedule the installation to move it forward.</div>
+      <button class="btn primary" onclick="scheduleInstall()">📅 Schedule install</button>`;
+  } else if (s === "scheduled_install") {
+    body = `
+      <div class="job-action__text"><strong>Install scheduled${when ? ` for ${when}` : ""}.</strong> It moves to <em>Installing</em> automatically on that date.</div>
+      <div class="job-action__btns">
+        <button class="btn secondary" onclick="scheduleInstall()">Reschedule</button>
+        <button class="btn ghost" onclick="quickStatus('installing')">Start install now</button>
+      </div>`;
+  } else if (s === "installing") {
+    body = `
+      <div class="job-action__text"><strong>Installation in progress${when ? ` — install date ${when}` : ""}.</strong> Mark it complete when the work is finished.</div>
+      <button class="btn primary" onclick="completeJob()">✓ Complete job</button>`;
+  } else if (s === "completed") {
+    body = `<div class="job-action__text"><strong>Job completed 🎉</strong>${when ? ` &nbsp;Installed ${when}.` : ""}</div>`;
+  }
+  return `<div class="job-action card">${body}</div>`;
+}
+
 async function quickStatus(key) {
   try {
     await SSCrm.fetchJSON("/api/projects/" + id, { method: "PATCH", body: JSON.stringify({ status: key }) });
     SSCrm.toast("Status updated", "success");
     await render();
   } catch (e) { SSCrm.toast(e.message || "Could not update status", "error"); }
+}
+
+// Date-picker modal → set install_date + move the job to Scheduled.
+function promptInstallDate(current) {
+  return new Promise((resolve) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const bg = document.createElement("div");
+    bg.className = "modal-bg";
+    bg.innerHTML = `
+      <div class="modal" style="max-width:380px">
+        <div class="modal-head">Schedule installation</div>
+        <div class="modal-body">
+          <label style="display:block;font-size:13px;color:var(--ink-soft);margin-bottom:6px">Install date</label>
+          <input id="install-date-input" type="date" value="${current || ""}" min="${today}"
+            style="width:100%;padding:10px 12px;border:2px solid var(--line);border-radius:8px;font:inherit;box-sizing:border-box"/>
+        </div>
+        <div class="modal-foot">
+          <button class="btn ghost" data-cancel>Cancel</button>
+          <button class="btn primary" data-save>Schedule</button>
+        </div>
+      </div>`;
+    document.body.appendChild(bg);
+    const input = bg.querySelector("#install-date-input");
+    setTimeout(() => input.focus(), 30);
+    const close = (v) => { bg.remove(); resolve(v); };
+    bg.querySelector("[data-cancel]").onclick = () => close(null);
+    bg.querySelector("[data-save]").onclick = () => {
+      if (!input.value) { input.style.borderColor = "#D2683F"; input.focus(); return; }
+      close(input.value);
+    };
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter" && input.value) close(input.value); });
+    bg.addEventListener("click", (e) => { if (e.target === bg) close(null); });
+  });
+}
+
+async function scheduleInstall() {
+  const date = await promptInstallDate(state?.project?.install_date || "");
+  if (!date) return;
+  try {
+    await SSCrm.fetchJSON("/api/projects/" + id, { method: "PATCH", body: JSON.stringify({ status: "scheduled_install", install_date: date }) });
+    SSCrm.toast("Install scheduled", "success");
+    await render();
+  } catch (e) { SSCrm.toast(e.message || "Could not schedule", "error"); }
+}
+
+async function completeJob() {
+  if (!(await SSCrm.confirmDialog("Mark this job as completed?"))) return;
+  try {
+    await SSCrm.fetchJSON("/api/projects/" + id, { method: "PATCH", body: JSON.stringify({ status: "completed" }) });
+    SSCrm.toast("Job completed", "success");
+    await render();
+  } catch (e) { SSCrm.toast(e.message || "Could not complete", "error"); }
 }
 
 function renderCta(c) {

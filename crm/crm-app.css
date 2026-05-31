@@ -667,6 +667,16 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
 .lead-header__id { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .lead-header__actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
+/* Contextual job-action card under the pipeline (Schedule / Complete) */
+.job-action {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+  padding: 16px 18px; margin: 0 0 18px;
+}
+.job-action__text { font-size: 14px; color: var(--ink); line-height: 1.5; }
+.job-action__text em { font-style: italic; color: var(--accent-ink); }
+.job-action__btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
 /* Pipeline stepper — full-width strip of clickable status pills */
 .pipeline-bar {
   display: flex; align-items: stretch; gap: 0;

@@ -73,9 +73,9 @@ export async function onRequestPatch(context) {
   const body = await context.request.json().catch(() => ({}));
   const fields = [];
   const binds = [];
-  const allowed = ["name","description","site_address","status"];
+  const allowed = ["name","description","site_address","status","install_date"];
   for (const k of allowed) {
-    if (body[k] !== undefined) { fields.push(`${k}=?${binds.length+1}`); binds.push(body[k]); }
+    if (body[k] !== undefined) { fields.push(`${k}=?${binds.length+1}`); binds.push(body[k] === "" ? null : body[k]); }
   }
   if (!fields.length) return json({ error: "Nothing to update" }, 400);
   fields.push(`updated_at=datetime('now')`);

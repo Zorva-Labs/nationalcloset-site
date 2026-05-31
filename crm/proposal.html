@@ -65,6 +65,7 @@ function render() {
         ${isAccepted ? `<button class="btn success" onclick="convertToContract()">Convert to Contract →</button>` : ""}
         ${canSend ? `<button class="btn primary" onclick="sendProposal()">Send to customer</button>` : ""}
         ${(p.status !== "draft" && p.status !== "accepted") ? `<button class="btn primary" onclick="resendProposal()">↻ Resend to customer</button>` : ""}
+        ${p.status !== "draft" ? `<button class="btn secondary" onclick="editProposal()">✎ Edit proposal</button>` : ""}
         ${p.status !== "draft" ? `<a class="btn secondary" href="${customerUrl}" target="_blank">Customer link ↗</a>` : ""}
         <button class="btn danger" onclick="del()">Delete</button>
       </div>
@@ -236,6 +237,11 @@ async function sendProposal() {
 async function resendProposal() {
   if (!(await SSCrm.confirmDialog(`Resend this proposal email to ${SSCrm.esc(state.proposal.contact_name || "the customer")}?`))) return;
   try { await SSCrm.fetchJSON(`/api/proposals/${id}/send`, { method: "POST" }); SSCrm.toast("Proposal resent", "success"); state = await SSCrm.fetchJSON("/api/proposals/" + id); render(); }
+  catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function editProposal() {
+  if (!(await SSCrm.confirmDialog("Re-open this proposal for editing? It moves back to draft so you can change the type, options, and line items, then resend."))) return;
+  try { await SSCrm.fetchJSON("/api/proposals/" + id, { method: "PATCH", body: JSON.stringify({ status: "draft" }) }); SSCrm.toast("Re-opened for editing", "success"); state = await SSCrm.fetchJSON("/api/proposals/" + id); render(); }
   catch (e) { SSCrm.toast(e.message, "error"); }
 }
 // Convenience for the bottom-of-page action: persist pending edits to all

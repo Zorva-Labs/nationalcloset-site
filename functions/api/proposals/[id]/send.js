@@ -1,6 +1,7 @@
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { sendEmail, brandedEmail, escapeHtml } from "../../../_lib/email.js";
 import { recordActivity } from "../../../_lib/db.js";
+import { logOutboundEmail } from "../../../_lib/email-log.js";
 
 const SITE_URL = "https://nationalclosetco.com";
 
@@ -16,27 +17,35 @@ export async function onRequestPost(context) {
   if (!p.contact_email) return json({ error: "Contact has no email address — add one on the contact page first." }, 400);
 
   const url = `${SITE_URL}/proposal/?t=${p.view_token}`;
-  const result = await sendEmail(context.env, {
-    to: p.contact_email,
-    subject: `Your proposal — ${p.number}`,
-    html: brandedEmail({
-      title: "Your proposal is ready to review.",
-      body: `
+  const subject = `Your proposal — ${p.number}`;
+  const html = brandedEmail({
+    title: "Your proposal is ready to review.",
+    body: `
         <p>Hi ${escapeHtml(p.contact_name.split(" ")[0])},</p>
         <p>Here's your proposal for <strong>${escapeHtml(p.project_name)}</strong>.</p>
         ${p.intro ? `<p style="border-left:3px solid #D2683F;padding-left:14px;color:#3A362F;font-style:italic">${escapeHtml(p.intro)}</p>` : ""}
         <p>Open it online to review the full details and accept the option that fits — or just reply to this email with any questions.</p>
       `,
-      ctaLabel: "Open Your Proposal",
-      ctaUrl: url,
-    }),
-    text: `Your proposal ${p.number} is ready: ${url}`,
+    ctaLabel: "Open Your Proposal",
+    ctaUrl: url,
+  });
+  const text = `Your proposal ${p.number} is ready: ${url}`;
+  const result = await sendEmail(context.env, { to: p.contact_email, subject, html, text });
+  const failed = result?.skipped || result?.error || (result?.status && result.status >= 400);
+
+  // Log to Messages either way (sent or failed) so the thread is complete.
+  await logOutboundEmail(context.env, {
+    to: p.contact_email, subject, html, text, messageId: result?.messageId,
+    projectId: p.project_id, templateKind: "proposal_sent",
+    status: failed ? "failed" : "sent", actorId: auth.id,
+    errorCode: failed ? (result?.reason || "send_error") : null,
+    errorMessage: failed ? (result?.error || "send_failed").toString().slice(0, 240) : null,
   });
 
   // If SMTP actually failed, don't lie to the admin and mark it sent — surface
   // the error so they can call/text the customer instead. The proposal stays
   // 'draft' so the admin can retry once the underlying issue is fixed.
-  if (result?.skipped || result?.error || (result?.status && result.status >= 400)) {
+  if (failed) {
     console.error("[proposals/send] mail failed:", result);
     return json({
       error: "Email failed to send: " + (result.error || ("HTTP " + result.status)),

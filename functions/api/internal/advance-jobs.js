@@ -10,6 +10,7 @@
 // (so the admin can trigger a manual sweep from the CRM if needed).
 import { requireAuth, json } from "../../_lib/auth.js";
 import { recordActivity } from "../../_lib/db.js";
+import { sendStageEmail } from "../../_lib/stage-emails.js";
 
 async function authenticate(context) {
   const authHeader = context.request.headers.get("Authorization") || "";
@@ -46,6 +47,8 @@ async function advance(context) {
       actorKind: "system", actorId: null, actorName: "auto-scheduler",
       details: { install_date: p.install_date },
     }).catch(() => {});
+    // Notify the client their install is underway + log to Messages.
+    await sendStageEmail(context.env, "installing", p.id, { name: "auto-scheduler" });
   }
 
   return json({ ok: true, advanced: due.length, ids: due.map((p) => p.id) });

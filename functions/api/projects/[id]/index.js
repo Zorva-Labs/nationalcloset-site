@@ -1,4 +1,5 @@
 import { requireAuth, json } from "../../../_lib/auth.js";
+import { sendStageEmail, STAGE_EMAIL_KIND } from "../../../_lib/stage-emails.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -78,9 +79,26 @@ export async function onRequestPatch(context) {
     if (body[k] !== undefined) { fields.push(`${k}=?${binds.length+1}`); binds.push(body[k] === "" ? null : body[k]); }
   }
   if (!fields.length) return json({ error: "Nothing to update" }, 400);
+
+  // If the status is changing into a job stage, capture the previous status so
+  // we only fire the stage email on a real transition (not a no-op re-save).
+  let prevStatus = null;
+  if (body.status !== undefined) {
+    const cur = await context.env.DB.prepare(`SELECT status FROM projects WHERE id=?1`).bind(id).first();
+    prevStatus = cur?.status || null;
+  }
+
   fields.push(`updated_at=datetime('now')`);
   binds.push(id);
   await context.env.DB.prepare(`UPDATE projects SET ${fields.join(", ")} WHERE id=?${binds.length}`).bind(...binds).run();
+
+  // Notify the client of the new stage (Booked / Scheduled / Installing /
+  // Completed) and log it to Messages. Best-effort; runs after the response
+  // commits so the CRM stays snappy.
+  if (body.status !== undefined && body.status !== prevStatus && STAGE_EMAIL_KIND[body.status]) {
+    const p = sendStageEmail(context.env, body.status, id, { id: auth.id, name: auth.email });
+    if (context.waitUntil) context.waitUntil(p); else await p;
+  }
   return json({ ok: true });
 }
 

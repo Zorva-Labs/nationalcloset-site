@@ -5,6 +5,7 @@ import { sha256Hex } from "../../../_lib/tokens.js";
 import { trackView, recordActivity } from "../../../_lib/db.js";
 import { sendEmail, brandedEmail, escapeHtml } from "../../../_lib/email.js";
 import { markProjectBooked } from "../../../_lib/lifecycle.js";
+import { sendStageEmail } from "../../../_lib/stage-emails.js";
 
 const SITE_URL = "https://nationalclosetco.com";
 
@@ -85,30 +86,10 @@ export async function onRequestPost(context) {
   // Mark the project as booked
   await markProjectBooked(context.env.DB, k.project_id, k.id);
 
-  // Send confirmation email to customer
-  const customerEmail = body.signer_email || k.signer_email;
-  if (customerEmail) {
-    await sendEmail(context.env, {
-      to: customerEmail,
-      subject: `You're booked — ${k.number} · National Closet Company`,
-      html: brandedEmail({
-        title: "You're booked.",
-        body: `
-          <p>Hi ${escapeHtml(body.signer_name.split(" ")[0])},</p>
-          <p>Thank you for signing contract <strong>${escapeHtml(k.number)}</strong>. Your job is officially booked.</p>
-          <p>Here's what happens next:</p>
-          <ol style="line-height:1.7;color:#3A362F">
-            <li>${k.deposit_cents > 0 ? `<strong>Deposit:</strong> please send ${moneyFmt(k.deposit_cents)} by check, ACH, Venmo, or Cash App to release the order.` : `<strong>Payment:</strong> due upon completion of the install.`}</li>
-            <li><strong>Schedule your install</strong> using the link below — pick a day that works for you.</li>
-            <li>We'll arrive on the scheduled day with drop cloths and tools, install, and demonstrate every product before we leave.</li>
-          </ol>
-          <p>Questions? Reply to this email or call <a href="tel:+16292988241">629-298-8241</a>.</p>
-        `,
-        ctaLabel: "Schedule Your Install",
-        ctaUrl: `${SITE_URL}/contract/?t=${k.view_token}#schedule`,
-      }),
-    });
-  }
+  // Send the customer the "Booked" stage email — templated, branded, and
+  // logged to the Messages thread. We'll reach out to schedule the install
+  // (no self-scheduling link anymore: signing = booked).
+  await sendStageEmail(context.env, "contracted", k.project_id, { name: body.signer_name });
 
   // Notify the team
   await sendEmail(context.env, {

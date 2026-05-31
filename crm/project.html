@@ -99,6 +99,7 @@ async function render() {
         ${tab("messages", "Messages")}
         ${tab("proposals", "Proposals", proposals.length)}
         ${tab("contracts", "Contracts", contracts.length)}
+        ${tab("invoices", "Invoices")}
         ${tab("activity", "Activity")}
       </nav>
 
@@ -283,8 +284,105 @@ function switchTab(tab) {
   }
   else if (tab === "proposals") body.innerHTML = renderDocTab(proposals, "proposal", "PROP", newProposal);
   else if (tab === "contracts") body.innerHTML = renderDocTab(contracts, "contract", "C", newContract);
+  else if (tab === "invoices") { body.innerHTML = `<div id="invoices-host" class="muted">Loading…</div>`; loadInvoices(); }
   else if (tab === "activity") body.innerHTML = `<div id="activity-feed" class="muted">Loading…</div>`, loadActivity();
 }
+
+// ───────── Invoices tab (Stripe-backed deposit/balance/custom invoices) ─────────
+const INV_STATUS = {
+  open:  { label: "Awaiting payment", cls: "" },
+  paid:  { label: "Paid", cls: "completed" },
+  void:  { label: "Void", cls: "lost" },
+  draft: { label: "Draft", cls: "draft" },
+};
+const INV_TYPE = { deposit: "Deposit", balance: "Final balance", full: "Full", custom: "Custom" };
+
+async function loadInvoices() {
+  const host = document.getElementById("invoices-host");
+  try {
+    const { invoices } = await SSCrm.fetchJSON(`/api/invoices?project_id=${id}`);
+    renderInvoices(host, invoices || []);
+  } catch (e) { host.innerHTML = `<div class="empty">Couldn't load invoices.</div>`; }
+}
+
+function renderInvoices(host, invoices) {
+  const m = SSCrm.fmtMoney, e = SSCrm.esc;
+  const rows = invoices.map((iv) => {
+    const st = INV_STATUS[iv.status] || { label: iv.status, cls: "" };
+    const payUrl = `https://nationalclosetco.com/invoice/?t=${iv.view_token}`;
+    const actions = iv.status === "paid"
+      ? `<span class="muted" style="font-size:12px">Paid ${e(SSCrm.fmtDate(iv.paid_at))}${iv.paid_method ? " · " + e(iv.paid_method) : ""}</span>`
+      : iv.status === "void"
+      ? `<span class="muted" style="font-size:12px">Voided</span>`
+      : `<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+           <button class="btn ghost sm" onclick="copyPayLink('${e(payUrl)}')">Copy link</button>
+           <button class="btn ghost sm" onclick="resendInvoice(${iv.id})">Resend</button>
+           <button class="btn ghost sm" onclick="markInvoicePaid(${iv.id})">Mark paid</button>
+           <button class="btn ghost sm" onclick="voidInvoice(${iv.id})">Void</button>
+         </div>`;
+    return `<tr>
+      <td><strong>${e(iv.number)}</strong><div class="muted" style="font-size:12px">${e(INV_TYPE[iv.type] || iv.type)} · ${e(iv.description || "")}</div></td>
+      <td class="money">${m(iv.amount_cents)}</td>
+      <td>${SSCrm.pill(st.cls || iv.status)}</td>
+      <td style="text-align:right">${actions}</td>
+    </tr>`;
+  }).join("");
+
+  host.innerHTML = `
+    <div class="card">
+      <div class="card-head" style="display:flex;justify-content:space-between;align-items:center">
+        <h3>Invoices</h3>
+        <div style="display:flex;gap:8px">
+          <button class="btn secondary" onclick="createInvoiceUI('deposit')">+ Deposit</button>
+          <button class="btn secondary" onclick="createInvoiceUI('balance')">+ Balance</button>
+          <button class="btn primary" onclick="createInvoiceUI('custom')">+ Custom</button>
+        </div>
+      </div>
+      ${invoices.length ? `<div class="tbl" style="border:0"><table>
+        <thead><tr><th>Invoice</th><th class="money">Amount</th><th>Status</th><th></th></tr></thead>
+        <tbody>${rows}</tbody></table></div>`
+        : `<div class="empty">No invoices yet. Create a deposit or balance invoice — the customer pays by card online.</div>`}
+    </div>`;
+  // Re-apply friendly labels for the status pills we mapped to other keys.
+  host.querySelectorAll('.pill[data-s="completed"]').forEach((p) => p.textContent = "Paid");
+  host.querySelectorAll('.pill[data-s="lost"]').forEach((p) => p.textContent = "Void");
+  host.querySelectorAll('.pill[data-s="open"]').forEach((p) => p.textContent = "Awaiting payment");
+}
+
+async function createInvoiceUI(type) {
+  let amountCents, description;
+  if (type === "custom") {
+    const amt = prompt("Invoice amount (USD):", "");
+    if (amt == null) return;
+    const dollars = parseFloat(String(amt).replace(/[^0-9.]/g, ""));
+    if (!dollars || dollars <= 0) { SSCrm.toast("Enter a valid amount", "error"); return; }
+    amountCents = Math.round(dollars * 100);
+    description = prompt("Description (optional):", "Custom invoice") || "Custom invoice";
+  }
+  try {
+    const body = { project_id: id, type };
+    if (amountCents != null) body.amount_cents = amountCents;
+    if (description) body.description = description;
+    const r = await SSCrm.fetchJSON("/api/invoices", { method: "POST", body: JSON.stringify(body) });
+    SSCrm.toast(r.deduped ? "Invoice already existed" : "Invoice created & emailed", "success");
+    loadInvoices();
+  } catch (e) { SSCrm.toast(e.message || "Could not create invoice", "error"); }
+}
+async function resendInvoice(iid) {
+  try { await SSCrm.fetchJSON(`/api/invoices/${iid}`, { method: "POST", body: JSON.stringify({ action: "resend" }) }); SSCrm.toast("Invoice re-sent", "success"); }
+  catch (e) { SSCrm.toast(e.message || "Could not resend", "error"); }
+}
+async function voidInvoice(iid) {
+  if (!(await SSCrm.confirmDialog("Void this invoice? The customer will no longer be able to pay it."))) return;
+  try { await SSCrm.fetchJSON(`/api/invoices/${iid}`, { method: "POST", body: JSON.stringify({ action: "void" }) }); SSCrm.toast("Invoice voided", "success"); loadInvoices(); }
+  catch (e) { SSCrm.toast(e.message || "Could not void", "error"); }
+}
+async function markInvoicePaid(iid) {
+  if (!(await SSCrm.confirmDialog("Mark this invoice paid (e.g. cash/check received)?"))) return;
+  try { await SSCrm.fetchJSON(`/api/invoices/${iid}`, { method: "POST", body: JSON.stringify({ action: "mark_paid", method: "manual" }) }); SSCrm.toast("Marked paid", "success"); loadInvoices(); }
+  catch (e) { SSCrm.toast(e.message || "Could not update", "error"); }
+}
+function copyPayLink(url) { navigator.clipboard.writeText(url).then(() => SSCrm.toast("Pay link copied", "success"), () => SSCrm.toast(url, "info")); }
 
 // Consolidated Overview tab — surfaces everything that used to live on the
 // separate Lead screen so the job page is the single place to see the whole

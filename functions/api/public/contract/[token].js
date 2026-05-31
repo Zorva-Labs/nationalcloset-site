@@ -6,6 +6,7 @@ import { trackView, recordActivity } from "../../../_lib/db.js";
 import { sendEmail, brandedEmail, escapeHtml } from "../../../_lib/email.js";
 import { markProjectBooked } from "../../../_lib/lifecycle.js";
 import { sendStageEmail } from "../../../_lib/stage-emails.js";
+import { createInvoice } from "../../../_lib/invoices.js";
 
 const SITE_URL = "https://nationalclosetco.com";
 
@@ -90,6 +91,12 @@ export async function onRequestPost(context) {
   // logged to the Messages thread. We'll reach out to schedule the install
   // (no self-scheduling link anymore: signing = booked).
   await sendStageEmail(context.env, "contracted", k.project_id, { name: body.signer_name });
+
+  // Auto-create + send the deposit invoice. Dedup skips it if proposal-accept
+  // already created one for this project.
+  await createInvoice(context.env, {
+    projectId: k.project_id, type: "deposit", contractId: k.id, actor: { name: body.signer_name },
+  }).catch((e) => console.error("[invoice/booked]", String(e)));
 
   // Notify the team
   await sendEmail(context.env, {

@@ -4,6 +4,7 @@
 import { json, hashIp } from "../../../_lib/auth.js";
 import { trackView, recordActivity } from "../../../_lib/db.js";
 import { createContractFromProposalTier, syncLeadQuotedFromProposal } from "../../../_lib/lifecycle.js";
+import { createInvoice } from "../../../_lib/invoices.js";
 
 export async function onRequestGet(context) {
   const token = context.params.token;
@@ -74,6 +75,13 @@ export async function onRequestPost(context) {
       // If conversion fails (e.g. tier missing), still return accept success — admin can convert manually
       console.error("auto-convert failed:", e);
     }
+
+    // 3) Auto-create + email the deposit invoice for the accepted option.
+    //    Dedup in createInvoice prevents a second one when the job later books.
+    const invoiceWork = createInvoice(context.env, {
+      projectId: p.project_id, type: "deposit", proposalId: p.id, actor: { name: body.name },
+    }).catch((e) => console.error("[invoice/accept]", String(e)));
+    if (context.waitUntil) context.waitUntil(invoiceWork); else await invoiceWork;
 
     return json({ ok: true, contract_token: contractToken });
   }

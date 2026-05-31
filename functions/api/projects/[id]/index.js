@@ -1,5 +1,6 @@
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { sendStageEmail, STAGE_EMAIL_KIND } from "../../../_lib/stage-emails.js";
+import { createInvoice } from "../../../_lib/invoices.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -98,6 +99,14 @@ export async function onRequestPatch(context) {
   if (body.status !== undefined && body.status !== prevStatus && STAGE_EMAIL_KIND[body.status]) {
     const p = sendStageEmail(context.env, body.status, id, { id: auth.id, name: auth.email });
     if (context.waitUntil) context.waitUntil(p); else await p;
+  }
+
+  // On completion, auto-create + send the final balance invoice (total minus
+  // the deposit already invoiced). Dedup prevents a second balance invoice.
+  if (body.status === "completed" && prevStatus !== "completed") {
+    const inv = createInvoice(context.env, { projectId: id, type: "balance", actor: { id: auth.id, name: auth.email } })
+      .catch((e) => console.error("[invoice/balance]", String(e)));
+    if (context.waitUntil) context.waitUntil(inv); else await inv;
   }
   return json({ ok: true });
 }

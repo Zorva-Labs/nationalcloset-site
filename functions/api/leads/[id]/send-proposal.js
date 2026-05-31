@@ -5,8 +5,7 @@ import { requireAuth, json } from "../../../_lib/auth.js";
 import { upsertContact, recordActivity } from "../../../_lib/db.js";
 import { genToken, nextSequence, formatDocNumber } from "../../../_lib/tokens.js";
 import { seedTiersFromWindows, syncLeadQuotedFromProposal, bumpLeadStatusForward } from "../../../_lib/lifecycle.js";
-
-const TIERS = ["good", "better", "best"];
+import { proposalTiersForKind, defaultContractTypeForKind } from "../../../_lib/proposal-tiers.js";
 
 export async function onRequestPost(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -62,16 +61,22 @@ export async function onRequestPost(context) {
   }
   const projectId = project.id;
 
-  // 3. Create proposal — load default template if no template_id given
-  const tpl = body.template_id
-    ? await DB.prepare(`SELECT * FROM document_templates WHERE id=?1`).bind(body.template_id).first()
-    : await DB.prepare(`SELECT * FROM document_templates WHERE kind='proposal' AND is_default=1 ORDER BY id LIMIT 1`).first();
-  const intro = tpl?.intro || "Thank you for the opportunity to dress your windows. We've put together three options below — each one custom-fit to your home.";
-  const tierTitles = {
-    good:   tpl?.tier_good_title   || "The Essentials",
-    better: tpl?.tier_better_title || "The Smart-Home Package",
-    best:   tpl?.tier_best_title   || "The Heirloom Build",
-  };
+  // 3. Create proposal — select template by explicit id, by proposal_kind
+  // (subkind), or fall back to the default/custom proposal template.
+  let tpl = null;
+  if (body.template_id) {
+    tpl = await DB.prepare(`SELECT * FROM document_templates WHERE id=?1`).bind(body.template_id).first();
+  } else if (body.proposal_kind) {
+    tpl = await DB.prepare(`SELECT * FROM document_templates WHERE kind='proposal' AND subkind=?1 ORDER BY id LIMIT 1`).bind(body.proposal_kind).first();
+  }
+  if (!tpl) tpl = await DB.prepare(`SELECT * FROM document_templates WHERE kind='proposal' AND (is_default=1 OR subkind='custom') ORDER BY is_default DESC, id LIMIT 1`).first();
+
+  const intro = tpl?.intro || "Thank you for the opportunity to design your custom closets. Below are two options: Option 1 installs your new system with the walls left as-is, and Option 2 adds patching and fresh paint of the area where your old shelving or cabinets were, before we install. Pick the one that fits.";
+
+  // Map the proposal kind to its option(s) + per-option contract type.
+  const kind = body.proposal_kind || tpl?.subkind || "custom";
+  const tiers = proposalTiersForKind(kind, tpl);
+  const defaultContractType = defaultContractTypeForKind(kind);
 
   const year = new Date().getUTCFullYear();
   const seq = await nextSequence(DB, `proposal-${year}`);
@@ -80,12 +85,12 @@ export async function onRequestPost(context) {
   const validUntil = new Date(Date.now() + 30 * 86400 * 1000).toISOString().slice(0, 10);
 
   const proposalRow = await DB.prepare(
-    `INSERT INTO proposals (project_id, number, view_token, status, intro, valid_until, author_user_id)
-     VALUES (?1, ?2, ?3, 'draft', ?4, ?5, ?6) RETURNING id`
-  ).bind(projectId, number, token, intro, validUntil, auth.id).first();
+    `INSERT INTO proposals (project_id, number, view_token, status, intro, valid_until, default_contract_type, author_user_id)
+     VALUES (?1, ?2, ?3, 'draft', ?4, ?5, ?6, ?7) RETURNING id`
+  ).bind(projectId, number, token, intro, validUntil, defaultContractType, auth.id).first();
 
-  for (const t of TIERS) {
-    await DB.prepare(`INSERT INTO proposal_tiers (proposal_id, tier, title) VALUES (?1, ?2, ?3)`).bind(proposalRow.id, t, tierTitles[t]).run();
+  for (const t of tiers) {
+    await DB.prepare(`INSERT INTO proposal_tiers (proposal_id, tier, title, contract_type) VALUES (?1, ?2, ?3, ?4)`).bind(proposalRow.id, t.key, t.title, t.contract_type).run();
   }
   // Pre-populate each tier from the windows the admin already entered on the lead
   await seedTiersFromWindows(DB, proposalRow.id, projectId);

@@ -354,6 +354,11 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 /* ---------- Lead form ---------- */
 .form-card { background: var(--white); border-radius: var(--radius); padding: 1.8rem; border: 1px solid var(--line); box-shadow: 0 40px 80px -50px rgba(0,0,0,.5); }
 .section--ink .form-card { color: var(--ink); }
+/* Mobile: the two columns of the bottom consultation band stack, so add
+   breathing room between the contact details (email) and the form. */
+@media (max-width: 939px) {
+  .cta-band .form-card { margin-top: 2.5rem; }
+}
 .form-grid { display: grid; gap: 1rem; }
 .field { display: grid; gap: 0.4rem; }
 .field label { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); }

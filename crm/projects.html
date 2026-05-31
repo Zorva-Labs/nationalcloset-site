@@ -42,7 +42,7 @@ const JOB_STATUS_LABELS = { contracted: "Booked", scheduled_install: "Scheduled"
     return;
   }
   page.innerHTML = `<div class="tbl"><table>
-    <thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>City</th><th class="money">Total</th><th>Status</th><th>Updated</th></tr></thead>
+    <thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>City</th><th class="money">Total</th><th>Status</th><th>Install date</th><th>Updated</th></tr></thead>
     <tbody>${projects.map((p) => `<tr class="clickable" onclick="location.href='/crm/project.html?id=${p.id}'">
       <td><strong>${SSCrm.esc(p.contact_name || "—")}</strong></td>
       <td>${p.contact_email ? `<a href="mailto:${SSCrm.esc(p.contact_email)}" onclick="event.stopPropagation()">${SSCrm.esc(p.contact_email)}</a>` : `<span class="muted">—</span>`}</td>
@@ -50,6 +50,7 @@ const JOB_STATUS_LABELS = { contracted: "Booked", scheduled_install: "Scheduled"
       <td>${p.contact_city ? SSCrm.esc(p.contact_city) : `<span class="muted">—</span>`}</td>
       <td class="money">${p.job_total_cents != null ? SSCrm.fmtMoney(p.job_total_cents) : `<span class="muted">—</span>`}</td>
       <td>${SSCrm.pill(p.status)}</td>
+      <td>${p.install_date ? SSCrm.fmtDate(p.install_date) : `<span class="muted">—</span>`}</td>
       <td class="muted">${SSCrm.fmtDate(p.updated_at)}</td>
     </tr>`).join("")}</tbody></table></div>`;
 })();

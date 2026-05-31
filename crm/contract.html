@@ -2,7 +2,10 @@
 <html lang="en">
 <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Contract · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow" />
-<link rel="stylesheet" href="/crm/crm-app.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/crm/crm-app.css" />
 <style>
   /* Print stylesheet — admins hit "Print / Save PDF" to download a clean
      copy of the contract. Strips the CRM chrome and renders just the
@@ -103,7 +106,7 @@ function render() {
     </div>
 
     <div class="card">
-      <div class="card-head"><h2>Scope &amp; line items <span class="muted" style="font-size:11px;font-weight:400">· all dimensions in inches</span></h2></div>
+      <div class="card-head"><h2>Scope &amp; line items</h2></div>
       <table class="lines"><thead><tr>
         <th style="width:34%">Description</th><th>Room / Area</th><th class="num">Qty</th><th class="num">Unit $</th><th class="num">Total</th><th></th>
       </tr></thead><tbody id="lines-body">${lines.length ? lines.map((l, i) => lineRow(l, i)).join("") : lineRow({}, 0)}</tbody></table>

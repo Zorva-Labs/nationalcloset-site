@@ -809,3 +809,14 @@ button { font: inherit; cursor: pointer; }
 }
 .login__brand-logo { height: 42px; width: auto; display: block; margin: 0 auto; }
 .login__brand { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+/* ===== Login — match the marketing site (Montserrat, terracotta primary, compact logo) ===== */
+.login__brand-logo { height: 34px; width: auto; }
+.login__brand { gap: 8px; }
+.login h1 { font-weight: 800; }
+.login label { font-family: var(--font-body); font-size: 0.68rem; letter-spacing: 0.09em; }
+.login input { font-family: var(--font-body); border-radius: 6px; }
+.login input:focus { outline: 1px solid var(--color-brass); border-color: var(--color-brass); }
+.login button { font-family: var(--font-body); background: var(--color-brass); color: #fff; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.02em; text-transform: none; border-radius: 6px; }
+.login button:hover { background: var(--color-brass-hot); }
+.login__card { border-radius: 10px; }

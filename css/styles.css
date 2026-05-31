@@ -380,6 +380,9 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .footer__col h4 { color: #fff; font-family: var(--body); font-size: 0.78rem; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 0.9rem; font-weight: 700; }
 .footer__col a, .footer__col li { display: block; padding: 0.28rem 0; font-size: 0.95rem; }
 .footer__contact a { display: flex; align-items: center; gap: 0.6rem; font-weight: 700; color: #fff; font-size: 1.05rem; padding: 0.3rem 0; }
+.footer__areas { padding: 1.8rem 0 0.2rem; border-top: 1px solid #2a261f; }
+.footer__areas h4 { color: #fff; font-family: var(--body); font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 0.7rem; font-weight: 700; }
+.footer__areas p { font-size: 0.9rem; line-height: 1.7; max-width: 82ch; color: #b6b1a7; margin: 0; }
 .footer__bottom { padding-top: 1.8rem; display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.85rem; }
 .footer__bottom a { text-decoration: underline; text-underline-offset: 2px; }
 .zorva { color: #cfcabf; }

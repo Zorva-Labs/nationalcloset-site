@@ -3,7 +3,7 @@ import { genToken, nextSequence, formatDocNumber } from "../../_lib/tokens.js";
 import { recordActivity } from "../../_lib/db.js";
 import { syncLeadQuotedFromProposal } from "../../_lib/lifecycle.js";
 
-const TIERS = ["good", "better", "best"];
+const TIERS = ["good", "better"];
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -37,11 +37,10 @@ export async function onRequestPost(context) {
     ? await context.env.DB.prepare(`SELECT * FROM document_templates WHERE id=?1`).bind(body.template_id).first()
     : await context.env.DB.prepare(`SELECT * FROM document_templates WHERE kind='proposal' AND is_default=1 ORDER BY id LIMIT 1`).first();
 
-  const intro = body.intro || tpl?.intro || "Thank you for the opportunity to design your custom closets. We've put together three options below — each one tailored to your space and the way you live.";
+  const intro = body.intro || tpl?.intro || "Thank you for the opportunity to design your custom closets. Below are two options: Option 1 installs your new system with the walls left as-is, and Option 2 adds patching and fresh paint of the area where your old shelving or cabinets were, before we install. Pick the one that fits.";
   const tierTitles = {
-    good:   tpl?.tier_good_title   || "The Essentials",
-    better: tpl?.tier_better_title || "The Smart-Home Package",
-    best:   tpl?.tier_best_title   || "The Heirloom Build",
+    good:   tpl?.tier_good_title   || "Option 1 · Design & Install (walls as-is)",
+    better: tpl?.tier_better_title || "Option 2 · Design & Install + Wall Repair & Fresh Paint",
   };
 
   const r = await context.env.DB.prepare(
@@ -64,5 +63,5 @@ export async function onRequestPost(context) {
 }
 
 function defaultTitle(t) {
-  return { good: "The Essentials", better: "The Smart-Home Package", best: "The Heirloom Build" }[t];
+  return { good: "Option 1 · Design & Install (walls as-is)", better: "Option 2 · Design & Install + Wall Repair & Fresh Paint" }[t];
 }

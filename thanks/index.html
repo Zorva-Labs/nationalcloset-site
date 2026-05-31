@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thank You · National Closet Company</title>
+  <meta name="description" content="Your request has been received. National Closet Company will reach out within one business day to schedule your free in-home consultation in Gallatin or the Nashville area." />
+  <!-- This is a thank-you / conversion page. Tell crawlers it isn't part of
+       the SEO surface — keeping it out of the index avoids stealing rank from
+       the homepage and prevents people from landing here directly. -->
+  <meta name="robots" content="noindex, follow" />
+
+  <link rel="canonical" href="https://nationalclosetco.com/thanks/" />
+  <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg" />
+  <link rel="icon" type="image/png" href="/assets/images/logo-v4.png" />
+  <link rel="apple-touch-icon" href="/assets/images/logo-v4.png" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/styles.css?v=thanks-202605" />
+
+  <style>
+    /* Page-specific layout — keeps the design consistent with the site
+       (Cormorant display, DM Sans body, IBM Plex Mono accents, brass on cream)
+       without duplicating the homepage chrome. */
+    .ty {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 80px 24px;
+      background: var(--color-bg);
+    }
+    .ty__wrap { max-width: 640px; width: 100%; text-align: center; }
+    .ty__eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--color-brass);
+      margin-bottom: 18px;
+    }
+    .ty__check {
+      width: 64px; height: 64px;
+      margin: 0 auto 22px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1.5px solid var(--color-brass);
+      border-radius: 50%;
+      color: var(--color-brass);
+    }
+    .ty__h1 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+      line-height: 1.1;
+      color: var(--color-ink);
+      margin: 0 0 18px;
+    }
+    .ty__h1 em { font-style: italic; color: var(--color-brass); }
+    .ty__lead {
+      font-family: var(--font-body);
+      font-size: clamp(1.02rem, 1.4vw, 1.18rem);
+      line-height: 1.65;
+      color: var(--color-ink-soft);
+      margin: 0 0 32px;
+    }
+    .ty__card {
+      background: #fff;
+      border: 1px solid var(--color-line, #E5DCC9);
+      padding: 28px 32px;
+      margin: 0 0 32px;
+      text-align: left;
+    }
+    .ty__card-title {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--color-brass);
+      margin: 0 0 14px;
+    }
+    .ty__step {
+      display: flex; gap: 14px; padding: 10px 0;
+      border-bottom: 1px solid var(--color-bg-3, #E5DCC9);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      color: var(--color-ink-soft);
+      line-height: 1.5;
+    }
+    .ty__step:last-child { border-bottom: 0; }
+    .ty__step-n {
+      font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-brass);
+      flex-shrink: 0; min-width: 22px;
+    }
+    .ty__step strong { color: var(--color-ink); font-weight: 500; }
+    .ty__contact {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 1.05rem;
+      line-height: 1.55;
+      color: var(--color-ink-soft);
+      margin: 0 0 28px;
+    }
+    .ty__contact a {
+      color: var(--color-ink); border-bottom: 1px solid var(--color-brass-hot);
+      text-decoration: none;
+      font-style: normal; font-family: var(--font-mono);
+      font-size: 0.9rem; letter-spacing: 0.06em;
+      padding-bottom: 2px;
+    }
+    .ty__back {
+      display: inline-block;
+      padding: 14px 28px;
+      background: var(--color-ink); color: var(--color-bg);
+      font-family: var(--font-mono); font-size: 0.78rem;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      text-decoration: none;
+      border: 0;
+    }
+    .ty__back:hover { background: var(--color-ink-2); }
+    .ty__greeting {
+      font-family: var(--font-display);
+      font-style: italic;
+      color: var(--color-brass);
+      font-size: 1.1rem;
+      margin: -8px 0 22px;
+      display: none;
+    }
+    .ty__greeting.is-visible { display: block; }
+  </style>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-P2P09LS2RM"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-P2P09LS2RM');
+  </script>
+</head>
+<body>
+
+<main class="ty">
+  <div class="ty__wrap">
+    <div class="ty__eyebrow">Request Received</div>
+
+    <div class="ty__check" aria-hidden="true">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+
+    <h1 class="ty__h1">Thank you<em>.</em></h1>
+
+    <p id="ty-greeting" class="ty__greeting"></p>
+
+    <p class="ty__lead">
+      Your consultation request is in. We'll be in touch within one business day to schedule a complimentary in-home visit at your address.
+    </p>
+
+    <div class="ty__card">
+      <p class="ty__card-title">What happens next</p>
+      <div class="ty__step">
+        <span class="ty__step-n">01</span>
+        <span><strong>We'll call or text</strong> very quickly to confirm the visit time and what rooms we'll be measuring.</span>
+      </div>
+      <div class="ty__step">
+        <span class="ty__step-n">02</span>
+        <span><strong>Free in-home consultation</strong> — we take exact measurements, show samples, and talk through what each room needs. No pressure, no charge.</span>
+      </div>
+      <div class="ty__step">
+        <span class="ty__step-n">03</span>
+        <span><strong>A real proposal</strong> with three options at three price points so you can pick what fits.</span>
+      </div>
+    </div>
+
+    <p class="ty__contact">
+      Anything urgent? Call or text <a href="tel:+16292988241">629-298-8241</a>
+    </p>
+
+    <a href="/" class="ty__back">← Back to National Closet Company</a>
+  </div>
+</main>
+
+<script>
+  // Greet the customer by first name if the form passed one through.
+  // This is a soft personal touch — strictly cosmetic.
+  (function () {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const raw = (params.get("name") || "").trim();
+      if (!raw) return;
+      // Sanitize: first word only, max 30 chars, letters/apostrophes/hyphens only
+      const first = raw.split(/\s+/)[0].replace(/[^A-Za-z'\-]/g, "").slice(0, 30);
+      if (!first) return;
+      const cap = first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
+      const el = document.getElementById("ty-greeting");
+      if (el) {
+        el.textContent = "Welcome, " + cap + ".";
+        el.classList.add("is-visible");
+      }
+    } catch (_) { /* never break the page */ }
+  })();
+
+  // Conversion tracking hook — fires once on landing so any of these analytics
+  // tags will record the lead conversion if/when the site adds them:
+  //   • Google Ads (gtag config + send_to AW-XXXXXXX/XXXX)
+  //   • GA4 (gtag config G-XXXXXXX)
+  //   • GTM dataLayer push
+  //   • Facebook Pixel (window.fbq('track', 'Lead'))
+  // None of these need to be installed for the page to work — every block is
+  // guarded so missing tags are silent no-ops.
+  (function () {
+    const params = new URLSearchParams(window.location.search);
+    const source = (params.get("source") || "unknown").slice(0, 48);
+    try {
+      if (typeof window.gtag === "function") {
+        window.gtag("event", "generate_lead", {
+          event_category: "engagement",
+          event_label: source,
+          source_form: source,
+          page_path: "/thanks/",
+        });
+      }
+    } catch (_) {}
+    try {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({ event: "generate_lead", source_form: source, page_path: "/thanks/" });
+    } catch (_) {}
+    try {
+      if (typeof window.fbq === "function") window.fbq("track", "Lead", { source_form: source });
+    } catch (_) {}
+  })();
+</script>
+
+</body>
+</html>

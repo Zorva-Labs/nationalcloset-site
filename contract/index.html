@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Your Contract · National Closet Company</title>
+  <meta name="robots" content="noindex, nofollow"/>
+  <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/styles.css?v=blog10"/>
+  <style>
+    .doc { max-width: 820px; margin: 0 auto; padding: clamp(60px, 10vw, 120px) clamp(20px, 4vw, 40px) 80px; }
+    .doc-mast { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 28px; border-bottom: 1px solid var(--color-line); margin-bottom: 36px; }
+    .doc-brand { font-family: var(--font-display); font-size: 1.5rem; }
+    .doc-brand small { display: block; font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.28em; color: var(--color-brass); text-transform: uppercase; margin-top: 4px; }
+    .doc h1 { font-family: var(--font-display); font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 400; letter-spacing: -0.02em; margin: 0 0 16px; }
+    .doc h1 em { color: var(--color-brass); }
+    .doc-intro { font-family: var(--font-display); font-style: italic; font-size: 1.1rem; line-height: 1.55; color: var(--color-ink-soft); margin-bottom: 30px; }
+    .doc-meta { display: flex; gap: 24px; flex-wrap: wrap; font-size: 0.88rem; color: var(--color-ink-soft); margin-bottom: 32px; padding: 18px 22px; background: var(--color-bg-2); border-radius: 2px; }
+    .doc-meta strong { color: var(--color-ink); display: block; font-weight: 600; }
+    .doc h2 { font-family: var(--font-display); font-weight: 500; font-size: 1.4rem; color: var(--color-ink); margin: 36px 0 14px; }
+    .doc h3 { font-family: var(--font-display); font-weight: 500; font-size: 1.1rem; color: var(--color-ink); margin: 22px 0 8px; }
+    .doc p { font-size: 0.98rem; line-height: 1.7; color: var(--color-ink-2); }
+    .doc table { width: 100%; border-collapse: collapse; margin: 14px 0; }
+    .doc table thead th { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-ink-soft); text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--color-line); font-weight: 600; }
+    .doc table tbody td { padding: 14px 12px; border-bottom: 1px solid var(--color-line-soft); font-size: 0.92rem; vertical-align: top; }
+    .doc table tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .doc-totals { margin-left: auto; max-width: 340px; padding-top: 18px; font-variant-numeric: tabular-nums; }
+    .doc-totals .r { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.98rem; }
+    .doc-totals .r.grand { border-top: 1px solid var(--color-line); margin-top: 8px; padding-top: 14px; font-size: 1.2rem; font-weight: 600; color: var(--color-ink); }
+    .doc-totals .r.deposit { color: var(--color-brass); font-weight: 600; padding-top: 12px; }
+    .sign-box { background: #fff; border: 2px solid var(--color-ink); padding: 32px; margin-top: 40px; }
+    .sign-box h2 { margin-top: 0; }
+    .sign-box label { display: block; margin-bottom: 16px; }
+    .sign-box label span { display: block; font-size: 0.78rem; color: var(--color-ink-soft); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.12em; }
+    .sign-box .sig-field { display: block; margin-bottom: 16px; }
+    .sign-box .sig-field-label { display: block; font-size: 0.78rem; color: var(--color-ink-soft); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.12em; }
+    .sign-box input { width: 100%; padding: 10px 12px; border: 1px solid var(--color-line); font: inherit; font-size: 0.95rem; }
+    .sig { background: #fff; border: 1px solid var(--color-line); }
+    .sig canvas { display: block; width: 100%; height: 180px; cursor: crosshair; touch-action: none; background: linear-gradient(transparent calc(100% - 1px), var(--color-line) calc(100% - 1px)); }
+    .sig-bar { padding: 10px 14px; border-top: 1px solid var(--color-line-soft); display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--color-ink-soft); }
+    .sig-bar button { background: transparent; border: 0; color: var(--color-ink-soft); font: inherit; cursor: pointer; }
+    .sign-btn { width: 100%; padding: 18px; background: var(--color-ink); color: var(--color-bg); border: 0; font: inherit; font-family: var(--font-mono); font-size: 0.84rem; letter-spacing: 0.22em; text-transform: uppercase; cursor: pointer; font-weight: 600; margin-top: 14px; }
+    .sign-btn:hover { background: var(--color-espresso-2); }
+    .sign-btn:disabled { opacity: 0.5; }
+    .signed-box { background: var(--color-espresso); color: var(--color-bg); padding: 40px; text-align: center; margin-top: 40px; }
+    .signed-box h2 { color: var(--color-bg); font-family: var(--font-display); font-size: 2rem; font-weight: 400; margin: 0 0 12px; }
+    .signed-box p { color: rgba(247,242,234,.82); font-family: var(--font-display); font-style: italic; margin: 0; }
+
+    /* Install scheduler */
+    .sched-box { background: #fff; border: 2px solid var(--color-brass); padding: 30px; margin-top: 24px; }
+    .sched-box h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; margin: 0 0 8px; color: var(--color-ink); }
+    .sched-box .sub { font-family: var(--font-display); font-style: italic; color: var(--color-ink-soft); margin: 0 0 18px; }
+    .sched-day { background: var(--color-bg-2); border: 1px solid var(--color-line-soft); padding: 14px 18px; margin-bottom: 8px; }
+    .sched-day h3 { font-family: var(--font-display); font-weight: 500; font-size: 1.05rem; margin: 0 0 10px; color: var(--color-ink); }
+    .sched-slots { display: flex; flex-wrap: wrap; gap: 8px; }
+    .sched-slot { padding: 8px 14px; background: #fff; border: 1px solid var(--color-line); cursor: pointer; font: inherit; font-size: 0.88rem; color: var(--color-ink); border-radius: 2px; transition: all 150ms ease; }
+    .sched-slot:hover { border-color: var(--color-brass); }
+    .sched-slot.is-picked { background: var(--color-ink); color: var(--color-bg); border-color: var(--color-ink); }
+    .sched-confirm { background: var(--color-ink); color: var(--color-bg); border: 0; padding: 14px 28px; font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.22em; text-transform: uppercase; cursor: pointer; margin-top: 18px; }
+    .sched-confirm:hover { background: var(--color-espresso-2); }
+    .sched-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    @media print {
+      @page { size: letter; margin: 0.6in; }
+      body { background: #fff; color: #14110D; }
+      .sign-btn, .sign-bar, .sign-bar button, .sched-box, .no-print { display: none !important; }
+      .doc { max-width: none; padding: 0; }
+      .signed-box { background: transparent !important; color: #14110D !important; border: 2px solid #14110D; padding: 18pt; text-align: left; }
+      .signed-box h2 { color: #14110D !important; font-size: 14pt; margin: 0 0 6pt; }
+      .signed-box p { color: #14110D !important; font-size: 10pt; opacity: 1; }
+      h1, h2, h3 { color: #14110D !important; page-break-after: avoid; }
+      .doc-intro, .doc-mast small { color: #56493C !important; }
+    }
+  </style>
+</head>
+<body>
+<main class="doc" id="root"><p style="text-align:center;color:var(--color-ink-soft);padding:40px">Loading…</p></main>
+<script>
+const token = new URLSearchParams(location.search).get("t");
+if (!token) document.getElementById("root").innerHTML = `<p style="color:#B85450;text-align:center">Missing token.</p>`;
+else load();
+
+let contract = null;
+async function load() {
+  try {
+    const data = await (await fetch("/api/public/contract/" + token)).json();
+    if (data.error) throw new Error(data.error);
+    contract = data.contract;
+    render(data.contract, data.lines);
+  } catch (e) { document.getElementById("root").innerHTML = `<p style="color:#B85450;text-align:center;padding:40px">${esc(e.message)}</p>`; }
+}
+
+function render(k, lines) {
+  const isSigned = ["signed_by_customer", "fully_executed"].includes(k.status);
+  const isExecuted = k.status === "fully_executed";
+  document.title = `${k.number} · Your Contract · National Closet Company`;
+
+  document.getElementById("root").innerHTML = `
+    <div class="doc-mast">
+      <div class="doc-brand">National Closet Company<small>Service Agreement</small></div>
+      <div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--color-ink-soft)">${esc(k.number)}</div>
+    </div>
+    <h1>Window-treatment <em>agreement.</em></h1>
+    <p class="doc-intro">${esc(k.intro || "")}</p>
+
+    <div class="doc-meta">
+      <div><strong>Customer</strong>${esc(k.contact_name)}</div>
+      <div><strong>Project</strong>${esc(k.project_name)}</div>
+      ${k.site_address ? `<div><strong>Site</strong>${esc(k.site_address)}</div>` : ""}
+      <div><strong>Install window</strong>${esc(k.estimated_install_window || "TBD")}</div>
+    </div>
+
+    <h2>Scope of work</h2>
+    ${k.scope_html ? `<div>${k.scope_html}</div>` : ""}
+    <table>
+      <thead><tr><th style="width:55%">Item</th><th>Room</th><th class="num">Qty</th><th class="num">Unit</th><th class="num">Total</th></tr></thead>
+      <tbody>${lines.map((l) => `<tr><td><strong>${esc(l.description)}</strong></td><td>${esc(l.room || "")}</td><td class="num">${l.quantity}</td><td class="num">${money(l.unit_price_cents)}</td><td class="num"><strong>${money(l.line_total_cents)}</strong></td></tr>`).join("")}</tbody>
+    </table>
+    <div class="doc-totals">
+      <div class="r grand"><span>Total</span><span>${money(k.total_cents)}</span></div>
+      <div class="r deposit"><span>Deposit due at signing</span><span>${money(k.deposit_cents)}</span></div>
+    </div>
+
+    <h2>Terms &amp; conditions</h2>
+    <div>${k.terms_html || ""}</div>
+
+    ${isExecuted ? `
+      <div class="signed-box">
+        <h2>Job is booked.</h2>
+        <p>Signed on ${formatDt(k.signed_by_customer_at)}. ${k.deposit_cents > 0 ? `Deposit due: <strong style="color:var(--color-champagne)">${money(k.deposit_cents)}</strong>` : "Payment due on completion."}</p>
+        <button onclick="window.print()" class="no-print" style="margin-top:18px;padding:12px 22px;background:var(--color-champagne);color:var(--color-ink);border:0;font:inherit;font-family:var(--font-mono);font-size:0.78rem;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;font-weight:600">🖨 Print / Save PDF</button>
+      </div>
+      <div id="install-scheduler"></div>
+    ` : isSigned ? `
+      <div class="signed-box" style="background:var(--color-brass);color:var(--color-ink)">
+        <h2 style="color:var(--color-ink)">Thank you — signed!</h2>
+        <p style="color:var(--color-ink);opacity:0.8">We've received your signature. The contract is fully executed — we'll release your order shortly.</p>
+        <button onclick="window.print()" class="no-print" style="margin-top:18px;padding:12px 22px;background:var(--color-ink);color:var(--color-bg);border:0;font:inherit;font-family:var(--font-mono);font-size:0.78rem;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer">🖨 Print / Save PDF</button>
+      </div>
+    ` : `
+      <div class="sign-box">
+        <h2>Sign to book the job</h2>
+        <p style="font-size:0.92rem;color:var(--color-ink-soft);margin:0 0 22px">By typing your name and signing below, you accept the terms above and authorize National Closet Company to release your order to manufacturing.</p>
+        <label><span>Full legal name</span><input id="signer-name" autocomplete="name"/></label>
+        <label><span>Email (for receipt)</span><input id="signer-email" type="email" autocomplete="email" value="${esc(k.contact_email)}"/></label>
+        <!-- Intentionally NOT a label wrapper: a label without a for attr
+             implicitly associates with the first form control inside it, so
+             clicking the canvas would dispatch a synthetic click on the
+             Clear button below, wiping every stroke on mouseup. Use a div
+             with a standalone span caption instead. -->
+        <div class="sig-field">
+          <span class="sig-field-label">Draw your signature</span>
+          <div class="sig">
+            <canvas id="sig-pad" width="700" height="180"></canvas>
+            <div class="sig-bar"><span>Use mouse, finger, or stylus</span><button type="button" id="sig-clear">Clear</button></div>
+          </div>
+        </div>
+        <button class="sign-btn" id="sign-btn" onclick="sign()">Sign &amp; book the job</button>
+      </div>
+    `}
+  `;
+
+  if (!isSigned) wirePad();
+  if (isExecuted) loadInstallScheduler();
+}
+
+let pickedSlot = null;
+
+async function loadInstallScheduler() {
+  const host = document.getElementById("install-scheduler");
+  if (!host) return;
+
+  // Check if an install is already on the books
+  const existing = await fetch("/api/public/contract/" + token + "/install").then((r) => r.json()).catch(() => ({ appointment: null }));
+  if (existing.appointment) {
+    host.innerHTML = `
+      <div class="sched-box" style="border-color:#3A8C5A;background:#F0FDF4">
+        <h2 style="color:#14110D">Install scheduled ✓</h2>
+        <p class="sub" style="color:#14110D">${formatDt(existing.appointment.start_at)} (${existing.appointment.duration_min} min). Check your email for the calendar invite.</p>
+        <p style="font-size:0.9rem;color:var(--color-ink-soft);margin:0">Need to change? Call or text <a href="tel:+16292988241" style="color:var(--color-brass);border-bottom:1px solid currentColor">629-298-8241</a>.</p>
+      </div>
+    `;
+    return;
+  }
+
+  host.innerHTML = `
+    <div class="sched-box">
+      <h2>Schedule your install.</h2>
+      <p class="sub">Pick a time below — installs typically take 2–6 hours depending on window count. We'll bring drop cloths and tools.</p>
+      <div id="sched-slots"><p style="color:var(--color-ink-soft);font-size:0.9rem">Loading times…</p></div>
+      <div id="sched-confirm-host" style="margin-top:16px"></div>
+    </div>
+  `;
+  try {
+    // Install scheduling uses its own slot feed (10am / 4pm only, max 2/day,
+    // 4-week manufacturer lead time for custom-order contracts) — NOT the
+    // general /api/public/slots used for free consultations.
+    const slotsData = await fetch("/api/public/install-slots/" + token).then((r) => r.json());
+    renderSlots(slotsData);
+  } catch (e) {
+    document.getElementById("sched-slots").innerHTML = `<p style="color:#B85450">Couldn't load times — please call 629-298-8241.</p>`;
+  }
+}
+
+function renderSlots(slotsData) {
+  const dates = Object.keys(slotsData.slots || {}).sort().slice(0, 14); // show first 2 weeks of available days
+  const leadNote = slotsData.needs_lead_time
+    ? `<p style="font-size:0.88rem;color:var(--color-ink-soft);margin:0 0 16px;line-height:1.55">
+         Custom orders need <strong>${slotsData.lead_time_days} days</strong> for manufacture, so the earliest install date is
+         <strong>${prettyDate(slotsData.earliest)}</strong>. We only install in two slots a day —
+         <strong>10am</strong> or <strong>4pm</strong> — and book a maximum of two installs daily.
+       </p>`
+    : `<p style="font-size:0.88rem;color:var(--color-ink-soft);margin:0 0 16px;line-height:1.55">
+         Installs run in two slots a day — <strong>10am</strong> or <strong>4pm</strong> — with a max of two installs daily.
+       </p>`;
+
+  if (!dates.length) {
+    document.getElementById("sched-slots").innerHTML = leadNote +
+      `<p style="color:var(--color-ink-soft)">No open install times in the next 4 weeks. Please call <a href="tel:+16292988241">629-298-8241</a> to schedule.</p>`;
+    return;
+  }
+  document.getElementById("sched-slots").innerHTML = leadNote + dates.map((d) => `
+    <div class="sched-day">
+      <h3>${prettyDate(d)}</h3>
+      <div class="sched-slots">${slotsData.slots[d].map((s) => `<button class="sched-slot" data-start="${s.start}" onclick="pickSlot(this)">${s.label || prettyTime(s.start)}</button>`).join("")}</div>
+    </div>
+  `).join("");
+}
+
+function pickSlot(btn) {
+  document.querySelectorAll(".sched-slot").forEach((b) => b.classList.remove("is-picked"));
+  btn.classList.add("is-picked");
+  pickedSlot = btn.dataset.start;
+  const day = prettyDate(pickedSlot.slice(0, 10));
+  document.getElementById("sched-confirm-host").innerHTML = `
+    <p style="margin:0 0 10px;color:var(--color-ink)"><strong>${day}</strong> at <strong>${prettyTime(pickedSlot)}</strong></p>
+    <label style="display:block;margin-bottom:10px;font-size:0.85rem;color:var(--color-ink-soft)">
+      <span style="display:block;margin-bottom:4px">Expected install length</span>
+      <select id="sched-dur" style="padding:8px 12px;border:1px solid var(--color-line);font:inherit;font-size:0.9rem;background:#fff">
+        <option value="120">2 hours · few windows</option>
+        <option value="240" selected>4 hours · typical job</option>
+        <option value="360">6 hours · whole house</option>
+        <option value="480">8 hours · full day</option>
+      </select>
+    </label>
+    <button class="sched-confirm" id="sched-confirm-btn" onclick="confirmSlot()">Confirm install</button>
+  `;
+}
+
+async function confirmSlot() {
+  if (!pickedSlot) return;
+  const btn = document.getElementById("sched-confirm-btn");
+  btn.disabled = true; btn.textContent = "Booking…";
+  const dur = parseInt(document.getElementById("sched-dur").value || "240", 10);
+  try {
+    const res = await fetch("/api/public/contract/" + token + "/install", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ start_at: pickedSlot, duration_min: dur }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Couldn't schedule.");
+    loadInstallScheduler();  // re-render to show the confirmation
+  } catch (e) {
+    alert(e.message);
+    btn.disabled = false; btn.textContent = "Confirm install";
+  }
+}
+
+function prettyDate(d) {
+  const dt = new Date(d + "T12:00:00Z");
+  const today = new Date().toISOString().slice(0, 10);
+  if (d === today) return "Today, " + dt.toLocaleDateString(undefined, { month: "long", day: "numeric" });
+  return dt.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+}
+function prettyTime(iso) {
+  const [, t] = (iso || "").split("T");
+  if (!t) return "";
+  const [h, m] = t.split(":").map((n) => parseInt(n, 10));
+  const ap = h < 12 ? "am" : "pm";
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${ap}`;
+}
+
+let pad = null;
+// Pointer events on the canvas. Strokes are painted directly onto the bitmap
+// and stay there until the user clicks Clear or submits. No library, no
+// resize handler, no dpr scaling — see commit history for the labyrinth of
+// red herrings that led here.
+//
+// CRITICAL: the parent of the canvas must NOT be a <label> element. A label
+// with no `for` attribute implicitly forwards clicks to the first form
+// control inside it — which in our markup is the Clear button. Wrapping
+// the canvas in <label> caused every mouseup to wipe the signature.
+// The canvas is now in a <div class="sig-field"> instead.
+function wirePad() {
+  const canvas = document.getElementById("sig-pad");
+  canvas.width  = canvas.offsetWidth  || 700;
+  canvas.height = canvas.offsetHeight || 180;
+  const ctx = canvas.getContext("2d");
+  ctx.strokeStyle = "#14110D";
+  ctx.lineWidth   = 2;
+  ctx.lineCap     = "round";
+  ctx.lineJoin    = "round";
+
+  let drawing = false;
+  let strokes = 0;
+
+  function point(e) {
+    const r = canvas.getBoundingClientRect();
+    const sx = canvas.width  / r.width;
+    const sy = canvas.height / r.height;
+    return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
+  }
+  function startStroke(e) {
+    if (drawing) return;
+    if (e.button != null && e.button !== 0) return;
+    if (e.preventDefault) e.preventDefault();
+    drawing = true; strokes++;
+    const p = point(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(p.x + 0.1, p.y + 0.1);  // visible dot for a tap
+    ctx.stroke();
+  }
+  function moveStroke(e) {
+    if (!drawing) return;
+    if (e.preventDefault) e.preventDefault();
+    const p = point(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+  function endStroke() { drawing = false; }
+
+  // Pointer events first (unified mouse + touch + pen). Triple-redundant
+  // event coverage: also bind mouse and touch fallbacks so older browsers
+  // still work. The `drawing` flag prevents double-counting strokes when
+  // a single user gesture fires both a pointer and a mouse event.
+  canvas.addEventListener("pointerdown", (e) => {
+    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+    startStroke(e);
+  });
+  canvas.addEventListener("pointermove",   moveStroke);
+  canvas.addEventListener("pointerup",     endStroke);
+  canvas.addEventListener("pointercancel", endStroke);
+
+  canvas.addEventListener("mousedown", startStroke);
+  canvas.addEventListener("mousemove", moveStroke);
+  window.addEventListener("mouseup",   endStroke);
+
+  canvas.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    startStroke({ clientX: t.clientX, clientY: t.clientY, button: 0, preventDefault: () => e.preventDefault() });
+  }, { passive: false });
+  canvas.addEventListener("touchmove", (e) => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    moveStroke({ clientX: t.clientX, clientY: t.clientY, preventDefault: () => e.preventDefault() });
+  }, { passive: false });
+  canvas.addEventListener("touchend",    endStroke);
+  canvas.addEventListener("touchcancel", endStroke);
+
+  pad = {
+    clear:     () => { ctx.clearRect(0, 0, canvas.width, canvas.height); strokes = 0; },
+    isEmpty:   () => strokes === 0,
+    toDataURL: () => canvas.toDataURL("image/png"),
+  };
+  document.getElementById("sig-clear").onclick = () => pad.clear();
+}
+
+async function sign() {
+  const name = document.getElementById("signer-name").value.trim();
+  const email = document.getElementById("signer-email").value.trim();
+  if (!name) { alert("Please type your full legal name."); return; }
+  if (!pad || pad.isEmpty()) { alert("Please draw your signature."); return; }
+  const btn = document.getElementById("sign-btn");
+  btn.disabled = true; btn.textContent = "Signing…";
+  try {
+    const res = await fetch("/api/public/contract/" + token, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sign", signer_name: name, signer_email: email, signature_image: pad.toDataURL() }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Couldn't sign.");
+    load();
+  } catch (e) { alert(e.message); btn.disabled = false; btn.textContent = "Sign & book the job"; }
+}
+
+function money(c) { if (c == null) return "—"; return "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function formatDt(iso) { if (!iso) return ""; const d = new Date(iso.replace(" ", "T")); return d.toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" }); }
+</script>
+</body>
+</html>

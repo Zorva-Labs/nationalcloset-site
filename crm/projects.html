@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Jobs · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css"/></head>
+<body>
+<script src="/crm/crm-app.js"></script>
+<script>
+// A project only counts as a "Job" once the customer signs the contract.
+// Pre-contract projects (in 'new','scheduled','measured','quoted','proposed')
+// live on their lead and aren't shown here.
+//
+// The sidebar Jobs drill-down (see crm-app.js JOB_STATUSES_NAV) deep-links
+// here with ?status=contracted | installing | completed — when present we
+// filter the list down to that single status (mirrors how the Leads page
+// honors ?status=).
+const JOB_STATUSES = new Set(["contracted", "installing", "completed"]);
+const JOB_STATUS_LABELS = { contracted: "Booked", installing: "Installing", completed: "Installed" };
+
+(async () => {
+  const params = new URLSearchParams(location.search);
+  const filterStatus = params.get("status");
+  const subtitle = filterStatus && JOB_STATUSES.has(filterStatus)
+    ? `${JOB_STATUS_LABELS[filterStatus] || filterStatus} jobs`
+    : "Booked work — contract signed";
+
+  const user = await SSCrm.mount({ title: "Jobs", subtitle,
+    actions: `${filterStatus ? `<a class="btn ghost" href="/crm/projects.html">← All jobs</a>` : ""}<a class="btn secondary" href="/crm/pipeline.html">Pipeline (all stages) →</a>`,
+    wide: true });
+  if (!user) return;
+  const { projects: all } = await SSCrm.fetchJSON("/api/projects");
+  let projects = all.filter((p) => JOB_STATUSES.has(p.status));
+  if (filterStatus && JOB_STATUSES.has(filterStatus)) {
+    projects = projects.filter((p) => p.status === filterStatus);
+  }
+  const page = document.getElementById("page");
+  if (!projects.length) {
+    const pending = all.length - all.filter((p) => JOB_STATUSES.has(p.status)).length;
+    page.innerHTML = `<div class="tbl"><div class="empty">
+      ${filterStatus ? `No ${JOB_STATUS_LABELS[filterStatus] || filterStatus} jobs.` : "No booked jobs yet."}
+      ${!filterStatus && pending > 0 ? `<div style="margin-top:8px;font-size:13px">${pending} project${pending === 1 ? " is" : "s are"} in flight on the lead side — they'll appear here once the customer signs.</div>` : ""}
+    </div></div>`;
+    return;
+  }
+  page.innerHTML = `<div class="tbl"><table>
+    <thead><tr><th>Job</th><th>Customer</th><th>Status</th><th>Updated</th></tr></thead>
+    <tbody>${projects.map((p) => `<tr class="clickable" onclick="location.href='/crm/project.html?id=${p.id}'">
+      <td><strong>${SSCrm.esc(p.name)}</strong></td>
+      <td>${SSCrm.esc(p.contact_name)} <span class="muted" style="font-size:12px">· ${SSCrm.esc(p.contact_email)}</span></td>
+      <td>${SSCrm.pill(p.status)}</td>
+      <td class="muted">${SSCrm.fmtDate(p.updated_at)}</td>
+    </tr>`).join("")}</tbody></table></div>`;
+})();
+</script></body></html>

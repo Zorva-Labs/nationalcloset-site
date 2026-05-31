@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Contact · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css"/>
+<style>
+  /* Contact-detail grid — collapses to one column under 900px so the side rail
+     doesn't push the main column off-screen on narrow displays. */
+  .contact-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+  @media (max-width: 1000px) { .contact-grid { grid-template-columns: 1fr; } }
+  .contact-grid > div { min-width: 0; }
+  /* Prevent long emails / addresses / phone numbers from blowing out the layout */
+  .contact-grid .tbl td, .contact-grid .form input { overflow-wrap: anywhere; word-break: break-word; }
+  .contact-grid .form input { max-width: 100%; }
+</style>
+</head>
+<body>
+<script src="/crm/crm-app.js"></script>
+<script>
+const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
+if (!id) location.href = "/crm/contacts.html";
+
+let state = null; // { contact, projects, appointments }
+
+(async () => {
+  const user = await SSCrm.mount({ title: "Contact", actions: `<a class="btn ghost" href="/crm/contacts.html">← Contacts</a>` });
+  if (!user) return;
+  state = await SSCrm.fetchJSON("/api/contacts/" + id);
+  render();
+})();
+
+function render() {
+  const c = state.contact;
+  const projects = state.projects || [];
+  const appointments = state.appointments || [];
+  const leadNotes = state.lead_notes || [];
+  const stats = state.stats || { project_count: 0, booked_count: 0, lifetime_value_cents: 0 };
+  document.getElementById("page-title").textContent = c.name;
+
+  document.getElementById("page").innerHTML = `
+    <div class="contact-grid">
+      <div>
+        <!-- Lifetime summary — jobs count, bookings count, total $ spent -->
+        ${stats.project_count > 0 ? `
+          <div class="card" style="margin-bottom:14px">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center">
+              <div>
+                <div style="font-size:26px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">${stats.project_count}</div>
+                <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em">Job${stats.project_count === 1 ? "" : "s"} total</div>
+              </div>
+              <div>
+                <div style="font-size:26px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">${stats.booked_count}</div>
+                <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em">Booked</div>
+              </div>
+              <div>
+                <div style="font-size:26px;font-weight:700;color:var(--money);font-variant-numeric:tabular-nums">${SSCrm.fmtMoney(stats.lifetime_value_cents)}</div>
+                <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em">Lifetime value</div>
+              </div>
+            </div>
+          </div>
+        ` : ""}
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Jobs <span class="muted" style="font-size:11px;font-weight:400">${stats.project_count > 1 ? "· past + active" : ""}</span></h2>
+            <button class="btn primary sm" onclick="newJob(${c.id})">+ New job</button>
+          </div>
+          ${projects.length ? `<div class="tbl"><table>
+            <thead><tr>
+              <th>Name</th>
+              <th style="width:120px">Status</th>
+              <th class="num" style="width:110px">Value</th>
+              <th style="width:110px">Updated</th>
+            </tr></thead>
+            <tbody>${projects.map((p) => {
+              const value = p.signed_total || p.proposed_total || null;
+              return `<tr class="clickable" onclick="location.href='/crm/project.html?id=${p.id}'">
+                <td>
+                  <strong>${SSCrm.esc(p.name)}</strong>
+                  ${p.lead_interest ? `<div class="muted" style="font-size:12px;margin-top:2px">${SSCrm.esc(p.lead_interest)}</div>` : (p.description ? `<div class="muted" style="font-size:12px;margin-top:2px">${SSCrm.esc(p.description)}</div>` : "")}
+                </td>
+                <td>${SSCrm.pill(p.status)}</td>
+                <td class="num ${p.signed_total ? "money" : "muted"}">${value ? SSCrm.fmtMoney(value) : "—"}</td>
+                <td class="muted">${SSCrm.fmtDate(p.updated_at)}</td>
+              </tr>`;
+            }).join("")}</tbody></table></div>` : `<p class="muted" style="text-align:center;padding:20px;font-size:13px">No jobs yet — create one to start a proposal.</p>`}
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <div class="card-head"><h2>Appointments</h2></div>
+          ${appointments.length ? `<div class="tbl"><table><thead><tr><th>When</th><th style="width:120px">Type</th><th style="width:120px">Status</th></tr></thead><tbody>${
+            appointments.map((a) => `<tr><td>${SSCrm.fmtDateTime(a.start_at)}</td><td class="muted">${SSCrm.esc(a.type)}</td><td>${SSCrm.pill(a.status)}</td></tr>`).join("")
+          }</tbody></table></div>` : `<p class="muted" style="text-align:center;padding:20px;font-size:13px">No appointments yet.</p>`}
+        </div>
+
+        ${leadNotes.length ? `
+          <div class="card" style="margin-top:14px">
+            <div class="card-head"><h2>Notes from lead stage <span class="muted" style="font-size:12px;font-weight:400">${leadNotes.length}</span></h2></div>
+            <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">
+              ${leadNotes.map((n) => `
+                <li style="padding:10px 14px;background:var(--bg-soft);border-radius:var(--r-sm)">
+                  <div style="font-size:13px;color:var(--ink);white-space:pre-wrap">${SSCrm.esc(n.body)}</div>
+                  <div class="muted" style="font-size:11px;margin-top:4px">${SSCrm.esc(n.author || "—")} · ${SSCrm.fmtDateTime(n.created_at)} · <a href="/crm/lead.html?id=${n.lead_id}">Lead #${n.lead_id}</a></div>
+                </li>`).join("")}
+            </ul>
+          </div>
+        ` : ""}
+
+        <div class="card" style="margin-top:14px">
+          <div class="card-head"><h2>Messages</h2></div>
+          <div id="email-timeline"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-head"><h2>Details</h2></div>
+          <div class="form">
+            <label><span>Name</span><input id="f-name" value="${SSCrm.esc(c.name)}"/></label>
+            <label><span>Email</span><input id="f-email" type="email" value="${SSCrm.esc(c.email)}"/></label>
+            <label><span>Phone</span><input id="f-phone" type="tel" value="${SSCrm.esc(c.phone || "")}"/></label>
+            <label><span>Street</span><input id="f-street" value="${SSCrm.esc(c.address_street || "")}"/></label>
+            <div class="row-3">
+              <label><span>City</span><input id="f-city" value="${SSCrm.esc(c.address_city || "")}"/></label>
+              <label><span>State</span><input id="f-state" value="${SSCrm.esc(c.address_state || "")}" maxlength="2"/></label>
+              <label><span>ZIP</span><input id="f-zip" value="${SSCrm.esc(c.address_zip || "")}"/></label>
+            </div>
+            <label><span>Notes</span><textarea id="f-notes" rows="4">${SSCrm.esc(c.notes || "")}</textarea></label>
+            <div class="form-actions"><button class="btn primary" onclick="save(${c.id})">Save</button></div>
+          </div>
+        </div>
+
+        <!-- Destructive contact removal — separated from the everyday Details
+             card so it's hard to mis-click. Confirmation modal surfaces the
+             count of every linked record before the request fires. -->
+        <div class="card" style="margin-top:14px;border-color:#FEE2E2;background:#FEF2F2">
+          <div class="card-head"><h3 style="color:#991B1B">Danger zone</h3></div>
+          <p class="muted" style="font-size:12px;line-height:1.5;margin:0 0 10px;color:#991B1B">Remove this contact and everything tied to them — every job, lead, email, appointment, contract. Cannot be undone.</p>
+          <button class="btn danger" style="width:100%" onclick="purgeContact()">🗑 Delete &amp; purge this contact</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Mount the email timeline (lives across the contact relationship)
+  const emailHost = document.getElementById("email-timeline");
+  if (emailHost && c.email) {
+    const refresh = () => SSCrm.renderEmailTimeline(emailHost, {
+      contact_id: c.id,
+      onCompose: async () => {
+        const res = await SSCrm.composeEmail({ contact: c });
+        if (res?.ok) refresh();
+      },
+    });
+    refresh();
+  } else if (emailHost) {
+    emailHost.innerHTML = `<p class="muted" style="font-size:13px;padding:8px 0">Add an email above and save to start emailing from the CRM.</p>`;
+  }
+}
+
+async function save(id) {
+  const v = (fld) => document.getElementById("f-" + fld).value.trim();
+  const body = {
+    name:           v("name"),
+    email:          v("email"),
+    phone:          v("phone"),
+    address_street: v("street"),
+    address_city:   v("city"),
+    address_state:  v("state"),
+    address_zip:    v("zip"),
+    notes:          v("notes"),
+  };
+  try {
+    await SSCrm.fetchJSON("/api/contacts/" + id, { method: "PATCH", body: JSON.stringify(body) });
+    SSCrm.toast("Saved", "success");
+    state = await SSCrm.fetchJSON("/api/contacts/" + id);
+    render();
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function newJob(contactId) {
+  const name = prompt("Job name? (e.g. 'Whole house', 'Kitchen + Baths')"); if (!name) return;
+  try { const { id } = await SSCrm.fetchJSON("/api/projects", { method: "POST", body: JSON.stringify({ contact_id: contactId, name }) }); location.href = "/crm/project.html?id=" + id; }
+  catch (e) { SSCrm.toast(e.message, "error"); }
+}
+
+// Two-step purge — same pattern as the project Danger Zone. Modal shows the
+// count of every record tied to this contact and requires typing the contact's
+// name to enable the delete button.
+async function purgeContact() {
+  const c = state.contact;
+  const projects = state.projects || [];
+  const appointments = state.appointments || [];
+  const leadNotes = state.lead_notes || [];
+
+  // Pre-flight: ask the API for a definitive count
+  const counts = { Jobs: projects.length, Appointments: appointments.length, "Lead notes": leadNotes.length };
+
+  const items = Object.entries(counts).filter(([, n]) => n > 0).map(([k, n]) =>
+    `<li style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line-soft);font-size:13px"><span>${SSCrm.esc(k)}</span><strong>${n}</strong></li>`
+  ).join("");
+
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `
+    <div class="modal" style="max-width:520px">
+      <div class="modal-head" style="background:#FEF2F2;color:#991B1B;border-bottom:1px solid #FEE2E2">🗑 Delete &amp; purge "${SSCrm.esc(c.name)}"</div>
+      <div class="modal-body">
+        <p style="margin:0 0 14px;font-size:14px;line-height:1.55">This permanently removes the contact AND every related record (every job, lead, email, appointment, contract). <strong>Cannot be undone.</strong></p>
+        ${items ? `<ul style="list-style:none;padding:0;margin:0 0 16px;border-top:1px solid var(--line-soft)">${items}</ul>` : `<p class="muted" style="font-size:13px;font-style:italic;margin:0 0 16px">No linked records — just the contact row itself.</p>`}
+        <p style="font-size:13px;margin:14px 0 6px">Type <code style="background:var(--bg-soft);padding:2px 6px;border-radius:3px;font-family:var(--font-mono,monospace);font-size:12px">${SSCrm.esc(c.name)}</code> to confirm:</p>
+        <input id="purge-confirm" autocomplete="off"
+               style="width:100%;padding:10px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font:inherit;font-size:14px"
+               placeholder="${SSCrm.esc(c.name)}"/>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" id="px-cancel">Cancel</button>
+        <button class="btn danger" id="px-confirm" disabled>Permanently delete</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  const input = bg.querySelector("#purge-confirm");
+  const btn   = bg.querySelector("#px-confirm");
+  input.focus();
+  input.addEventListener("input", () => { btn.disabled = input.value.trim() !== c.name; });
+  bg.querySelector("#px-cancel").onclick = () => bg.remove();
+  bg.addEventListener("click", (e) => { if (e.target === bg) bg.remove(); });
+  btn.onclick = async () => {
+    btn.disabled = true; btn.textContent = "Deleting…";
+    try {
+      const res = await SSCrm.fetchJSON(`/api/contacts/${c.id}?purge=1`, { method: "DELETE" });
+      bg.remove();
+      const s = res.summary || {};
+      const parts = [];
+      if (s.projects)     parts.push(`${s.projects} job${s.projects === 1 ? "" : "s"}`);
+      if (s.leads)        parts.push(`${s.leads} lead${s.leads === 1 ? "" : "s"}`);
+      if (s.appointments) parts.push(`${s.appointments} appt${s.appointments === 1 ? "" : "s"}`);
+      if (s.emails)       parts.push(`${s.emails} email${s.emails === 1 ? "" : "s"}`);
+      SSCrm.toast(`Purged — wiped ${parts.length ? parts.join(" · ") : "just the contact"}`, "success");
+      setTimeout(() => { location.href = "/crm/contacts.html"; }, 600);
+    } catch (e) {
+      btn.disabled = false; btn.textContent = "Permanently delete";
+      SSCrm.toast(e.message || "Delete failed", "error");
+    }
+  };
+}
+</script></body></html>

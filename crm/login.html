@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in · National Closet Company CRM</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=DM+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/crm/admin.css" />
+  <link rel="icon" href="/assets/images/logo-v4.png" />
+</head>
+<body class="login">
+  <div class="login__card">
+    <div class="login__brand">
+      <span class="admin__brand-monogram" aria-hidden="true">S<span>S</span></span>
+      <span class="admin__brand-text">
+        <strong>National Closet Company</strong>
+        <span>CRM</span>
+      </span>
+    </div>
+    <h1>Sign in</h1>
+    <p>Restricted to staff. Use your assigned email and password.</p>
+    <form id="login-form" novalidate>
+      <label>
+        Email
+        <input type="email" name="email" required autocomplete="username" />
+      </label>
+      <label>
+        Password
+        <input type="password" name="password" required autocomplete="current-password" />
+      </label>
+      <button type="submit">Sign in</button>
+      <div id="error" class="login__error" hidden></div>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById("login-form");
+    const errBox = document.getElementById("error");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errBox.hidden = true;
+      const btn = form.querySelector("button");
+      btn.disabled = true;
+      btn.textContent = "Signing in…";
+      const data = Object.fromEntries(new FormData(form).entries());
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(data),
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error || "Sign in failed.");
+        const next = new URLSearchParams(location.search).get("next") || "/crm/";
+        location.href = next;
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.hidden = false;
+        btn.disabled = false;
+        btn.textContent = "Sign in";
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Your Estimate · National Closet Company</title>
+  <meta name="robots" content="noindex, nofollow"/>
+  <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/styles.css?v=blog10"/>
+  <style>
+    .doc { max-width: 820px; margin: 0 auto; padding: clamp(60px, 10vw, 120px) clamp(20px, 4vw, 40px) 80px; }
+    .doc-mast { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 28px; border-bottom: 1px solid var(--color-line); margin-bottom: 36px; }
+    .doc-brand { font-family: var(--font-display); font-size: 1.5rem; letter-spacing: -0.01em; color: var(--color-ink); }
+    .doc-brand small { display: block; font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.28em; color: var(--color-brass); text-transform: uppercase; margin-top: 4px; }
+    .doc-num { font-family: var(--font-mono); font-size: 0.85rem; color: var(--color-ink-soft); }
+    .doc h1 { font-family: var(--font-display); font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 400; letter-spacing: -0.02em; line-height: 1.05; margin: 0 0 8px; }
+    .doc h1 em { color: var(--color-brass); }
+    .doc-meta { display: flex; gap: 24px; flex-wrap: wrap; font-size: 0.88rem; color: var(--color-ink-soft); margin-bottom: 32px; }
+    .doc-meta strong { color: var(--color-ink); display: block; font-weight: 600; }
+    .doc table { width: 100%; border-collapse: collapse; margin: 18px 0; }
+    .doc table thead th { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-ink-soft); text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--color-line); font-weight: 600; }
+    .doc table tbody td { padding: 14px 12px; border-bottom: 1px solid var(--color-line-soft); font-size: 0.95rem; vertical-align: top; }
+    .doc table tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .doc table tbody td.muted { color: var(--color-ink-soft); font-size: 0.82rem; }
+    .doc-totals { margin-left: auto; max-width: 320px; padding-top: 18px; font-variant-numeric: tabular-nums; }
+    .doc-totals .r { display: flex; justify-content: space-between; padding: 6px 0; font-size: 0.95rem; }
+    .doc-totals .r.grand { border-top: 1px solid var(--color-line); margin-top: 8px; padding-top: 14px; font-size: 1.2rem; font-weight: 600; color: var(--color-ink); }
+    .doc-notes { background: var(--color-bg-2); border-left: 3px solid var(--color-brass); padding: 18px 22px; margin: 30px 0; font-style: italic; color: var(--color-ink-soft); font-family: var(--font-display); }
+    .doc-actions { display: flex; gap: 12px; justify-content: center; margin: 50px 0 0; padding-top: 30px; border-top: 1px solid var(--color-line-soft); }
+    .doc-btn { padding: 14px 28px; font: inherit; font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.22em; text-transform: uppercase; border: 0; cursor: pointer; }
+    .doc-btn.primary { background: var(--color-ink); color: var(--color-bg); }
+    .doc-btn.secondary { background: transparent; border: 1px solid var(--color-line); color: var(--color-ink); }
+    .doc-status { padding: 28px; background: var(--color-espresso); color: var(--color-bg); text-align: center; margin-top: 30px; }
+    .doc-status h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.7rem; color: var(--color-bg); margin: 0 0 8px; }
+    .doc-status p { color: rgba(247,242,234,.82); font-family: var(--font-display); font-style: italic; margin: 0; }
+    @media print {
+      body { background: #fff; }
+      .doc-actions { display: none; }
+    }
+  </style>
+</head>
+<body>
+<main class="doc" id="root"><p style="text-align:center;color:var(--color-ink-soft);padding:40px">Loading…</p></main>
+<script>
+const token = new URLSearchParams(location.search).get("t");
+if (!token) document.getElementById("root").innerHTML = `<p style="color:#B85450;text-align:center">Missing token. Please use the link from your email.</p>`;
+else load();
+
+async function load() {
+  try {
+    const data = await (await fetch("/api/public/estimate/" + token)).json();
+    if (data.error) throw new Error(data.error);
+    render(data.estimate, data.lines);
+  } catch (e) {
+    document.getElementById("root").innerHTML = `<p style="color:#B85450;text-align:center;padding:40px">${esc(e.message)}</p>`;
+  }
+}
+
+function render(e, lines) {
+  const isFinal = ["approved", "declined"].includes(e.status);
+  document.title = `${e.number} · Your Estimate · National Closet Company`;
+  document.getElementById("root").innerHTML = `
+    <div class="doc-mast">
+      <div class="doc-brand">National Closet Company<small>Blinds, Shutters &amp; Shades</small></div>
+      <div class="doc-num">${esc(e.number)}</div>
+    </div>
+
+    <h1>Your <em>written estimate.</em></h1>
+    <p style="color:var(--color-ink-soft);font-family:var(--font-display);font-style:italic;font-size:1.1rem;margin:0 0 28px">For ${esc(e.project_name)} — prepared with care for ${esc(e.contact_name)}.</p>
+
+    <div class="doc-meta">
+      <div><strong>Estimate</strong>${esc(e.number)}</div>
+      <div><strong>Valid through</strong>${esc(e.valid_until || "—")}</div>
+      <div><strong>Status</strong>${esc(e.status.replace(/_/g, " "))}</div>
+    </div>
+
+    <table>
+      <thead><tr><th style="width:55%">Item</th><th>Room</th><th class="num">Qty</th><th class="num">Unit</th><th class="num">Total</th></tr></thead>
+      <tbody>${lines.map((l) => `
+        <tr>
+          <td><strong>${esc(l.description)}</strong></td>
+          <td class="muted">${esc(l.room || "")}</td>
+          <td class="num">${l.quantity}</td>
+          <td class="num">${money(l.unit_price_cents)}</td>
+          <td class="num"><strong>${money(l.line_total_cents)}</strong></td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+
+    <div class="doc-totals">
+      <div class="r"><span>Subtotal</span><span>${money(e.subtotal_cents)}</span></div>
+      ${e.discount_cents ? `<div class="r"><span>Discount</span><span>−${money(e.discount_cents)}</span></div>` : ""}
+      ${e.tax_cents ? `<div class="r"><span>Tax</span><span>${money(e.tax_cents)}</span></div>` : ""}
+      <div class="r grand"><span>Total</span><span>${money(e.total_cents)}</span></div>
+    </div>
+
+    ${e.notes_customer ? `<div class="doc-notes">${esc(e.notes_customer)}</div>` : ""}
+
+    ${isFinal ? `
+      <div class="doc-status">
+        <h2>${e.status === "approved" ? "Estimate approved." : "Estimate declined."}</h2>
+        <p>${e.status === "approved" ? "Thank you. We'll be in touch to send a contract." : "We're here if you change your mind — 629-298-8241."}</p>
+      </div>` : `
+      <div class="doc-actions">
+        <button class="doc-btn primary" onclick="approve()">Approve estimate</button>
+        <button class="doc-btn secondary" onclick="window.print()">Print / save PDF</button>
+        <a class="doc-btn secondary" href="tel:+16292988241" style="text-decoration:none;display:inline-block;line-height:1">Call us</a>
+      </div>`}
+  `;
+}
+
+async function approve() {
+  const name = prompt("Type your full legal name to approve this estimate:");
+  if (!name) return;
+  try {
+    const res = await fetch("/api/public/estimate/" + token, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "approve", name }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Couldn't approve.");
+    alert("Estimate approved — thank you! We'll be in touch within one business day to send the contract.");
+    load();
+  } catch (e) { alert(e.message); }
+}
+function money(c) { if (c == null) return "—"; return "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+</script>
+</body>
+</html>

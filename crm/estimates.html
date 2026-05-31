@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Estimates · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css"/></head>
+<body>
+<script src="/crm/crm-app.js"></script>
+<script>
+(async () => {
+  const user = await SSCrm.mount({ title: "Estimates", subtitle: "Every written estimate", wide: true });
+  if (!user) return;
+  const { estimates } = await SSCrm.fetchJSON("/api/estimates");
+  const page = document.getElementById("page");
+  if (!estimates.length) { page.innerHTML = `<div class="tbl"><div class="empty">No estimates yet. Open a job and click "+ Estimate".</div></div>`; return; }
+  page.innerHTML = `<div class="tbl"><table>
+    <thead><tr><th>#</th><th>Project / Customer</th><th>Status</th><th class="num">Total</th><th>Created</th></tr></thead>
+    <tbody>${estimates.map((e) => `<tr class="clickable" onclick="location.href='/crm/estimate.html?id=${e.id}'">
+      <td><strong>${SSCrm.esc(e.number)}</strong></td>
+      <td>${SSCrm.esc(e.project_name)}<div class="muted" style="font-size:12px">${SSCrm.esc(e.contact_name)}</div></td>
+      <td>${SSCrm.pill(e.status)}</td>
+      <td class="money">${SSCrm.fmtMoney(e.total_cents)}</td>
+      <td class="muted">${SSCrm.fmtDate(e.created_at)}</td>
+    </tr>`).join("")}</tbody></table></div>`;
+})();
+</script></body></html>

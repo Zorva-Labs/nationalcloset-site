@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Contacts · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css"/></head>
+<body>
+<script src="/crm/crm-app.js"></script>
+<script>
+(async () => {
+  const action = new URLSearchParams(location.search).get("action");
+  const user = await SSCrm.mount({
+    title: "Contacts", subtitle: "Every person we've talked to",
+    actions: `<input type="search" id="q" placeholder="Search…" style="padding:8px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font-size:13px;min-width:220px"/>
+              <button class="btn primary" onclick="newContact()">+ New contact</button>`,
+    wide: true,
+  });
+  if (!user) return;
+  document.getElementById("q").oninput = debounce(load, 250);
+  await load();
+  if (action === "new") newContact();
+})();
+async function load() {
+  const q = document.getElementById("q").value.trim();
+  const { contacts } = await SSCrm.fetchJSON("/api/contacts" + (q ? "?q=" + encodeURIComponent(q) : ""));
+  const page = document.getElementById("page");
+  if (!contacts.length) { page.innerHTML = `<div class="tbl"><div class="empty">No contacts yet.</div></div>`; return; }
+  page.innerHTML = `<div class="tbl"><table>
+    <thead><tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Phone</th>
+      <th>City</th>
+      <th class="num" style="width:100px">Jobs</th>
+      <th class="num" style="width:120px">Lifetime $</th>
+      <th style="width:110px">Last activity</th>
+      <th style="width:34px"></th>
+    </tr></thead>
+    <tbody>${contacts.map((c) => {
+      const jobs   = c.project_count || 0;
+      const booked = c.booked_count  || 0;
+      const ltv    = c.lifetime_value_cents || 0;
+      const last   = c.last_project_at || c.updated_at || c.created_at;
+      return `<tr data-id="${c.id}" data-name="${SSCrm.esc(c.name)}">
+        <td class="clickable" onclick="location.href='/crm/contact.html?id=${c.id}'"><strong>${SSCrm.esc(c.name)}</strong></td>
+        <td class="clickable" onclick="location.href='/crm/contact.html?id=${c.id}'">${SSCrm.esc(c.email)}</td>
+        <td class="muted clickable" onclick="location.href='/crm/contact.html?id=${c.id}'">${SSCrm.esc(c.phone || "")}</td>
+        <td class="muted clickable" onclick="location.href='/crm/contact.html?id=${c.id}'">${SSCrm.esc(c.address_city || "")}${c.address_state ? `, ${SSCrm.esc(c.address_state)}` : ""}</td>
+        <td class="num clickable" onclick="location.href='/crm/contact.html?id=${c.id}'">${jobs}${booked > 0 ? ` <span class="muted" style="font-size:10px">(${booked} booked)</span>` : ""}</td>
+        <td class="num ${ltv > 0 ? "money" : "muted"} clickable" onclick="location.href='/crm/contact.html?id=${c.id}'">${ltv > 0 ? SSCrm.fmtMoney(ltv) : "—"}</td>
+        <td class="muted clickable" onclick="location.href='/crm/contact.html?id=${c.id}'">${SSCrm.fmtDate(last)}</td>
+        <td style="padding:0;text-align:center"><button class="row-del" title="Delete contact" onclick="quickDelete(${c.id}, '${SSCrm.esc(c.name).replace(/'/g, "\\'")}', this)" style="background:transparent;border:0;cursor:pointer;color:var(--ink-muted);font-size:16px;padding:8px 10px;line-height:1">×</button></td>
+      </tr>`;
+    }).join("")}</tbody></table></div>`;
+}
+
+// Quick delete from the list — if the contact has any linked data the API
+// returns 409 and we route the admin to the contact page (Danger Zone) for
+// the full purge confirmation flow. Bare contacts (no jobs/leads/etc.)
+// disappear with a single click.
+async function quickDelete(id, name, btn) {
+  if (!confirm(`Delete contact "${name}"?\n\n(If they have any jobs / leads / emails, you'll be sent to the contact page to confirm a full purge.)`)) return;
+  btn.disabled = true;
+  try {
+    await SSCrm.fetchJSON(`/api/contacts/${id}`, { method: "DELETE" });
+    btn.closest("tr").remove();
+    SSCrm.toast(`Deleted ${name}`, "success");
+  } catch (e) {
+    btn.disabled = false;
+    // 409 = has linked records → bounce them to the contact page for the
+    // full Danger-Zone purge confirmation.
+    if (/linked records/i.test(e.message || "")) {
+      SSCrm.toast(`${name} has linked records — opening their page to purge`, "info");
+      setTimeout(() => { location.href = "/crm/contact.html?id=" + id; }, 700);
+    } else {
+      SSCrm.toast(e.message || "Delete failed", "error");
+    }
+  }
+}
+async function newContact() {
+  const name = prompt("Full name?"); if (!name) return;
+  const email = prompt("Email?"); if (!email) return;
+  const phone = prompt("Phone (optional)?") || null;
+  try { const { id } = await SSCrm.fetchJSON("/api/contacts", { method: "POST", body: JSON.stringify({ name, email, phone }) }); location.href = `/crm/contact.html?id=${id}`; }
+  catch (e) { SSCrm.toast(e.message, "error"); }
+}
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+</script></body></html>

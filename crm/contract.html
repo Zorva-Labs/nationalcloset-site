@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Contract · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" href="/crm/crm-app.css" />
+<style>
+  /* Print stylesheet — admins hit "Print / Save PDF" to download a clean
+     copy of the contract. Strips the CRM chrome and renders just the
+     legal document: header, line items, scope, terms, signatures. The
+     browser's print dialog "Save as PDF" produces a permanent PDF copy. */
+  @media print {
+    @page { size: letter; margin: 0.6in; }
+    body { background: #fff !important; color: #14110D !important; font-size: 11pt; line-height: 1.5; }
+    .tnav, .page-head, .no-print, .banner, button, .actions, .card-head .btn, .pill[data-s] { display: none !important; }
+    .app, .app--wide { max-width: none !important; margin-left: 0 !important; padding: 0 !important; }
+    .card { border: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 0 14pt !important; background: transparent !important; page-break-inside: avoid; }
+    .card-head { border-bottom: 1px solid #999 !important; padding: 0 0 4pt !important; margin-bottom: 8pt !important; }
+    .card-head h2 { font-size: 13pt !important; font-weight: 600 !important; color: #14110D !important; margin: 0 !important; }
+    table.lines { width: 100%; border-collapse: collapse; font-size: 10pt; }
+    table.lines th, table.lines td { padding: 4pt 6pt; border-bottom: 1px solid #ddd; text-align: left; }
+    table.lines th { background: #F7F2EA; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.04em; }
+    table.lines .num { text-align: right; font-variant-numeric: tabular-nums; }
+    table.lines input, table.lines select, table.lines button.rm, .add, button { display: none !important; }
+    table.lines input[readonly], table.lines td input { border: 0 !important; background: transparent !important; padding: 0 !important; color: #14110D !important; }
+    /* Inline inputs in the line items table — render their value as plain text */
+    table.lines td input[type="text"], table.lines td input[type="number"] { background: transparent; border: 0; padding: 0; color: inherit; width: 100%; }
+    .totals { margin-top: 10pt; padding-top: 8pt; border-top: 2px solid #14110D; font-size: 11pt; }
+    .totals .r { display: flex; justify-content: space-between; padding: 2pt 0; }
+    .form textarea { display: block; width: 100%; border: 0 !important; background: transparent !important; padding: 0 !important; color: #14110D !important; font-family: inherit !important; font-size: 11pt !important; resize: none !important; }
+    .form label > span:first-child { font-size: 9pt; text-transform: uppercase; letter-spacing: 0.04em; color: #56493C; display: block; margin: 8pt 0 2pt; }
+    .form input[type="text"] { border: 0 !important; padding: 0 !important; background: transparent !important; color: #14110D !important; font: inherit !important; }
+    /* Signature blocks — make them prominent */
+    img[alt$="signature"] { border: 1px solid #999 !important; max-width: 280px !important; }
+    /* Hide form-actions row that holds Save buttons */
+    .form-actions { display: none !important; }
+  }
+  /* Hide print-only helpers on screen */
+  .print-only { display: none; }
+  @media print { .print-only { display: block !important; } }
+</style>
+</head>
+<body>
+<script src="/crm/crm-app.js"></script>
+<script>
+const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
+const wantCountersign = new URLSearchParams(location.search).get("action") === "countersign";
+if (!id) location.href = "/crm/contracts.html";
+let state;
+
+(async () => {
+  const user = await SSCrm.mount({ title: "Contract", actions: `<a class="btn ghost" href="/crm/contracts.html">← Contracts</a>` });
+  if (!user) return;
+  state = await SSCrm.fetchJSON("/api/contracts/" + id);
+  render();
+  if (wantCountersign) setTimeout(() => document.getElementById("countersign-btn")?.scrollIntoView({ behavior: "smooth" }), 100);
+})();
+
+function render() {
+  const { contract: k, lines } = state;
+  document.getElementById("page-title").textContent = `${k.number} · ${SSCrm.fmtMoney(k.total_cents)}`;
+  const customerUrl = `${location.origin}/contract/?t=${k.view_token}`;
+  const canSend = k.status === "draft";
+  // Contracts now auto-counter-sign at the moment the customer signs — see
+  // POST /api/public/contract/[token] which sets status='fully_executed' +
+  // counter_signed_at + counter_signer_name='National Closet Company' in one shot.
+  // The legacy manual countersign UI is intentionally not surfaced here; a
+  // pre-existing contract still stuck in 'signed_by_customer' shows a small
+  // hint and a one-click "Mark as booked" button below to clear it.
+  const stuckSignedByCustomer = k.status === "signed_by_customer";
+  const isBooked = k.status === "fully_executed";
+
+  document.getElementById("page").innerHTML = `
+    ${isBooked ? `
+      <div class="banner banner--success">
+        <div class="banner__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="banner__body">
+          <strong>Job booked!</strong>
+          <span>Auto-countersigned ${SSCrm.fmtDateTime(k.counter_signed_at)}. ${k.deposit_paid ? "Deposit received." : `Deposit pending: ${SSCrm.fmtMoney(k.deposit_cents)}`}</span>
+        </div>
+      </div>` : ""}
+
+    ${stuckSignedByCustomer ? `
+      <div class="banner" style="background:#FEF3C7;border-left:3px solid #9D7A3E;color:#14110D">
+        <div class="banner__body">
+          <strong>Legacy contract pending counter-sign.</strong>
+          <span>This contract was signed before auto-countersign was wired up. Click below to mark it as booked.</span>
+          <button class="btn primary sm" style="margin-top:8px" onclick="markBooked()">Mark as booked &amp; book the job</button>
+        </div>
+      </div>` : ""}
+
+    <div class="no-print" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;gap:10px;align-items:center">
+        ${SSCrm.pill(k.status)}
+        <span class="pill" style="background:#F0FDFA;color:#0F766E;border-color:#CCFBF1">${contractTypeLabel(k.contract_type || "custom_order")}</span>
+        <span class="muted" style="font-size:13px">${SSCrm.esc(k.project_name)} · <a href="/crm/contact.html?id=${k.contact_id}">${SSCrm.esc(k.contact_name)}</a></span>
+      </div>
+      <div style="display:flex;gap:8px">
+        ${canSend ? `<button class="btn primary" onclick="sendContract()">Send to customer</button>` : ""}
+        <button class="btn secondary" onclick="printContract()">🖨 Print / Save PDF</button>
+        ${k.status !== "draft" ? `<a class="btn secondary" href="${customerUrl}" target="_blank">Customer link ↗</a>` : ""}
+        ${!isBooked ? `<button class="btn danger" onclick="del()">Delete</button>` : ""}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Scope &amp; line items <span class="muted" style="font-size:11px;font-weight:400">· all dimensions in inches</span></h2></div>
+      <table class="lines"><thead><tr>
+        <th style="width:30%">Description</th><th>Room</th><th class="num">W&Prime;</th><th class="num">H&Prime;</th><th class="num">Qty</th><th class="num">Unit $</th><th class="num">Total</th><th></th>
+      </tr></thead><tbody id="lines-body">${lines.length ? lines.map((l, i) => lineRow(l, i)).join("") : lineRow({}, 0)}</tbody></table>
+      <div class="add"><button onclick="addLine()">+ Line item</button></div>
+
+      <div class="totals">
+        <div class="r"><span>Total</span><span id="t-grand">${SSCrm.fmtMoney(k.total_cents)}</span></div>
+        <div class="r"><span>Deposit due at signing</span><input id="t-deposit" type="text" value="${k.deposit_cents ? "$" + (k.deposit_cents/100).toFixed(2) : ""}" style="width:120px;text-align:right;border:1px solid var(--line);padding:5px 8px;border-radius:var(--r-sm)"/></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-head"><h2>Contract content</h2></div>
+      <div class="form">
+        <label><span>Intro</span><textarea id="intro" rows="3">${SSCrm.esc(k.intro || "")}</textarea></label>
+        <label><span>Scope (HTML allowed)</span><textarea id="scope" rows="4">${SSCrm.esc(k.scope_html || "")}</textarea></label>
+        <label><span>Terms (HTML allowed)</span><textarea id="terms" rows="10">${SSCrm.esc(k.terms_html || "")}</textarea></label>
+        <label><span>Estimated install window</span><input id="install-win" value="${SSCrm.esc(k.estimated_install_window || "")}"/></label>
+        <div class="form-actions"><button class="btn primary" onclick="save()">Save changes</button></div>
+      </div>
+    </div>
+
+    ${isBooked || canCountersign ? `
+      <div class="card" style="margin-top:16px">
+        <div class="card-head"><h2>Deposit</h2></div>
+        <div class="form">
+          <div class="row">
+            <label><span>Deposit received?</span>
+              <select id="dep-paid">
+                <option value="0" ${!k.deposit_paid ? "selected" : ""}>Not yet</option>
+                <option value="1" ${k.deposit_paid ? "selected" : ""}>Yes, received</option>
+              </select>
+            </label>
+            <label><span>Method (check #, Venmo, cash, ACH)</span>
+              <input id="dep-method" value="${SSCrm.esc(k.deposit_paid_method || "")}"/></label>
+          </div>
+          <div class="form-actions"><button class="btn primary" onclick="saveDeposit()">Update deposit</button></div>
+        </div>
+      </div>` : ""}
+
+    ${k.signature_image ? `
+      <div class="card" style="margin-top:16px">
+        <div class="card-head"><h2>Signatures</h2></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:30px">
+          <div>
+            <div class="muted" style="font-size:12px;margin-bottom:6px">CUSTOMER SIGNATURE</div>
+            <img src="${SSCrm.esc(k.signature_image)}" style="border:1px solid var(--line);max-width:100%;background:#fff" alt="Customer signature"/>
+            <div style="font-size:13px;margin-top:8px"><strong>${SSCrm.esc(k.signer_name)}</strong></div>
+            <div class="muted" style="font-size:12px">${SSCrm.fmtDateTime(k.signed_by_customer_at)}</div>
+            <div class="muted" style="font-size:11px;font-family:var(--font-mono)">hash ${SSCrm.esc(String(k.document_hash_at_sign || "").slice(0, 16))}…</div>
+          </div>
+          ${k.counter_signature_image ? `
+            <div>
+              <div class="muted" style="font-size:12px;margin-bottom:6px">STATELY SHADES SIGNATURE</div>
+              <img src="${SSCrm.esc(k.counter_signature_image)}" style="border:1px solid var(--line);max-width:100%;background:#fff" alt="Counter signature"/>
+              <div style="font-size:13px;margin-top:8px"><strong>${SSCrm.esc(k.counter_signer_name)}</strong></div>
+              <div class="muted" style="font-size:12px">${SSCrm.fmtDateTime(k.counter_signed_at)}</div>
+            </div>` : `
+            <div style="display:flex;align-items:center;justify-content:center;border:1px dashed var(--line-strong);border-radius:var(--r);padding:30px;color:var(--ink-muted);font-size:13px">
+              Awaiting counter-signature
+            </div>`}
+        </div>
+      </div>` : ""}
+  `;
+}
+
+function lineRow(l, i) {
+  const total = (Number(l.quantity || 1)) * (l.unit_price_cents || 0);
+  return `<tr data-i="${i}">
+    <td><input data-f="description" value="${SSCrm.esc(l.description || "")}"/></td>
+    <td><input data-f="room" value="${SSCrm.esc(l.room || "")}"/></td>
+    <td><input class="num" data-f="width_in" value="${l.width_in ?? ""}" type="number" step="0.125" min="0"/></td>
+    <td><input class="num" data-f="height_in" value="${l.height_in ?? ""}" type="number" step="0.125" min="0"/></td>
+    <td><input class="num" data-f="quantity" value="${l.quantity || 1}" type="number" step="1" min="0"/></td>
+    <td><input class="num" data-f="unit" value="${l.unit_price_cents ? "$" + (l.unit_price_cents / 100).toFixed(2) : ""}"/></td>
+    <td class="num money money-line">${SSCrm.fmtMoney(total)}</td>
+    <td><button class="rm" onclick="this.closest('tr').remove()" title="Remove">×</button></td>
+  </tr>`;
+}
+function addLine() { const t = document.getElementById("lines-body"); t.insertAdjacentHTML("beforeend", lineRow({}, t.children.length)); }
+
+async function save() {
+  const lines = [...document.querySelectorAll("#lines-body tr")].map((tr) => {
+    const w = tr.querySelector("[data-f=width_in]")?.value;
+    const h = tr.querySelector("[data-f=height_in]")?.value;
+    return {
+      description: tr.querySelector("[data-f=description]").value.trim(),
+      room: tr.querySelector("[data-f=room]").value.trim() || null,
+      width_in: w == null || w === "" ? null : Number(w),
+      height_in: h == null || h === "" ? null : Number(h),
+      quantity: Number(tr.querySelector("[data-f=quantity]").value || 1),
+      unit_price_cents: SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value),
+    };
+  }).filter((l) => l.description);
+  try {
+    await SSCrm.fetchJSON("/api/contracts/" + id, { method: "PATCH", body: JSON.stringify({
+      lines,
+      deposit_cents: SSCrm.parseMoney(document.getElementById("t-deposit").value),
+      intro: document.getElementById("intro").value.trim(),
+      scope_html: document.getElementById("scope").value.trim(),
+      terms_html: document.getElementById("terms").value.trim(),
+      estimated_install_window: document.getElementById("install-win").value.trim(),
+    })});
+    SSCrm.toast("Saved", "success");
+    state = await SSCrm.fetchJSON("/api/contracts/" + id);
+    render();
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function saveDeposit() {
+  try {
+    await SSCrm.fetchJSON("/api/contracts/" + id, { method: "PATCH", body: JSON.stringify({
+      deposit_paid: document.getElementById("dep-paid").value === "1",
+      deposit_paid_method: document.getElementById("dep-method").value.trim() || null,
+      deposit_paid_at: document.getElementById("dep-paid").value === "1" ? new Date().toISOString().slice(0, 19).replace("T", " ") : null,
+    })});
+    SSCrm.toast("Deposit updated", "success");
+    state = await SSCrm.fetchJSON("/api/contracts/" + id);
+    render();
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function sendContract() {
+  if (!(await SSCrm.confirmDialog("Email this contract to the customer for signature?"))) return;
+  try { await SSCrm.fetchJSON(`/api/contracts/${id}/send`, { method: "POST" }); SSCrm.toast("Contract sent", "success"); state = await SSCrm.fetchJSON("/api/contracts/" + id); render(); }
+  catch (e) { SSCrm.toast(e.message, "error"); }
+}
+
+// Legacy fallback: a contract stuck in 'signed_by_customer' (signed before
+// auto-countersign was wired). One click flips it to fully_executed without
+// requiring a hand-drawn signature — the system stamps National Closet Company as
+// the counter-signer with the current timestamp.
+async function markBooked() {
+  if (!(await SSCrm.confirmDialog("Mark this contract as booked? (Auto-countersign as National Closet Company.)"))) return;
+  try {
+    await SSCrm.fetchJSON(`/api/contracts/${id}/countersign`, {
+      method: "POST",
+      body: JSON.stringify({ signer_name: "National Closet Company", auto: true }),
+    });
+    SSCrm.toast("Booked!", "success");
+    state = await SSCrm.fetchJSON("/api/contracts/" + id);
+    render();
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+
+// Open a clean print view of the contract — uses browser print → "Save as
+// PDF" so admins / customers can download a permanent copy without any
+// server-side PDF rendering. The print stylesheet (@media print, see <style>
+// block above) hides admin chrome and shows just the legal document.
+function printContract() {
+  // Slight delay so any open dropdowns close before the print dialog opens
+  setTimeout(() => window.print(), 50);
+}
+
+async function del() {
+  if (!(await SSCrm.confirmDialog("Delete this contract? Cannot be undone."))) return;
+  await SSCrm.fetchJSON("/api/contracts/" + id, { method: "DELETE" });
+  location.href = "/crm/contracts.html";
+}
+
+function contractTypeLabel(t) {
+  return ({
+    custom_order: "Custom Order",
+    install_only: "Install Only · BYO",
+    repair: "Repair / Service Call",
+    service_call: "Service Call",
+  })[t] || t;
+}
+</script>
+</body>
+</html>

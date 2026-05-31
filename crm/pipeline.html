@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pipeline · National Closet Company CRM</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/crm/crm-app.css" />
+  <link rel="icon" href="/assets/images/logo-v4.png" />
+</head>
+<body>
+<script src="/crm/crm-app.js"></script>
+<script>
+// Lead pipeline — kanban of LEADS only. Once a contract is signed the lead
+// auto-transitions to a Job (project.status='contracted', shown on the
+// /crm/projects.html page) and disappears from this board. The "lost" column
+// stays here as the off-track terminal for the lead funnel.
+const PIPELINE_STAGES = [
+  { key: "new",       label: "New",       color: "#94A3B8" },
+  { key: "replied",   label: "Replied",   color: "#F59E0B" },
+  { key: "consult",   label: "Consult",   color: "#6366F1" },
+  { key: "proposal",  label: "Proposal",  color: "#8B5CF6" },
+  { key: "lost",      label: "Lost",      color: "#94A3B8" },
+];
+
+(async () => {
+  const user = await SSCrm.mount({
+    title: "Pipeline",
+    subtitle: "Drag a lead between stages",
+    actions: `<a class="btn secondary" href="/crm/leads.html">Table view →</a>`,
+    wide: true,
+  });
+  if (!user) return;
+
+  const { leads } = await SSCrm.fetchJSON("/api/leads?limit=500");
+  // Group leads by status — unknown statuses fall into "new"
+  const byStatus = Object.fromEntries(PIPELINE_STAGES.map((s) => [s.key, []]));
+  for (const l of leads) {
+    (byStatus[l.status] || byStatus.new).push(l);
+  }
+
+  document.getElementById("page").innerHTML = `
+    <div class="kanban">${PIPELINE_STAGES.map((s) => `
+      <div class="kanban__col" data-status="${s.key}" style="--col-color:${s.color}">
+        <div class="kanban__col-head">
+          <strong>${SSCrm.esc(s.label)}</strong>
+          <span class="count">${byStatus[s.key].length}</span>
+        </div>
+        <div class="kanban__col-body">${byStatus[s.key].map(renderCard).join("")}</div>
+      </div>`).join("")}
+    </div>
+  `;
+
+  wireDragDrop();
+})();
+
+function renderCard(l) {
+  const quoted = l.quoted_amount_cents ? SSCrm.fmtMoney(l.quoted_amount_cents) : "";
+  const sub = [l.interest, [l.address_city, l.address_state].filter(Boolean).join(", ")].filter(Boolean).join(" · ");
+  return `<div class="kanban__card" draggable="true" data-id="${l.id}">
+    <div class="kanban__card-title"><a href="/crm/lead.html?id=${l.id}" style="color:inherit;text-decoration:none">${SSCrm.esc(l.name || "(no name)")}</a></div>
+    ${sub ? `<div class="kanban__card-meta">${SSCrm.esc(sub)}</div>` : ""}
+    <div class="kanban__card-foot">
+      <span class="kanban__card-date">${SSCrm.fmtDate(l.updated_at || l.created_at)}</span>
+      ${quoted ? `<span class="money">${quoted}</span>` : ""}
+    </div>
+  </div>`;
+}
+
+function wireDragDrop() {
+  let draggedId = null;
+  let draggedFrom = null;
+
+  document.querySelectorAll(".kanban__card").forEach((card) => {
+    card.addEventListener("dragstart", (e) => {
+      draggedId = card.dataset.id;
+      draggedFrom = card.closest(".kanban__col").dataset.status;
+      card.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", card.dataset.id);
+    });
+    card.addEventListener("dragend", () => {
+      card.classList.remove("dragging");
+      document.querySelectorAll(".drop-target").forEach((c) => c.classList.remove("drop-target"));
+    });
+  });
+
+  document.querySelectorAll(".kanban__col").forEach((col) => {
+    col.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      col.classList.add("drop-target");
+    });
+    col.addEventListener("dragleave", (e) => {
+      if (!col.contains(e.relatedTarget)) col.classList.remove("drop-target");
+    });
+    col.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      col.classList.remove("drop-target");
+      const newStatus = col.dataset.status;
+      if (!draggedId || newStatus === draggedFrom) return;
+
+      const card = document.querySelector(`.kanban__card[data-id="${draggedId}"]`);
+      if (!card) return;
+
+      // Optimistic UI move
+      col.querySelector(".kanban__col-body").appendChild(card);
+      const fromCol = document.querySelector(`.kanban__col[data-status="${draggedFrom}"]`);
+      bumpCount(col, +1); bumpCount(fromCol, -1);
+
+      try {
+        await SSCrm.fetchJSON(`/api/leads/${draggedId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: newStatus }),
+        });
+        const label = PIPELINE_STAGES.find((s) => s.key === newStatus)?.label || newStatus;
+        SSCrm.toast(`Moved to ${label}`, "success");
+      } catch (err) {
+        SSCrm.toast("Failed: " + err.message, "error");
+        // Roll back
+        fromCol.querySelector(".kanban__col-body").appendChild(card);
+        bumpCount(col, -1); bumpCount(fromCol, +1);
+      }
+    });
+  });
+}
+
+function bumpCount(col, delta) {
+  const el = col.querySelector(".count");
+  el.textContent = (parseInt(el.textContent, 10) || 0) + delta;
+}
+</script>
+</body>
+</html>

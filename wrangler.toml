@@ -1,0 +1,9 @@
+name = "nationalcloset"
+compatibility_date = "2026-05-24"
+pages_build_output_dir = "."
+
+# D1 binding used by the Pages Functions in /functions/api/*
+[[d1_databases]]
+binding = "DB"
+database_name = "nationalcloset-crm"
+database_id = "f5787ce4-29f9-43be-bf0e-cb486f1ec8e9"

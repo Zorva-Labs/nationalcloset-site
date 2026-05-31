@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leads · National Closet Company CRM</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/crm/crm-app.css" />
+  <link rel="icon" href="/assets/images/logo-v4.png" />
+</head>
+<body>
+<script src="/crm/crm-app.js"></script>
+<script>
+// booked + installed are Job statuses, not Lead statuses — see crm-app.js
+// JOB_STATUSES_NAV for the parallel set under Jobs.
+const STATUS_LABELS = { new: "New", replied: "Replied", consult: "Consult", proposal: "Proposal", lost: "Lost" };
+const STATUS_ORDER = ["new", "replied", "consult", "proposal", "lost"];
+
+(async () => {
+  const url = new URL(location.href);
+  const activeStatus = url.searchParams.get("status");
+  const q = url.searchParams.get("q") || "";
+
+  const user = await SSCrm.mount({
+    title: "Leads",
+    subtitle: activeStatus ? `Showing ${STATUS_LABELS[activeStatus] || activeStatus}` : "Every inbound inquiry",
+    actions: `
+      <input type="search" id="q" placeholder="Search name, email…" value="${SSCrm.esc(q)}" style="padding:8px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font-size:13px;min-width:220px" />
+      <select id="status-filter" style="padding:8px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font-size:13px;background:var(--bg)">
+        <option value="">All statuses</option>
+        ${STATUS_ORDER.map((s) => `<option value="${s}" ${activeStatus === s ? "selected" : ""}>${STATUS_LABELS[s]}</option>`).join("")}
+      </select>
+    `,
+    wide: true,
+  });
+  if (!user) return;
+
+  document.getElementById("q").addEventListener("input", (e) => {
+    clearTimeout(window._lt);
+    window._lt = setTimeout(() => { url.searchParams.set("q", e.target.value); if (!e.target.value) url.searchParams.delete("q"); history.replaceState({}, "", url); load(); }, 250);
+  });
+  document.getElementById("status-filter").addEventListener("change", (e) => {
+    const v = e.target.value;
+    if (v) url.searchParams.set("status", v); else url.searchParams.delete("status");
+    history.replaceState({}, "", url);
+    load();
+  });
+  await load();
+
+  async function load() {
+    const params = new URLSearchParams();
+    const status = url.searchParams.get("status"); if (status) params.set("status", status);
+    const q = url.searchParams.get("q"); if (q) params.set("q", q);
+    const { leads } = await SSCrm.fetchJSON("/api/leads?" + params);
+    const page = document.getElementById("page");
+    if (!leads.length) { page.innerHTML = `<div class="tbl"><div class="empty">No leads ${q ? "match that search" : "yet"}.</div></div>`; return; }
+    page.innerHTML = `
+      <div class="tbl"><table>
+        <thead><tr>
+          <th>Name</th><th>Contact</th><th>Considering</th><th>Location</th><th>Status</th><th style="width:60px"></th>
+        </tr></thead>
+        <tbody>${leads.map((l) => `
+          <tr data-id="${l.id}" data-name="${SSCrm.esc(l.name)}">
+            <td class="clickable" onclick="location.href='/crm/lead.html?id=${l.id}'">
+              <div style="font-weight:600">${SSCrm.esc(l.name)}</div>
+              <div style="font-size:12px;color:var(--ink-soft);margin-top:2px">${SSCrm.fmtDate(l.created_at)}</div>
+            </td>
+            <td class="clickable" onclick="location.href='/crm/lead.html?id=${l.id}'">
+              <div>${l.email ? `<a href="mailto:${SSCrm.esc(l.email)}" onclick="event.stopPropagation()">${SSCrm.esc(l.email)}</a>` : ""}</div>
+              <div style="font-size:12px;color:var(--ink-soft)">${l.phone ? `<a href="tel:${SSCrm.esc(l.phone)}" onclick="event.stopPropagation()">${SSCrm.esc(l.phone)}</a>` : ""}</div>
+            </td>
+            <td class="clickable" onclick="location.href='/crm/lead.html?id=${l.id}'">${SSCrm.esc(l.interest || "—")}</td>
+            <td class="clickable" onclick="location.href='/crm/lead.html?id=${l.id}'" style="color:var(--ink-soft)">${SSCrm.esc([l.address_city, l.address_state].filter(Boolean).join(", ") || l.location || "—")}</td>
+            <td class="clickable" onclick="location.href='/crm/lead.html?id=${l.id}'">${SSCrm.pill(l.status)}</td>
+            <td style="text-align:center">
+              <button class="btn ghost" title="Delete" data-del="${l.id}" style="padding:6px 8px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              </button>
+            </td>
+          </tr>`).join("")}
+        </tbody>
+      </table></div>
+    `;
+    page.querySelectorAll("[data-del]").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.del;
+        const row = btn.closest("tr");
+        if (!(await SSCrm.confirmDialog(`Delete lead "${row.dataset.name}"? This cannot be undone.`))) return;
+        try {
+          await SSCrm.fetchJSON("/api/leads/" + id, { method: "DELETE" });
+          row.style.transition = "opacity .2s ease, transform .2s ease";
+          row.style.opacity = "0";
+          row.style.transform = "translateX(20px)";
+          setTimeout(() => row.remove(), 220);
+          SSCrm.toast("Lead deleted", "success");
+        } catch (err) { SSCrm.toast(err.message, "error"); }
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>

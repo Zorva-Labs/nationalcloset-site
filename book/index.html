@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Book Your Free Consultation · National Closet Company</title>
+  <meta name="description" content="Pick a time for your free in-home window-treatment consultation. We measure every window, sample every product, and leave you a written quote on the visit." />
+  <link rel="canonical" href="https://nationalclosetco.com/book/" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css?v=blog10" />
+  <style>
+    .book-wrap { max-width: 920px; margin: 0 auto; padding: clamp(80px, 14vw, 160px) clamp(20px, 4vw, 40px) 80px; }
+    .book-eyebrow { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--color-brass); }
+    .book-h1 { font-family: var(--font-display); font-size: clamp(2.2rem, 4vw, 3.2rem); font-weight: 400; letter-spacing: -0.02em; margin: 16px 0 12px; line-height: 1.05; }
+    .book-h1 em { color: var(--color-brass); font-weight: 400; }
+    .book-lead { font-family: var(--font-display); font-style: italic; font-size: 1.15rem; line-height: 1.55; color: var(--color-ink-soft); max-width: 56ch; margin-bottom: 36px; }
+    .book-grid { display: grid; grid-template-columns: 360px 1fr; gap: 32px; }
+    @media (max-width: 760px) { .book-grid { grid-template-columns: 1fr; } }
+    .day-block { background: #fff; border: 1px solid var(--color-line-soft); padding: 18px 20px; margin-bottom: 10px; }
+    .day-block h3 { font-family: var(--font-display); font-weight: 500; font-size: 1.15rem; margin: 0 0 12px; color: var(--color-ink); }
+    .slot-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .slot-btn { padding: 8px 14px; background: var(--color-bg); border: 1px solid var(--color-line); cursor: pointer; font: inherit; font-size: 0.88rem; color: var(--color-ink); transition: all 150ms ease; border-radius: 2px; }
+    .slot-btn:hover { border-color: var(--color-brass); background: #fff; }
+    .slot-btn.is-selected { background: var(--color-ink); color: var(--color-bg); border-color: var(--color-ink); }
+    .book-form { background: #fff; border: 1px solid var(--color-line-soft); padding: 28px; }
+    .book-form h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.4rem; margin: 0 0 6px; color: var(--color-ink); }
+    .book-form .selected-time { font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-brass); margin-bottom: 22px; text-transform: uppercase; letter-spacing: 0.16em; }
+    .book-form label { display: block; margin-bottom: 14px; font-size: 0.88rem; }
+    .book-form label span { display: block; color: var(--color-ink-soft); font-size: 0.78rem; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.12em; }
+    .book-form input, .book-form textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--color-line); font: inherit; font-size: 0.95rem; color: var(--color-ink); background: var(--color-bg); }
+    .book-form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .book-form .row-3 { display: grid; grid-template-columns: 2fr 1fr 1.4fr; gap: 12px; }
+    .book-cta { width: 100%; padding: 14px; background: var(--color-ink); color: var(--color-bg); border: 0; font: inherit; font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.22em; text-transform: uppercase; cursor: pointer; margin-top: 6px; }
+    .book-cta:hover { background: var(--color-espresso-2); }
+    .book-cta:disabled { opacity: 0.5; cursor: not-allowed; }
+    .book-success { background: var(--color-espresso); color: var(--color-bg); padding: 44px 32px; text-align: center; }
+    .book-success h2 { font-family: var(--font-display); font-weight: 400; font-size: 2rem; color: var(--color-bg); margin: 0 0 14px; }
+    .book-success p { color: rgba(247,242,234,.82); font-family: var(--font-display); font-style: italic; font-size: 1.1rem; line-height: 1.55; max-width: 38ch; margin: 0 auto; }
+  </style>
+</head>
+<body>
+<main class="book-wrap">
+  <span class="book-eyebrow">Free Consultation · No Obligation</span>
+  <h1 class="book-h1">Book your <em>free in-home consultation.</em></h1>
+  <p class="book-lead">Pick a 60-minute slot below. We come to you with samples for every product line, measure every window, and leave a written quote on the visit. No pressure, no travel fee within 90 miles of Gallatin.</p>
+  <div class="book-grid">
+    <div id="slots"><p style="color:var(--color-ink-soft)">Loading available times…</p></div>
+    <div id="form-host"></div>
+  </div>
+</main>
+<script>
+let selected = null;
+let slotsData = null;
+
+(async () => {
+  const cancelToken = new URLSearchParams(location.search).get("cancel");
+  if (cancelToken) return showCancel(cancelToken);
+  try {
+    slotsData = await (await fetch("/api/public/slots", { credentials: "same-origin" })).json();
+    renderSlots();
+  } catch (e) {
+    document.getElementById("slots").innerHTML = `<p style="color:#B85450">Couldn't load times. Please call us at 629-298-8241.</p>`;
+  }
+})();
+
+function renderSlots() {
+  const dates = Object.keys(slotsData.slots).sort();
+  if (!dates.length) {
+    document.getElementById("slots").innerHTML = `<p style="color:var(--color-ink-soft)">No times available in the next 14 days. Please call <a href="tel:+16292988241">629-298-8241</a> to book directly.</p>`;
+    return;
+  }
+  document.getElementById("slots").innerHTML = dates.map((d) => `
+    <div class="day-block">
+      <h3>${prettyDate(d)}</h3>
+      <div class="slot-row">${slotsData.slots[d].map((s) => `
+        <button class="slot-btn" data-start="${s.start}" data-end="${s.end}" onclick="pick(this)">${prettyTime(s.start)}</button>
+      `).join("")}</div>
+    </div>
+  `).join("");
+}
+
+function pick(btn) {
+  document.querySelectorAll(".slot-btn").forEach((b) => b.classList.remove("is-selected"));
+  btn.classList.add("is-selected");
+  selected = { start: btn.dataset.start, end: btn.dataset.end };
+  renderForm();
+}
+
+function renderForm() {
+  document.getElementById("form-host").innerHTML = `
+    <div class="book-form">
+      <h2>Confirm your visit</h2>
+      <div class="selected-time">${prettyDate(selected.start.slice(0, 10))} · ${prettyTime(selected.start)} Central</div>
+      <label><span>Full name</span><input id="b-name" required autocomplete="name"/></label>
+      <div class="row">
+        <label><span>Phone</span><input id="b-phone" type="tel" required autocomplete="tel"/></label>
+        <label><span>Email</span><input id="b-email" type="email" required autocomplete="email"/></label>
+      </div>
+      <label><span>Street address</span><input id="b-street" required autocomplete="street-address"/></label>
+      <div class="row-3">
+        <label><span>City</span><input id="b-city" required/></label>
+        <label><span>State</span><input id="b-state" required maxlength="2" value="TN"/></label>
+        <label><span>ZIP</span><input id="b-zip" required maxlength="10" inputmode="numeric"/></label>
+      </div>
+      <label><span>Rooms / scope (optional)</span><input id="b-rooms" placeholder="Living, primary BR, 2 baths"/></label>
+      <label><span>Anything we should know (optional)</span><textarea id="b-notes" rows="2"></textarea></label>
+      <button class="book-cta" id="book-btn" onclick="submit()">Confirm Booking</button>
+    </div>
+  `;
+}
+
+async function submit() {
+  const btn = document.getElementById("book-btn");
+  btn.disabled = true; btn.textContent = "Booking…";
+  const body = {
+    start_at: selected.start, duration_min: 60,
+    name: g("b-name"), phone: g("b-phone"), email: g("b-email"),
+    address: { street: g("b-street"), city: g("b-city"), state: g("b-state"), zip: g("b-zip") },
+    rooms: g("b-rooms") || null, notes: g("b-notes") || null,
+  };
+  try {
+    const res = await fetch("/api/public/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Couldn't book that slot.");
+    document.querySelector(".book-wrap").innerHTML = `
+      <div class="book-success">
+        <h2>You're booked.</h2>
+        <p>We've sent a confirmation + calendar invite to <strong style="color:var(--color-champagne)">${esc(g("b-email"))}</strong>. See you ${prettyDate(selected.start.slice(0, 10))} at ${prettyTime(selected.start)}.</p>
+      </div>`;
+  } catch (e) {
+    alert(e.message);
+    btn.disabled = false; btn.textContent = "Confirm Booking";
+  }
+}
+
+function showCancel(token) {
+  document.querySelector(".book-wrap").innerHTML = `
+    <span class="book-eyebrow">Reschedule or cancel</span>
+    <h1 class="book-h1">Need to change <em>that visit?</em></h1>
+    <p class="book-lead">No problem. Click below to cancel — or call/text 629-298-8241 if you'd rather reschedule.</p>
+    <button class="book-cta" style="max-width:240px" onclick="doCancel('${token}')">Cancel my appointment</button>
+  `;
+}
+async function doCancel(t) {
+  if (!confirm("Cancel your consultation?")) return;
+  try {
+    const res = await fetch("/api/public/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: t }) });
+    if (!res.ok) throw new Error("Cancel failed");
+    document.querySelector(".book-wrap").innerHTML = `<div class="book-success"><h2>Cancelled.</h2><p>Hope to see you another time. Call 629-298-8241 whenever you'd like to rebook.</p></div>`;
+  } catch (e) { alert(e.message); }
+}
+
+function g(id) { return document.getElementById(id).value.trim(); }
+function esc(s) { return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function prettyDate(d) { const dt = new Date(d + "T12:00:00Z"); const today = new Date().toISOString().slice(0, 10); const tom = new Date(Date.now() + 86400000).toISOString().slice(0, 10); if (d === today) return "Today, " + dt.toLocaleDateString(undefined, { month: "long", day: "numeric" }); if (d === tom) return "Tomorrow, " + dt.toLocaleDateString(undefined, { month: "long", day: "numeric" }); return dt.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }); }
+function prettyTime(iso) { const [, t] = iso.split("T"); const [h, m] = t.split(":").map((n) => parseInt(n, 10)); const ap = h < 12 ? "am" : "pm"; return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${ap}`; }
+</script>
+</body>
+</html>

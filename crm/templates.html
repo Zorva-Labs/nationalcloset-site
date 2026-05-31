@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Templates · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css"/></head>
+<body>
+<script src="/crm/crm-app.js"></script>
+<script>
+const TABS = [
+  { key: "email",      label: "Email" },
+  { key: "contract",   label: "Contracts" },
+  { key: "proposal",   label: "Proposals" },
+];
+
+let emailTemplates = [];
+let docTemplates = [];
+let activeTab = "email";
+let editingId = null;
+let editingKind = null;   // "email" or "document"
+
+(async () => {
+  const user = await SSCrm.mount({
+    title: "Templates",
+    subtitle: "Reusable boilerplate for emails &amp; documents",
+    wide: true,
+  });
+  if (!user) return;
+
+  activeTab = new URLSearchParams(location.search).get("tab") || "email";
+  await loadAll();
+  render();
+})();
+
+// Email template kinds — the keys we drive from the lead/contact/project pages.
+// Keep in sync with the seed data in migration 0017.
+const EMAIL_KINDS = [
+  "lead_new", "consult_confirm", "proposal_followup", "contract_followup",
+  "install_scheduled", "post_install_thanks", "touch_base",
+];
+
+async function loadAll() {
+  const [emails, docs] = await Promise.all([
+    SSCrm.fetchJSON("/api/email-templates?all=1"),
+    SSCrm.fetchJSON("/api/document-templates"),
+  ]);
+  emailTemplates = emails.templates || [];
+  docTemplates = docs.templates || [];
+}
+
+function render() {
+  document.getElementById("page").innerHTML = `
+    <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r);overflow:hidden">
+      <nav style="display:flex;border-bottom:1px solid var(--line);padding:0 14px">
+        ${TABS.map((t) => `<button class="tab-btn" data-tab="${t.key}" style="padding:14px 18px;font-size:13px;font-weight:${activeTab === t.key ? "600" : "500"};color:${activeTab === t.key ? "var(--accent)" : "var(--ink-soft)"};background:transparent;border:0;border-bottom:2px solid ${activeTab === t.key ? "var(--accent)" : "transparent"};cursor:pointer">${SSCrm.esc(t.label)}</button>`).join("")}
+      </nav>
+      <div id="tab-content" style="padding:24px"></div>
+    </div>
+  `;
+  document.querySelectorAll(".tab-btn").forEach((b) => b.onclick = () => { activeTab = b.dataset.tab; editingId = null; render(); });
+  renderTab();
+}
+
+function renderTab() {
+  const c = document.getElementById("tab-content");
+  if (activeTab === "email") c.innerHTML = renderTemplatesList(emailTemplates, "email");
+  else c.innerHTML = renderTemplatesList(docTemplates.filter((t) => t.kind === activeTab), "document");
+  wireRowClicks();
+}
+
+function renderTemplatesList(templates, kind) {
+  if (!templates.length) {
+    return `<p class="muted" style="text-align:center;padding:30px">No ${activeTab} templates yet. <button class="btn primary sm" onclick="newTemplate()" style="margin-left:10px">+ New template</button></p>`;
+  }
+  return `
+    <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start">
+      <div>
+        <button class="btn primary" onclick="newTemplate()" style="width:100%;margin-bottom:10px">+ New template</button>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          ${templates.map((t) => `
+            <button class="tpl-row" data-id="${t.id}" data-kind="${kind}" style="text-align:left;padding:10px 14px;border:0;border-radius:var(--r-sm);background:${editingId === t.id ? "var(--accent-soft)" : "transparent"};color:${editingId === t.id ? "var(--accent-ink)" : "var(--ink)"};cursor:pointer;font-size:13px">
+              <strong>${SSCrm.esc(t.name)}</strong>
+              ${t.is_default ? `<span style="font-size:10px;color:var(--accent);font-weight:600;margin-left:6px">DEFAULT</span>` : ""}
+              ${t.subkind ? `<div style="font-size:11px;color:var(--ink-soft);font-weight:400;margin-top:2px">${SSCrm.esc(t.subkind)}</div>` : ""}
+              ${kind === "email" ? `<div style="font-size:11px;color:var(--ink-soft);font-weight:400;margin-top:2px">${SSCrm.esc(t.category || "general")}</div>` : ""}
+            </button>
+          `).join("")}
+        </div>
+      </div>
+      <div id="editor">${editingId ? "" : `<p class="muted" style="text-align:center;padding:40px">Pick a template on the left to edit.</p>`}</div>
+    </div>
+    ${kind === "email" ? mergeFieldsHelp() : ""}
+  `;
+}
+
+function wireRowClicks() {
+  document.querySelectorAll(".tpl-row").forEach((row) => {
+    row.onclick = () => {
+      editingId = parseInt(row.dataset.id, 10);
+      editingKind = row.dataset.kind;
+      render();
+      renderEditor();
+    };
+  });
+  if (editingId) renderEditor();
+}
+
+function renderEditor() {
+  const editor = document.getElementById("editor");
+  if (!editor) return;
+  if (editingKind === "email") {
+    const t = emailTemplates.find((x) => x.id === editingId);
+    if (!t) return;
+    editor.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin:0;font-size:15px">${SSCrm.esc(t.name)}</h3>
+        <div style="display:flex;gap:8px"><button class="btn danger sm" onclick="delEmail(${t.id})">Delete</button></div>
+      </div>
+      <div class="form">
+        <div class="row">
+          <label><span>Name</span><input id="e-name" value="${SSCrm.esc(t.name)}"/></label>
+          <label><span>Kind (pipeline stage)</span>
+            <select id="e-kind">${EMAIL_KINDS.map((k) => `<option value="${k}" ${k === t.kind ? "selected" : ""}>${k}</option>`).join("")}</select>
+          </label>
+        </div>
+        <label><span>Subject</span><input id="e-subj" value="${SSCrm.esc(t.subject)}"/></label>
+        <label><span>Body (plain text; use {{first_name}}, {{interest}}, {{address}}, {{quoted_amount}}, {{proposal_link}}, {{contract_link}}, {{appointment_date}}, {{appointment_time}})</span>
+          <textarea id="e-body" rows="14" style="font-family:var(--font-mono);font-size:12px">${SSCrm.esc(t.body_text || "")}</textarea>
+        </label>
+        <div class="row">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input id="e-default" type="checkbox" ${t.is_default ? "checked" : ""}/> <span>Default for this kind</span></label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input id="e-active" type="checkbox" ${t.is_active ? "checked" : ""}/> <span>Active (shown in Compose)</span></label>
+        </div>
+        <div class="form-actions"><button class="btn primary" onclick="saveEmail(${t.id})">Save</button></div>
+      </div>
+    `;
+  } else {
+    const t = docTemplates.find((x) => x.id === editingId);
+    if (!t) return;
+    editor.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin:0;font-size:15px">${SSCrm.esc(t.name)} ${t.is_default ? `<span style="font-size:11px;color:var(--accent);margin-left:8px">DEFAULT</span>` : ""}</h3>
+        <div style="display:flex;gap:8px">
+          ${!t.is_default ? `<button class="btn secondary sm" onclick="makeDefault(${t.id})">Make default</button>` : ""}
+          <button class="btn danger sm" onclick="delDoc(${t.id})">Delete</button>
+        </div>
+      </div>
+      <div class="form">
+        <div class="row">
+          <label><span>Name</span><input id="d-name" value="${SSCrm.esc(t.name)}"/></label>
+          ${t.kind === "contract" ? `<label><span>Contract type</span>
+            <select id="d-subkind">${["custom_order","install_only","repair","service_call"].map((s) => `<option ${s === t.subkind ? "selected" : ""}>${s}</option>`).join("")}</select>
+          </label>` : `<div></div>`}
+        </div>
+
+        <label><span>Intro (customer-facing opener)</span><textarea id="d-intro" rows="3">${SSCrm.esc(t.intro || "")}</textarea></label>
+
+        ${t.kind === "contract" ? `
+          <label><span>Scope (HTML — usually populated per-contract)</span><textarea id="d-scope" rows="4" style="font-family:var(--font-mono);font-size:12px">${SSCrm.esc(t.scope_html || "")}</textarea></label>
+          <label><span>Terms (HTML — boilerplate terms &amp; conditions)</span><textarea id="d-terms" rows="14" style="font-family:var(--font-mono);font-size:12px">${SSCrm.esc(t.terms_html || "")}</textarea></label>
+          <label><span>Default install window</span><input id="d-window" value="${SSCrm.esc(t.estimated_install_window || "")}"/></label>
+        ` : ""}
+
+        ${t.kind === "proposal" ? `
+          <div class="row-3">
+            <label><span>Good tier title</span><input id="d-tg" value="${SSCrm.esc(t.tier_good_title || "")}"/></label>
+            <label><span>Better tier title</span><input id="d-tb" value="${SSCrm.esc(t.tier_better_title || "")}"/></label>
+            <label><span>Best tier title</span><input id="d-tx" value="${SSCrm.esc(t.tier_best_title || "")}"/></label>
+          </div>
+        ` : ""}
+
+        ${t.kind === "estimate" ? `
+          <label><span>Default customer notes (shown on the estimate)</span><textarea id="d-notes" rows="3">${SSCrm.esc(t.notes_customer || "")}</textarea></label>
+          <label><span>Default validity period (days)</span><input id="d-days" type="number" value="${t.valid_days || 30}" min="1" max="365"/></label>
+        ` : ""}
+
+        <div class="form-actions"><button class="btn primary" onclick="saveDoc(${t.id})">Save changes</button></div>
+      </div>
+    `;
+  }
+}
+
+async function newTemplate() {
+  if (activeTab === "email") {
+    const name = prompt("Template name?"); if (!name) return;
+    const kind = prompt(`Kind? (${EMAIL_KINDS.join(", ")})`, "touch_base"); if (!kind) return;
+    try {
+      await SSCrm.fetchJSON("/api/email-templates", {
+        method: "POST",
+        body: JSON.stringify({
+          name, kind,
+          subject: "Subject here — use {{first_name}} etc.",
+          body_text: "Hi {{first_name}},\n\nBody…\n\nJames\nNational Closet Company",
+        }),
+      });
+      await loadAll(); render();
+    } catch (e) { SSCrm.toast(e.message, "error"); }
+  } else {
+    const name = prompt(`${activeTab[0].toUpperCase()+activeTab.slice(1)} template name?`); if (!name) return;
+    const subkind = activeTab === "contract" ? prompt("Contract type (custom_order, install_only, repair, service_call)?", "custom_order") : null;
+    try {
+      const body = { kind: activeTab, name, subkind, is_default: false };
+      if (activeTab === "contract") { body.terms_html = "<h3>New section</h3><p>Edit me.</p>"; body.intro = "Intro paragraph."; body.estimated_install_window = "TBD"; }
+      if (activeTab === "proposal") { body.intro = "Intro paragraph."; body.tier_good_title = "Good"; body.tier_better_title = "Better"; body.tier_best_title = "Best"; }
+      if (activeTab === "estimate") { body.notes_customer = "Notes here."; body.valid_days = 30; }
+      await SSCrm.fetchJSON("/api/document-templates", { method: "POST", body: JSON.stringify(body) });
+      await loadAll(); render();
+    } catch (e) { SSCrm.toast(e.message, "error"); }
+  }
+}
+
+async function saveEmail(id) {
+  try {
+    await SSCrm.fetchJSON("/api/email-templates/" + id, { method: "PATCH", body: JSON.stringify({
+      name:      document.getElementById("e-name").value.trim(),
+      kind:      document.getElementById("e-kind").value,
+      subject:   document.getElementById("e-subj").value.trim(),
+      body_text: document.getElementById("e-body").value,
+      is_default: document.getElementById("e-default").checked ? 1 : 0,
+      is_active:  document.getElementById("e-active").checked ? 1 : 0,
+    })});
+    SSCrm.toast("Saved", "success"); await loadAll(); render();
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function delEmail(id) {
+  if (!(await SSCrm.confirmDialog("Archive this email template?"))) return;
+  await SSCrm.fetchJSON("/api/email-templates/" + id, { method: "DELETE" });
+  editingId = null; await loadAll(); render();
+}
+
+async function saveDoc(id) {
+  const t = docTemplates.find((x) => x.id === id);
+  const body = { name: document.getElementById("d-name").value.trim(), intro: document.getElementById("d-intro").value };
+  if (t.kind === "contract") {
+    body.subkind = document.getElementById("d-subkind").value;
+    body.scope_html = document.getElementById("d-scope").value;
+    body.terms_html = document.getElementById("d-terms").value;
+    body.estimated_install_window = document.getElementById("d-window").value.trim();
+  }
+  if (t.kind === "proposal") {
+    body.tier_good_title = document.getElementById("d-tg").value.trim();
+    body.tier_better_title = document.getElementById("d-tb").value.trim();
+    body.tier_best_title = document.getElementById("d-tx").value.trim();
+  }
+  if (t.kind === "estimate") {
+    body.notes_customer = document.getElementById("d-notes").value;
+    body.valid_days = parseInt(document.getElementById("d-days").value, 10);
+  }
+  try { await SSCrm.fetchJSON("/api/document-templates/" + id, { method: "PATCH", body: JSON.stringify(body) }); SSCrm.toast("Saved", "success"); await loadAll(); render(); }
+  catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function makeDefault(id) {
+  try { await SSCrm.fetchJSON("/api/document-templates/" + id, { method: "PATCH", body: JSON.stringify({ is_default: true }) }); SSCrm.toast("Marked as default", "success"); await loadAll(); render(); }
+  catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function delDoc(id) {
+  if (!(await SSCrm.confirmDialog("Delete this template?"))) return;
+  await SSCrm.fetchJSON("/api/document-templates/" + id, { method: "DELETE" });
+  editingId = null; await loadAll(); render();
+}
+
+function previewEmail() {
+  const sample = { "contact.first_name": "Mary", "contact.name": "Mary Johnson", "contact.email": "mary@example.com", "project.name": "Kitchen + Master", "estimate.number": "EST-2026-0042", "estimate.total": "$3,890.00", "estimate.view_url": "https://nationalclosetco.com/estimate/?t=demo", "contract.number": "C-2026-0042", "contract.total": "$3,890.00", "contract.deposit": "$1,945.00", "contract.view_url": "https://nationalclosetco.com/contract/?t=demo", "proposal.view_url": "https://nationalclosetco.com/proposal/?t=demo", "appointment.pretty_date": "Tuesday, June 3 at 2:30 pm Central", "appointment.cancel_url": "https://nationalclosetco.com/book/?cancel=demo" };
+  const body = document.getElementById("e-body").value.replace(/\{\{([^}]+)\}\}/g, (_, k) => sample[k.trim()] || `[${k}]`);
+  const subj = document.getElementById("e-subj").value.replace(/\{\{([^}]+)\}\}/g, (_, k) => sample[k.trim()] || `[${k}]`);
+  const bg = document.createElement("div"); bg.className = "modal-bg";
+  bg.innerHTML = `<div class="modal" style="max-width:680px"><div class="modal-head">Preview</div><div class="modal-body"><div class="muted" style="font-size:12px">Subject</div><div style="font-weight:600;margin-bottom:14px">${SSCrm.esc(subj)}</div><hr class="sep"/><div>${body}</div></div><div class="modal-foot"><button class="btn primary" onclick="this.closest('.modal-bg').remove()">Close</button></div></div>`;
+  document.body.appendChild(bg);
+  bg.addEventListener("click", (e) => { if (e.target === bg) bg.remove(); });
+}
+
+function mergeFieldsHelp() {
+  return `
+    <div style="background:var(--bg-soft);border-radius:var(--r);padding:14px 18px;margin-top:18px;font-size:12px">
+      <strong style="display:block;margin-bottom:8px;color:var(--ink)">Merge fields available in email templates</strong>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px 14px">
+        <div><code>{{contact.name}}</code></div><div><code>{{contact.first_name}}</code></div><div><code>{{contact.email}}</code></div>
+        <div><code>{{project.name}}</code></div>
+        <div><code>{{estimate.number}}</code></div><div><code>{{estimate.total}}</code></div><div><code>{{estimate.view_url}}</code></div>
+        <div><code>{{contract.number}}</code></div><div><code>{{contract.deposit}}</code></div><div><code>{{contract.view_url}}</code></div>
+        <div><code>{{proposal.view_url}}</code></div>
+        <div><code>{{appointment.pretty_date}}</code></div><div><code>{{appointment.cancel_url}}</code></div>
+      </div>
+    </div>
+  `;
+}
+</script></body></html>

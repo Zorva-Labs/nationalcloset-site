@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Calendar · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css"/></head>
+<body>
+<script src="/crm/crm-app.js"></script>
+<script>
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOW_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+let viewYear, viewMonth;  // 0-indexed month
+
+(async () => {
+  const user = await SSCrm.mount({
+    title: "Calendar",
+    subtitle: "Month view — click a day to add, click an event to view",
+    actions: `<a class="btn secondary" href="/crm/availability.html">Edit availability →</a>
+              <button class="btn secondary" onclick="showSubscribeInstructions()">📱 Sync to phone</button>
+              <button class="btn primary" onclick="SSCrm.quickAddAppointment()">+ Manual appointment</button>`,
+    wide: true,
+  });
+  if (!user) return;
+  const now = new Date();
+  viewYear = now.getFullYear();
+  viewMonth = now.getMonth();
+  await render();
+})();
+
+async function render() {
+  // Fetch ALL appointments in the visible window (which may extend slightly into prev/next month)
+  const first = new Date(Date.UTC(viewYear, viewMonth, 1));
+  const last = new Date(Date.UTC(viewYear, viewMonth + 1, 0));   // last day of this month
+  // Extend ±7 days to cover the leading/trailing cells from adjacent months
+  const fromDate = new Date(first); fromDate.setUTCDate(fromDate.getUTCDate() - 7);
+  const toDate = new Date(last); toDate.setUTCDate(toDate.getUTCDate() + 7);
+  const from = fromDate.toISOString().slice(0, 10);
+  const to = toDate.toISOString().slice(0, 10);
+
+  const { appointments } = await SSCrm.fetchJSON(`/api/appointments?from=${from}&to=${to}`);
+
+  // Bucket appointments by YYYY-MM-DD
+  const byDate = {};
+  for (const a of appointments) {
+    const d = (a.start_at || "").slice(0, 10);
+    (byDate[d] ||= []).push(a);
+  }
+
+  // Build the 6-row × 7-col grid
+  const firstDow = new Date(Date.UTC(viewYear, viewMonth, 1)).getUTCDay();
+  const daysInMonth = new Date(Date.UTC(viewYear, viewMonth + 1, 0)).getUTCDate();
+  const daysInPrev = new Date(Date.UTC(viewYear, viewMonth, 0)).getUTCDate();
+  const todayStr = isoToday();
+
+  const cells = [];
+  // Leading days from prev month
+  for (let i = firstDow - 1; i >= 0; i--) {
+    const d = daysInPrev - i;
+    const date = new Date(Date.UTC(viewYear, viewMonth - 1, d));
+    cells.push({ date, current: false });
+  }
+  // This month
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ date: new Date(Date.UTC(viewYear, viewMonth, d)), current: true });
+  }
+  // Trailing days to fill 6 rows (42 cells)
+  let next = 1;
+  while (cells.length < 42) {
+    cells.push({ date: new Date(Date.UTC(viewYear, viewMonth + 1, next++)), current: false });
+  }
+
+  document.getElementById("page").innerHTML = `
+    <div class="cal-month">
+      <div class="cal-month-head">
+        <h2>${MONTH_NAMES[viewMonth]} ${viewYear}</h2>
+        <div class="nav">
+          <button onclick="prevMonth()" title="Previous month">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button class="today-btn" onclick="goToday()">Today</button>
+          <button onclick="nextMonth()" title="Next month">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="cal-dow-row">${DOW_NAMES.map((d) => `<div class="cal-dow">${d}</div>`).join("")}</div>
+      <div class="cal-month-grid">${cells.map((c) => renderCell(c, byDate, todayStr)).join("")}</div>
+    </div>
+  `;
+
+  // Wire click on each event
+  document.querySelectorAll(".cal-event[data-id]").forEach((el) => {
+    el.addEventListener("click", (e) => { e.stopPropagation(); openAppt(parseInt(el.dataset.id, 10)); });
+  });
+  document.querySelectorAll(".cal-day[data-date]").forEach((el) => {
+    el.addEventListener("click", () => openDay(el.dataset.date));
+  });
+}
+
+function renderCell(c, byDate, todayStr) {
+  const iso = c.date.toISOString().slice(0, 10);
+  const events = byDate[iso] || [];
+  const classes = ["cal-day"];
+  if (!c.current) classes.push("cal-day--other");
+  if (iso === todayStr) classes.push("cal-day--today");
+  const shown = events.slice(0, 3);
+  const more = events.length - shown.length;
+  return `<div class="${classes.join(" ")}" data-date="${iso}">
+    <div class="cal-day-num">${c.date.getUTCDate()}</div>
+    ${shown.map((a) => `<div class="cal-event" data-id="${a.id}" data-s="${SSCrm.esc(a.status)}" title="${SSCrm.esc(a.name)} — ${SSCrm.esc(a.type)}"><span class="cal-event-time">${prettyTime(a.start_at)}</span> ${SSCrm.esc(a.name.split(" ")[0])}</div>`).join("")}
+    ${more > 0 ? `<div class="cal-more">+${more} more</div>` : ""}
+  </div>`;
+}
+
+function prevMonth() {
+  if (--viewMonth < 0) { viewMonth = 11; viewYear--; }
+  render();
+}
+function nextMonth() {
+  if (++viewMonth > 11) { viewMonth = 0; viewYear++; }
+  render();
+}
+function goToday() {
+  const now = new Date();
+  viewYear = now.getFullYear();
+  viewMonth = now.getMonth();
+  render();
+}
+
+function isoToday() { return new Date().toISOString().slice(0, 10); }
+function prettyTime(iso) {
+  const [, t] = (iso || "").split("T");
+  if (!t) return "";
+  const [h, m] = t.split(":").map((n) => parseInt(n, 10));
+  const ap = h < 12 ? "a" : "p";
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")}${ap}`;
+}
+
+// Click on a day → open the day in a side modal showing all appointments + add button
+async function openDay(iso) {
+  const { appointments } = await SSCrm.fetchJSON(`/api/appointments?from=${iso}&to=${iso}`);
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `
+    <div class="modal" style="max-width:560px">
+      <div class="modal-head">${prettyDate(iso)}</div>
+      <div class="modal-body">
+        ${appointments.length ? `<div style="display:grid;gap:8px">${appointments.map((a) => `
+          <div style="border:1px solid var(--line);border-radius:var(--r-sm);padding:12px;cursor:pointer" onclick="openAppt(${a.id})">
+            <div style="font-weight:600;color:var(--accent);font-size:13px">${prettyTime(a.start_at)} — ${prettyTime(a.end_at)}</div>
+            <div style="margin-top:4px;font-weight:600">${SSCrm.esc(a.name)}</div>
+            <div style="font-size:12px;color:var(--ink-soft)">${SSCrm.esc(a.type)} · ${a.duration_min}m${a.phone ? " · " + SSCrm.esc(a.phone) : ""}</div>
+            ${a.site_address ? `<div style="font-size:12px;color:var(--ink-soft);margin-top:2px">${SSCrm.esc(a.site_address)}</div>` : ""}
+            <div style="margin-top:6px">${SSCrm.pill(a.status)}</div>
+          </div>`).join("")}</div>` : `<p class="muted" style="text-align:center;padding:24px 0">No appointments this day.</p>`}
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" data-close>Close</button>
+        <button class="btn primary" data-add>+ Add appointment</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(bg);
+  bg.querySelector("[data-close]").onclick = () => bg.remove();
+  bg.querySelector("[data-add]").onclick = () => { bg.remove(); SSCrm.quickAddAppointment(); };
+  bg.addEventListener("click", (e) => { if (e.target === bg) bg.remove(); });
+}
+
+// Click on a specific event → show details + actions
+async function openAppt(id) {
+  const data = await SSCrm.fetchJSON("/api/appointments/" + id);
+  const a = data.appointment;
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `
+    <div class="modal" style="max-width:520px">
+      <div class="modal-head">${SSCrm.esc(a.name)}</div>
+      <div class="modal-body">
+        <div style="display:grid;gap:10px;font-size:13px">
+          <div><strong>When</strong> · ${SSCrm.fmtDateTime(a.start_at)} (${a.duration_min}m)</div>
+          <div><strong>Type</strong> · ${SSCrm.esc(a.type)}</div>
+          <div><strong>Status</strong> · ${SSCrm.pill(a.status)}</div>
+          ${a.phone ? `<div><strong>Phone</strong> · <a href="tel:${SSCrm.esc(a.phone)}">${SSCrm.esc(a.phone)}</a></div>` : ""}
+          ${a.email ? `<div><strong>Email</strong> · <a href="mailto:${SSCrm.esc(a.email)}">${SSCrm.esc(a.email)}</a></div>` : ""}
+          ${a.site_address ? `<div><strong>Where</strong> · ${SSCrm.esc(a.site_address)}</div>` : ""}
+          ${a.rooms ? `<div><strong>Rooms</strong> · ${SSCrm.esc(a.rooms)}</div>` : ""}
+          ${a.notes ? `<div><strong>Notes</strong> · ${SSCrm.esc(a.notes)}</div>` : ""}
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" data-close>Close</button>
+        ${a.status !== "completed" ? `<button class="btn secondary" data-status="completed">Mark completed</button>` : ""}
+        ${a.status !== "cancelled" ? `<button class="btn danger" data-status="cancelled">Cancel</button>` : ""}
+      </div>
+    </div>
+  `;
+  document.body.appendChild(bg);
+  bg.querySelector("[data-close]").onclick = () => bg.remove();
+  bg.addEventListener("click", (e) => { if (e.target === bg) bg.remove(); });
+  bg.querySelectorAll("[data-status]").forEach((b) => b.onclick = async () => {
+    try { await SSCrm.fetchJSON("/api/appointments/" + id, { method: "PATCH", body: JSON.stringify({ status: b.dataset.status }) }); SSCrm.toast("Updated", "success"); bg.remove(); render(); }
+    catch (e) { SSCrm.toast(e.message, "error"); }
+  });
+}
+
+function prettyDate(iso) {
+  const d = new Date(iso + "T12:00:00Z");
+  const today = new Date().toISOString().slice(0, 10);
+  if (iso === today) return "Today, " + d.toLocaleDateString(undefined, { month: "long", day: "numeric" });
+  return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+}
+
+// "Sync to phone" modal — shows the subscription URL with copy-to-clipboard
+// and step-by-step iPhone instructions. We fetch the token from a tiny
+// auth-gated endpoint so the URL only renders for logged-in admins.
+async function showSubscribeInstructions() {
+  let urlInfo;
+  try {
+    urlInfo = await SSCrm.fetchJSON("/api/calendar-feed-url");
+  } catch (e) {
+    SSCrm.toast(e.message || "Couldn't load feed URL", "error");
+    return;
+  }
+  const url = urlInfo.url || "";
+  const webcal = url.replace(/^https?:/, "webcal:");
+
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `
+    <div class="modal" style="max-width:620px;width:96vw">
+      <div class="modal-head">📱 Sync this calendar to your phone</div>
+      <div class="modal-body" style="padding:20px 24px">
+        <p style="margin:0 0 18px;font-size:14px;line-height:1.55;color:var(--ink-soft)">
+          Subscribe your iPhone (or Apple Calendar / Google Calendar / Outlook) to this read-only feed. Every appointment in the CRM will appear on your phone, and updates flow through automatically — usually within an hour.
+        </p>
+
+        <div style="margin-bottom:20px">
+          <label style="display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-soft);margin-bottom:6px">Subscription URL</label>
+          <div style="display:flex;gap:8px">
+            <input id="feed-url" readonly value="${SSCrm.esc(webcal)}"
+              style="flex:1;font-family:var(--font-mono,ui-monospace,monospace);font-size:12px;padding:9px 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg-soft)"/>
+            <button class="btn primary sm" id="copy-url">Copy</button>
+          </div>
+        </div>
+
+        <details open style="margin-bottom:14px">
+          <summary style="cursor:pointer;font-weight:600;font-size:14px;color:var(--ink)">📱 On iPhone (Settings)</summary>
+          <ol style="margin:10px 0 0;padding-left:22px;font-size:13px;line-height:1.7;color:var(--ink-soft)">
+            <li>Open <strong>Settings → Calendar → Accounts → Add Account → Other</strong></li>
+            <li>Tap <strong>Add Subscribed Calendar</strong></li>
+            <li>Paste the URL above into <strong>Server</strong> and tap <strong>Next</strong></li>
+            <li>iPhone verifies the feed (takes a few seconds) — tap <strong>Save</strong></li>
+            <li>Open the Calendar app — appointments appear in a new calendar labeled "National Closet Company — Appointments"</li>
+          </ol>
+        </details>
+
+        <details style="margin-bottom:14px">
+          <summary style="cursor:pointer;font-weight:600;font-size:14px;color:var(--ink)">📲 Even faster: tap the link from your phone</summary>
+          <p style="margin:8px 0 0;font-size:13px;line-height:1.6;color:var(--ink-soft)">
+            Email the <code style="background:var(--bg-soft);padding:2px 6px;border-radius:3px">webcal://</code> URL to yourself, then tap it on your iPhone. iOS recognizes <code>webcal://</code> and opens the subscribe sheet directly — no Settings navigation needed.
+          </p>
+          <button class="btn ghost sm" style="margin-top:10px" id="email-self">✉️ Email me this link</button>
+        </details>
+
+        <details style="margin-bottom:14px">
+          <summary style="cursor:pointer;font-weight:600;font-size:14px;color:var(--ink)">💻 On Mac (Apple Calendar)</summary>
+          <ol style="margin:10px 0 0;padding-left:22px;font-size:13px;line-height:1.7;color:var(--ink-soft)">
+            <li>Calendar app → <strong>File → New Calendar Subscription</strong></li>
+            <li>Paste the URL → <strong>Subscribe</strong></li>
+            <li>Set refresh to <strong>Every 15 minutes</strong> for fastest pickup</li>
+          </ol>
+        </details>
+
+        <details>
+          <summary style="cursor:pointer;font-weight:600;font-size:14px;color:var(--ink)">📋 On Google Calendar</summary>
+          <ol style="margin:10px 0 0;padding-left:22px;font-size:13px;line-height:1.7;color:var(--ink-soft)">
+            <li>Open Google Calendar → left sidebar → <strong>Other calendars → + → From URL</strong></li>
+            <li>Paste the URL → <strong>Add calendar</strong></li>
+            <li>Note: Google refreshes external feeds slowly (up to 12 hours). Apple Calendar is faster.</li>
+          </ol>
+        </details>
+
+        <p style="margin:24px 0 0;font-size:12px;color:var(--ink-muted);line-height:1.55">
+          <strong style="color:var(--ink)">This URL is a password.</strong> Anyone who has it can read all your appointment data. Don't share or post it. To rotate the URL (if it leaks), ask Zorva Labs to regenerate <code>CALENDAR_FEED_TOKEN</code>.
+        </p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn primary" data-cancel>Got it</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(bg);
+  bg.querySelector("[data-cancel]").onclick = () => bg.remove();
+  bg.addEventListener("click", (e) => { if (e.target === bg) bg.remove(); });
+
+  bg.querySelector("#copy-url").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(webcal);
+      SSCrm.toast("Copied to clipboard", "success");
+    } catch (_) {
+      // Fallback: select the input so the user can copy manually
+      const inp = bg.querySelector("#feed-url");
+      inp.select(); inp.setSelectionRange(0, 999);
+      SSCrm.toast("Select the URL and press ⌘C", "info");
+    }
+  };
+  bg.querySelector("#email-self").onclick = () => {
+    const subject = encodeURIComponent("Subscribe to National Closet Company Calendar");
+    const body = encodeURIComponent(
+      `Tap this link on your iPhone to subscribe to the National Closet Company CRM calendar:\n\n${webcal}\n\nIf nothing happens when you tap it, copy the URL and add it manually under Settings → Calendar → Accounts → Add Account → Other → Add Subscribed Calendar.`
+    );
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+}
+</script></body></html>

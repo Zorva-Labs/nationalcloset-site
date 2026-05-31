@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Proposals · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css"/></head>
+<body>
+<script src="/crm/crm-app.js"></script>
+<script>
+(async () => {
+  const user = await SSCrm.mount({ title: "Proposals", subtitle: "Multi-tier proposals", wide: true });
+  if (!user) return;
+  const { proposals } = await SSCrm.fetchJSON("/api/proposals");
+  const page = document.getElementById("page");
+  if (!proposals.length) { page.innerHTML = `<div class="tbl"><div class="empty">No proposals yet.</div></div>`; return; }
+  page.innerHTML = `<div class="tbl"><table>
+    <thead><tr><th>#</th><th>Project / Customer</th><th>Status</th><th>Tier picked</th><th class="num">Total</th><th>Created</th></tr></thead>
+    <tbody>${proposals.map((p) => `<tr class="clickable" onclick="location.href='/crm/proposal.html?id=${p.id}'">
+      <td><strong>${SSCrm.esc(p.number)}</strong></td>
+      <td>${SSCrm.esc(p.project_name)}<div class="muted" style="font-size:12px">${SSCrm.esc(p.contact_name)}</div></td>
+      <td>${SSCrm.pill(p.status)}</td>
+      <td>${p.selected_tier ? `<span class="pill" data-s="accepted">${SSCrm.esc(p.selected_tier)}</span>` : `<span class="muted">—</span>`}</td>
+      <td class="money">${SSCrm.fmtMoney(p.selected_total_cents || 0)}</td>
+      <td class="muted">${SSCrm.fmtDate(p.created_at)}</td>
+    </tr>`).join("")}</tbody></table></div>`;
+})();
+</script></body></html>

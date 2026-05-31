@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard · National Closet Company CRM</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/crm/crm-app.css" />
+  <link rel="icon" href="/assets/images/logo-v4.png" />
+</head>
+<body>
+<script src="/crm/crm-app.js"></script>
+<script>
+(async () => {
+  const user = await SSCrm.mount({
+    title: "Dashboard",
+    subtitle: "Pipeline overview · this week's appointments · recent activity",
+    actions: `<a class="btn secondary" href="/crm/pipeline.html">View pipeline →</a>`,
+    wide: true,
+  });
+  if (!user) return;
+
+  const d = await SSCrm.fetchJSON("/api/dashboard");
+
+  document.getElementById("page").innerHTML = `
+    <!-- Top metric tiles -->
+    <div class="metrics">
+      <div class="metric metric--money">
+        <div class="metric__label">Pipeline value</div>
+        <div class="metric__value">${SSCrm.fmtMoney(d.pipeline.total)}</div>
+        <div class="metric__delta">${SSCrm.fmtMoney(d.pipeline.estimate_pipeline)} estimates · ${SSCrm.fmtMoney(d.pipeline.proposal_pipeline)} proposals · ${SSCrm.fmtMoney(d.pipeline.contract_pipeline)} contracts</div>
+      </div>
+      <div class="metric metric--money">
+        <div class="metric__label">Booked this month</div>
+        <div class="metric__value">${SSCrm.fmtMoney(d.month.booked_revenue_this_month)}</div>
+        <div class="metric__delta">${d.month.booked_this_month} job${d.month.booked_this_month === 1 ? "" : "s"} signed</div>
+      </div>
+      <div class="metric">
+        <div class="metric__label">New leads this month</div>
+        <div class="metric__value">${d.month.leads_this_month}</div>
+        <div class="metric__delta"><a href="/crm/leads.html">All leads →</a></div>
+      </div>
+      <div class="metric">
+        <div class="metric__label">Upcoming visits</div>
+        <div class="metric__value">${d.upcoming.length}</div>
+        <div class="metric__delta">in the next 7 days</div>
+      </div>
+    </div>
+
+    ${renderAttention(d.attention)}
+
+    <div class="dash">
+      <!-- Left column: upcoming + pipeline distribution -->
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head">
+            <h2>This week · upcoming visits</h2>
+            <a class="more" href="/crm/calendar.html">Calendar →</a>
+          </div>
+          ${d.upcoming.length ? renderUpcoming(d.upcoming) : `<div style="padding:20px;text-align:center;color:var(--ink-soft);font-size:13px">No appointments in the next week. <a href="/crm/calendar.html">Add one →</a></div>`}
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Pipeline at a glance</h2><a class="more" href="/crm/pipeline.html">Open board →</a></div>
+          ${renderDistribution(d.distribution)}
+        </div>
+      </div>
+
+      <!-- Right column: activity feed -->
+      <div>
+        <div class="card">
+          <div class="card-head"><h2>Recent activity</h2><a class="more" href="/crm/activity.html">All activity →</a></div>
+          ${d.activity.length ? renderActivity(d.activity) : `<div style="padding:20px;text-align:center;color:var(--ink-soft);font-size:13px">No activity yet.</div>`}
+        </div>
+      </div>
+    </div>
+  `;
+})();
+
+function renderAttention(a) {
+  const items = [];
+  if (a.untouched_leads) items.push({ label: `${a.untouched_leads} new lead${a.untouched_leads === 1 ? "" : "s"} need first contact`, href: "/crm/leads.html?status=new" });
+  if (a.awaiting_countersign) items.push({ label: `${a.awaiting_countersign} contract${a.awaiting_countersign === 1 ? "" : "s"} ready to counter-sign`, href: "/crm/contracts.html?status=signed_by_customer" });
+  if (a.unviewed_estimates) items.push({ label: `${a.unviewed_estimates} estimate${a.unviewed_estimates === 1 ? "" : "s"} sent but never viewed (3+ days)`, href: "/crm/estimates.html?status=sent" });
+  if (a.stale_proposals) items.push({ label: `${a.stale_proposals} proposal${a.stale_proposals === 1 ? "" : "s"} stale (5+ days)`, href: "/crm/proposals.html?status=sent" });
+  if (!items.length) return "";
+  return `
+    <div class="banner" style="margin-bottom:20px;background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border-color:#FDE68A">
+      <div class="banner__icon" style="background:#FCD34D;color:#92400E">!</div>
+      <div class="banner__body">
+        <strong>Needs your attention</strong>
+        <span>${items.map((i) => `<a href="${i.href}">${SSCrm.esc(i.label)}</a>`).join(" · ")}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderUpcoming(list) {
+  return `<div class="tbl" style="border:0"><table>
+    <tbody>${list.map((a) => `
+      <tr class="clickable" onclick="location.href='/crm/calendar.html?focus=${a.id}'">
+        <td style="width:36px;color:var(--accent);font-weight:600">${SSCrm.esc((a.start_at || "").slice(8, 10))}</td>
+        <td>
+          <div style="font-weight:600">${SSCrm.esc(a.name)}</div>
+          <div style="font-size:12px;color:var(--ink-soft)">${SSCrm.fmtDateTime(a.start_at)} · ${SSCrm.esc(a.type)}</div>
+        </td>
+        <td style="color:var(--ink-soft);font-size:12px">${SSCrm.esc(a.site_address || "—")}</td>
+        <td class="right">${SSCrm.pill(a.status)}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table></div>`;
+}
+
+function renderDistribution(dist) {
+  const map = Object.fromEntries(dist.map((d) => [d.status, d.n]));
+  return `<div style="display:flex;flex-direction:column;gap:6px">${SSCrm.PROJECT_STATUSES.map((s) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 0">
+      <span style="font-size:13px;color:var(--ink);min-width:130px">${SSCrm.esc(s.label)}</span>
+      <span style="flex:1;height:6px;background:var(--bg-soft);border-radius:3px;overflow:hidden">
+        <span style="display:block;height:100%;background:var(--accent);width:${Math.min(100, (map[s.key] || 0) * 8)}%"></span>
+      </span>
+      <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:24px;text-align:right">${map[s.key] || 0}</span>
+    </div>`).join("")}</div>`;
+}
+
+function renderActivity(list) {
+  return `<ul class="activity">${list.map((a) => {
+    const details = a.details ? (typeof a.details === "string" ? JSON.parse(a.details || "{}") : a.details) : {};
+    const linkHref = entityLink(a.entity_type, a.entity_id);
+    return `
+      <li>
+        <span class="activity__icon" data-k="${SSCrm.esc(a.action)}">${actionIcon(a.action)}</span>
+        <div class="activity__body">
+          <a href="${linkHref}"><strong>${SSCrm.esc(verb(a.action))}</strong></a> ${SSCrm.esc(a.entity_type)} #${a.entity_id} ${a.actor_name ? `· by ${SSCrm.esc(a.actor_name)}` : ""}
+          <div class="activity__time">${SSCrm.fmtDate(a.created_at)}</div>
+        </div>
+      </li>`;
+  }).join("")}</ul>`;
+}
+
+function entityLink(type, id) {
+  return ({
+    appointment: "/crm/calendar.html?focus=" + id,
+    contact: "/crm/contact.html?id=" + id,
+    project: "/crm/project.html?id=" + id,
+    estimate: "/crm/estimate.html?id=" + id,
+    proposal: "/crm/proposal.html?id=" + id,
+    contract: "/crm/contract.html?id=" + id,
+  })[type] || "#";
+}
+function verb(action) { return ({ booked: "Booked", created: "Created", sent: "Sent", viewed: "Viewed", approved: "Approved", signed: "Signed", "signed-by-customer": "Customer signed", "counter-signed": "Counter-signed", accepted: "Accepted", "tier-selected": "Picked tier", cancelled: "Cancelled", updated: "Updated", "created-from-proposal": "Created from proposal" })[action] || action; }
+function actionIcon(a) {
+  if (a === "signed-by-customer" || a === "counter-signed" || a === "accepted") return "✓";
+  if (a === "sent") return "→";
+  if (a === "viewed") return "👁";
+  if (a === "booked" || a === "created") return "+";
+  return "·";
+}
+</script>
+</body>
+</html>

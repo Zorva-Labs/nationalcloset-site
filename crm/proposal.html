@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Proposal · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" href="/crm/crm-app.css" />
+</head>
+<body>
+<script src="/crm/crm-app.js"></script>
+<script>
+const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
+if (!id) location.href = "/crm/proposals.html";
+let state;
+
+(async () => {
+  const user = await SSCrm.mount({ title: "Proposal", actions: `<a class="btn ghost" href="/crm/proposals.html">← Proposals</a>` });
+  if (!user) return;
+  state = await SSCrm.fetchJSON("/api/proposals/" + id);
+  render();
+})();
+
+function render() {
+  const { proposal: p, tiers, comments } = state;
+  document.getElementById("page-title").textContent = `${p.number} · ${p.project_name}`;
+  const canSend = ["draft"].includes(p.status);
+  const isAccepted = p.status === "accepted";
+  const customerUrl = `${location.origin}/proposal/?t=${p.view_token}`;
+
+  document.getElementById("page").innerHTML = `
+    ${isAccepted ? `
+      <div class="banner">
+        <div class="banner__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="banner__body">
+          <strong>Customer accepted the ${SSCrm.esc(p.selected_tier)} tier.</strong>
+          <span>Next: convert to a contract and send for signature to book the job.</span>
+        </div>
+      </div>` : ""}
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;gap:10px;align-items:center">
+        ${SSCrm.pill(p.status)}
+        ${p.selected_tier ? `<span class="pill" data-s="accepted">Customer picked: ${SSCrm.esc(p.selected_tier)}</span>` : ""}
+        <span class="muted" style="font-size:13px"><a href="/crm/contact.html?id=${p.contact_id}">${SSCrm.esc(p.contact_name)}</a></span>
+      </div>
+      <div style="display:flex;gap:8px">
+        ${isAccepted ? `<button class="btn success" onclick="convertToContract()">Convert to Contract →</button>` : ""}
+        ${canSend ? `<button class="btn primary" onclick="sendProposal()">Send to customer</button>` : ""}
+        ${p.status !== "draft" ? `<a class="btn secondary" href="${customerUrl}" target="_blank">Customer link ↗</a>` : ""}
+        <button class="btn danger" onclick="del()">Delete</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Customer intro &amp; contract</h2></div>
+      <div class="form">
+        <label><span>This text appears at the top of the proposal page</span>
+          <textarea id="intro" rows="3">${SSCrm.esc(p.intro || "")}</textarea>
+        </label>
+        <label><span>Contract attached when customer accepts</span>
+          <select id="contract-type">
+            <option value="custom_order"  ${(p.default_contract_type || "custom_order") === "custom_order" ? "selected" : ""}>Custom Order — we supply &amp; install (50% deposit, 2–6 wk lead)</option>
+            <option value="install_only"  ${p.default_contract_type === "install_only" ? "selected" : ""}>Install Only — customer-supplied product (no deposit, due on completion)</option>
+            <option value="repair"        ${p.default_contract_type === "repair" ? "selected" : ""}>Repair / Service Call (service-call fee + parts)</option>
+          </select>
+        </label>
+        <p style="font-size:11px;color:var(--ink-muted);margin:-4px 0 0">When the customer clicks "Accept" on the proposal page, this is the contract template that gets auto-created for them to sign.</p>
+      </div>
+    </div>
+
+    <!-- Tiers stacked vertically so each card has the full page width
+         for line items, dimensions, color, and pricing columns -->
+    <div style="display:flex;flex-direction:column;gap:16px;margin-top:16px">
+      ${tiers.map(renderTier).join("")}
+    </div>
+
+    <div class="form-actions" style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <button class="btn secondary" onclick="saveAll()">💾 Save proposal</button>
+      ${canSend ? `<button class="btn primary" onclick="saveThenSend()">📧 Save &amp; Send to customer →</button>` : ""}
+      ${isAccepted ? `<button class="btn success" onclick="convertToContract()">Convert to Contract →</button>` : ""}
+      ${p.status !== "draft" && p.status !== "accepted" ? `<span class="muted" style="font-size:13px">Status: <strong>${SSCrm.esc(p.status)}</strong> — re-open the proposal in Drafts to send again.</span>` : ""}
+    </div>
+
+    ${comments.length ? `
+      <div class="card" style="margin-top:20px">
+        <div class="card-head"><h2>Customer comments</h2></div>
+        <ul class="activity">${comments.map((c) => `
+          <li><span class="activity__icon">💬</span>
+          <div class="activity__body">${c.tier ? `<span class="pill" data-s="${SSCrm.esc(c.tier)}">${SSCrm.esc(c.tier)}</span> ` : ""}<strong>${SSCrm.esc(c.author_name || c.author_kind)}</strong> ${SSCrm.esc(c.body)}
+            <div class="activity__time">${SSCrm.fmtDateTime(c.created_at)}</div>
+          </div></li>`).join("")}
+        </ul>
+      </div>` : ""}
+  `;
+  // After the DOM is in place, size each tier-title textarea to its content
+  requestAnimationFrame(autoGrowAllTitles);
+}
+
+// Auto-grow the tier-title textarea so long titles ("The Smart-Home Package") wrap
+// to a second line instead of getting clipped at the right edge of the card.
+function autoGrow(el) {
+  el.style.height = "auto";
+  el.style.height = (el.scrollHeight) + "px";
+}
+function autoGrowAllTitles() {
+  document.querySelectorAll(".t-title").forEach(autoGrow);
+}
+
+function renderTier(t) {
+  return `<div class="card" data-tier-id="${t.id}" data-tier="${t.tier}" style="${state.proposal.selected_tier === t.tier ? "border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)" : ""};min-width:0;overflow:hidden">
+    <div class="card-head" style="display:block">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;font-weight:600;color:var(--ink-soft);margin-bottom:4px">${SSCrm.esc(t.tier)}</div>
+      <textarea class="t-title" data-f="title" rows="1" placeholder="Tier title" style="font-size:15px;font-weight:600;border:0;padding:4px 0;width:100%;box-sizing:border-box;resize:none;font-family:inherit;line-height:1.25;color:var(--ink);overflow:hidden;background:transparent" oninput="autoGrow(this)">${SSCrm.esc(t.title || "")}</textarea>
+    </div>
+    <textarea class="t-desc" data-f="description" rows="2" placeholder="Brief description (optional)" style="width:100%;border:1px solid var(--line-soft);padding:6px;border-radius:var(--r-sm);font-size:12px;margin-bottom:10px">${SSCrm.esc(t.description || "")}</textarea>
+    <table class="lines"><thead><tr>
+      <th>Item</th>
+      <th style="width:90px">Color / Finish</th>
+      <th style="width:120px">Options</th>
+      <th style="width:90px">Room</th>
+      <th class="num" style="width:64px" title="Width (in)">W″</th>
+      <th class="num" style="width:64px" title="Height (in)">H″</th>
+      <th class="num" style="width:54px">Qty</th>
+      <th class="num" style="width:90px">Unit price</th>
+      <th class="num" style="width:100px">Total</th><th style="width:32px"></th>
+    </tr></thead>
+    <tbody class="tier-lines">${(t.lines || []).map(tierLineRow).join("") || tierLineRow({})}</tbody></table>
+    <div class="add" style="display:flex;gap:8px"><button onclick="addFromCatalog(this)">+ Add from catalog</button><button onclick="addTierLine(this)">+ Custom line</button></div>
+    <div style="border-top:1px solid var(--line-soft);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;font-weight:600">
+      <span>Subtotal</span><span class="tier-total money">${SSCrm.fmtMoney(t.total_cents)}</span>
+    </div>
+  </div>`;
+}
+function tierLineRow(l) {
+  const productId = l?.product_id || "";
+  const widthIn = l?.width_in ?? "";
+  const heightIn = l?.height_in ?? "";
+  return `<tr>
+    <td>
+      <input data-f="description" value="${SSCrm.esc(l?.description || "")}" placeholder="Product / item"/>
+      <input type="hidden" data-f="product_id" value="${productId}"/>
+    </td>
+    <td><input data-f="color" value="${SSCrm.esc(l?.color || "")}" placeholder="White, walnut…"/></td>
+    <td><input data-f="options" value="${SSCrm.esc(l?.options || "")}" placeholder="Cordless, motorized…"/></td>
+    <td><input data-f="room" value="${SSCrm.esc(l?.room || "")}" placeholder="Room"/></td>
+    <td><input class="num" data-f="width_in" value="${widthIn}" type="number" step="0.125" min="0" placeholder="—" title="Width (in)"/></td>
+    <td><input class="num" data-f="height_in" value="${heightIn}" type="number" step="0.125" min="0" placeholder="—" title="Height (in)"/></td>
+    <td><input class="num" data-f="quantity" value="${l?.quantity || 1}" type="number" step="1" min="1" onchange="recalcTier(this)"/></td>
+    <td><input class="num" data-f="unit" value="${l?.unit_price_cents ? "$" + (l.unit_price_cents/100).toFixed(2) : ""}" onchange="recalcTier(this)"/></td>
+    <td class="num money tier-line-money">${SSCrm.fmtMoney((l?.quantity || 1) * (l?.unit_price_cents || 0))}</td>
+    <td><button class="rm" onclick="this.closest('tr').remove();recalcTierEl(this.closest('.card'))" title="Remove">×</button></td>
+  </tr>`;
+}
+function addTierLine(btn) {
+  const card = btn.closest(".card");
+  card.querySelector(".tier-lines").insertAdjacentHTML("beforeend", tierLineRow({}));
+}
+
+// Open the shared catalog picker, then insert the chosen item as a new line
+async function addFromCatalog(btn) {
+  const card = btn.closest(".card");
+  const picked = await SSCrm.pickProduct();
+  if (!picked) return;
+  card.querySelector(".tier-lines").insertAdjacentHTML("beforeend", tierLineRow(picked));
+  recalcTierEl(card);
+}
+function recalcTier(input) {
+  const tr = input.closest("tr");
+  const qty = Number(tr.querySelector("[data-f=quantity]").value || 0);
+  const unit = SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value);
+  tr.querySelector(".tier-line-money").textContent = SSCrm.fmtMoney(qty * unit);
+  recalcTierEl(input.closest(".card"));
+}
+function recalcTierEl(card) {
+  let sub = 0;
+  card.querySelectorAll(".tier-lines tr").forEach((tr) => {
+    const qty = Number(tr.querySelector("[data-f=quantity]").value || 0);
+    const unit = SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value);
+    sub += qty * unit;
+  });
+  card.querySelector(".tier-total").textContent = SSCrm.fmtMoney(sub);
+}
+
+async function saveAll() {
+  const tiers = [...document.querySelectorAll("[data-tier-id]")].map((card) => ({
+    id: parseInt(card.dataset.tierId, 10),
+    title: card.querySelector(".t-title").value.trim(),
+    description: card.querySelector(".t-desc").value.trim(),
+    lines: [...card.querySelectorAll(".tier-lines tr")].map((tr) => {
+      const productIdRaw = tr.querySelector("[data-f=product_id]")?.value || "";
+      const widthRaw = tr.querySelector("[data-f=width_in]")?.value || "";
+      const heightRaw = tr.querySelector("[data-f=height_in]")?.value || "";
+      return {
+        description: tr.querySelector("[data-f=description]").value.trim(),
+        color: tr.querySelector("[data-f=color]")?.value.trim() || null,
+        options: tr.querySelector("[data-f=options]")?.value.trim() || null,
+        room: tr.querySelector("[data-f=room]")?.value.trim() || null,
+        quantity: Math.max(1, Math.round(Number(tr.querySelector("[data-f=quantity]").value || 1))),
+        unit_price_cents: SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value),
+        product_id: productIdRaw ? parseInt(productIdRaw, 10) : null,
+        width_in: widthRaw !== "" ? Number(widthRaw) : null,
+        height_in: heightRaw !== "" ? Number(heightRaw) : null,
+      };
+    }).filter((l) => l.description),
+  }));
+  try {
+    await SSCrm.fetchJSON("/api/proposals/" + id, { method: "PATCH", body: JSON.stringify({
+      intro: document.getElementById("intro").value.trim(),
+      default_contract_type: document.getElementById("contract-type").value,
+      tiers,
+    })});
+    SSCrm.toast("Saved", "success");
+    state = await SSCrm.fetchJSON("/api/proposals/" + id);
+    render();
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function sendProposal() {
+  if (!(await SSCrm.confirmDialog("Send this proposal to the customer?"))) return;
+  try { await SSCrm.fetchJSON(`/api/proposals/${id}/send`, { method: "POST" }); SSCrm.toast("Proposal sent", "success"); state = await SSCrm.fetchJSON("/api/proposals/" + id); render(); }
+  catch (e) { SSCrm.toast(e.message, "error"); }
+}
+// Convenience for the bottom-of-page action: persist pending edits to all
+// tiers FIRST so the customer gets the freshest version, then email it.
+// Skips the confirm dialog (the button label "Save & Send" makes the intent
+// explicit) so it's a single confident click after a long edit session.
+async function saveThenSend() {
+  try {
+    await saveAll();
+    await SSCrm.fetchJSON(`/api/proposals/${id}/send`, { method: "POST" });
+    SSCrm.toast("Saved + sent to customer", "success");
+    state = await SSCrm.fetchJSON("/api/proposals/" + id);
+    render();
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function convertToContract() {
+  if (!(await SSCrm.confirmDialog(`Create a contract from the ${state.proposal.selected_tier || "selected"} tier?`))) return;
+  try {
+    const { id: nid } = await SSCrm.fetchJSON(`/api/proposals/${id}/convert`, { method: "POST" });
+    SSCrm.toast("Contract drafted from proposal", "success");
+    location.href = "/crm/contract.html?id=" + nid;
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function del() {
+  if (!(await SSCrm.confirmDialog("Delete this proposal?"))) return;
+  await SSCrm.fetchJSON("/api/proposals/" + id, { method: "DELETE" });
+  location.href = "/crm/proposals.html";
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job · National Closet Company CRM</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/crm/crm-app.css" />
+  <link rel="icon" href="/assets/images/logo-v4.png" />
+</head>
+<body>
+<script src="/crm/crm-app.js"></script>
+<script src="/crm/windows-editor.js"></script>
+<script>
+const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
+if (!id) location.href = "/crm/projects.html";
+
+let state = null; // { project, windows, estimates, proposals, contracts }
+
+(async () => {
+  const user = await SSCrm.mount({
+    title: "Job",
+    actions: `<a class="btn ghost" href="/crm/projects.html">← All jobs</a>`,
+    wide: true,
+  });
+  if (!user) return;
+  await render();
+})();
+
+async function render() {
+  state = await SSCrm.fetchJSON("/api/projects/" + id);
+  const { project, windows, estimates, proposals, contracts, appointments, lead, email_count } = state;
+  document.title = `${project.name} · National Closet Company CRM`;
+
+  // Find the "booked-the-job" state
+  const fullyExecuted = contracts.find((c) => c.status === "fully_executed");
+  const customerSigned = contracts.find((c) => c.status === "signed_by_customer");
+  const acceptedProposal = proposals.find((p) => p.status === "accepted");
+  const sentContract = contracts.find((c) => c.status === "sent");
+
+  // What's the next best action? Drives the big CTA on the right.
+  let bigCta = null;
+  if (fullyExecuted) {
+    bigCta = null; // Show celebration banner instead
+  } else if (customerSigned) {
+    bigCta = { label: "Counter-sign contract", href: `/crm/contract.html?id=${customerSigned.id}&action=countersign`, kind: "primary" };
+  } else if (sentContract) {
+    bigCta = { label: "Contract sent — awaiting signature", href: `/crm/contract.html?id=${sentContract.id}`, kind: "secondary" };
+  } else if (acceptedProposal) {
+    bigCta = { label: "Convert proposal → contract", action: `convertProposal(${acceptedProposal.id})`, kind: "primary" };
+  } else if (proposals.length && proposals.some((p) => p.status === "tier_selected")) {
+    const p = proposals.find((p) => p.status === "tier_selected");
+    bigCta = { label: `Customer picked ${p.selected_tier} — request acceptance`, href: `/crm/proposal.html?id=${p.id}`, kind: "primary" };
+  } else if (estimates.length || proposals.length) {
+    bigCta = { label: "Send a contract", action: `newContract()`, kind: "secondary" };
+  } else {
+    bigCta = { label: "Start a proposal", action: `newProposal()`, kind: "primary" };
+  }
+
+  const initialTab = new URLSearchParams(location.hash.slice(1)).get("tab") || "overview";
+
+  document.getElementById("page").innerHTML = `
+    ${fullyExecuted ? `
+      <div class="banner banner--success">
+        <div class="banner__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="banner__body">
+          <strong>Job booked.</strong>
+          <span>Contract ${SSCrm.esc(fullyExecuted.number)} fully executed · ${SSCrm.fmtMoney(fullyExecuted.total_cents)}${fullyExecuted.deposit_paid ? " · Deposit received" : " · Deposit pending"}</span>
+        </div>
+      </div>` : ""}
+
+    <div class="job">
+      <header class="job__head">
+        <div>
+          <div class="job__title">${SSCrm.esc(project.name)}</div>
+          <div class="job__customer">
+            <a href="/crm/contact.html?id=${project.contact_id}">${SSCrm.esc(project.contact_name)}</a>
+            · ${SSCrm.esc(project.contact_email)}
+            ${project.contact_phone ? ` · ${SSCrm.esc(project.contact_phone)}` : ""}
+            ${project.site_address ? ` · ${SSCrm.esc(project.site_address)}` : ""}
+          </div>
+        </div>
+        <div class="job__status-actions">
+          ${SSCrm.pill(project.status)}
+          ${bigCta ? renderCta(bigCta) : ""}
+        </div>
+      </header>
+
+      <nav class="job__tabs" id="tabs">
+        ${tab("overview", "Overview")}
+        ${tab("windows", "Windows", windows.length)}
+        ${tab("messages", "Messages")}
+        ${tab("proposals", "Proposals", proposals.length)}
+        ${tab("contracts", "Contracts", contracts.length)}
+        ${tab("activity", "Activity")}
+      </nav>
+
+      <div class="job__body" id="tab-body"></div>
+    </div>
+  `;
+
+  switchTab(initialTab);
+  document.querySelectorAll(".job__tab").forEach((t) => {
+    t.addEventListener("click", () => switchTab(t.dataset.tab));
+  });
+}
+
+function tab(key, label, count) {
+  return `<button class="job__tab" data-tab="${key}">${SSCrm.esc(label)}${count != null ? `<span class="job__tab-count">${count}</span>` : ""}</button>`;
+}
+
+function renderCta(c) {
+  const cls = c.kind === "primary" ? "primary" : "secondary";
+  if (c.href) return `<a class="btn lg ${cls} job__big-cta" href="${c.href}">${SSCrm.esc(c.label)}</a>`;
+  return `<button class="btn lg ${cls} job__big-cta" onclick="${c.action}">${SSCrm.esc(c.label)}</button>`;
+}
+
+function switchTab(tab) {
+  document.querySelectorAll(".job__tab").forEach((t) => t.classList.toggle("is-active", t.dataset.tab === tab));
+  location.hash = `tab=${tab}`;
+  const body = document.getElementById("tab-body");
+  const { project, windows, estimates, proposals, contracts } = state;
+
+  if (tab === "overview") {
+    body.innerHTML = renderOverview(state);
+  }
+  else if (tab === "windows") {
+    body.innerHTML = renderWindowsTab(windows);
+    // Wire the shared editor into the host div that renderWindowsTab created
+    ensureCatalog().then((cat) => {
+      const host = document.getElementById("rooms-host");
+      WindowsEditor.init(host, windows, { catalog: cat });
+    });
+  }
+  else if (tab === "messages") {
+    body.innerHTML = `<div id="email-timeline"></div>`;
+    const emailHost = document.getElementById("email-timeline");
+    const refresh = () => SSCrm.renderEmailTimeline(emailHost, {
+      project_id: project.id,
+      onCompose: async () => {
+        const res = await SSCrm.composeEmail({
+          contact: { id: project.contact_id, name: project.contact_name, email: project.contact_email, phone: project.contact_phone, address_street: project.site_address || "" },
+          project,
+        });
+        if (res?.ok) refresh();
+      },
+    });
+    refresh();
+  }
+  else if (tab === "proposals") body.innerHTML = renderDocTab(proposals, "proposal", "PROP", newProposal);
+  else if (tab === "contracts") body.innerHTML = renderDocTab(contracts, "contract", "C", newContract);
+  else if (tab === "activity") body.innerHTML = `<div id="activity-feed" class="muted">Loading…</div>`, loadActivity();
+}
+
+// Consolidated Overview tab — surfaces everything that used to live on the
+// separate Lead screen so the job page is the single place to see the whole
+// customer history at a glance.
+function renderOverview(s) {
+  const { project, windows, contracts, appointments, lead, lead_notes, email_count } = s;
+  const e = SSCrm.esc;
+  const fmtMoney = SSCrm.fmtMoney;
+  const fmtDate = SSCrm.fmtDate;
+  const fmtDateTime = SSCrm.fmtDateTime;
+
+  // Windows summary
+  const roomCounts = {};
+  for (const w of windows) {
+    const key = w.room || "(unassigned)";
+    roomCounts[key] = (roomCounts[key] || 0) + 1;
+  }
+  const roomSummary = windows.length
+    ? Object.entries(roomCounts).map(([r, n]) =>
+        `<span style="display:inline-block;background:var(--bg-soft);padding:4px 10px;border-radius:999px;font-size:12px;margin:2px 4px 2px 0;color:var(--ink)">${e(r)} <strong>${n}</strong></span>`
+      ).join("")
+    : `<p class="muted" style="font-size:13px;margin:6px 0 0;font-style:italic">No windows tracked yet — measure them on the consultation visit and add them here.</p>`;
+
+  // Pick the most relevant contract to highlight
+  const signedContract = contracts.find((c) => c.status === "fully_executed") ||
+                         contracts.find((c) => c.status === "signed_by_customer");
+  const draftContract  = contracts.find((c) => c.status === "draft" || c.status === "sent");
+
+  // Sort appointments: upcoming first (asc), then past (desc). Only show 4.
+  const now = new Date().toISOString();
+  const upcoming = appointments.filter((a) => a.start_at >= now).sort((a, b) => a.start_at.localeCompare(b.start_at)).slice(0, 3);
+  const recentPast = appointments.filter((a) => a.start_at <  now).slice(0, 2);
+  const apptList = [...upcoming, ...recentPast];
+
+  return `
+    <div class="lead-grid">
+      <div class="lead-grid__main" style="display:flex;flex-direction:column;gap:14px">
+
+        <!-- Customer + origin — pulled from the linked lead row -->
+        <div class="card">
+          <div class="card-head">
+            <h3>Customer</h3>
+            <a class="btn ghost sm" href="/crm/contact.html?id=${project.contact_id}">Open contact →</a>
+          </div>
+          <div style="display:grid;grid-template-columns:140px 1fr;gap:8px 14px;font-size:13px;color:var(--ink-soft)">
+            <div class="muted">Name</div><div><strong style="color:var(--ink)">${e(project.contact_name)}</strong></div>
+            <div class="muted">Email</div><div><a href="mailto:${e(project.contact_email)}">${e(project.contact_email)}</a></div>
+            ${project.contact_phone ? `<div class="muted">Phone</div><div><a href="tel:${e(project.contact_phone)}">${e(project.contact_phone)}</a> · <a href="sms:${e(project.contact_phone)}">Text</a></div>` : ""}
+            ${project.site_address ? `<div class="muted">Site</div><div><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(project.site_address)}" target="_blank" rel="noopener">${e(project.site_address)} ↗</a></div>` : ""}
+            ${lead?.interest ? `<div class="muted">Interest</div><div>${e(lead.interest)}</div>` : ""}
+            ${lead?.created_at ? `<div class="muted">First contact</div><div>${fmtDateTime(lead.created_at)}${lead.source_page ? ` <span class="muted">· via ${e(lead.source_page)}</span>` : ""}</div>` : ""}
+            ${lead?.utm_source ? `<div class="muted">Attribution</div><div class="muted" style="font-size:12px">${e(lead.utm_source)}${lead.utm_campaign ? ` / ${e(lead.utm_campaign)}` : ""}</div>` : ""}
+          </div>
+          ${lead?.message ? `
+            <div style="margin-top:14px;padding:12px 14px;background:var(--accent-soft);border-left:3px solid var(--accent);border-radius:0 var(--r-sm) var(--r-sm) 0;font-size:13px;color:var(--ink);white-space:pre-wrap">${e(lead.message)}</div>
+            <p class="muted" style="font-size:11px;margin:6px 0 0">Original message from the lead form</p>
+          ` : ""}
+          ${lead_notes && lead_notes.length ? `
+            <div style="margin-top:14px">
+              <p class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;margin:0 0 6px">Admin notes from the lead stage</p>
+              <ul class="activity" style="list-style:none;padding:0;margin:0">
+                ${lead_notes.map((n) => `
+                  <li style="padding:8px 12px;background:var(--bg-soft);border-radius:var(--r-sm);margin-bottom:6px">
+                    <div style="font-size:13px;color:var(--ink);white-space:pre-wrap">${e(n.body)}</div>
+                    <div class="muted" style="font-size:11px;margin-top:4px">${e(n.author || "—")} · ${SSCrm.fmtDateTime(n.created_at)}</div>
+                  </li>`).join("")}
+              </ul>
+            </div>
+          ` : ""}
+        </div>
+
+        <!-- Appointments + messages summary -->
+        <div class="card">
+          <div class="card-head">
+            <h3>Touchpoints</h3>
+            <a class="btn ghost sm" href="#tab=messages" onclick="event.preventDefault();switchTab('messages')">Messages →</a>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+            <div style="text-align:center;padding:12px;background:var(--bg-soft);border-radius:var(--r-sm)">
+              <div style="font-size:24px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">${email_count?.sent || 0}</div>
+              <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em">Emails sent</div>
+            </div>
+            <div style="text-align:center;padding:12px;background:var(--bg-soft);border-radius:var(--r-sm)">
+              <div style="font-size:24px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">${email_count?.received || 0}</div>
+              <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em">Replies received</div>
+            </div>
+          </div>
+          ${apptList.length ? `
+            <h4 style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-soft);margin:0 0 8px">Appointments</h4>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              ${apptList.map((a) => {
+                const isPast = a.start_at < now;
+                const typeLabel = ({ consultation: "Consult", measure: "Measure", install: "Install", service: "Service" }[a.type] || a.type);
+                return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:${isPast ? "var(--bg-soft)" : "var(--accent-soft)"};border-radius:var(--r-sm);font-size:13px${isPast ? ";opacity:0.7" : ""}">
+                  <div>
+                    <strong style="color:var(--ink)">${typeLabel}</strong>
+                    <span class="muted" style="margin-left:8px">${fmtDateTime(a.start_at)}</span>
+                  </div>
+                  <span class="muted" style="font-size:11px">${e(a.status)}</span>
+                </div>`;
+              }).join("")}
+            </div>
+          ` : `<p class="muted" style="font-size:13px;font-style:italic;margin:0">No appointments scheduled yet.</p>`}
+        </div>
+
+        <!-- Windows summary -->
+        <div class="card">
+          <div class="card-head">
+            <h3>Windows on this job</h3>
+            <span style="font-size:28px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">${windows.length}</span>
+          </div>
+          <div style="margin-top:4px;line-height:1.8">${roomSummary}</div>
+          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn primary sm" onclick="switchTab('windows')">${windows.length ? "Edit windows" : "+ Add windows"}</button>
+            ${windows.length ? `<button class="btn secondary sm" onclick="printWorksheet()">🖨 Print install worksheet</button>` : ""}
+            ${windows.length ? `<button class="btn ghost sm" onclick="newProposalFromWindows()">+ Proposal from these windows</button>` : ""}
+          </div>
+        </div>
+
+        <!-- Signed contract block (the source-of-truth document for this job) -->
+        ${signedContract ? `
+          <div class="card" style="border-left:3px solid var(--money,#10B981)">
+            <div class="card-head">
+              <h3>Signed contract</h3>
+              <span class="pill" data-s="${e(signedContract.status)}">${e(signedContract.status.replace(/_/g, " "))}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:140px 1fr;gap:8px 14px;font-size:13px;color:var(--ink-soft);margin-top:8px">
+              <div class="muted">Number</div><div><strong style="color:var(--ink)">${e(signedContract.number)}</strong></div>
+              <div class="muted">Type</div><div>${e(signedContract.contract_type || "custom_order").replace(/_/g, " ")}</div>
+              <div class="muted">Total</div><div class="money" style="font-size:15px">${fmtMoney(signedContract.total_cents)}</div>
+              ${signedContract.deposit_cents ? `<div class="muted">Deposit</div><div>${fmtMoney(signedContract.deposit_cents)} ${signedContract.deposit_paid ? "<span class=\"muted\">· received</span>" : "<span class=\"muted\">· pending</span>"}</div>` : ""}
+              ${signedContract.signed_by_customer_at ? `<div class="muted">Customer signed</div><div>${fmtDateTime(signedContract.signed_by_customer_at)}</div>` : ""}
+              ${signedContract.counter_signed_at ? `<div class="muted">Counter-signed</div><div>${fmtDateTime(signedContract.counter_signed_at)}</div>` : ""}
+            </div>
+            <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+              <a class="btn primary sm" href="/crm/contract.html?id=${signedContract.id}">Open contract →</a>
+              ${signedContract.view_token ? `<a class="btn secondary sm" href="/contract/?t=${signedContract.view_token}" target="_blank">Customer view ↗</a>` : ""}
+            </div>
+          </div>
+        ` : draftContract ? `
+          <div class="card">
+            <div class="card-head">
+              <h3>Contract in progress</h3>
+              <span class="pill" data-s="${e(draftContract.status)}">${e(draftContract.status)}</span>
+            </div>
+            <p class="muted" style="font-size:13px;margin:8px 0 12px">Contract ${e(draftContract.number)} for ${fmtMoney(draftContract.total_cents)} — ${draftContract.status === "sent" ? "awaiting customer signature" : "still in draft"}.</p>
+            <a class="btn primary sm" href="/crm/contract.html?id=${draftContract.id}">Open contract →</a>
+          </div>
+        ` : ""}
+
+        <!-- Job details form (editable) -->
+        <div class="card">
+          <div class="card-head"><h3>Job details</h3></div>
+          <div class="form">
+            <label><span>Name</span><input id="p-name" value="${e(project.name)}"/></label>
+            <label><span>Status</span>
+              <select id="p-status">
+                ${SSCrm.PROJECT_STATUSES.map((s) => `<option value="${s.key}" ${s.key === project.status ? "selected" : ""}>${s.label}</option>`).join("")}
+              </select>
+            </label>
+            <label><span>Site address</span><input id="p-addr" value="${e(project.site_address || "")}"/></label>
+            <label><span>Description</span><textarea id="p-desc" rows="3">${e(project.description || "")}</textarea></label>
+            <div class="form-actions"><button class="btn primary" onclick="saveProject()">Save</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lead-grid__side">
+        <div class="card">
+          <div class="card-head"><h3>Quick actions</h3></div>
+          <div style="display:grid;gap:8px">
+            <button class="btn primary" onclick="newProposal()">+ Proposal</button>
+            <button class="btn secondary" onclick="newContract()">+ Contract</button>
+            ${project.contact_email ? `<button class="btn secondary" onclick="composeFromOverview()">✉️ Send email</button>` : ""}
+            <button class="btn ghost" onclick="switchTab('windows')">Edit windows</button>
+            ${project.contact_phone ? `<a class="btn ghost" href="tel:${e(project.contact_phone)}">📞 Call</a>` : ""}
+            ${project.contact_phone ? `<a class="btn ghost" href="sms:${e(project.contact_phone)}">💬 Text</a>` : ""}
+          </div>
+        </div>
+
+        <!-- Destructive action lives apart from the everyday quick-actions card
+             so it's harder to mis-click. Confirmation modal shows a count of
+             everything that will be wiped before the request fires. -->
+        <div class="card" style="margin-top:14px;border-color:#FEE2E2;background:#FEF2F2">
+          <div class="card-head"><h3 style="color:#991B1B">Danger zone</h3></div>
+          <p class="muted" style="font-size:12px;line-height:1.5;margin:0 0 10px;color:#991B1B">Permanently remove this job and everything tied to it — proposals, contracts, windows, appointments, emails, and the originating lead. The customer's contact record stays. This cannot be undone.</p>
+          <button class="btn danger" style="width:100%" onclick="purgeJob()">🗑 Delete &amp; purge this job</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Compose helper called from the Overview Quick-actions panel
+async function composeFromOverview() {
+  const { project } = state;
+  const res = await SSCrm.composeEmail({
+    contact: { id: project.contact_id, name: project.contact_name, email: project.contact_email, phone: project.contact_phone, address_street: project.site_address || "" },
+    project,
+  });
+  if (res?.ok) render();
+}
+
+// Two-step purge: show a count summary of every dependent that'll be wiped
+// (windows, proposals, contracts, emails, appointments, lead notes), require
+// the admin to type the job's name to confirm, then hit DELETE …?purge=1.
+async function purgeJob() {
+  const { project, windows, proposals, contracts, appointments, lead, lead_notes, email_count } = state;
+  const counts = {
+    Windows:      windows.length,
+    Proposals:    proposals.length,
+    Contracts:    contracts.length,
+    Appointments: (appointments || []).length,
+    Emails:       (email_count?.sent || 0) + (email_count?.received || 0),
+    "Lead notes": (lead_notes || []).length,
+  };
+  const items = Object.entries(counts).filter(([, n]) => n > 0).map(([k, n]) =>
+    `<li style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line-soft);font-size:13px"><span>${SSCrm.esc(k)}</span><strong>${n}</strong></li>`
+  ).join("");
+  const leadLine = lead ? `<li style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line-soft);font-size:13px"><span>Originating lead (#${lead.id})</span><strong>1</strong></li>` : "";
+
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `
+    <div class="modal" style="max-width:520px">
+      <div class="modal-head" style="background:#FEF2F2;color:#991B1B;border-bottom:1px solid #FEE2E2">🗑 Delete &amp; purge "${SSCrm.esc(project.name)}"</div>
+      <div class="modal-body">
+        <p style="margin:0 0 14px;font-size:14px;line-height:1.55">This permanently removes the job AND every related record. <strong>Cannot be undone.</strong></p>
+        <ul style="list-style:none;padding:0;margin:0 0 16px;border-top:1px solid var(--line-soft)">
+          ${items || `<li class="muted" style="padding:8px 0;font-style:italic">Nothing additional — just the project itself.</li>`}
+          ${leadLine}
+        </ul>
+        <p class="muted" style="font-size:12px;margin:0 0 8px">The contact <strong>${SSCrm.esc(project.contact_name)}</strong> stays — they may have other jobs or come back later.</p>
+        <p style="font-size:13px;margin:14px 0 6px">Type <code style="background:var(--bg-soft);padding:2px 6px;border-radius:3px;font-family:var(--font-mono,monospace);font-size:12px">${SSCrm.esc(project.name)}</code> to confirm:</p>
+        <input id="purge-confirm" autocomplete="off"
+               style="width:100%;padding:10px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font:inherit;font-size:14px"
+               placeholder="${SSCrm.esc(project.name)}"/>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" id="px-cancel">Cancel</button>
+        <button class="btn danger" id="px-confirm" disabled>Permanently delete</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  const input = bg.querySelector("#purge-confirm");
+  const btn   = bg.querySelector("#px-confirm");
+  input.focus();
+  input.addEventListener("input", () => { btn.disabled = input.value.trim() !== project.name; });
+  bg.querySelector("#px-cancel").onclick = () => bg.remove();
+  bg.addEventListener("click", (e) => { if (e.target === bg) bg.remove(); });
+  btn.onclick = async () => {
+    btn.disabled = true; btn.textContent = "Deleting…";
+    try {
+      const res = await SSCrm.fetchJSON(`/api/projects/${project.id}?purge=1`, { method: "DELETE" });
+      bg.remove();
+      const summary = res.summary || {};
+      const parts = [];
+      if (summary.windows)      parts.push(`${summary.windows} window${summary.windows === 1 ? "" : "s"}`);
+      if (summary.proposals)    parts.push(`${summary.proposals} proposal${summary.proposals === 1 ? "" : "s"}`);
+      if (summary.contracts)    parts.push(`${summary.contracts} contract${summary.contracts === 1 ? "" : "s"}`);
+      if (summary.emails)       parts.push(`${summary.emails} email${summary.emails === 1 ? "" : "s"}`);
+      if (summary.appointments) parts.push(`${summary.appointments} appt${summary.appointments === 1 ? "" : "s"}`);
+      if (summary.lead_removed) parts.push("lead");
+      SSCrm.toast(`Purged — wiped ${parts.length ? parts.join(" · ") : "just the project"}`, "success");
+      setTimeout(() => { location.href = "/crm/projects.html"; }, 600);
+    } catch (e) {
+      btn.disabled = false; btn.textContent = "Permanently delete";
+      SSCrm.toast(e.message || "Delete failed", "error");
+    }
+  };
+}
+
+function renderDocTab(docs, kind, prefix, addFn) {
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="font-size:14px;color:var(--ink-soft)">${docs.length} ${kind}${docs.length === 1 ? "" : "s"}</h3>
+      <button class="btn primary sm" onclick="${addFn.name}()">+ New ${kind}</button>
+    </div>
+    ${docs.length ? `<div class="tbl"><table>
+      <thead><tr><th>${prefix}-#</th><th>Status</th><th class="num">Total</th><th>Activity</th><th></th></tr></thead>
+      <tbody>${docs.map((d) => `
+        <tr class="clickable" onclick="location.href='/crm/${kind}.html?id=${d.id}'">
+          <td><strong>${SSCrm.esc(d.number || "")}</strong></td>
+          <td>${SSCrm.pill(d.status)}</td>
+          <td class="money">${SSCrm.fmtMoney(d.total_cents || d.selected_total_cents || 0)}</td>
+          <td class="muted" style="font-size:12px">${SSCrm.fmtDate(d.updated_at || d.created_at)}</td>
+          <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+        </tr>`).join("")}
+      </tbody></table></div>` : `<p class="muted" style="padding:30px;text-align:center">No ${kind}s yet.</p>`}
+  `;
+}
+
+// ============================================================
+// Windows tab — uses the shared /crm/windows-editor.js (WindowsEditor module).
+// Convention: clockwise from back-left. Each window letter (A, B, C…)
+// matches a position on the top-down floor-plan SVG.
+// ============================================================
+let productCatalog = null;
+async function ensureCatalog() {
+  if (productCatalog) return productCatalog;
+  const { products } = await SSCrm.fetchJSON("/api/products");
+  productCatalog = products.filter((p) => p.active);
+  return productCatalog;
+}
+
+function renderWindowsTab(ws) {
+  const roomCount = new Set(ws.map((w) => w.room || "(unassigned)")).size;
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:8px" class="ws-toolbar">
+      <div>
+        <h3 style="font-size:14px;color:var(--ink-soft);margin:0">${ws.length} window${ws.length === 1 ? "" : "s"} across ${roomCount} room${roomCount === 1 ? "" : "s"}</h3>
+        <p class="muted" style="font-size:12px;margin:4px 0 0">Clockwise from the back-left corner — pick a wall and the window appears in the plan.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost sm" onclick="printWorksheet()">🖨 Print for installer</button>
+        <button class="btn secondary sm" onclick="WindowsEditor.addWindow()">+ Window</button>
+        <button class="btn primary sm" onclick="WindowsEditor.addRoom()">+ Room</button>
+        <button class="btn primary sm" onclick="saveWindows()">Save</button>
+      </div>
+    </div>
+    <div id="rooms-host" style="display:flex;flex-direction:column;gap:14px"></div>
+  `;
+}
+
+async function saveWindows() {
+  const out = WindowsEditor.collect();
+  try {
+    await SSCrm.fetchJSON(`/api/projects/${id}/windows`, { method: "PUT", body: JSON.stringify({ windows: out }) });
+    SSCrm.toast(`Saved ${out.length} window${out.length === 1 ? "" : "s"}`, "success");
+    state = await SSCrm.fetchJSON("/api/projects/" + id);
+    // Rerender the tab so freshly-saved rows pick up DB ids + redraw clockwise
+    switchTab("windows");
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+
+// ============================================================
+// Print-friendly installer worksheet — opens a new window with a clean
+// single-page-per-room layout. Each room shows the floor-plan SVG +
+// every window's measurements, product, color, mount, and notes.
+// Includes empty "installer notes" + "verified" checkboxes per window
+// so the installer can mark up the paper on-site.
+// ============================================================
+async function printWorksheet() {
+  const { project, appointments } = state;
+  // Pull from the editor first if it's mounted (Windows tab) — that way
+  // any notes / dimensions / products the admin typed but hasn't clicked
+  // Save on yet still make it onto the printout. Auto-save them too so the
+  // DB matches what was printed.
+  let windows = state.windows || [];
+  if (window.WindowsEditor?.host && document.getElementById("rooms-host")) {
+    const live = WindowsEditor.collect();
+    if (live.length) {
+      windows = live;
+      try {
+        await SSCrm.fetchJSON(`/api/projects/${id}/windows`, { method: "PUT", body: JSON.stringify({ windows: live }) });
+        // Re-fetch so subsequent renders see fresh DB ids + the just-saved data
+        state = await SSCrm.fetchJSON("/api/projects/" + id);
+        windows = state.windows;
+      } catch (e) {
+        // If save fails we still print the in-memory edits; nothing is lost
+        console.warn("[print] auto-save before print failed, printing live data anyway:", e?.message);
+      }
+    }
+  }
+  if (!windows.length) { SSCrm.toast("No windows to print yet", "error"); return; }
+
+  const installAppt = (appointments || []).find((a) => a.type === "install" && (a.status === "pending" || a.status === "confirmed"));
+  const installDate = installAppt ? SSCrm.fmtDateTime(installAppt.start_at) : null;
+
+  // Group by room, preserve clockwise order
+  const byRoom = {};
+  const roomOrder = [];
+  for (const w of windows) {
+    const key = w.room || "(unassigned)";
+    if (!byRoom[key]) { byRoom[key] = []; roomOrder.push(key); }
+    byRoom[key].push(w);
+  }
+  for (const key of roomOrder) byRoom[key] = WindowsEditor.sortClockwise(byRoom[key]);
+
+  const fmtInch = (n) => n == null || n === "" ? "—" : (Math.round(n * 8) / 8).toString().replace(/\.0$/, "") + "″";
+  const esc = SSCrm.esc;
+
+  // Each room: top-down floor plan SVG (reuse the WindowsEditor renderer) +
+  // a windows table. Page-break-inside avoided so a room stays whole.
+  const roomBlocks = roomOrder.map((room) => {
+    const ws = byRoom[room];
+    const floorplan = WindowsEditor.floorplanSvg(ws);
+    const rows = ws.map((w, i) => {
+      const letter = String.fromCharCode(65 + (i % 26));
+      const dims = (w.width_in != null || w.height_in != null)
+        ? `${fmtInch(w.width_in)} × ${fmtInch(w.height_in)}`
+        : "—";
+      return `
+        <tr>
+          <td class="cell-letter">${letter}</td>
+          <td>${esc(w.label || "")}</td>
+          <td>${esc((w.wall || "").replace(/^\w/, (c) => c.toUpperCase()))}</td>
+          <td class="num">${dims}</td>
+          <td>${esc(w.mount || "")}</td>
+          <td>${esc(w.product_name || "—")}${w.product_sku ? `<div class="sku">${esc(w.product_sku)}</div>` : ""}</td>
+          <td>${esc(w.color || "")}</td>
+          <td>${esc(w.notes || "")}</td>
+          <td class="check"><span class="checkbox"></span></td>
+        </tr>`;
+    }).join("");
+
+    // Pull every window's notes into a callout under the table — easier for
+    // the installer to read at a glance than scanning the Notes column.
+    const windowNotes = ws.filter((w) => w.notes && w.notes.trim()).map((w, i) => {
+      const letter = String.fromCharCode(65 + (ws.indexOf(w) % 26));
+      return `<li><span class="note-letter">${letter}</span><span>${esc(w.notes)}</span></li>`;
+    }).join("");
+
+    return `
+      <section class="room-block">
+        <h2>${esc(room)} <span class="count">${ws.length} window${ws.length === 1 ? "" : "s"}</span></h2>
+        <div class="room-layout">
+          <div class="plan">${floorplan}</div>
+          <table class="windows">
+            <thead>
+              <tr>
+                <th class="cell-letter">#</th>
+                <th>Label</th>
+                <th>Wall</th>
+                <th class="num">W × H</th>
+                <th>Mount</th>
+                <th>Product</th>
+                <th>Color</th>
+                <th>Notes</th>
+                <th class="check">✓</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        ${windowNotes ? `
+          <div class="window-notes">
+            <strong>Notes from the consult</strong>
+            <ul>${windowNotes}</ul>
+          </div>
+        ` : ""}
+        <div class="installer-notes">
+          <strong>Installer notes (on-site):</strong>
+          <div class="lines"></div>
+        </div>
+      </section>`;
+  }).join("");
+
+  // Project-level description (admin's free-form notes about the whole job)
+  // — shows above the room blocks so installer reads it first.
+  const projectNotesBlock = project.description && project.description.trim()
+    ? `<div class="project-notes">
+         <strong>Job notes</strong>
+         <p>${esc(project.description)}</p>
+       </div>` : "";
+
+  const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8" />
+<title>Install worksheet · ${esc(project.name)}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif; color: #14110D; margin: 0; padding: 28px 32px; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 14px; margin-bottom: 22px; border-bottom: 2px solid #14110D; }
+  .brand { font-family: "Cormorant Garamond", "Times New Roman", serif; font-size: 22px; font-weight: 500; }
+  .brand small { display: block; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #9D7A3E; margin-top: 2px; font-family: ui-monospace, "SF Mono", monospace; }
+  .meta { font-size: 11px; color: #56493C; text-align: right; line-height: 1.5; }
+  .meta strong { color: #14110D; font-size: 13px; }
+  h1 { font-family: "Cormorant Garamond", serif; font-weight: 400; font-size: 28px; margin: 0 0 4px; }
+  .subtitle { font-size: 12px; color: #56493C; margin: 0 0 22px; }
+
+  /* Each room is a discrete block — try to keep on one page */
+  .room-block { page-break-inside: avoid; margin-bottom: 28px; padding-bottom: 22px; border-bottom: 1px dashed #D9CFBB; }
+  .room-block:last-child { border-bottom: 0; }
+  .room-block h2 { font-family: "Cormorant Garamond", serif; font-weight: 500; font-size: 22px; margin: 0 0 12px; padding-bottom: 6px; border-bottom: 1px solid #D9CFBB; }
+  .room-block h2 .count { font-size: 11px; color: #9D7A3E; font-family: ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.08em; vertical-align: middle; margin-left: 8px; }
+
+  .room-layout { display: grid; grid-template-columns: 200px 1fr; gap: 18px; align-items: start; }
+  .plan svg { width: 100%; height: auto; max-width: 200px; }
+
+  table.windows { width: 100%; border-collapse: collapse; font-size: 11px; }
+  table.windows th { background: #F7F2EA; padding: 7px 6px; text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: #56493C; border-bottom: 1px solid #D9CFBB; font-weight: 600; }
+  table.windows td { padding: 8px 6px; border-bottom: 1px solid #EFE8DB; vertical-align: top; }
+  table.windows td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.windows td.cell-letter, table.windows th.cell-letter { width: 26px; text-align: center; font-weight: 700; background: #FEF3C7; color: #9D7A3E; font-family: ui-monospace, monospace; }
+  table.windows .sku { font-size: 9px; color: #8B7F6F; font-family: ui-monospace, monospace; margin-top: 2px; }
+  table.windows th.check, table.windows td.check { width: 30px; text-align: center; }
+  .checkbox { display: inline-block; width: 14px; height: 14px; border: 1.5px solid #14110D; border-radius: 2px; }
+
+  /* Consolidated per-room notes — already-typed notes from the consult */
+  .window-notes { margin-top: 12px; background: #FFFBEB; border-left: 3px solid #C9A158; padding: 10px 14px; border-radius: 0 3px 3px 0; }
+  .window-notes strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #9D7A3E; margin-bottom: 6px; }
+  .window-notes ul { list-style: none; padding: 0; margin: 0; }
+  .window-notes li { display: flex; gap: 8px; padding: 3px 0; font-size: 11px; line-height: 1.45; color: #14110D; }
+  .window-notes .note-letter { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 18px; height: 18px; background: #FEF3C7; color: #9D7A3E; border-radius: 2px; font-family: ui-monospace, monospace; font-size: 10px; font-weight: 700; }
+
+  /* Project-level notes — admin's overall instructions for the install */
+  .project-notes { background: #EFE8DB; border-left: 3px solid #14110D; padding: 12px 16px; margin: 0 0 22px; border-radius: 0 3px 3px 0; }
+  .project-notes strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #56493C; margin-bottom: 4px; }
+  .project-notes p { margin: 0; font-size: 12px; line-height: 1.5; color: #14110D; white-space: pre-wrap; }
+
+  /* Blank ruled lines for the installer to add notes on-site */
+  .installer-notes { margin-top: 12px; }
+  .installer-notes strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #56493C; margin-bottom: 4px; }
+  .installer-notes .lines { height: 36px; background: repeating-linear-gradient(transparent, transparent 17px, #D9CFBB 17px, #D9CFBB 18px); border: 1px solid #D9CFBB; border-radius: 2px; }
+
+  footer { margin-top: 30px; padding-top: 12px; border-top: 1px solid #D9CFBB; font-size: 10px; color: #8B7F6F; display: flex; justify-content: space-between; }
+
+  @media print {
+    @page { margin: 0.4in; size: letter; }
+    body { padding: 0; }
+    .room-block { page-break-inside: avoid; }
+  }
+  @media screen {
+    body { max-width: 8.5in; margin: 0 auto; box-shadow: 0 0 0 1px #ddd, 0 12px 40px -16px rgba(0,0,0,.2); margin-top: 24px; margin-bottom: 24px; background: #fff; }
+    .print-btn { position: fixed; top: 16px; right: 16px; padding: 10px 18px; background: #14110D; color: #F7F2EA; border: 0; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+  }
+</style>
+</head>
+<body>
+  <button class="print-btn" onclick="window.print()">🖨 Print</button>
+  <header>
+    <div>
+      <div class="brand">National Closet Company<small>Install Worksheet</small></div>
+    </div>
+    <div class="meta">
+      <strong>${esc(project.name)}</strong>
+      <div>${esc(project.contact_name)}${project.contact_phone ? " · " + esc(project.contact_phone) : ""}</div>
+      ${project.site_address ? `<div>${esc(project.site_address)}</div>` : ""}
+      ${installDate ? `<div style="margin-top:6px"><strong>Install: ${esc(installDate)}</strong></div>` : `<div style="margin-top:6px;color:#9D7A3E">Install not scheduled</div>`}
+    </div>
+  </header>
+
+  <h1>${windows.length} window${windows.length === 1 ? "" : "s"} · ${roomOrder.length} room${roomOrder.length === 1 ? "" : "s"}</h1>
+  <p class="subtitle">Clockwise letters A, B, C… start at the back-left corner of each room as you face it from the entry. Match the letters on the floor plan to the table rows. Tick the ✓ column as each window is installed.</p>
+
+  ${projectNotesBlock}
+  ${roomBlocks}
+
+  <footer>
+    <span>Generated ${new Date().toLocaleString()}</span>
+    <span>National Closet Company · Gallatin, TN · 629-298-8241</span>
+  </footer>
+</body>
+</html>`;
+
+  const win = window.open("", "_blank");
+  if (!win) { SSCrm.toast("Pop-ups blocked — allow them to open the print view", "error"); return; }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
+
+async function saveProject() {
+  try {
+    await SSCrm.fetchJSON("/api/projects/" + id, { method: "PATCH", body: JSON.stringify({
+      name: document.getElementById("p-name").value.trim(),
+      status: document.getElementById("p-status").value,
+      site_address: document.getElementById("p-addr").value.trim(),
+      description: document.getElementById("p-desc").value.trim(),
+    })});
+    SSCrm.toast("Saved", "success");
+    await render();
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+
+async function loadActivity() {
+  try {
+    // ?project_id= triggers the unified feed — pulls activity for the
+    // project itself + its originating lead + every proposal/contract/
+    // appointment/email_message tied to it. The legacy entity_type/entity_id
+    // strict-match was only returning rows where entity_type='project'.
+    const { activity } = await SSCrm.fetchJSON(`/api/activity?project_id=${id}&limit=120`);
+    const feed = document.getElementById("activity-feed");
+    if (!activity.length) { feed.innerHTML = `<p style="text-align:center;color:var(--ink-soft);padding:40px">No activity yet.</p>`; return; }
+    feed.innerHTML = `<ul class="activity">${activity.map((a) => `
+      <li>
+        <span class="activity__icon" data-k="${SSCrm.esc(a.action)}">·</span>
+        <div class="activity__body">
+          <strong>${SSCrm.esc(a.action.replace(/-/g, " "))}</strong>
+          ${a.actor_name ? `· by ${SSCrm.esc(a.actor_name)}` : ""}
+          <div class="activity__time">${SSCrm.fmtDateTime(a.created_at)}</div>
+        </div>
+      </li>`).join("")}</ul>`;
+  } catch (e) { document.getElementById("activity-feed").innerHTML = `<p class="muted">${SSCrm.esc(e.message)}</p>`; }
+}
+
+async function newEstimate() {
+  try { const { id: nid } = await SSCrm.fetchJSON("/api/estimates", { method: "POST", body: JSON.stringify({ project_id: id }) }); location.href = "/crm/estimate.html?id=" + nid; }
+  catch (e) { SSCrm.toast(e.message, "error"); }
+}
+// Start a proposal AND signal to the proposal builder that the project's
+// windows should be pre-loaded as lines (handled via ?seed=windows).
+async function newProposalFromWindows() {
+  try {
+    const { id: nid } = await SSCrm.fetchJSON("/api/proposals", { method: "POST", body: JSON.stringify({ project_id: id }) });
+    location.href = `/crm/proposal.html?id=${nid}&seed=windows`;
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function newProposal() {
+  try { const { id: nid } = await SSCrm.fetchJSON("/api/proposals", { method: "POST", body: JSON.stringify({ project_id: id }) }); location.href = "/crm/proposal.html?id=" + nid; }
+  catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function newContract() {
+  // Ask which contract type
+  const type = await pickContractType();
+  if (!type) return;
+  try {
+    const { id: nid } = await SSCrm.fetchJSON("/api/contracts", { method: "POST", body: JSON.stringify({ project_id: id, contract_type: type }) });
+    location.href = "/crm/contract.html?id=" + nid;
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+
+function pickContractType() {
+  return new Promise((resolve) => {
+    const bg = document.createElement("div");
+    bg.className = "modal-bg";
+    bg.innerHTML = `
+      <div class="modal" style="max-width:520px">
+        <div class="modal-head">What kind of contract?</div>
+        <div class="modal-body" style="display:grid;gap:10px">
+          <button class="btn secondary" data-t="custom_order" style="justify-content:flex-start;padding:14px;text-align:left;flex-direction:column;align-items:flex-start;gap:4px">
+            <strong style="font-size:14px">Custom Order</strong>
+            <span style="font-size:12px;color:var(--ink-soft);font-weight:400">We supply &amp; install custom-made treatments. 50% deposit. Manufacturer warranty + 90-day workmanship.</span>
+          </button>
+          <button class="btn secondary" data-t="install_only" style="justify-content:flex-start;padding:14px;text-align:left;flex-direction:column;align-items:flex-start;gap:4px">
+            <strong style="font-size:14px">Install Only · BYO Blinds</strong>
+            <span style="font-size:12px;color:var(--ink-soft);font-weight:400">Customer supplies blinds (Lowes, Home Depot, Costco, etc.). We install them. No deposit. Pay on completion. 90-day workmanship.</span>
+          </button>
+          <button class="btn secondary" data-t="repair" style="justify-content:flex-start;padding:14px;text-align:left;flex-direction:column;align-items:flex-start;gap:4px">
+            <strong style="font-size:14px">Repair / Service Call</strong>
+            <span style="font-size:12px;color:var(--ink-soft);font-weight:400">Repair an existing blind, shutter, or shade. Service-call fee + parts. Pay on completion. 90-day workmanship.</span>
+          </button>
+        </div>
+        <div class="modal-foot"><button class="btn ghost" data-no>Cancel</button></div>
+      </div>
+    `;
+    document.body.appendChild(bg);
+    bg.querySelectorAll("[data-t]").forEach((b) => { b.onclick = () => { bg.remove(); resolve(b.dataset.t); }; });
+    bg.querySelector("[data-no]").onclick = () => { bg.remove(); resolve(null); };
+    bg.addEventListener("click", (e) => { if (e.target === bg) { bg.remove(); resolve(null); } });
+  });
+}
+async function convertProposal(propId) {
+  if (!(await SSCrm.confirmDialog("Create a contract from the accepted tier of this proposal?"))) return;
+  try {
+    const { id: nid } = await SSCrm.fetchJSON(`/api/proposals/${propId}/convert`, { method: "POST" });
+    SSCrm.toast("Contract drafted from proposal", "success");
+    location.href = "/crm/contract.html?id=" + nid;
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+</script>
+</body>
+</html>

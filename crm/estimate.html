@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Estimate · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/crm/crm-app.css" />
+</head>
+<body>
+<script src="/crm/crm-app.js"></script>
+<script>
+const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
+if (!id) location.href = "/crm/estimates.html";
+let state, products = [];
+
+(async () => {
+  const user = await SSCrm.mount({ title: "Estimate", actions: `<a class="btn ghost" href="/crm/estimates.html">← Estimates</a>` });
+  if (!user) return;
+  [state, productsBundle] = await Promise.all([
+    SSCrm.fetchJSON("/api/estimates/" + id),
+    SSCrm.fetchJSON("/api/products"),
+  ]);
+  products = productsBundle.products;
+  render();
+})();
+let productsBundle;
+
+function render() {
+  const { estimate: e, lines } = state;
+  document.getElementById("page-title").textContent = `${e.number || "Draft estimate"} · ${SSCrm.fmtMoney(e.total_cents)}`;
+  const isSent = ["sent","viewed","approved","declined"].includes(e.status);
+  const customerUrl = `${location.origin}/estimate/?t=${e.view_token}`;
+
+  document.getElementById("page").innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;gap:10px;align-items:center">
+        ${SSCrm.pill(e.status)}
+        <span class="muted" style="font-size:13px">${SSCrm.esc(e.project_name)} · <a href="/crm/contact.html?id=${e.contact_id}">${SSCrm.esc(e.contact_name)}</a></span>
+      </div>
+      <div style="display:flex;gap:8px">
+        ${e.status === "approved" ? `<button class="btn success" onclick="convertToContract()">Convert to Contract →</button>` : ""}
+        ${!isSent ? `<button class="btn primary" onclick="sendEstimate()">Send to customer</button>` : ""}
+        ${isSent ? `<a class="btn secondary" href="${customerUrl}" target="_blank">Customer link ↗</a>` : ""}
+        <button class="btn danger" onclick="del()">Delete</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Line items <span class="muted" style="font-size:11px;font-weight:400">· all dimensions in inches</span></h2><span class="muted" style="font-size:12px">${lines.length} item${lines.length === 1 ? "" : "s"}</span></div>
+      <table class="lines"><thead><tr>
+        <th style="width:30%">Product</th><th>Room</th><th class="num">W&Prime;</th><th class="num">H&Prime;</th><th class="num">Qty</th><th class="num">Unit $</th><th class="num">Total</th><th></th>
+      </tr></thead><tbody id="lines-body">
+        ${lines.length ? lines.map((l, i) => lineRow(l, i)).join("") : lineRow({}, 0)}
+      </tbody></table>
+      <div class="add"><button onclick="addLine()">+ Empty line</button> <button onclick="pickProduct()">+ Pick from catalog</button></div>
+
+      <div class="totals">
+        <div class="r"><span>Subtotal</span><span id="t-sub">${SSCrm.fmtMoney(e.subtotal_cents)}</span></div>
+        <div class="r"><span>Discount</span><input id="t-disc" type="text" value="${e.discount_cents ? "$" + (e.discount_cents/100).toFixed(2) : ""}" placeholder="$0.00" style="width:110px;text-align:right;border:1px solid var(--line);padding:5px 8px;border-radius:var(--r-sm)" onchange="recalcTotals()"/></div>
+        <div class="r"><span>Tax</span><input id="t-tax" type="text" value="${e.tax_cents ? "$" + (e.tax_cents/100).toFixed(2) : ""}" placeholder="$0.00" style="width:110px;text-align:right;border:1px solid var(--line);padding:5px 8px;border-radius:var(--r-sm)" onchange="recalcTotals()"/></div>
+        <div class="r grand"><span>Total</span><span id="t-grand">${SSCrm.fmtMoney(e.total_cents)}</span></div>
+      </div>
+
+      <hr class="sep"/>
+      <div class="form">
+        <label><span>Notes to customer (shown on the estimate)</span><textarea id="notes-c" rows="3">${SSCrm.esc(e.notes_customer || "")}</textarea></label>
+        <label><span>Internal notes (staff only)</span><textarea id="notes-i" rows="2">${SSCrm.esc(e.notes_internal || "")}</textarea></label>
+        <div class="form-actions"><button class="btn primary" onclick="save()">Save changes</button></div>
+      </div>
+    </div>
+  `;
+}
+
+function lineRow(l, i) {
+  const total = (Number(l.quantity || 1)) * (l.unit_price_cents || 0);
+  return `<tr data-i="${i}" data-product-id="${l.product_id || ""}" data-base="${l.base_price_cents || 0}" data-persqft="${l.price_per_sqft_cents || 0}">
+    <td><input data-f="description" value="${SSCrm.esc(l.description || "")}" placeholder="Faux Wood 2.5″ — Living, North"/></td>
+    <td><input data-f="room" value="${SSCrm.esc(l.room || "")}" placeholder="Living"/></td>
+    <td><input class="num" data-f="width_in" value="${l.width_in ?? ""}" type="number" step="0.125" min="0" placeholder="36" onchange="recalcFromDims(this)"/></td>
+    <td><input class="num" data-f="height_in" value="${l.height_in ?? ""}" type="number" step="0.125" min="0" placeholder="60" onchange="recalcFromDims(this)"/></td>
+    <td><input class="num" data-f="quantity" value="${l.quantity || 1}" type="number" step="1" min="1" onchange="recalc(this)"/></td>
+    <td><input class="num" data-f="unit" value="${l.unit_price_cents ? "$" + (l.unit_price_cents / 100).toFixed(2) : ""}" placeholder="$0.00" onchange="recalc(this)"/></td>
+    <td class="num money money-line">${SSCrm.fmtMoney(total)}</td>
+    <td><button class="rm" onclick="this.closest('tr').remove();recalcTotals()" title="Remove">×</button></td>
+  </tr>`;
+}
+
+// When dimensions change, recompute unit price using the row's product rate
+function recalcFromDims(input) {
+  const tr = input.closest("tr");
+  const w = Number(tr.querySelector("[data-f=width_in]").value || 0);
+  const h = Number(tr.querySelector("[data-f=height_in]").value || 0);
+  const base = parseInt(tr.dataset.base || 0, 10);
+  const perSqft = parseInt(tr.dataset.persqft || 0, 10);
+  if (w > 0 && h > 0 && perSqft > 0) {
+    const sqft = (w * h) / 144;
+    const unit = Math.round(base + sqft * perSqft);
+    tr.querySelector("[data-f=unit]").value = "$" + (unit / 100).toFixed(2);
+  }
+  recalc(input);
+}
+
+function addLine() { const t = document.getElementById("lines-body"); t.insertAdjacentHTML("beforeend", lineRow({}, t.children.length)); }
+function recalc(input) {
+  const tr = input.closest("tr");
+  const qty = Number(tr.querySelector("[data-f=quantity]").value || 0);
+  const unit = SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value);
+  tr.querySelector(".money-line").textContent = SSCrm.fmtMoney(qty * unit);
+  recalcTotals();
+}
+function recalcTotals() {
+  let sub = 0;
+  document.querySelectorAll("#lines-body tr").forEach((tr) => {
+    const qty = Number(tr.querySelector("[data-f=quantity]").value || 0);
+    const unit = SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value);
+    sub += qty * unit;
+  });
+  const disc = SSCrm.parseMoney(document.getElementById("t-disc").value);
+  const tax = SSCrm.parseMoney(document.getElementById("t-tax").value);
+  document.getElementById("t-sub").textContent = SSCrm.fmtMoney(sub);
+  document.getElementById("t-grand").textContent = SSCrm.fmtMoney(sub - disc + tax);
+}
+
+function pickProduct() {
+  // Build a modal product picker
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `
+    <div class="modal" style="max-width:640px">
+      <div class="modal-head">Pick a product</div>
+      <div class="modal-body" style="max-height:60vh;overflow-y:auto">
+        <input type="search" id="prod-search" placeholder="Filter…" style="width:100%;padding:8px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font-size:13px;margin-bottom:14px"/>
+        <div id="prod-list"></div>
+      </div>
+      <div class="modal-foot"><button class="btn ghost" data-no>Cancel</button></div>
+    </div>
+  `;
+  document.body.appendChild(bg);
+
+  // Group by category
+  const byCat = {};
+  for (const p of products) (byCat[p.category] ||= []).push(p);
+  function renderList(filter = "") {
+    const f = filter.toLowerCase();
+    document.getElementById("prod-list").innerHTML = Object.keys(byCat).sort().map((cat) => {
+      const items = byCat[cat].filter((p) => !f || (p.name + p.category + (p.sku || "")).toLowerCase().includes(f));
+      if (!items.length) return "";
+      return `
+        <div style="margin-bottom:14px">
+          <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;padding:6px 0;font-weight:600">${SSCrm.esc(cat)}</div>
+          ${items.map((p) => `
+            <button class="btn ghost" style="width:100%;justify-content:space-between;padding:10px 12px;text-align:left" data-pick="${p.id}">
+              <span><strong>${SSCrm.esc(p.name)}</strong><span class="muted" style="margin-left:8px;font-size:11px">${p.sku ? SSCrm.esc(p.sku) + " · " : ""}${p.unit}</span></span>
+              <span class="money">${p.price_per_sqft_cents ? SSCrm.fmtMoney(p.price_per_sqft_cents) + "/sqft" : SSCrm.fmtMoney(p.base_price_cents)}</span>
+            </button>
+          `).join("")}
+        </div>
+      `;
+    }).join("");
+    document.querySelectorAll("[data-pick]").forEach((btn) => {
+      btn.onclick = () => {
+        const p = products.find((x) => x.id === parseInt(btn.dataset.pick, 10));
+        bg.remove();
+        addProductRow(p);
+      };
+    });
+  }
+  renderList();
+  document.getElementById("prod-search").oninput = (e) => renderList(e.target.value);
+  bg.querySelector("[data-no]").onclick = () => bg.remove();
+  bg.addEventListener("click", (e) => { if (e.target === bg) bg.remove(); });
+}
+
+function addProductRow(p) {
+  const t = document.getElementById("lines-body");
+  // Pre-fill with default 36×60 for inch-based products so the price renders immediately
+  const isPerSqft = (p.price_per_sqft_cents || 0) > 0;
+  const w = isPerSqft ? 36 : null;
+  const h = isPerSqft ? 60 : null;
+  const unit = isPerSqft ? Math.round(p.base_price_cents + ((w * h) / 144) * p.price_per_sqft_cents) : p.base_price_cents;
+  t.insertAdjacentHTML("beforeend", lineRow({
+    description: p.name,
+    product_id: p.id,
+    base_price_cents: p.base_price_cents,
+    price_per_sqft_cents: p.price_per_sqft_cents,
+    width_in: w, height_in: h,
+    unit_price_cents: unit,
+    quantity: 1,
+  }, t.children.length));
+  recalcTotals();
+}
+
+async function save() {
+  const lines = [...document.querySelectorAll("#lines-body tr")].map((tr) => {
+    const w = tr.querySelector("[data-f=width_in]").value;
+    const h = tr.querySelector("[data-f=height_in]").value;
+    return {
+      description: tr.querySelector("[data-f=description]").value.trim(),
+      room: tr.querySelector("[data-f=room]").value.trim() || null,
+      width_in: w === "" ? null : Number(w),
+      height_in: h === "" ? null : Number(h),
+      quantity: Number(tr.querySelector("[data-f=quantity]").value || 1),
+      unit_price_cents: SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value),
+      product_id: tr.dataset.productId ? parseInt(tr.dataset.productId, 10) : null,
+    };
+  }).filter((l) => l.description);
+  try {
+    await SSCrm.fetchJSON("/api/estimates/" + id, { method: "PATCH", body: JSON.stringify({
+      lines,
+      discount_cents: SSCrm.parseMoney(document.getElementById("t-disc").value),
+      tax_cents: SSCrm.parseMoney(document.getElementById("t-tax").value),
+      notes_customer: document.getElementById("notes-c").value.trim() || null,
+      notes_internal: document.getElementById("notes-i").value.trim() || null,
+    })});
+    SSCrm.toast("Saved", "success");
+    state = await SSCrm.fetchJSON("/api/estimates/" + id);
+    render();
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function sendEstimate() {
+  if (!(await SSCrm.confirmDialog("Send this estimate to the customer by email?"))) return;
+  try { await SSCrm.fetchJSON(`/api/estimates/${id}/send`, { method: "POST" }); SSCrm.toast("Estimate sent", "success"); state = await SSCrm.fetchJSON("/api/estimates/" + id); render(); }
+  catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function convertToContract() {
+  if (!(await SSCrm.confirmDialog("Create a draft contract from this estimate's line items?"))) return;
+  try {
+    const { id: nid } = await SSCrm.fetchJSON("/api/contracts", { method: "POST", body: JSON.stringify({ project_id: state.estimate.project_id, estimate_id: id }) });
+    location.href = "/crm/contract.html?id=" + nid;
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function del() {
+  if (!(await SSCrm.confirmDialog("Delete this estimate? Cannot be undone."))) return;
+  await SSCrm.fetchJSON("/api/estimates/" + id, { method: "DELETE" });
+  location.href = "/crm/estimates.html";
+}
+</script>
+</body>
+</html>

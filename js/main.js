@@ -96,18 +96,31 @@
     });
   });
 
-  /* ---------- Lead form (demo handler) ---------- */
+  /* ---------- Lead form -> /api/lead (Resend) ---------- */
   document.querySelectorAll("form[data-lead]").forEach(function (form) {
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       var card = form.closest(".form-card") || form.parentElement;
       var success = card.querySelector(".form-success");
-      if (success) {
-        form.style.display = "none";
-        success.classList.add("show");
-        success.scrollIntoView({ behavior: "smooth", block: "center" });
+      var btn = form.querySelector('button[type="submit"]');
+      var original = btn ? btn.innerHTML : "";
+      if (btn) { btn.disabled = true; btn.innerHTML = "Sending…"; }
+
+      function done() {
+        if (btn) { btn.disabled = false; btn.innerHTML = original; }
+        if (success) {
+          form.style.display = "none";
+          success.classList.add("show");
+          success.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
       }
-      // In production: POST to a Cloudflare Worker / form endpoint, then redirect to /thank-you.html
+
+      fetch("/api/lead", { method: "POST", body: new FormData(form) })
+        .then(function (r) {
+          if (!r.ok) { try { r.text().then(function (t) { console.warn("lead send failed", r.status, t); }); } catch (_) {} }
+        })
+        .catch(function (err) { console.warn("lead send error", err); })
+        .then(done); // show success regardless so the user is never blocked
     });
   });
 

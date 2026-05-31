@@ -47,7 +47,7 @@ function render() {
     <div class="card">
       <div class="card-head"><h2>Line items <span class="muted" style="font-size:11px;font-weight:400">· all dimensions in inches</span></h2><span class="muted" style="font-size:12px">${lines.length} item${lines.length === 1 ? "" : "s"}</span></div>
       <table class="lines"><thead><tr>
-        <th style="width:30%">Product</th><th>Room</th><th class="num">W&Prime;</th><th class="num">H&Prime;</th><th class="num">Qty</th><th class="num">Unit $</th><th class="num">Total</th><th></th>
+        <th style="width:34%">Product / Description</th><th>Room / Area</th><th class="num">Qty</th><th class="num">Unit $</th><th class="num">Total</th><th></th>
       </tr></thead><tbody id="lines-body">
         ${lines.length ? lines.map((l, i) => lineRow(l, i)).join("") : lineRow({}, 0)}
       </tbody></table>
@@ -72,31 +72,14 @@ function render() {
 
 function lineRow(l, i) {
   const total = (Number(l.quantity || 1)) * (l.unit_price_cents || 0);
-  return `<tr data-i="${i}" data-product-id="${l.product_id || ""}" data-base="${l.base_price_cents || 0}" data-persqft="${l.price_per_sqft_cents || 0}">
-    <td><input data-f="description" value="${SSCrm.esc(l.description || "")}" placeholder="Faux Wood 2.5″ — Living, North"/></td>
-    <td><input data-f="room" value="${SSCrm.esc(l.room || "")}" placeholder="Living"/></td>
-    <td><input class="num" data-f="width_in" value="${l.width_in ?? ""}" type="number" step="0.125" min="0" placeholder="36" onchange="recalcFromDims(this)"/></td>
-    <td><input class="num" data-f="height_in" value="${l.height_in ?? ""}" type="number" step="0.125" min="0" placeholder="60" onchange="recalcFromDims(this)"/></td>
+  return `<tr data-i="${i}" data-product-id="${l.product_id || ""}" data-base="${l.base_price_cents || 0}">
+    <td><input data-f="description" value="${SSCrm.esc(l.description || "")}" placeholder="Walk-In Closet System — Master"/></td>
+    <td><input data-f="room" value="${SSCrm.esc(l.room || "")}" placeholder="Master"/></td>
     <td><input class="num" data-f="quantity" value="${l.quantity || 1}" type="number" step="1" min="1" onchange="recalc(this)"/></td>
     <td><input class="num" data-f="unit" value="${l.unit_price_cents ? "$" + (l.unit_price_cents / 100).toFixed(2) : ""}" placeholder="$0.00" onchange="recalc(this)"/></td>
     <td class="num money money-line">${SSCrm.fmtMoney(total)}</td>
     <td><button class="rm" onclick="this.closest('tr').remove();recalcTotals()" title="Remove">×</button></td>
   </tr>`;
-}
-
-// When dimensions change, recompute unit price using the row's product rate
-function recalcFromDims(input) {
-  const tr = input.closest("tr");
-  const w = Number(tr.querySelector("[data-f=width_in]").value || 0);
-  const h = Number(tr.querySelector("[data-f=height_in]").value || 0);
-  const base = parseInt(tr.dataset.base || 0, 10);
-  const perSqft = parseInt(tr.dataset.persqft || 0, 10);
-  if (w > 0 && h > 0 && perSqft > 0) {
-    const sqft = (w * h) / 144;
-    const unit = Math.round(base + sqft * perSqft);
-    tr.querySelector("[data-f=unit]").value = "$" + (unit / 100).toFixed(2);
-  }
-  recalc(input);
 }
 
 function addLine() { const t = document.getElementById("lines-body"); t.insertAdjacentHTML("beforeend", lineRow({}, t.children.length)); }
@@ -150,7 +133,7 @@ function pickProduct() {
           ${items.map((p) => `
             <button class="btn ghost" style="width:100%;justify-content:space-between;padding:10px 12px;text-align:left" data-pick="${p.id}">
               <span><strong>${SSCrm.esc(p.name)}</strong><span class="muted" style="margin-left:8px;font-size:11px">${p.sku ? SSCrm.esc(p.sku) + " · " : ""}${p.unit}</span></span>
-              <span class="money">${p.price_per_sqft_cents ? SSCrm.fmtMoney(p.price_per_sqft_cents) + "/sqft" : SSCrm.fmtMoney(p.base_price_cents)}</span>
+              <span class="money">${SSCrm.fmtMoney(p.base_price_cents)}</span>
             </button>
           `).join("")}
         </div>
@@ -172,18 +155,11 @@ function pickProduct() {
 
 function addProductRow(p) {
   const t = document.getElementById("lines-body");
-  // Pre-fill with default 36×60 for inch-based products so the price renders immediately
-  const isPerSqft = (p.price_per_sqft_cents || 0) > 0;
-  const w = isPerSqft ? 36 : null;
-  const h = isPerSqft ? 60 : null;
-  const unit = isPerSqft ? Math.round(p.base_price_cents + ((w * h) / 144) * p.price_per_sqft_cents) : p.base_price_cents;
   t.insertAdjacentHTML("beforeend", lineRow({
     description: p.name,
     product_id: p.id,
     base_price_cents: p.base_price_cents,
-    price_per_sqft_cents: p.price_per_sqft_cents,
-    width_in: w, height_in: h,
-    unit_price_cents: unit,
+    unit_price_cents: p.base_price_cents,
     quantity: 1,
   }, t.children.length));
   recalcTotals();
@@ -191,13 +167,9 @@ function addProductRow(p) {
 
 async function save() {
   const lines = [...document.querySelectorAll("#lines-body tr")].map((tr) => {
-    const w = tr.querySelector("[data-f=width_in]").value;
-    const h = tr.querySelector("[data-f=height_in]").value;
     return {
       description: tr.querySelector("[data-f=description]").value.trim(),
       room: tr.querySelector("[data-f=room]").value.trim() || null,
-      width_in: w === "" ? null : Number(w),
-      height_in: h === "" ? null : Number(h),
       quantity: Number(tr.querySelector("[data-f=quantity]").value || 1),
       unit_price_cents: SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value),
       product_id: tr.dataset.productId ? parseInt(tr.dataset.productId, 10) : null,

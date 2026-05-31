@@ -90,7 +90,6 @@ async function render() {
 
       <nav class="job__tabs" id="tabs">
         ${tab("overview", "Overview")}
-        ${tab("windows", "Windows", windows.length)}
         ${tab("messages", "Messages")}
         ${tab("proposals", "Proposals", proposals.length)}
         ${tab("contracts", "Contracts", contracts.length)}
@@ -258,20 +257,6 @@ function renderOverview(s) {
           ` : `<p class="muted" style="font-size:13px;font-style:italic;margin:0">No appointments scheduled yet.</p>`}
         </div>
 
-        <!-- Windows summary -->
-        <div class="card">
-          <div class="card-head">
-            <h3>Windows on this job</h3>
-            <span style="font-size:28px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">${windows.length}</span>
-          </div>
-          <div style="margin-top:4px;line-height:1.8">${roomSummary}</div>
-          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn primary sm" onclick="switchTab('windows')">${windows.length ? "Edit windows" : "+ Add windows"}</button>
-            ${windows.length ? `<button class="btn secondary sm" onclick="printWorksheet()">🖨 Print install worksheet</button>` : ""}
-            ${windows.length ? `<button class="btn ghost sm" onclick="newProposalFromWindows()">+ Proposal from these windows</button>` : ""}
-          </div>
-        </div>
-
         <!-- Signed contract block (the source-of-truth document for this job) -->
         ${signedContract ? `
           <div class="card" style="border-left:3px solid var(--money,#10B981)">
@@ -327,7 +312,6 @@ function renderOverview(s) {
             <button class="btn primary" onclick="newProposal()">+ Proposal</button>
             <button class="btn secondary" onclick="newContract()">+ Contract</button>
             ${project.contact_email ? `<button class="btn secondary" onclick="composeFromOverview()">✉️ Send email</button>` : ""}
-            <button class="btn ghost" onclick="switchTab('windows')">Edit windows</button>
             ${project.contact_phone ? `<a class="btn ghost" href="tel:${e(project.contact_phone)}">📞 Call</a>` : ""}
             ${project.contact_phone ? `<a class="btn ghost" href="sms:${e(project.contact_phone)}">💬 Text</a>` : ""}
           </div>

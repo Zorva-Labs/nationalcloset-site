@@ -43,9 +43,6 @@ export async function onRequestPost({ request, env }) {
   if (!name || !phone || !email) {
     return json({ error: "Name, phone, and email are required." }, 400);
   }
-  if (!addressStreet || !addressCity || !addressState || !addressZip) {
-    return json({ error: "Please provide your full service address (street, city, state, ZIP)." }, 400);
-  }
   if (!/^\S+@\S+\.\S+$/.test(email)) {
     return json({ error: "That email address looks invalid." }, 400);
   }

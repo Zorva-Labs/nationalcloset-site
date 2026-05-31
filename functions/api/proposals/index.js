@@ -1,7 +1,7 @@
 import { requireAuth, json } from "../../_lib/auth.js";
 import { genToken, nextSequence, formatDocNumber } from "../../_lib/tokens.js";
 import { recordActivity } from "../../_lib/db.js";
-import { seedTiersFromWindows, syncLeadQuotedFromProposal } from "../../_lib/lifecycle.js";
+import { syncLeadQuotedFromProposal } from "../../_lib/lifecycle.js";
 
 const TIERS = ["good", "better", "best"];
 
@@ -37,7 +37,7 @@ export async function onRequestPost(context) {
     ? await context.env.DB.prepare(`SELECT * FROM document_templates WHERE id=?1`).bind(body.template_id).first()
     : await context.env.DB.prepare(`SELECT * FROM document_templates WHERE kind='proposal' AND is_default=1 ORDER BY id LIMIT 1`).first();
 
-  const intro = body.intro || tpl?.intro || "Thank you for the opportunity to dress your windows. We've put together three options below — each one custom-fit to your home.";
+  const intro = body.intro || tpl?.intro || "Thank you for the opportunity to design your custom closets. We've put together three options below — each one tailored to your space and the way you live.";
   const tierTitles = {
     good:   tpl?.tier_good_title   || "The Essentials",
     better: tpl?.tier_better_title || "The Smart-Home Package",
@@ -53,11 +53,7 @@ export async function onRequestPost(context) {
     await context.env.DB.prepare(`INSERT INTO proposal_tiers (proposal_id, tier, title) VALUES (?1,?2,?3)`).bind(r.id, t, tierTitles[t]).run();
   }
 
-  // Auto-populate every tier from the project's windows. If a window has a
-  // product chosen, drop it into all three tiers (price + name from catalog;
-  // dimensions, room, color from the window). Admin can then differentiate
-  // tiers by swapping products in each.
-  await seedTiersFromWindows(context.env.DB, r.id, body.project_id);
+  // Tiers start empty — the admin adds closet line items from the catalog.
   // Mirror the proposal total back to the lead's quoted_amount_cents
   await syncLeadQuotedFromProposal(context.env.DB, r.id);
   await recordActivity(context.env.DB, {

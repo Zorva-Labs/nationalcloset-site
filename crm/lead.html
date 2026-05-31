@@ -252,34 +252,24 @@ function render() {
 // ============================================================
 function renderWindowsCard() {
   const hasWorkspace = workspace && workspace.project;
-  const windows = workspace?.windows || [];
   const proposal = workspace?.proposals?.[0] || null;
-  const roomCount = new Set(windows.map((w) => w.room || "(unassigned)")).size;
 
   const proposalLink = proposal
     ? `<a class="btn secondary sm" href="/crm/proposal.html?id=${proposal.id}">Open proposal <span class="muted">(${SSCrm.esc(proposal.number)} · ${SSCrm.esc(proposal.status)})</span> →</a>`
-    : `<button class="btn primary sm" onclick="sendProposal()">+ Send proposal from these windows</button>`;
+    : `<button class="btn primary sm" onclick="sendProposal()">+ Create proposal</button>`;
 
   return `
     <div class="card" style="margin-top:14px">
       <div class="card-head" style="align-items:flex-start">
         <div>
-          <h2>Windows on this lead</h2>
-          <div class="muted" style="font-size:12px;margin-top:2px">${windows.length} windows across ${roomCount} room${roomCount === 1 ? "" : "s"} · clockwise from the back-left corner. Pick a product per window and it populates the proposal.</div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          ${hasWorkspace ? `
-            <button class="btn secondary sm" onclick="WindowsEditor.addWindow()">+ Window</button>
-            <button class="btn primary sm" onclick="WindowsEditor.addRoom()">+ Room</button>
-            <button class="btn primary sm" onclick="saveLeadWindows()">Save</button>
-          ` : ""}
+          <h2>Proposal</h2>
+          <div class="muted" style="font-size:12px;margin-top:2px">Create a custom-closet proposal for this lead, then add closet systems and add-ons from the catalog.</div>
         </div>
       </div>
 
       ${!hasWorkspace ? `
-        <p class="muted" style="font-size:13px;padding:12px 0">Save the lead's email first to enable the windows workspace.</p>
+        <p class="muted" style="font-size:13px;padding:12px 0">Save the lead's email first to enable proposals.</p>
       ` : `
-        <div id="rooms-host" style="display:flex;flex-direction:column;gap:14px;margin-top:10px"></div>
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
           <span style="flex:1"></span>
           ${proposalLink}

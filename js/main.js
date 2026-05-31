@@ -115,11 +115,27 @@
         }
       }
 
-      fetch("/api/lead", { method: "POST", body: new FormData(form) })
+      var fd = new FormData(form);
+      var payload = {
+        name: (fd.get("name") || "").toString(),
+        phone: (fd.get("phone") || "").toString(),
+        email: (fd.get("email") || "").toString(),
+        interest: (fd.get("project") || "").toString(),
+        address_zip: (fd.get("zip") || "").toString(),
+        message: (fd.get("msg") || "").toString(),
+        company: (fd.get("company") || "").toString(), // honeypot
+        source: "website" + (location.pathname === "/" ? "" : location.pathname)
+      };
+      if (payload.company) { done(); return; } // bot — accept silently
+      fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
         .then(function (r) {
-          if (!r.ok) { try { r.text().then(function (t) { console.warn("lead send failed", r.status, t); }); } catch (_) {} }
+          if (!r.ok) { try { r.text().then(function (t) { console.warn("lead save failed", r.status, t); }); } catch (_) {} }
         })
-        .catch(function (err) { console.warn("lead send error", err); })
+        .catch(function (err) { console.warn("lead save error", err); })
         .then(done); // show success regardless so the user is never blocked
     });
   });

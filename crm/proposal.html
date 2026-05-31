@@ -116,8 +116,6 @@ function renderTier(t) {
       <th style="width:90px">Color / Finish</th>
       <th style="width:120px">Options</th>
       <th style="width:90px">Room</th>
-      <th class="num" style="width:64px" title="Width (in)">W″</th>
-      <th class="num" style="width:64px" title="Height (in)">H″</th>
       <th class="num" style="width:54px">Qty</th>
       <th class="num" style="width:90px">Unit price</th>
       <th class="num" style="width:100px">Total</th><th style="width:32px"></th>
@@ -131,8 +129,6 @@ function renderTier(t) {
 }
 function tierLineRow(l) {
   const productId = l?.product_id || "";
-  const widthIn = l?.width_in ?? "";
-  const heightIn = l?.height_in ?? "";
   return `<tr>
     <td>
       <input data-f="description" value="${SSCrm.esc(l?.description || "")}" placeholder="Product / item"/>
@@ -141,8 +137,6 @@ function tierLineRow(l) {
     <td><input data-f="color" value="${SSCrm.esc(l?.color || "")}" placeholder="White, walnut…"/></td>
     <td><input data-f="options" value="${SSCrm.esc(l?.options || "")}" placeholder="Cordless, motorized…"/></td>
     <td><input data-f="room" value="${SSCrm.esc(l?.room || "")}" placeholder="Room"/></td>
-    <td><input class="num" data-f="width_in" value="${widthIn}" type="number" step="0.125" min="0" placeholder="—" title="Width (in)"/></td>
-    <td><input class="num" data-f="height_in" value="${heightIn}" type="number" step="0.125" min="0" placeholder="—" title="Height (in)"/></td>
     <td><input class="num" data-f="quantity" value="${l?.quantity || 1}" type="number" step="1" min="1" onchange="recalcTier(this)"/></td>
     <td><input class="num" data-f="unit" value="${l?.unit_price_cents ? "$" + (l.unit_price_cents/100).toFixed(2) : ""}" onchange="recalcTier(this)"/></td>
     <td class="num money tier-line-money">${SSCrm.fmtMoney((l?.quantity || 1) * (l?.unit_price_cents || 0))}</td>
@@ -186,8 +180,6 @@ async function saveAll() {
     description: card.querySelector(".t-desc").value.trim(),
     lines: [...card.querySelectorAll(".tier-lines tr")].map((tr) => {
       const productIdRaw = tr.querySelector("[data-f=product_id]")?.value || "";
-      const widthRaw = tr.querySelector("[data-f=width_in]")?.value || "";
-      const heightRaw = tr.querySelector("[data-f=height_in]")?.value || "";
       return {
         description: tr.querySelector("[data-f=description]").value.trim(),
         color: tr.querySelector("[data-f=color]")?.value.trim() || null,
@@ -196,8 +188,6 @@ async function saveAll() {
         quantity: Math.max(1, Math.round(Number(tr.querySelector("[data-f=quantity]").value || 1))),
         unit_price_cents: SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value),
         product_id: productIdRaw ? parseInt(productIdRaw, 10) : null,
-        width_in: widthRaw !== "" ? Number(widthRaw) : null,
-        height_in: heightRaw !== "" ? Number(heightRaw) : null,
       };
     }).filter((l) => l.description),
   }));

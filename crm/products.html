@@ -20,13 +20,12 @@ async function load() {
     <div class="card" style="margin-bottom:14px">
       <div class="card-head"><h2>${SSCrm.esc(cat)}</h2><span class="muted" style="font-size:12px">${grouped[cat].length} item${grouped[cat].length === 1 ? "" : "s"}</span></div>
       <div class="tbl" style="border:0"><table>
-        <thead><tr><th>SKU</th><th>Name</th><th>Unit</th><th class="num">Base $</th><th class="num">Per sq ft</th><th></th></tr></thead>
+        <thead><tr><th>SKU</th><th>Name</th><th>Unit</th><th class="num">Price</th><th></th></tr></thead>
         <tbody>${grouped[cat].map((p) => `<tr data-id="${p.id}">
           <td class="mono" style="font-size:12px;color:var(--ink-soft)">${SSCrm.esc(p.sku || "")}</td>
           <td>${SSCrm.esc(p.name)}</td>
           <td class="muted" style="font-size:12px">${SSCrm.esc(p.unit)}</td>
           <td class="money">${SSCrm.fmtMoney(p.base_price_cents)}</td>
-          <td class="num muted">${p.price_per_sqft_cents ? SSCrm.fmtMoney(p.price_per_sqft_cents) : "—"}</td>
           <td><button class="rm" onclick="delProd(${p.id})" title="Archive">×</button></td>
         </tr>`).join("")}</tbody></table></div>
     </div>

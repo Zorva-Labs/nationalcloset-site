@@ -5,7 +5,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc3" />
 <style>
   /* Print stylesheet — admins hit "Print / Save PDF" to download a clean
      copy of the contract. Strips the CRM chrome and renders just the
@@ -43,7 +43,7 @@
 </style>
 </head>
 <body>
-<script src="/crm/crm-app.js"></script>
+<script src="/crm/crm-app.js?v=ncc3"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 const wantCountersign = new URLSearchParams(location.search).get("action") === "countersign";

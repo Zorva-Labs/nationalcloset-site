@@ -15,11 +15,11 @@
 <meta property="og:title" content="Custom Closets &amp; Closet Systems | National Closet Co." />
 <meta property="og:description" content="Custom closets, walk-in closet systems, home offices, garages &amp; pantries — designed, built and installed. Free 3D design consultation." />
 <meta property="og:url" content="https://nationalclosetco.com/" />
-<meta property="og:image" content="https://nationalclosetco.com/og-image.jpg" />
+<meta property="og:image" content="https://nationalclosetco.com/img/hero-closet.webp" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Custom Closets &amp; Closet Systems | National Closet Co." />
 <meta name="twitter:description" content="Custom closets, walk-in closet systems, home offices, garages &amp; pantries — designed, built and installed. Free 3D design consultation." />
-<meta name="twitter:image" content="https://nationalclosetco.com/og-image.jpg" />
+<meta name="twitter:image" content="https://nationalclosetco.com/img/hero-closet.webp" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -39,8 +39,8 @@
       "name": "National Closet Company",
       "alternateName": "National Closet Co.",
       "url": "https://nationalclosetco.com/",
-      "logo": { "@type": "ImageObject", "url": "https://nationalclosetco.com/logo.png", "width": 512, "height": 512 },
-      "image": "https://nationalclosetco.com/og-image.jpg",
+      "logo": { "@type": "ImageObject", "url": "https://nationalclosetco.com/img/ncc.png", "width": 512, "height": 512 },
+      "image": "https://nationalclosetco.com/img/hero-closet.webp",
       "description": "National Closet Company designs, builds and installs custom closets, closet systems, walk-in and reach-in closets, home offices, garage storage, pantries and more.",
       "foundingDate": "2012",
       "telephone": "+1-629-298-8241",
@@ -69,7 +69,7 @@
       "@type": "LocalBusiness",
       "@id": "https://nationalclosetco.com/#localbusiness",
       "name": "National Closet Company",
-      "image": "https://nationalclosetco.com/og-image.jpg",
+      "image": "https://nationalclosetco.com/img/hero-closet.webp",
       "url": "https://nationalclosetco.com/",
       "telephone": "+1-629-298-8241",
       "email": "hello@nationalclosetco.com",
@@ -202,7 +202,9 @@
 
 <!-- ================= HERO ================= -->
 <section class="hero">
-  <div class="hero__grid-lines" aria-hidden="true"></div>
+  <div class="hero__bg" aria-hidden="true">
+    <img src="/img/hero-closet.webp" alt="Luxury custom walk-in closet with island, warm wood and white cabinetry by National Closet Company" width="1024" height="1024" fetchpriority="high" />
+  </div>
   <div class="wrap">
     <div class="hero__inner">
       <div class="hero__copy">
@@ -226,12 +228,51 @@
         </div>
       </div>
 
-      <div class="hero__visual" data-reveal>
-        <div class="hero__photo">
-          <img src="https://images.unsplash.com/photo-1558997519-83ea9252edf8?auto=format&fit=crop&w=1000&q=80" alt="Custom walk-in closet system with organized hanging clothes, shelves and drawers by National Closet Company" loading="eager" width="1000" height="1250" />
+      <div class="hero__form" data-reveal>
+        <div class="form-card">
+          <form data-lead novalidate>
+            <span class="hero__form-tag">⚡ Free · No obligation</span>
+            <h2 class="h3" style="margin:.3rem 0 1.1rem">Get your free 3D design</h2>
+            <div class="form-grid">
+              <div class="field">
+                <label for="h-name">Full name</label>
+                <input id="h-name" name="name" type="text" autocomplete="name" placeholder="Jane Doe" required />
+              </div>
+              <div class="field--row">
+                <div class="field">
+                  <label for="h-phone">Phone / text</label>
+                  <input id="h-phone" name="phone" type="tel" autocomplete="tel" placeholder="(629) 298-8241" required />
+                </div>
+                <div class="field">
+                  <label for="h-project">Project</label>
+                  <select id="h-project" name="project" required>
+                    <option value="" disabled selected>Choose…</option>
+                    <option>Walk-In Closet</option>
+                    <option>Reach-In Closet</option>
+                    <option>Home Office</option>
+                    <option>Garage Storage</option>
+                    <option>Pantry</option>
+                    <option>Laundry / Mudroom</option>
+                    <option>Murphy / Wall Bed</option>
+                    <option>Media / Wall Unit</option>
+                    <option>Multiple Spaces</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="h-email">Email</label>
+                <input id="h-email" name="email" type="email" autocomplete="email" placeholder="you@email.com" required />
+              </div>
+              <button class="btn btn--primary btn--block" type="submit">Book My Free Consultation <span class="arr">→</span></button>
+              <p class="form-note">🔒 No spam — just your free design. Or call/text <a href="tel:+16292988241" style="color:var(--clay-deep);font-weight:700">629-298-8241</a>.</p>
+            </div>
+          </form>
+          <div class="form-success" role="status" aria-live="polite">
+            <div class="check">✓</div>
+            <h3 class="h3">You're all set!</h3>
+            <p class="muted" style="margin-top:.5rem">A National Closet Company designer will reach out within one business day to book your free 3D design.</p>
+          </div>
         </div>
-        <div class="hero__chip hero__chip--1"><span class="big">1&nbsp;Day</span> typical install</div>
-        <div class="hero__chip hero__chip--2"><span class="big">100%</span> free design</div>
       </div>
     </div>
   </div>
@@ -273,49 +314,75 @@
 
     <div class="svc-grid">
       <a class="svc" href="#consult" data-reveal>
-        <h3>Custom Walk-In Closets</h3>
-        <p class="svc__desc">Boutique-style walk-in closets with islands, lighting, glass-front drawers and display shelving.</p>
-        <span class="svc__arrow">→</span>
+        <span class="svc__img"><img src="/img/svc-walkin.webp" alt="Custom walk-in closet with island and organized shelving" loading="lazy" width="800" height="500" /></span>
+        <span class="svc__body">
+          <h3>Custom Walk-In Closets</h3>
+          <p class="svc__desc">Boutique-style walk-in closets with islands, lighting, glass-front drawers and display shelving.</p>
+          <span class="svc__arrow">→</span>
+        </span>
       </a>
       <a class="svc" href="#consult" data-reveal data-delay="1">
-        <h3>Reach-In Closet Systems</h3>
-        <p class="svc__desc">Double-hang, shelving and drawers that triple the usable space of a standard reach-in closet.</p>
-        <span class="svc__arrow">→</span>
+        <span class="svc__img"><img src="/img/svc-reachin.webp" alt="Custom reach-in closet system with double-hang rods, shelves and drawers" loading="lazy" width="800" height="500" /></span>
+        <span class="svc__body">
+          <h3>Reach-In Closet Systems</h3>
+          <p class="svc__desc">Double-hang, shelving and drawers that triple the usable space of a standard reach-in closet.</p>
+          <span class="svc__arrow">→</span>
+        </span>
       </a>
       <a class="svc" href="#consult" data-reveal data-delay="2">
-        <h3>Home Offices</h3>
-        <p class="svc__desc">Built-in desks, file storage and shelving that turn any room into a focused, beautiful workspace.</p>
-        <span class="svc__arrow">→</span>
+        <span class="svc__img"><img src="/img/svc-office.webp" alt="Custom home office with built-in cabinetry and floating desk" loading="lazy" width="800" height="500" /></span>
+        <span class="svc__body">
+          <h3>Home Offices</h3>
+          <p class="svc__desc">Built-in desks, file storage and shelving that turn any room into a focused, beautiful workspace.</p>
+          <span class="svc__arrow">→</span>
+        </span>
       </a>
       <a class="svc" href="#consult" data-reveal>
-        <h3>Garage Storage</h3>
-        <p class="svc__desc">Durable cabinets, overhead racks, slatwall and workbenches that reclaim your garage floor.</p>
-        <span class="svc__arrow">→</span>
+        <span class="svc__img"><img src="/img/svc-garage.webp" alt="Custom garage storage system with cabinets, slatwall and overhead racks" loading="lazy" width="800" height="500" /></span>
+        <span class="svc__body">
+          <h3>Garage Storage</h3>
+          <p class="svc__desc">Durable cabinets, overhead racks, slatwall and workbenches that reclaim your garage floor.</p>
+          <span class="svc__arrow">→</span>
+        </span>
       </a>
       <a class="svc" href="#consult" data-reveal data-delay="1">
-        <h3>Custom Pantries</h3>
-        <p class="svc__desc">Pull-outs, deep drawers and adjustable shelving that make every ingredient easy to find.</p>
-        <span class="svc__arrow">→</span>
+        <span class="svc__img"><img src="/img/svc-pantry.webp" alt="Custom kitchen pantry with adjustable shelving and pull-out drawers" loading="lazy" width="800" height="500" /></span>
+        <span class="svc__body">
+          <h3>Custom Pantries</h3>
+          <p class="svc__desc">Pull-outs, deep drawers and adjustable shelving that make every ingredient easy to find.</p>
+          <span class="svc__arrow">→</span>
+        </span>
       </a>
       <a class="svc" href="#consult" data-reveal data-delay="2">
-        <h3>Laundry &amp; Mudrooms</h3>
-        <p class="svc__desc">Folding counters, hampers, lockers and hooks that keep the busiest rooms in order.</p>
-        <span class="svc__arrow">→</span>
+        <span class="svc__img"><img src="/img/svc-laundry.webp" alt="Custom laundry room and mudroom with cabinetry, folding counter and hooks" loading="lazy" width="800" height="500" /></span>
+        <span class="svc__body">
+          <h3>Laundry &amp; Mudrooms</h3>
+          <p class="svc__desc">Folding counters, hampers, lockers and hooks that keep the busiest rooms in order.</p>
+          <span class="svc__arrow">→</span>
+        </span>
       </a>
       <a class="svc" href="#consult" data-reveal>
-        <h3>Wall Beds &amp; Murphy Beds</h3>
-        <p class="svc__desc">Space-saving wall beds with integrated storage that turn a guest room into a multitasking space.</p>
-        <span class="svc__arrow">→</span>
+        <span class="svc__img"><img src="/img/svc-murphy.webp" alt="Wall bed Murphy bed integrated into custom cabinetry in a guest room" loading="lazy" width="800" height="500" /></span>
+        <span class="svc__body">
+          <h3>Wall Beds &amp; Murphy Beds</h3>
+          <p class="svc__desc">Space-saving wall beds with integrated storage that turn a guest room into a multitasking space.</p>
+          <span class="svc__arrow">→</span>
+        </span>
       </a>
       <a class="svc" href="#consult" data-reveal data-delay="1">
-        <h3>Media &amp; Wall Units</h3>
-        <p class="svc__desc">Entertainment centers, bookcases and wall units built to frame your space and hide the clutter.</p>
-        <span class="svc__arrow">→</span>
+        <span class="svc__img"><img src="/img/svc-media.webp" alt="Custom built-in media center and wall unit around a mounted TV" loading="lazy" width="800" height="500" /></span>
+        <span class="svc__body">
+          <h3>Media &amp; Wall Units</h3>
+          <p class="svc__desc">Entertainment centers, bookcases and wall units built to frame your space and hide the clutter.</p>
+          <span class="svc__arrow">→</span>
+        </span>
       </a>
-      <a class="svc" href="#consult" data-reveal data-delay="2" style="background:var(--ink);color:var(--paper)">
-        <h3>See it all in 3D</h3>
-        <p class="svc__desc" style="color:#c7c2b8">Book a free consultation and watch your space come to life in a photorealistic 3D design.</p>
-        <span class="svc__arrow" style="background:var(--clay);color:#fff;border-color:var(--clay)">→</span>
+      <a class="svc svc--cta" href="#consult" data-reveal data-delay="2">
+        <span class="svc__body">
+          <h3>See it all in 3D</h3>
+          <p class="svc__desc">Book a free consultation and watch your space come to life in a photorealistic 3D design.</p>
+          <span class="svc__arrow">→</span>
+        </span>
       </a>
     </div>
   </div>
@@ -350,7 +417,7 @@
   <div class="wrap">
     <div class="split">
       <div class="split__media" data-reveal>
-        <img src="https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=1100&q=80" alt="Organized custom closet system with neatly folded clothing on adjustable shelving" loading="lazy" width="1100" height="880" />
+        <img src="/img/svc-walkin.webp" alt="Organized custom closet system with island, neatly folded clothing and adjustable shelving" loading="lazy" width="1024" height="1024" />
       </div>
       <div data-reveal data-delay="1">
         <span class="eyebrow">Custom closets</span>
@@ -428,23 +495,23 @@
 
     <div class="gallery">
       <a class="gal gal--wide" href="#consult" data-reveal>
-        <img src="https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&w=1200&q=80" alt="Modern white custom closet system with open shelving and hanging space" loading="lazy" />
+        <img src="/img/feat-island.webp" alt="Modern white custom closet system with open shelving and hanging space" loading="lazy" />
         <span class="gal__cap">Boutique Walk-In <span>→</span></span>
       </a>
       <a class="gal" href="#consult" data-reveal data-delay="1">
-        <img src="https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=800&q=80" alt="Reach-in closet with double-hang rods and folded sweaters" loading="lazy" />
+        <img src="/img/svc-reachin.webp" alt="Reach-in closet with double-hang rods and folded sweaters" loading="lazy" />
         <span class="gal__cap">Reach-In System <span>→</span></span>
       </a>
       <a class="gal" href="#consult" data-reveal data-delay="2">
-        <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80" alt="Bright custom home office with built-in cabinetry and desk" loading="lazy" />
+        <img src="/img/svc-office.webp" alt="Bright custom home office with built-in cabinetry and desk" loading="lazy" />
         <span class="gal__cap">Home Office <span>→</span></span>
       </a>
       <a class="gal" href="#consult" data-reveal>
-        <img src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=800&q=80" alt="Custom built-in wall unit and media center in a modern living room" loading="lazy" />
+        <img src="/img/svc-media.webp" alt="Custom built-in wall unit and media center in a modern living room" loading="lazy" />
         <span class="gal__cap">Media Wall Unit <span>→</span></span>
       </a>
       <a class="gal gal--wide" href="#consult" data-reveal data-delay="1">
-        <img src="https://images.unsplash.com/photo-1600210492493-0946911123ea?auto=format&fit=crop&w=1200&q=80" alt="Custom pantry with deep drawers and organized shelving in a modern kitchen" loading="lazy" />
+        <img src="/img/svc-pantry.webp" alt="Custom pantry with deep drawers and organized shelving in a modern kitchen" loading="lazy" />
         <span class="gal__cap">Chef's Pantry <span>→</span></span>
       </a>
     </div>
@@ -459,7 +526,7 @@
   <div class="wrap">
     <div class="split split--rev">
       <div class="split__media" data-reveal>
-        <img src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=1100&q=80" alt="Organized garage storage system with cabinets, shelving and workbench" loading="lazy" width="1100" height="880" />
+        <img src="/img/svc-garage.webp" alt="Organized garage storage system with cabinets, shelving and workbench" loading="lazy" width="1100" height="880" />
       </div>
       <div data-reveal data-delay="1">
         <span class="eyebrow">Beyond the bedroom</span>
@@ -633,7 +700,7 @@
 
     <div class="post-grid">
       <a class="post-card" href="/blog/walk-in-closet-design-ideas.html" data-reveal>
-        <div class="post-card__img"><img src="https://images.unsplash.com/photo-1558997519-83ea9252edf8?auto=format&fit=crop&w=800&q=80" alt="Luxury walk-in closet design idea with island and lighting" loading="lazy" /></div>
+        <div class="post-card__img"><img src="/img/svc-walkin.webp" alt="Luxury walk-in closet design idea with island and lighting" loading="lazy" /></div>
         <div class="post-card__body">
           <span class="tag">Walk-In Closets</span>
           <h3>9 Walk-In Closet Design Ideas That Feel Like a Boutique</h3>
@@ -642,7 +709,7 @@
         </div>
       </a>
       <a class="post-card" href="/blog/maximize-small-reach-in-closet.html" data-reveal data-delay="1">
-        <div class="post-card__img"><img src="https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=800&q=80" alt="Small reach-in closet maximized with a custom closet system" loading="lazy" /></div>
+        <div class="post-card__img"><img src="/img/svc-reachin.webp" alt="Small reach-in closet maximized with a custom closet system" loading="lazy" /></div>
         <div class="post-card__body">
           <span class="tag">Reach-In Systems</span>
           <h3>How to Triple the Space in a Small Reach-In Closet</h3>
@@ -651,7 +718,7 @@
         </div>
       </a>
       <a class="post-card" href="/blog/garage-storage-systems-guide.html" data-reveal data-delay="2">
-        <div class="post-card__img"><img src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=800&q=80" alt="Custom garage storage system with cabinets and overhead racks" loading="lazy" /></div>
+        <div class="post-card__img"><img src="/img/svc-garage.webp" alt="Custom garage storage system with cabinets and overhead racks" loading="lazy" /></div>
         <div class="post-card__body">
           <span class="tag">Garage Storage</span>
           <h3>The Complete Guide to Custom Garage Storage Systems</h3>

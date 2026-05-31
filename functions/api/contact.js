@@ -157,7 +157,11 @@ https://nationalclosetco.com/crm/
   // their lead was captured (it was) regardless of email delivery.
   // We set Reply-To to the customer's email so hitting "Reply" in the admin
   // mailbox responds directly to the lead.
+  // Send the internal notification from a DISTINCT sender (not hello@) so it is
+  // not a self-addressed message (from == to), which receivers commonly junk.
+  // Reply-To stays the customer so hitting Reply answers the lead directly.
   await sendEmail(env, {
+    from: "National Closet Co. Website <notifications@nationalclosetco.com>",
     to: TO_ADDRESS,
     replyTo: email,
     subject,

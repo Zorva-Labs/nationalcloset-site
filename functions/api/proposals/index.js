@@ -32,24 +32,42 @@ export async function onRequestPost(context) {
   const token = genToken(16);
   const validDays = parseInt(body.valid_days || 30, 10);
   const validUntil = new Date(Date.now() + validDays * 86400 * 1000).toISOString().slice(0, 10);
-  // Load default proposal template
-  const tpl = body.template_id
-    ? await context.env.DB.prepare(`SELECT * FROM document_templates WHERE id=?1`).bind(body.template_id).first()
-    : await context.env.DB.prepare(`SELECT * FROM document_templates WHERE kind='proposal' AND is_default=1 ORDER BY id LIMIT 1`).first();
+  // Select the proposal template: by explicit id, by kind (subkind), or default.
+  let tpl = null;
+  if (body.template_id) {
+    tpl = await context.env.DB.prepare(`SELECT * FROM document_templates WHERE id=?1`).bind(body.template_id).first();
+  } else if (body.proposal_kind) {
+    tpl = await context.env.DB.prepare(`SELECT * FROM document_templates WHERE kind='proposal' AND subkind=?1 ORDER BY id LIMIT 1`).bind(body.proposal_kind).first();
+  }
+  if (!tpl) tpl = await context.env.DB.prepare(`SELECT * FROM document_templates WHERE kind='proposal' AND (is_default=1 OR subkind='custom') ORDER BY is_default DESC, id LIMIT 1`).first();
 
   const intro = body.intro || tpl?.intro || "Thank you for the opportunity to design your custom closets. Below are two options: Option 1 installs your new system with the walls left as-is, and Option 2 adds patching and fresh paint of the area where your old shelving or cabinets were, before we install. Pick the one that fits.";
-  const tierTitles = {
-    good:   tpl?.tier_good_title   || "Option 1 · Design & Install (walls as-is)",
-    better: tpl?.tier_better_title || "Option 2 · Design & Install + Wall Repair & Fresh Paint",
-  };
+
+  // Map the proposal kind to the contract type that should auto-attach on accept.
+  const kind = body.proposal_kind || tpl?.subkind || "custom";
+  const contractByKind = { custom: "custom_order", install_only: "install_only", repair: "repair" };
+  const defaultContractType = contractByKind[kind] || "custom_order";
+
+  // Build the tiers from whichever tier titles the template defines (good/better/best).
+  // BYO and repair templates define only one; custom defines two. Falls back to the
+  // two-option custom layout if a template has no titles at all.
+  const tierDefs = [
+    { key: "good",   title: tpl?.tier_good_title },
+    { key: "better", title: tpl?.tier_better_title },
+    { key: "best",   title: tpl?.tier_best_title },
+  ].filter((t) => t.title && String(t.title).trim());
+  const tiers = tierDefs.length ? tierDefs : [
+    { key: "good",   title: "Option 1 · Design & Install (walls as-is)" },
+    { key: "better", title: "Option 2 · Design & Install + Wall Repair & Fresh Paint" },
+  ];
 
   const r = await context.env.DB.prepare(
-    `INSERT INTO proposals (project_id, number, view_token, status, intro, notes_internal, valid_until, author_user_id)
-     VALUES (?1,?2,?3,'draft',?4,?5,?6,?7) RETURNING id`
-  ).bind(body.project_id, number, token, intro, body.notes_internal || null, validUntil, auth.id).first();
+    `INSERT INTO proposals (project_id, number, view_token, status, intro, notes_internal, valid_until, default_contract_type, author_user_id)
+     VALUES (?1,?2,?3,'draft',?4,?5,?6,?7,?8) RETURNING id`
+  ).bind(body.project_id, number, token, intro, body.notes_internal || null, validUntil, defaultContractType, auth.id).first();
 
-  for (const t of TIERS) {
-    await context.env.DB.prepare(`INSERT INTO proposal_tiers (proposal_id, tier, title) VALUES (?1,?2,?3)`).bind(r.id, t, tierTitles[t]).run();
+  for (const t of tiers) {
+    await context.env.DB.prepare(`INSERT INTO proposal_tiers (proposal_id, tier, title) VALUES (?1,?2,?3)`).bind(r.id, t.key, t.title).run();
   }
 
   // Tiers start empty — the admin adds closet line items from the catalog.

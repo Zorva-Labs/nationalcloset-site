@@ -739,8 +739,30 @@ async function newProposalFromWindows() {
   } catch (e) { SSCrm.toast(e.message, "error"); }
 }
 async function newProposal() {
-  try { const { id: nid } = await SSCrm.fetchJSON("/api/proposals", { method: "POST", body: JSON.stringify({ project_id: id }) }); location.href = "/crm/proposal.html?id=" + nid; }
+  const kind = await pickProposalKind();
+  if (!kind) return;
+  try { const { id: nid } = await SSCrm.fetchJSON("/api/proposals", { method: "POST", body: JSON.stringify({ project_id: id, proposal_kind: kind }) }); location.href = "/crm/proposal.html?id=" + nid; }
   catch (e) { SSCrm.toast(e.message, "error"); }
+}
+function pickProposalKind() {
+  return new Promise((resolve) => {
+    const bg = document.createElement("div");
+    bg.className = "modal-bg";
+    bg.innerHTML = `
+      <div class="modal" style="max-width:480px">
+        <div class="modal-head">New proposal — choose a type</div>
+        <div class="modal-body" style="display:grid;gap:10px">
+          <button class="btn secondary" data-k="custom" style="justify-content:flex-start;text-align:left;padding:12px 14px">🚪 Custom closet — 2 options (walls as-is / wall repair &amp; paint)</button>
+          <button class="btn secondary" data-k="install_only" style="justify-content:flex-start;text-align:left;padding:12px 14px">🔧 BYO install — customer-supplied closets</button>
+          <button class="btn secondary" data-k="repair" style="justify-content:flex-start;text-align:left;padding:12px 14px">🛠️ Repair / service</button>
+        </div>
+        <div class="modal-foot"><button class="btn ghost" data-cancel>Cancel</button></div>
+      </div>`;
+    document.body.appendChild(bg);
+    bg.querySelectorAll("[data-k]").forEach((b) => (b.onclick = () => { bg.remove(); resolve(b.dataset.k); }));
+    bg.querySelector("[data-cancel]").onclick = () => { bg.remove(); resolve(null); };
+    bg.addEventListener("click", (e) => { if (e.target === bg) { bg.remove(); resolve(null); } });
+  });
 }
 async function newContract() {
   // Ask which contract type

@@ -64,6 +64,7 @@ function render() {
       <div style="display:flex;gap:8px">
         ${isAccepted ? `<button class="btn success" onclick="convertToContract()">Convert to Contract →</button>` : ""}
         ${canSend ? `<button class="btn primary" onclick="sendProposal()">Send to customer</button>` : ""}
+        ${(p.status !== "draft" && p.status !== "accepted") ? `<button class="btn primary" onclick="resendProposal()">↻ Resend to customer</button>` : ""}
         ${p.status !== "draft" ? `<a class="btn secondary" href="${customerUrl}" target="_blank">Customer link ↗</a>` : ""}
         <button class="btn danger" onclick="del()">Delete</button>
       </div>
@@ -230,6 +231,11 @@ async function saveAll() {
 async function sendProposal() {
   if (!(await SSCrm.confirmDialog("Send this proposal to the customer?"))) return;
   try { await SSCrm.fetchJSON(`/api/proposals/${id}/send`, { method: "POST" }); SSCrm.toast("Proposal sent", "success"); state = await SSCrm.fetchJSON("/api/proposals/" + id); render(); }
+  catch (e) { SSCrm.toast(e.message, "error"); }
+}
+async function resendProposal() {
+  if (!(await SSCrm.confirmDialog(`Resend this proposal email to ${SSCrm.esc(state.proposal.contact_name || "the customer")}?`))) return;
+  try { await SSCrm.fetchJSON(`/api/proposals/${id}/send`, { method: "POST" }); SSCrm.toast("Proposal resent", "success"); state = await SSCrm.fetchJSON("/api/proposals/" + id); render(); }
   catch (e) { SSCrm.toast(e.message, "error"); }
 }
 // Convenience for the bottom-of-page action: persist pending edits to all

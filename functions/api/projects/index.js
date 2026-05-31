@@ -17,7 +17,22 @@ export async function onRequestGet(context) {
     return json({ counts });
   }
 
-  let sql = `SELECT p.*, c.name AS contact_name, c.email AS contact_email
+  // job_total_cents = the dollar value of the job, taken from its most
+  // authoritative contract (executed > signed > sent > latest draft).
+  let sql = `SELECT p.*,
+                    c.name  AS contact_name,
+                    c.email AS contact_email,
+                    c.phone AS contact_phone,
+                    c.address_city AS contact_city,
+                    (SELECT k.total_cents FROM contracts k
+                      WHERE k.project_id = p.id
+                      ORDER BY CASE k.status
+                                 WHEN 'fully_executed'    THEN 0
+                                 WHEN 'signed_by_customer' THEN 1
+                                 WHEN 'sent'              THEN 2
+                                 ELSE 3 END,
+                               datetime(k.created_at) DESC
+                      LIMIT 1) AS job_total_cents
              FROM projects p JOIN contacts c ON c.id = p.contact_id WHERE 1=1`;
   const binds = [];
   if (status) { binds.push(status); sql += ` AND p.status=?${binds.length}`; }

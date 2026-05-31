@@ -41,12 +41,18 @@ async function render() {
   const acceptedProposal = proposals.find((p) => p.status === "accepted");
   const sentContract = contracts.find((c) => c.status === "sent");
 
+  // Booking requires the DEPOSIT to be paid — a signed/executed contract alone
+  // is not a booked job. Until then the deal is still a lead in the proposal
+  // stage, and the next action is to collect the deposit.
+  const JOB_BOOKED = ["contracted", "scheduled_install", "installing", "completed"].includes(project.status);
+  const isSigned = !!(fullyExecuted || customerSigned);
+
   // What's the next best action? Drives the big CTA on the right.
   let bigCta = null;
-  if (fullyExecuted) {
-    bigCta = null; // Show celebration banner instead
-  } else if (customerSigned) {
-    bigCta = { label: "Counter-sign contract", href: `/crm/contract.html?id=${customerSigned.id}&action=countersign`, kind: "primary" };
+  if (JOB_BOOKED) {
+    bigCta = null; // booked — pipeline + action card drive next steps
+  } else if (isSigned) {
+    bigCta = { label: "Open deposit invoice", action: "switchTab('invoices')", kind: "primary" };
   } else if (sentContract) {
     bigCta = { label: "Contract sent — awaiting signature", href: `/crm/contract.html?id=${sentContract.id}`, kind: "secondary" };
   } else if (acceptedProposal) {
@@ -63,14 +69,24 @@ async function render() {
   const initialTab = new URLSearchParams(location.hash.slice(1)).get("tab") || "overview";
 
   document.getElementById("page").innerHTML = `
-    ${fullyExecuted ? `
+    ${fullyExecuted && JOB_BOOKED ? `
       <div class="banner banner--success">
         <div class="banner__icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
         <div class="banner__body">
           <strong>Job booked.</strong>
-          <span>Contract ${SSCrm.esc(fullyExecuted.number)} fully executed · ${SSCrm.fmtMoney(fullyExecuted.total_cents)}${fullyExecuted.deposit_paid ? " · Deposit received" : " · Deposit pending"}</span>
+          <span>Contract ${SSCrm.esc(fullyExecuted.number)} fully executed · ${SSCrm.fmtMoney(fullyExecuted.total_cents)}${fullyExecuted.deposit_paid ? " · Deposit received" : ""}</span>
+        </div>
+      </div>` : ""}
+    ${isSigned && !JOB_BOOKED ? `
+      <div class="banner" style="background:linear-gradient(135deg,#FEF3C7,#FFFBEB);border-color:#FDE68A;color:#92400E">
+        <div class="banner__icon" style="color:#B45309">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+        </div>
+        <div class="banner__body">
+          <strong>Contract signed — awaiting deposit.</strong>
+          <span>Still a lead in the proposal stage until the deposit is paid. <a href="#" onclick="switchTab('invoices');return false;" style="color:#B45309;font-weight:700">Open deposit invoice →</a></span>
         </div>
       </div>` : ""}
 

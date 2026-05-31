@@ -32,12 +32,18 @@
     .doc h1 em{font-style:normal;color:var(--color-brass)}
     .doc-intro{font-style:normal!important}
     .doc h2{font-weight:800!important;letter-spacing:-0.02em}
-    .doc h3{font-weight:700!important}
+    .doc h3{font-weight:800!important}
+    .doc :where(strong,b){font-weight:700}
     .doc-totals .r.deposit{color:var(--color-brass-hot)!important}
-    .doc-meta,.sign-box,.sched-box,.signed-box,.sched-day{border-radius:10px}
-    .sign-box{border-color:var(--color-line)!important;border-width:1.5px!important;border-top:4px solid var(--color-brass)!important}
-    .sign-btn{background:var(--color-brass)!important;color:#fff!important;border-radius:8px!important;text-transform:none!important;letter-spacing:.01em!important;font-weight:700!important;font-size:1rem!important}
-    .sign-btn:hover{background:var(--color-brass-hot)!important}
+    .doc-meta,.signed-box{border-radius:10px}
+    /* Make the signing block the clear focal point */
+    .sign-box{background:#fffdfb!important;border:2px solid var(--color-brass)!important;border-top:6px solid var(--color-brass)!important;border-radius:16px!important;padding:clamp(28px,4vw,46px)!important;box-shadow:0 34px 72px -34px rgba(210,104,63,.6)!important;scroll-margin-top:24px;margin-top:48px!important}
+    .sign-box h2{font-size:clamp(1.55rem,3.2vw,2rem)!important;font-weight:900!important;letter-spacing:-0.02em!important;margin:0 0 10px!important}
+    .sign-box .sig-field-label,.sign-box label span{font-weight:700!important;color:var(--color-ink)!important}
+    .sign-box .sig{border:1.5px solid var(--color-line)!important;border-radius:10px!important;overflow:hidden}
+    .sign-box .sig canvas{height:220px!important}
+    .sign-btn{background:var(--color-brass)!important;color:#fff!important;border-radius:10px!important;text-transform:none!important;letter-spacing:.01em!important;font-weight:800!important;font-size:1.2rem!important;padding:22px!important;margin-top:22px!important;box-shadow:0 16px 34px -12px rgba(210,104,63,.9)!important;transition:transform .2s,background .2s}
+    .sign-btn:hover{background:var(--color-brass-hot)!important;transform:translateY(-2px)}
     .sched-box{border-color:var(--color-brass)!important;border-width:1.5px!important}
     .sched-box button:not(.sig-bar button){background:var(--color-brass);color:#fff;border:0;border-radius:8px;font-family:var(--font-body);font-weight:700;font-size:.98rem;padding:13px 22px;cursor:pointer}
     .sched-box button:hover:not(.sig-bar button){background:var(--color-brass-hot)}
@@ -161,11 +167,10 @@ function render(k, lines) {
 
     ${isExecuted ? `
       <div class="signed-box">
-        <h2>Job is booked.</h2>
-        <p>Signed on ${formatDt(k.signed_by_customer_at)}. ${k.deposit_cents > 0 ? `Deposit due: <strong style="color:var(--color-champagne)">${money(k.deposit_cents)}</strong>` : "Payment due on completion."}</p>
-        <button onclick="window.print()" class="no-print" style="margin-top:18px;padding:12px 22px;background:var(--color-champagne);color:var(--color-ink);border:0;font:inherit;font-family:var(--font-mono);font-size:0.78rem;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer;font-weight:600">🖨 Print / Save PDF</button>
+        <h2>Your job is booked! 🎉</h2>
+        <p>Signed on ${formatDt(k.signed_by_customer_at)}.${k.deposit_cents > 0 ? ` Deposit due: <strong style="color:var(--color-champagne)">${money(k.deposit_cents)}</strong>.` : ""} Thank you! We'll reach out after we receive and process your order to coordinate the rest — nothing else is needed from you right now.</p>
+        <button onclick="window.print()" class="no-print" style="margin-top:18px;padding:13px 24px;background:var(--color-champagne);color:var(--color-ink);border:0;font:inherit;font-weight:700;font-size:0.9rem;border-radius:8px;cursor:pointer">🖨 Print / Save PDF</button>
       </div>
-      <div id="install-scheduler"></div>
     ` : isSigned ? `
       <div class="signed-box" style="background:var(--color-brass);color:var(--color-ink)">
         <h2 style="color:var(--color-ink)">Thank you — signed!</h2>
@@ -196,7 +201,6 @@ function render(k, lines) {
   `;
 
   if (!isSigned) wirePad();
-  if (isExecuted) loadInstallScheduler();
 }
 
 let pickedSlot = null;

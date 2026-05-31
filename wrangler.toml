@@ -17,7 +17,7 @@ STAFF_EMAIL = "hello@nationalclosetco.com"
 # Stripe publishable key is public (safe in client/source). Secret key +
 # webhook signing secret are encrypted Pages secrets (STRIPE_SECRET_KEY,
 # STRIPE_WEBHOOK_SECRET) — NOT here.
-STRIPE_PUBLISHABLE_KEY = "pk_test_51TdEk3Fp54lWWmFANs89GvyTSZ9rR1QAEIhloKASL2mD3ig96W8aoFmzYjTRvvx4BQohL5r2zrSXS0TPYR8cueLk001D4qIBW7"
+STRIPE_PUBLISHABLE_KEY = "pk_live_51TdEjnFwmijYgch1dzNcdPvBh4ecSA1sYWmRKBSJt3ORYjemAodChYzNYqsL48DCAJv480dzo9xEZsdSzBkr8Mdb00zWlgeHeN"
 
 # D1 binding used by the Pages Functions in /functions/api/*
 [[d1_databases]]

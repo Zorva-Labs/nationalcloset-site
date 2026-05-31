@@ -2,6 +2,19 @@ name = "nationalcloset"
 compatibility_date = "2026-05-24"
 pages_build_output_dir = "."
 
+# Non-secret env vars MUST live here: with a wrangler.toml present, each
+# `wrangler pages deploy` treats [vars] as authoritative and clears any
+# plain-text vars set in the dashboard/API. (Secrets are managed separately
+# and are NOT affected — RESEND_API_KEY, PURELYMAIL_PASSWORD, CRON_SECRET,
+# CALENDAR_FEED_TOKEN stay as encrypted secrets.)
+[vars]
+PURELYMAIL_USER = "hello@nationalclosetco.com"
+IMAP_HOST = "imap.purelymail.com"
+IMAP_PORT = "993"
+MAIL_FROM = "National Closet Company <hello@nationalclosetco.com>"
+MAIL_DEFAULT_REPLY = "hello@nationalclosetco.com"
+STAFF_EMAIL = "hello@nationalclosetco.com"
+
 # D1 binding used by the Pages Functions in /functions/api/*
 [[d1_databases]]
 binding = "DB"

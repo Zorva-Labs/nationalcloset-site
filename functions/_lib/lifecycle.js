@@ -10,8 +10,8 @@ const FALLBACK_TERMS = {
 };
 
 const FALLBACK_INTROS = {
-  custom_order: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the supply and installation of custom window treatments at the project address listed.",
-  install_only: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the professional installation of window treatments supplied by the customer at the project address listed.",
+  custom_order: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the supply and installation of custom closets and storage systems at the project address listed.",
+  install_only: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the professional installation of closets and storage systems supplied by the customer at the project address listed.",
   repair: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the repair service detailed in the scope of work below.",
 };
 
@@ -38,7 +38,7 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
 
   // Use the contract type the admin chose on the proposal builder
   // (defaults to 'custom_order' for proposals created before the column existed).
-  const validTypes = ["custom_order", "install_only", "repair"];
+  const validTypes = ["custom_order", "wallprep", "install_only", "repair"];
   const contractType = validTypes.includes(proposal.default_contract_type)
     ? proposal.default_contract_type
     : "custom_order";
@@ -48,6 +48,7 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
   const intro = tpl?.intro || FALLBACK_INTROS[contractType];
   const terms = tpl?.terms_html || FALLBACK_TERMS[contractType];
   const installWindow = tpl?.estimated_install_window || FALLBACK_WINDOWS[contractType];
+  const scopeHtml = (tpl?.scope_html || "");
 
   const year = new Date().getUTCFullYear();
   const seq = await nextSequence(db, `contract-${year}`);
@@ -63,7 +64,7 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
   ).bind(
     proposal.project_id, proposal.id, number, token, contractType, totalCents, depositCents,
     intro,
-    `<p>Per the accepted <strong>${tierKey}</strong> tier of proposal ${proposal.number}.</p>`,
+    scopeHtml + `<p>Per the accepted <strong>${tierKey}</strong> tier of proposal ${proposal.number}. See the itemized line items above.</p>`,
     terms,
     installWindow,
     actor?.kind === "admin" ? actor.id : null,

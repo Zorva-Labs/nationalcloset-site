@@ -60,7 +60,8 @@ function render() {
         </label>
         <label><span>Contract attached when customer accepts</span>
           <select id="contract-type">
-            <option value="custom_order"  ${(p.default_contract_type || "custom_order") === "custom_order" ? "selected" : ""}>Custom Order — we supply &amp; install (50% deposit, 2–6 wk lead)</option>
+            <option value="custom_order"  ${(p.default_contract_type || "custom_order") === "custom_order" ? "selected" : ""}>Design &amp; Install — walls as-is (no wall repair/paint)</option>
+            <option value="wallprep"      ${p.default_contract_type === "wallprep" ? "selected" : ""}>Design &amp; Install + Wall Repair &amp; Paint</option>
             <option value="install_only"  ${p.default_contract_type === "install_only" ? "selected" : ""}>Install Only — customer-supplied product (no deposit, due on completion)</option>
             <option value="repair"        ${p.default_contract_type === "repair" ? "selected" : ""}>Repair / Service Call (service-call fee + parts)</option>
           </select>

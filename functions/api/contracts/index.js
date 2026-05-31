@@ -5,7 +5,7 @@ import { recordActivity } from "../../_lib/db.js";
 const TERMS_BY_TYPE = {
   custom_order: `
 <h3>Materials &amp; Manufacture</h3>
-<p>All custom window treatments listed in this agreement are made-to-order. Manufacturer lead times typically run two to six weeks from order placement. We will keep you informed of any changes to the schedule.</p>
+<p>All custom closets and storage systems listed in this agreement are made-to-order. Manufacturer lead times typically run two to six weeks from order placement. We will keep you informed of any changes to the schedule.</p>
 
 <h3>Deposit &amp; Payment</h3>
 <p>A deposit of fifty percent (50%) of the total contract price is due at signing to release the order to our manufacturing partners. The balance is due at the completion of installation. We accept check, cash, ACH, Venmo, and Cash App. Card payments incur a 3% convenience fee.</p>
@@ -28,7 +28,7 @@ const TERMS_BY_TYPE = {
 
   install_only: `
 <h3>Scope of Service</h3>
-<p>This is an <strong>install-only</strong> agreement. National Closet Company will install window treatments that the customer has purchased separately from another retailer (e.g. Lowes, Home Depot, Costco, Blinds.com, IKEA, Amazon, manufacturer-direct, or builder leftovers). National Closet Company does <em>not</em> supply or warrant the products themselves — only the labor and workmanship of the installation.</p>
+<p>This is an <strong>install-only</strong> agreement. National Closet Company will install closets and storage systems that the customer has purchased separately from another retailer (e.g. Lowes, Home Depot, Costco, Blinds.com, IKEA, Amazon, manufacturer-direct, or builder leftovers). National Closet Company does <em>not</em> supply or warrant the products themselves — only the labor and workmanship of the installation.</p>
 
 <h3>Customer-Supplied Products</h3>
 <p>The customer is responsible for ordering the correct quantity, dimensions, mount type, and finishes. National Closet Company will verify dimensions against the openings before drilling. If a product is the wrong size, the customer is responsible for the return / re-order; a service-call fee will apply if National Closet Company must return after the corrected product arrives.</p>
@@ -54,7 +54,7 @@ const TERMS_BY_TYPE = {
 
   repair: `
 <h3>Scope of Service</h3>
-<p>This is a <strong>repair</strong> agreement. National Closet Company will repair existing window treatments at the customer's premises as itemized in the scope above. We service any brand — Hunter Douglas, Norman, Somfy, Graber, Levolor, Bali, Lutron, Hampton Bay, builder-grade — and stock common parts on the truck.</p>
+<p>This is a <strong>repair</strong> agreement. National Closet Company will repair existing closets and storage systems at the customer's premises as itemized in the scope above. We service any brand — Hunter Douglas, Norman, Somfy, Graber, Levolor, Bali, Lutron, Hampton Bay, builder-grade — and stock common parts on the truck.</p>
 
 <h3>Payment</h3>
 <p>Payment is due upon completion of the repair visit. The service-call fee covers the trip and the first 30 minutes of work; additional time and parts are itemized separately. We accept check, cash, ACH, Venmo, and Cash App.</p>
@@ -108,7 +108,7 @@ export async function onRequestPost(context) {
     }
   }
 
-  const contractType = ["custom_order", "install_only", "repair", "service_call"].includes(body.contract_type) ? body.contract_type : "custom_order";
+  const contractType = ["custom_order", "wallprep", "install_only", "repair", "service_call"].includes(body.contract_type) ? body.contract_type : "custom_order";
 
   // Deposit rules differ by type
   let depositCents;
@@ -122,7 +122,7 @@ export async function onRequestPost(context) {
 
   // Load the default template for this contract type from the editable document_templates table.
   // Fall back to the hardcoded constant if the template was deleted.
-  let tplIntro, tplTerms, tplWindow;
+  let tplIntro, tplTerms, tplWindow, tplScope = "";
   const tpl = body.template_id
     ? await context.env.DB.prepare(`SELECT * FROM document_templates WHERE id=?1`).bind(body.template_id).first()
     : await context.env.DB.prepare(`SELECT * FROM document_templates WHERE kind='contract' AND subkind=?1 AND is_default=1 ORDER BY id LIMIT 1`).bind(contractType).first();
@@ -130,10 +130,11 @@ export async function onRequestPost(context) {
     tplIntro = tpl.intro;
     tplTerms = tpl.terms_html;
     tplWindow = tpl.estimated_install_window;
+    tplScope = tpl.scope_html || "";
   } else {
     const fallbacks = {
-      custom_order:   { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the supply and installation of custom window treatments at the project address listed.", window: "Weeks 4–6 from contract execution" },
-      install_only:   { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the professional installation of window treatments supplied by the customer at the project address listed.", window: "Scheduled within 1–2 weeks of customer-supplied products arriving on site" },
+      custom_order:   { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the supply and installation of custom closets and storage systems at the project address listed.", window: "Weeks 4–6 from contract execution" },
+      install_only:   { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the professional installation of closets and storage systems supplied by the customer at the project address listed.", window: "Scheduled within 1–2 weeks of customer-supplied products arriving on site" },
       repair:         { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the repair service detailed in the scope of work below.", window: "Single visit, typically within 1 week" },
       service_call:   { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the service call detailed below.", window: "Single visit, scheduled at signing" },
     };
@@ -152,7 +153,7 @@ export async function onRequestPost(context) {
     body.proposal_id || null,
     number, token, contractType, totalCents, depositCents,
     body.intro || tplIntro,
-    body.scope_html || "",
+    body.scope_html || tplScope || "",
     body.terms_html || tplTerms,
     body.estimated_install_window || tplWindow,
     auth.id,

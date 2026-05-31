@@ -23,9 +23,9 @@ export async function onRequestPost(context) {
       title: "Your proposal is ready to review.",
       body: `
         <p>Hi ${escapeHtml(p.contact_name.split(" ")[0])},</p>
-        <p>Here's the proposal for <strong>${escapeHtml(p.project_name)}</strong>. We've laid out three options — pick the one that fits, or write back with questions.</p>
+        <p>Here's your proposal for <strong>${escapeHtml(p.project_name)}</strong>.</p>
         ${p.intro ? `<p style="border-left:3px solid #D2683F;padding-left:14px;color:#3A362F;font-style:italic">${escapeHtml(p.intro)}</p>` : ""}
-        <p>Open the proposal online to compare tiers side-by-side.</p>
+        <p>Open it online to review the full details and accept the option that fits — or just reply to this email with any questions.</p>
       `,
       ctaLabel: "Open Your Proposal",
       ctaUrl: url,

@@ -365,6 +365,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .field textarea { min-height: 110px; resize: vertical; }
 .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--clay); box-shadow: 0 0 0 3px var(--clay-wash); background: #fff; }
 .field--row { display: grid; gap: 1rem; }
+.field--csz { display: grid; gap: 1rem; grid-template-columns: 1.6fr 0.7fr 1fr; }
 .form-note { font-size: 0.82rem; color: var(--muted); display: flex; align-items: center; gap: 0.5rem; }
 .form-success { display: none; text-align: center; padding: 1rem; }
 .form-success.show { display: block; animation: fadeUp .5s var(--ease); }

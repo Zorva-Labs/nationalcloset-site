@@ -121,6 +121,9 @@
         phone: (fd.get("phone") || "").toString(),
         email: (fd.get("email") || "").toString(),
         interest: (fd.get("project") || "").toString(),
+        address_street: (fd.get("street") || "").toString(),
+        address_city: (fd.get("city") || "").toString(),
+        address_state: (fd.get("state") || "").toString(),
         address_zip: (fd.get("zip") || "").toString(),
         message: (fd.get("msg") || "").toString(),
         company: (fd.get("company") || "").toString(), // honeypot

@@ -26,7 +26,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <link rel="icon" type="image/png" href="/img/ncc-logo-nc.png" />
 <link rel="apple-touch-icon" href="/img/ncc-logo-nc.png" />
-<link rel="stylesheet" href="/css/styles.css?v=ncc3" />
+<link rel="stylesheet" href="/css/styles.css?v=ncc4" />
 
 <!-- ============ JSON-LD: Organization + LocalBusiness + WebSite ============ -->
 <script type="application/ld+json">
@@ -260,7 +260,7 @@
 
       <div class="hero__form" data-reveal>
         <div class="form-card">
-          <form data-lead novalidate>
+          <form data-lead>
             <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden"><label>Company<input type="text" name="company" tabindex="-1" autocomplete="off" /></label></div>
             <span class="hero__form-tag">⚡ Free · No obligation</span>
             <h2 class="h3" style="margin:.3rem 0 1.1rem">Get your free design</h2>
@@ -293,6 +293,24 @@
               <div class="field">
                 <label for="h-email">Email</label>
                 <input id="h-email" name="email" type="email" autocomplete="email" placeholder="you@email.com" required />
+              </div>
+              <div class="field">
+                <label for="h-street">Service address</label>
+                <input id="h-street" name="street" type="text" autocomplete="address-line1" placeholder="123 Main St" required />
+              </div>
+              <div class="field--csz">
+                <div class="field">
+                  <label for="h-city">City</label>
+                  <input id="h-city" name="city" type="text" autocomplete="address-level2" placeholder="Nashville" required />
+                </div>
+                <div class="field">
+                  <label for="h-state">State</label>
+                  <input id="h-state" name="state" type="text" autocomplete="address-level1" placeholder="TN" maxlength="2" required />
+                </div>
+                <div class="field">
+                  <label for="h-zip">ZIP</label>
+                  <input id="h-zip" name="zip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="37203" required />
+                </div>
               </div>
               <div class="field">
                 <label for="h-msg">Tell us about your space <span style="text-transform:none;font-weight:500;color:var(--muted)">(optional)</span></label>
@@ -684,7 +702,7 @@
       </div>
 
       <div class="form-card" data-reveal data-delay="1">
-        <form data-lead novalidate>
+        <form data-lead>
             <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden"><label>Company<input type="text" name="company" tabindex="-1" autocomplete="off" /></label></div>
           <h3 class="h3" style="margin-bottom:1.2rem">Claim your free design</h3>
           <div class="form-grid">
@@ -701,6 +719,20 @@
             <div class="field">
               <label for="email">Email</label>
               <input id="email" name="email" type="email" autocomplete="email" placeholder="you@email.com" required />
+            </div>
+            <div class="field">
+              <label for="street">Service address</label>
+              <input id="street" name="street" type="text" autocomplete="address-line1" placeholder="123 Main St" required />
+            </div>
+            <div class="field--row">
+              <div class="field">
+                <label for="city">City</label>
+                <input id="city" name="city" type="text" autocomplete="address-level2" placeholder="Nashville" required />
+              </div>
+              <div class="field">
+                <label for="state">State</label>
+                <input id="state" name="state" type="text" autocomplete="address-level1" placeholder="TN" maxlength="2" required />
+              </div>
             </div>
             <div class="field--row">
               <div class="field">
@@ -843,6 +875,6 @@
   <a class="quote" href="#consult">✨ Free Design</a>
 </div>
 
-<script src="/js/main.js?v=ncc3" defer></script>
+<script src="/js/main.js?v=ncc4" defer></script>
 </body>
 </html>

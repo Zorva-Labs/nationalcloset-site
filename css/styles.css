@@ -330,6 +330,22 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .faq__a { max-height: 0; overflow: hidden; transition: max-height .4s var(--ease); }
 .faq__a-inner { padding: 0 0.2rem 1.5rem; color: var(--ink-soft); max-width: 75ch; line-height: 1.6; }
 
+/* ---------- Not-a-franchise band ---------- */
+.nofran { display: grid; gap: 2.2rem; align-items: center; }
+.nofran__chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1.4rem 0 1.7rem; }
+.nofran__chip { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 700; font-size: 0.9rem; background: #fff; border: 1px solid var(--line); border-radius: 100px; padding: 0.55rem 0.95rem; }
+.nofran__chip::before { font-weight: 900; }
+.nofran__chip--no::before { content: "✗"; color: var(--clay-deep); }
+.nofran__chip--yes::before { content: "✓"; color: #2f7d4f; }
+.nofran__badge { display: grid; place-items: center; }
+.stamp { position: relative; width: min(64vw, 250px); aspect-ratio: 1; display: grid; place-items: center; }
+.stamp__svg { position: absolute; inset: 0; width: 100%; height: 100%; animation: spin 22s linear infinite; }
+.stamp__svg text { font-family: var(--display); font-weight: 700; font-size: 13.5px; letter-spacing: 1.5px; fill: var(--ink); text-transform: uppercase; }
+.stamp__center { width: 56%; aspect-ratio: 1; border-radius: 50%; background: var(--clay); color: #fff; display: grid; place-items: center; text-align: center; font-family: var(--display); font-weight: 800; font-size: 1rem; line-height: 1.04; letter-spacing: 0.01em; box-shadow: 0 18px 34px -16px rgba(210,104,63,.85); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .stamp__svg { animation: none; } }
+@media (min-width: 940px) { .nofran { grid-template-columns: 1.4fr 0.9fr; gap: 3.5rem; } }
+
 /* ---------- Quote / CTA band ---------- */
 .cta-band { position: relative; overflow: hidden; }
 .cta-band__inner { position: relative; z-index: 1; display: grid; gap: 1.6rem; text-align: center; place-items: center; }

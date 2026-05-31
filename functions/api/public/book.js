@@ -109,7 +109,7 @@ export async function onRequestPost(context) {
       body: `
         <p>Hi ${escapeHtml(body.name.split(" ")[0])},</p>
         <p>Your free in-home consultation with National Closet Company is booked for:</p>
-        <p style="font-size:18px;color:#14110D;font-weight:600;margin:14px 0">${escapeHtml(fmtPretty(startAt))}</p>
+        <p style="font-size:18px;color:#16140F;font-weight:600;margin:14px 0">${escapeHtml(fmtPretty(startAt))}</p>
         ${body.address ? `<p>We'll come to:<br/><strong>${escapeHtml(formatAddress(body.address))}</strong></p>` : ""}
         ${body.rooms ? `<p><strong>Rooms / scope:</strong> ${escapeHtml(body.rooms)}</p>` : ""}
         <p>We'll bring samples, measure every window, and leave you with a written quote on the visit — no obligation. The whole visit usually takes 45–75 minutes depending on window count.</p>

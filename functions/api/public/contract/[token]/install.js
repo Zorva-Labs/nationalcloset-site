@@ -120,7 +120,7 @@ export async function onRequestPost(context) {
       body: `
         <p>Hi ${escapeHtml(k.contact_name.split(" ")[0])},</p>
         <p>Your install for contract <strong>${escapeHtml(k.number)}</strong> is scheduled:</p>
-        <p style="font-size:18px;color:#14110D;font-weight:600;margin:14px 0">${escapeHtml(fmtPretty(startAt))}</p>
+        <p style="font-size:18px;color:#16140F;font-weight:600;margin:14px 0">${escapeHtml(fmtPretty(startAt))}</p>
         ${k.site_address ? `<p>We'll be at:<br/><strong>${escapeHtml(k.site_address)}</strong></p>` : ""}
         <p>Plan for the team to be on site about ${Math.round(dur/60)} hour${dur >= 90 ? "s" : ""}. We'll arrive with drop cloths and tools, install every window, demo each motor or mechanism, and not leave until you're satisfied with the work.</p>
         <p>If anything changes, you can <a href="${SITE_URL}/book/?cancel=${cancelToken}">reschedule or cancel here</a>, or call/text us at <a href="tel:+16292988241">629-298-8241</a>.</p>

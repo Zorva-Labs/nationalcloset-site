@@ -24,7 +24,7 @@ export async function onRequestPost(context) {
       body: `
         <p>Hi ${escapeHtml(p.contact_name.split(" ")[0])},</p>
         <p>Here's the proposal for <strong>${escapeHtml(p.project_name)}</strong>. We've laid out three options — pick the one that fits, or write back with questions.</p>
-        ${p.intro ? `<p style="border-left:3px solid #9D7A3E;padding-left:14px;color:#56493C;font-style:italic">${escapeHtml(p.intro)}</p>` : ""}
+        ${p.intro ? `<p style="border-left:3px solid #D2683F;padding-left:14px;color:#3A362F;font-style:italic">${escapeHtml(p.intro)}</p>` : ""}
         <p>Open the proposal online to compare tiers side-by-side.</p>
       `,
       ctaLabel: "Open Your Proposal",

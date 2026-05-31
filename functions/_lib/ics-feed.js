@@ -67,7 +67,7 @@ export function buildAppointmentFeed(appointments) {
     "X-WR-CALDESC:Live feed of consultations, measures, installs, and service calls",
     "X-WR-TIMEZONE:America/Chicago",
     // Refresh hints (Apple-specific properties — iPhone reads these)
-    "X-APPLE-CALENDAR-COLOR:#9D7A3E",
+    "X-APPLE-CALENDAR-COLOR:#D2683F",
     "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
     "X-PUBLISHED-TTL:PT1H",
     // VTIMEZONE_CHICAGO is multi-line; splat so each line is folded individually

@@ -126,14 +126,17 @@ function stripHtml(html) {
 // Shared branded HTML shell
 // --------------------------------------------------------------
 const BRAND = {
-  espresso: "#14110D",
-  bg: "#F7F2EA",
-  bg2: "#EFE8DB",
-  brass: "#9D7A3E",
-  champagne: "#D4B896",
-  ink: "#14110D",
-  inkSoft: "#56493C",
-  line: "#D9CFBB",
+  espresso: "#16140F",   // charcoal (site --ink)
+  bg: "#FAF9F6",         // paper
+  bg2: "#EDECE8",        // fog
+  brass: "#D2683F",      // terracotta accent (site --clay)
+  brassDeep: "#B9542F",  // terracotta hover (site --clay-deep)
+  champagne: "#F6E6DF",  // clay-wash
+  ink: "#16140F",
+  inkSoft: "#3A362F",
+  muted: "#6C665B",
+  line: "#E3E1DC",
+  logo: "https://nationalclosetco.com/img/ncc-logo-nc.png",
 };
 
 export function brandedEmail({ title, preheader, body, ctaLabel, ctaUrl, footer }) {
@@ -144,28 +147,32 @@ export function brandedEmail({ title, preheader, body, ctaLabel, ctaUrl, footer 
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>${escapeHtml(title)}</title>
 <style>
-  body { margin:0; padding:0; background:${BRAND.bg}; font-family: 'Helvetica Neue', Arial, sans-serif; color:${BRAND.ink}; }
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+  body { margin:0; padding:0; background:${BRAND.bg}; font-family:'Montserrat','Helvetica Neue',Arial,sans-serif; color:${BRAND.ink}; -webkit-font-smoothing:antialiased; }
   .wrap { max-width:600px; margin:0 auto; padding:32px 20px; }
-  .card { background:#fff; border:1px solid ${BRAND.line}; border-top:3px solid ${BRAND.brass}; padding:36px 32px; }
-  .brand { font-family: Georgia, 'Times New Roman', serif; font-size:14px; letter-spacing:0.3em; color:${BRAND.brass}; text-transform:uppercase; margin-bottom:8px; }
-  h1 { font-family: Georgia, 'Times New Roman', serif; font-weight:400; font-size:28px; line-height:1.15; margin:0 0 18px; color:${BRAND.espresso}; }
-  p { font-size:15px; line-height:1.6; color:${BRAND.inkSoft}; margin:0 0 14px; }
-  .cta { display:inline-block; background:${BRAND.espresso}; color:#fff !important; padding:14px 28px; text-decoration:none; font-size:13px; letter-spacing:0.18em; text-transform:uppercase; margin:18px 0 6px; }
-  .footer { text-align:center; font-size:12px; color:${BRAND.inkSoft}; margin-top:24px; line-height:1.6; }
-  .footer a { color:${BRAND.brass}; }
+  .logo-wrap { text-align:center; padding:8px 0 22px; }
+  .logo-wrap img { height:38px; width:auto; }
+  .card { background:#ffffff; border:1px solid ${BRAND.line}; border-top:4px solid ${BRAND.brass}; border-radius:10px; padding:38px 34px; }
+  .brand { font-family:'Montserrat','Helvetica Neue',Arial,sans-serif; font-size:11px; font-weight:700; letter-spacing:0.22em; color:${BRAND.brass}; text-transform:uppercase; margin:0 0 10px; }
+  h1 { font-family:'Montserrat','Helvetica Neue',Arial,sans-serif; font-weight:800; font-size:26px; line-height:1.12; letter-spacing:-0.02em; margin:0 0 18px; color:${BRAND.ink}; }
+  p { font-size:15px; line-height:1.62; color:${BRAND.inkSoft}; margin:0 0 14px; }
+  .cta { display:inline-block; background:${BRAND.brass}; color:#ffffff !important; padding:15px 30px; text-decoration:none; font-size:14px; font-weight:700; letter-spacing:0.01em; border-radius:6px; margin:18px 0 6px; }
+  .footer { text-align:center; font-size:12px; color:${BRAND.muted}; margin-top:22px; line-height:1.7; }
+  .footer a { color:${BRAND.brass}; text-decoration:none; }
 </style>
 </head>
-<body>
-<span style="display:none;font-size:1px;color:#fff;max-height:0;max-width:0;opacity:0;overflow:hidden">${escapeHtml(preheader || "")}</span>
+<body style="margin:0;padding:0;background:${BRAND.bg};">
+<span style="display:none;font-size:1px;color:${BRAND.bg};max-height:0;max-width:0;opacity:0;overflow:hidden">${escapeHtml(preheader || "")}</span>
 <div class="wrap">
-  <div class="card">
+  <div class="logo-wrap"><img src="${BRAND.logo}" alt="National Closet Company" height="38" style="height:38px;width:auto" /></div>
+  <div class="card" style="background:#ffffff;border:1px solid ${BRAND.line};border-top:4px solid ${BRAND.brass};border-radius:10px;padding:38px 34px;">
     <div class="brand">National Closet Company</div>
     <h1>${title}</h1>
     ${body}
-    ${ctaUrl ? `<p style="text-align:center;margin-top:24px"><a class="cta" href="${ctaUrl}">${escapeHtml(ctaLabel || "Open")}</a></p>` : ""}
+    ${ctaUrl ? `<p style="text-align:center;margin-top:24px"><a class="cta" href="${ctaUrl}" style="display:inline-block;background:${BRAND.brass};color:#ffffff;text-decoration:none;padding:15px 30px;font-size:14px;font-weight:700;border-radius:6px;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif">${escapeHtml(ctaLabel || "Open")}</a></p>` : ""}
   </div>
   <div class="footer">
-    ${footer || `National Closet Company · Gallatin, Tennessee<br/><a href="tel:+16292988241">629-298-8241</a> · <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a>`}
+    ${footer || `National Closet Company · Custom Closets &amp; Closet Systems<br/><a href="tel:+16292988241">629-298-8241</a> · <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> · <a href="https://nationalclosetco.com">nationalclosetco.com</a>`}
   </div>
 </div>
 </body>

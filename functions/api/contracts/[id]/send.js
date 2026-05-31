@@ -24,7 +24,7 @@ export async function onRequestPost(context) {
       body: `
         <p>Hi ${escapeHtml(k.contact_name.split(" ")[0])},</p>
         <p>Here's the contract for <strong>${escapeHtml(k.project_name)}</strong>. Please review the scope and terms, then sign at the bottom of the page.</p>
-        <ul style="font-size:15px;color:#56493C;line-height:1.7;padding-left:20px">
+        <ul style="font-size:15px;color:#3A362F;line-height:1.7;padding-left:20px">
           <li>Contract: <strong>${escapeHtml(k.number)}</strong></li>
           <li>Total: <strong>${total}</strong></li>
           <li>Deposit to release order: <strong>${deposit}</strong></li>

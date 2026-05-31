@@ -97,7 +97,7 @@ export async function onRequestPost(context) {
           <p>Hi ${escapeHtml(body.signer_name.split(" ")[0])},</p>
           <p>Thank you for signing contract <strong>${escapeHtml(k.number)}</strong>. Your job is officially booked.</p>
           <p>Here's what happens next:</p>
-          <ol style="line-height:1.7;color:#56493C">
+          <ol style="line-height:1.7;color:#3A362F">
             <li>${k.deposit_cents > 0 ? `<strong>Deposit:</strong> please send ${moneyFmt(k.deposit_cents)} by check, ACH, Venmo, or Cash App to release the order.` : `<strong>Payment:</strong> due upon completion of the install.`}</li>
             <li><strong>Schedule your install</strong> using the link below — pick a day that works for you.</li>
             <li>We'll arrive on the scheduled day with drop cloths and tools, install, and demonstrate every product before we leave.</li>

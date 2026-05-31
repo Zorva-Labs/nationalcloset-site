@@ -27,13 +27,13 @@ export async function onRequestPost(context) {
       body: `
         <p>Hi ${escapeHtml(est.contact_name.split(" ")[0])},</p>
         <p>Thank you for the visit. Here is the written estimate for <strong>${escapeHtml(est.project_name)}</strong>:</p>
-        <ul style="font-size:15px;color:#56493C;line-height:1.7;padding-left:20px">
+        <ul style="font-size:15px;color:#3A362F;line-height:1.7;padding-left:20px">
           <li>Estimate number: <strong>${escapeHtml(est.number)}</strong></li>
           <li>Total: <strong>${escapeHtml(total)}</strong></li>
           ${est.valid_until ? `<li>Valid through: <strong>${escapeHtml(est.valid_until)}</strong></li>` : ""}
         </ul>
         <p>Open the estimate online — you can review every line, ask questions, or approve in one click.</p>
-        ${est.notes_customer ? `<p style="border-left:3px solid #9D7A3E;padding-left:14px;color:#56493C;font-style:italic">${escapeHtml(est.notes_customer)}</p>` : ""}
+        ${est.notes_customer ? `<p style="border-left:3px solid #D2683F;padding-left:14px;color:#3A362F;font-style:italic">${escapeHtml(est.notes_customer)}</p>` : ""}
         <p style="margin-top:20px">Questions? Reply to this email or call us at <a href="tel:+16292988241">629-298-8241</a>.</p>
       `,
       ctaLabel: "View Your Estimate",

@@ -76,10 +76,11 @@ export async function onRequestPost(context) {
       console.error("auto-convert failed:", e);
     }
 
-    // 3) Auto-create + email the deposit invoice for the accepted option.
-    //    Dedup in createInvoice prevents a second one when the job later books.
+    // 3) Pre-create the deposit invoice for the accepted option (no email —
+    //    the customer is sent straight to sign, then sees the invoice on screen
+    //    as the next booking step). Dedup prevents a second one at booking.
     const invoiceWork = createInvoice(context.env, {
-      projectId: p.project_id, type: "deposit", proposalId: p.id, actor: { name: body.name },
+      projectId: p.project_id, type: "deposit", proposalId: p.id, actor: { name: body.name }, send: false,
     }).catch((e) => console.error("[invoice/accept]", String(e)));
     if (context.waitUntil) context.waitUntil(invoiceWork); else await invoiceWork;
 

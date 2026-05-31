@@ -92,11 +92,17 @@ export async function onRequestPost(context) {
   // (no self-scheduling link anymore: signing = booked).
   await sendStageEmail(context.env, "contracted", k.project_id, { name: body.signer_name });
 
-  // Auto-create + send the deposit invoice. Dedup skips it if proposal-accept
-  // already created one for this project.
-  await createInvoice(context.env, {
-    projectId: k.project_id, type: "deposit", contractId: k.id, actor: { name: body.signer_name },
-  }).catch((e) => console.error("[invoice/booked]", String(e)));
+  // Create the deposit invoice and show it on-screen as the very next step of
+  // booking (send:false — we present it in the browser rather than emailing).
+  // Dedup returns the existing invoice if proposal-accept already made one.
+  let invoiceToken = null;
+  try {
+    const invRes = await createInvoice(context.env, {
+      projectId: k.project_id, type: "deposit", contractId: k.id,
+      actor: { name: body.signer_name }, send: false,
+    });
+    if (invRes?.invoice) invoiceToken = invRes.invoice.view_token;
+  } catch (e) { console.error("[invoice/booked]", String(e)); }
 
   // Notify the team
   await sendEmail(context.env, {
@@ -115,7 +121,7 @@ export async function onRequestPost(context) {
     }),
   });
 
-  return json({ ok: true, booked: true, contract_token: k.view_token });
+  return json({ ok: true, booked: true, contract_token: k.view_token, invoice_token: invoiceToken });
 }
 
 function moneyFmt(cents) { return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }

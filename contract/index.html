@@ -421,6 +421,9 @@ async function sign() {
     const res = await fetch("/api/public/contract/" + token, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sign", signer_name: name, signer_email: email, signature_image: pad.toDataURL() }) });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Couldn't sign.");
+    // Booked — the deposit invoice is the next step on screen. Send the
+    // customer straight to the secure card form to pay their deposit.
+    if (data.invoice_token) { location.href = "/invoice/?t=" + encodeURIComponent(data.invoice_token); return; }
     load();
   } catch (e) { alert(e.message); btn.disabled = false; btn.textContent = "Sign & book the job"; }
 }

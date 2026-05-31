@@ -6,6 +6,8 @@ import { genToken, nextSequence, formatDocNumber } from "./tokens.js";
 import { sendEmail, makeMessageId, brandedEmail } from "./email.js";
 import { logOutboundEmail } from "./email-log.js";
 import { recordActivity } from "./db.js";
+import { markProjectBooked } from "./lifecycle.js";
+import { sendStageEmail } from "./stage-emails.js";
 
 const SITE_URL = "https://nationalclosetco.com";
 export const DEPOSIT_RATE = 0.5; // default deposit = 50% when none specified
@@ -165,7 +167,10 @@ export async function sendInvoiceEmail(env, invoice, project) {
 // Mark an invoice paid (called by the Stripe webhook or a manual admin action).
 export async function markInvoicePaid(env, invoice, { method = "card", paymentIntentId } = {}) {
   const db = env.DB;
-  if (invoice.status === "paid") return { already: true };
+  // Re-check the live status (the passed row may be stale) so the webhook and
+  // the on-page sync can't both run the booking/receipt twice.
+  const fresh = await db.prepare(`SELECT status FROM invoices WHERE id=?1`).bind(invoice.id).first().catch(() => null);
+  if ((fresh?.status || invoice.status) === "paid") return { already: true };
   await db.prepare(
     `UPDATE invoices SET status='paid', paid_at=datetime('now'), paid_method=?1,
        stripe_payment_intent_id=COALESCE(?2, stripe_payment_intent_id), updated_at=datetime('now') WHERE id=?3`
@@ -176,6 +181,19 @@ export async function markInvoicePaid(env, invoice, { method = "card", paymentIn
     await db.prepare(
       `UPDATE contracts SET deposit_paid=1, deposit_paid_at=datetime('now'), deposit_paid_method=?1, updated_at=datetime('now') WHERE id=?2`
     ).bind(method, invoice.contract_id).run().catch(() => {});
+  }
+
+  // Booking happens HERE — when the deposit is paid, not at signing. Promote
+  // the project into the booked pipeline and send the "Booked" stage email,
+  // but only if it isn't already in a job stage (idempotent across the webhook
+  // + the on-page payment sync + a manual mark-paid).
+  if (invoice.type === "deposit") {
+    const proj = await db.prepare(`SELECT status FROM projects WHERE id=?1`).bind(invoice.project_id).first().catch(() => null);
+    const JOB = ["contracted", "scheduled_install", "installing", "completed"];
+    if (proj && !JOB.includes(proj.status)) {
+      await markProjectBooked(db, invoice.project_id, invoice.contract_id).catch((e) => console.error("[invoice/book]", String(e)));
+      await sendStageEmail(env, "contracted", invoice.project_id, { name: "deposit" }).catch((e) => console.error("[invoice/book-email]", String(e)));
+    }
   }
 
   await recordActivity(db, {

@@ -84,44 +84,51 @@ export async function onRequestPost(context) {
     details: { ip_hash: ipHash, ua, doc_hash: docHash },
   });
 
-  // Mark the project as booked
-  await markProjectBooked(context.env.DB, k.project_id, k.id);
-
-  // Send the customer the "Booked" stage email — templated, branded, and
-  // logged to the Messages thread. We'll reach out to schedule the install
-  // (no self-scheduling link anymore: signing = booked).
-  await sendStageEmail(context.env, "contracted", k.project_id, { name: body.signer_name });
-
-  // Create the deposit invoice and show it on-screen as the very next step of
-  // booking (send:false — we present it in the browser rather than emailing).
-  // Dedup returns the existing invoice if proposal-accept already made one.
+  // The customer has signed — but the JOB IS NOT BOOKED until the deposit is
+  // paid. Create the deposit invoice (shown on screen next, not emailed) and
+  // return its token. markInvoicePaid books the job + sends the "Booked" stage
+  // email once the deposit clears. Dedup returns an existing invoice if
+  // proposal-accept already created one.
   let invoiceToken = null;
+  let depositPending = false;
   try {
     const invRes = await createInvoice(context.env, {
       projectId: k.project_id, type: "deposit", contractId: k.id,
       actor: { name: body.signer_name }, send: false,
     });
-    if (invRes?.invoice) invoiceToken = invRes.invoice.view_token;
-  } catch (e) { console.error("[invoice/booked]", String(e)); }
+    if (invRes?.invoice) { invoiceToken = invRes.invoice.view_token; depositPending = true; }
+  } catch (e) { console.error("[invoice/deposit]", String(e)); }
+
+  if (depositPending) {
+    // Hold the project in 'awaiting_deposit' — out of the booked Jobs pipeline
+    // until payment lands.
+    await context.env.DB.prepare(
+      `UPDATE projects SET status='awaiting_deposit', updated_at=datetime('now') WHERE id=?1`
+    ).bind(k.project_id).run();
+  } else {
+    // No deposit required → book immediately on signing, with the booked email.
+    await markProjectBooked(context.env.DB, k.project_id, k.id);
+    await sendStageEmail(context.env, "contracted", k.project_id, { name: body.signer_name });
+  }
 
   // Notify the team
   await sendEmail(context.env, {
     to: context.env.STAFF_EMAIL || "hello@nationalclosetco.com",
-    subject: `🎉 Job booked — ${k.number}`,
+    subject: depositPending ? `✍️ Contract signed — awaiting deposit (${k.number})` : `🎉 Job booked — ${k.number}`,
     html: brandedEmail({
-      title: "A new job was just booked.",
+      title: depositPending ? "Contract signed — awaiting deposit." : "A new job was just booked.",
       body: `
         <p><strong>${escapeHtml(k.number)}</strong> was signed by <strong>${escapeHtml(body.signer_name)}</strong>.</p>
         <p>Document hash: <code style="font-size:11px">${escapeHtml(docHash)}</code></p>
-        <p>${k.deposit_cents > 0 ? `Deposit due: <strong>${moneyFmt(k.deposit_cents)}</strong>` : `No deposit — payment on completion.`}</p>
-        <p>Watch for the customer to schedule their install — they'll get a confirmation iCal when they do.</p>
+        <p>${k.deposit_cents > 0 ? `Deposit: <strong>${moneyFmt(k.deposit_cents)}</strong>` : `No deposit — payment on completion.`}</p>
+        <p>${depositPending ? "The job will book automatically once the deposit is paid." : "Watch for the customer to schedule their install."}</p>
       `,
       ctaLabel: "Open Contract",
       ctaUrl: `${SITE_URL}/crm/contract.html?id=${k.id}`,
     }),
   });
 
-  return json({ ok: true, booked: true, contract_token: k.view_token, invoice_token: invoiceToken });
+  return json({ ok: true, booked: !depositPending, awaiting_deposit: depositPending, contract_token: k.view_token, invoice_token: invoiceToken });
 }
 
 function moneyFmt(cents) { return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }

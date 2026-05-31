@@ -190,12 +190,35 @@ export async function markInvoicePaid(env, invoice, { method = "card", paymentIn
   ).bind(invoice.project_id).first().catch(() => null);
   if (project?.contact_email) {
     const first = (project.contact_name || "there").split(" ")[0];
+
+    // Remaining balance on the whole project = job total − everything paid so
+    // far (this payment is already marked paid above, so it's included).
+    const billing = await getProjectBilling(db, invoice.project_id).catch(() => ({ totalCents: 0 }));
+    const paidRow = await db.prepare(
+      `SELECT COALESCE(SUM(amount_cents),0) AS paid FROM invoices WHERE project_id=?1 AND status='paid'`
+    ).bind(invoice.project_id).first().catch(() => null);
+    const paidSum = paidRow?.paid || 0;
+    const hasTotal = (billing.totalCents || 0) > 0;
+    const balance = Math.max(0, (billing.totalCents || 0) - paidSum);
+    const balanceLabel = balance > 0 ? money(balance) : "$0.00 — paid in full 🎉";
+
     const subject = `Payment received — ${money(invoice.amount_cents)} (${invoice.number})`;
     const html = brandedEmail({
       title: "Payment received — thank you!",
-      body: `<p>Hi ${first},</p><p>We've received your payment of <strong>${money(invoice.amount_cents)}</strong> for invoice <strong>${invoice.number}</strong>. ${invoice.type === "deposit" ? "Your order is now moving forward — we'll be in touch to schedule your installation." : "Thank you for your business!"}</p>`,
+      body: `
+        <p>Hi ${first},</p>
+        <p>We've received your payment of <strong>${money(invoice.amount_cents)}</strong> for invoice <strong>${invoice.number}</strong>. Thank you!</p>
+        <table style="border-collapse:collapse;margin:8px 0 4px">
+          <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Amount paid</td><td style="padding:4px 0;font-weight:600">${money(invoice.amount_cents)}</td></tr>
+          ${hasTotal ? `<tr><td style="padding:4px 16px 4px 0;color:#6B6457">Project total</td><td style="padding:4px 0">${money(billing.totalCents)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Remaining balance</td><td style="padding:4px 0;font-weight:700">${balanceLabel}</td></tr>` : ""}
+        </table>
+        ${invoice.type === "deposit" ? `<p>Your order is now moving forward — we'll be in touch to schedule your installation.</p>` : ""}
+        ${hasTotal && balance > 0 ? `<p>Your remaining balance of <strong>${money(balance)}</strong> will be invoiced when it's due.</p>` : ""}
+      `,
     });
-    const text = `Payment received: ${money(invoice.amount_cents)} for ${invoice.number}. Thank you!`;
+    const text = `Payment received: ${money(invoice.amount_cents)} for ${invoice.number}. Thank you!`
+      + (hasTotal ? `\nRemaining balance: ${balance > 0 ? money(balance) : "$0.00 (paid in full)"}` : "");
     const messageId = makeMessageId();
     const to = project.contact_name ? `${project.contact_name} <${project.contact_email}>` : project.contact_email;
     const res = await sendEmail(env, { to, subject, html, text, messageId });

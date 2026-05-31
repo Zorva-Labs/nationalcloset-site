@@ -52,9 +52,18 @@ export async function sendStageEmail(env, newStatus, projectId, actor = {}) {
     if (!project) return { skipped: true, reason: "no_project" };
     if (!project.contact_email) return { skipped: true, reason: "no_email" };
 
-    const ctx = await buildEmailContext(db, { project: { project_id: projectId } });
+    // Pass BOTH contact and project — buildEmailContext doesn't derive the
+    // contact from the project on its own, so without contact_id the name
+    // vars come back empty and {{first_name}} would render literally.
+    const ctx = await buildEmailContext(db, {
+      contact: { contact_id: project.contact_id },
+      project: { project_id: projectId },
+    });
+    const fallbackFirst = (project.contact_name || "there").trim().split(/\s+/)[0];
     const vars = {
       ...ctx,
+      name: ctx.name || project.contact_name || "",
+      first_name: ctx.first_name || fallbackFirst,
       install_date: fmtDay(project.install_date),
       appointment_date: fmtDay(project.install_date),
     };

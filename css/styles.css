@@ -200,8 +200,8 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
   letter-spacing: 0.06em; text-transform: uppercase; padding: 0.5rem 0.9rem; border-radius: 100px; }
 .hero__tag .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--clay); box-shadow: 0 0 0 0 rgba(210,104,63,.6); animation: pulse 2.2s infinite; }
 @keyframes pulse { 0%{ box-shadow:0 0 0 0 rgba(210,104,63,.55);} 70%{ box-shadow:0 0 0 9px rgba(210,104,63,0);} 100%{ box-shadow:0 0 0 0 rgba(210,104,63,0);} }
-.hero h1 .line { display: block; overflow: hidden; }
-.hero h1 .line > span { display: block; transform: translateY(105%); animation: riseIn .9s var(--ease) forwards; }
+.hero h1 .line { display: block; overflow: hidden; padding-bottom: 0.16em; margin-bottom: -0.16em; }
+.hero h1 .line > span { display: block; transform: translateY(115%); animation: riseIn .9s var(--ease) forwards; }
 .hero h1 .line:nth-child(2) > span { animation-delay: .12s; }
 .hero h1 .line:nth-child(3) > span { animation-delay: .24s; }
 @keyframes riseIn { to { transform: translateY(0); } }

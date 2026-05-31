@@ -20,8 +20,8 @@
   --sand:       #c9a063;
 
   /* Type */
-  --display: "Archivo", "Arial Narrow", sans-serif;
-  --body:    "Hanken Grotesk", system-ui, sans-serif;
+  --display: "Montserrat", system-ui, sans-serif;
+  --body:    "Montserrat", system-ui, sans-serif;
 
   /* Spacing scale */
   --sp-1: 0.5rem;
@@ -138,14 +138,10 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 }
 .nav.scrolled { border-bottom-color: var(--line); box-shadow: 0 8px 30px -22px rgba(0,0,0,.4); }
 .nav__inner { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.brand { display: flex; align-items: center; gap: 0.65rem; font-family: var(--display); font-weight: 900; font-size: 1.12rem; letter-spacing: -0.02em; line-height: 1; }
-.brand__mark {
-  height: 38px; width: auto; flex: none; display: block;
-  transition: transform .4s var(--ease);
-}
-.brand__mark img { height: 38px; width: auto; display: block; }
-.brand:hover .brand__mark { transform: scale(1.05) rotate(-1deg); }
-.brand small { display: block; font-family: var(--body); font-weight: 600; font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+.brand { display: flex; align-items: center; line-height: 1; }
+.brand__logo { height: 52px; width: auto; display: block; transition: transform .4s var(--ease); }
+.brand:hover .brand__logo { transform: scale(1.04); }
+@media (min-width: 940px) { .brand__logo { height: 56px; } }
 
 .nav__links { display: none; align-items: center; gap: 0.35rem; }
 .nav__link { font-weight: 600; font-size: 0.93rem; padding: 0.55rem 0.7rem; border-radius: var(--radius); color: var(--ink-soft); position: relative; transition: color .2s; }

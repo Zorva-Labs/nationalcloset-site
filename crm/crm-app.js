@@ -38,9 +38,10 @@ const LEAD_STATUSES_NAV = [
 // drill-down in the sidebar. Statuses come from the projects table's
 // `status` column — see PROJECT_STATUSES below for the full list.
 const JOB_STATUSES_NAV = [
-  { key: "contracted", label: "Booked",       color: "#2563EB" },
-  { key: "installing", label: "Installing",   color: "#14B8A6" },
-  { key: "completed",  label: "Installed",    color: "#10B981" },
+  { key: "contracted",        label: "Booked",     color: "#2563EB" },
+  { key: "scheduled_install", label: "Scheduled",  color: "#6366F1" },
+  { key: "installing",        label: "Installing", color: "#14B8A6" },
+  { key: "completed",         label: "Completed",  color: "#10B981" },
 ];
 
 // Sidebar groups — all links visible (we have room in the vertical rail)
@@ -376,7 +377,12 @@ function esc(s) {
   if (s == null) return "";
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
-function pill(s) { return `<span class="pill" data-s="${esc(s)}">${esc((s || "").replace(/_/g, " "))}</span>`; }
+const PILL_LABELS = {
+  contracted: "Booked", scheduled_install: "Scheduled", installing: "Installing", completed: "Completed",
+  scheduled: "Consult Booked", tier_selected: "Option selected", signed_by_customer: "Signed",
+  fully_executed: "Executed",
+};
+function pill(s) { const label = PILL_LABELS[s] || (s || "").replace(/_/g, " "); return `<span class="pill" data-s="${esc(s)}">${esc(label)}</span>`; }
 function initials(email) { return (email || "?").slice(0, 1).toUpperCase(); }
 async function logout() {
   try { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); } catch (_) {}
@@ -413,10 +419,11 @@ const PROJECT_STATUSES = [
   { key: "measured",       label: "Measured" },
   { key: "quoted",         label: "Quoted" },
   { key: "proposed",       label: "Proposed" },
-  { key: "contracted",     label: "Booked" },          // contracted = job is booked
-  { key: "installing",     label: "Installing" },
-  { key: "completed",      label: "Completed" },
-  { key: "lost",           label: "Lost" },
+  { key: "contracted",        label: "Booked" },        // contracted = contract signed, job booked
+  { key: "scheduled_install", label: "Scheduled" },     // install date scheduled
+  { key: "installing",        label: "Installing" },
+  { key: "completed",         label: "Completed" },
+  { key: "lost",              label: "Lost" },
 ];
 
 // ============================================================

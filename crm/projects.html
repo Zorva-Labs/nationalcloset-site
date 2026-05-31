@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Jobs · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc5"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc6"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc5"></script>
+<script src="/crm/crm-app.js?v=ncc6"></script>
 <script>
 // A project only counts as a "Job" once the customer signs the contract.
 // Pre-contract projects (in 'new','scheduled','measured','quoted','proposed')
 // live on their lead and aren't shown here.
 //
 // The sidebar Jobs drill-down (see crm-app.js JOB_STATUSES_NAV) deep-links
-// here with ?status=contracted | installing | completed — when present we
+// here with ?status=contracted | scheduled_install | installing | completed — when present we
 // filter the list down to that single status (mirrors how the Leads page
 // honors ?status=).
-const JOB_STATUSES = new Set(["contracted", "installing", "completed"]);
-const JOB_STATUS_LABELS = { contracted: "Booked", installing: "Installing", completed: "Installed" };
+const JOB_STATUSES = new Set(["contracted", "scheduled_install", "installing", "completed"]);
+const JOB_STATUS_LABELS = { contracted: "Booked", scheduled_install: "Scheduled", installing: "Installing", completed: "Completed" };
 
 (async () => {
   const params = new URLSearchParams(location.search);

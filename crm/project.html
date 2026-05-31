@@ -8,12 +8,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc5" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc6" />
   <link rel="icon" href="/img/ncc-logo-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc5"></script>
-<script src="/crm/windows-editor.js?v=ncc5"></script>
+<script src="/crm/crm-app.js?v=ncc6"></script>
+<script src="/crm/windows-editor.js?v=ncc6"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -91,6 +91,8 @@ async function render() {
         </div>
       </header>
 
+      ${renderJobPipeline(project)}
+
       <nav class="job__tabs" id="tabs">
         ${tab("overview", "Overview")}
         ${tab("messages", "Messages")}
@@ -111,6 +113,37 @@ async function render() {
 
 function tab(key, label, count) {
   return `<button class="job__tab" data-tab="${key}">${SSCrm.esc(label)}${count != null ? `<span class="job__tab-count">${count}</span>` : ""}</button>`;
+}
+
+// Post-signature job pipeline. Once a contract is signed the project enters
+// 'contracted' (Booked) and advances Booked → Scheduled → Installing → Completed.
+const JOB_PIPELINE = [
+  { key: "contracted",        label: "Booked" },
+  { key: "scheduled_install", label: "Scheduled" },
+  { key: "installing",        label: "Installing" },
+  { key: "completed",         label: "Completed" },
+];
+function renderJobPipeline(project) {
+  const keys = JOB_PIPELINE.map((s) => s.key);
+  const cur = keys.indexOf(project.status);
+  if (cur < 0) return ""; // Not a booked job yet — pre-contract projects don't show the job pipeline.
+  return `
+    <div class="pipeline-bar" style="margin:0 0 18px">
+      ${JOB_PIPELINE.map((s, i) => {
+        const stateCls = i < cur ? "done" : i === cur ? "current" : "future";
+        return `<button class="pipeline-step ${stateCls}" type="button" onclick="quickStatus('${s.key}')" title="Set status to ${s.label}">
+          <span class="pipeline-step__dot">${i + 1}</span>
+          <span class="pipeline-step__label">${s.label}</span>
+        </button>`;
+      }).join("")}
+    </div>`;
+}
+async function quickStatus(key) {
+  try {
+    await SSCrm.fetchJSON("/api/projects/" + id, { method: "PATCH", body: JSON.stringify({ status: key }) });
+    SSCrm.toast("Status updated", "success");
+    await render();
+  } catch (e) { SSCrm.toast(e.message || "Could not update status", "error"); }
 }
 
 function renderCta(c) {

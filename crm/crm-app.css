@@ -365,8 +365,10 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 .tbl tbody tr:hover { background: var(--bg-hover); }
 .tbl tbody tr:last-child td { border-bottom: 0; }
 .tbl tbody tr.clickable { cursor: pointer; }
-.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
-.tbl td.money { text-align: right; font-variant-numeric: tabular-nums; color: var(--money); font-weight: 600; }
+.tbl td.num, .tbl th.num,
+.tbl td.money, .tbl th.money { text-align: right; }
+.tbl td.num { font-variant-numeric: tabular-nums; font-weight: 500; }
+.tbl td.money { font-variant-numeric: tabular-nums; color: var(--money); font-weight: 600; }
 .tbl .empty { padding: 40px 20px; text-align: center; color: var(--ink-soft); }
 
 /* ============================================================

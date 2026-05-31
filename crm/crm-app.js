@@ -387,7 +387,6 @@ function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 const PILL_LABELS = {
-  awaiting_deposit: "Awaiting deposit",
   contracted: "Booked", scheduled_install: "Scheduled", installing: "Installing", completed: "Completed",
   scheduled: "Consult Booked", tier_selected: "Option selected", signed_by_customer: "Signed",
   fully_executed: "Executed",
@@ -428,8 +427,7 @@ const PROJECT_STATUSES = [
   { key: "scheduled",      label: "Consult Booked" },
   { key: "measured",       label: "Measured" },
   { key: "quoted",         label: "Quoted" },
-  { key: "proposed",       label: "Proposed" },
-  { key: "awaiting_deposit",  label: "Awaiting deposit" }, // signed, not booked until deposit paid
+  { key: "proposed",       label: "Proposed" },          // proposal sent OR signed-but-deposit-unpaid (still a lead)
   { key: "contracted",        label: "Booked" },        // contracted = deposit paid, job booked
   { key: "scheduled_install", label: "Scheduled" },     // install date scheduled
   { key: "installing",        label: "Installing" },

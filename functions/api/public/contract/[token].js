@@ -100,10 +100,13 @@ export async function onRequestPost(context) {
   } catch (e) { console.error("[invoice/deposit]", String(e)); }
 
   if (depositPending) {
-    // Hold the project in 'awaiting_deposit' — out of the booked Jobs pipeline
-    // until payment lands.
+    // NOT booked yet. Until the deposit is paid the deal is still a LEAD in the
+    // proposal stage — keep the project in 'proposed' (a proposal-stage status,
+    // excluded from the booked Jobs pipeline) and leave the lead at 'proposal'.
+    // markInvoicePaid books it (project -> contracted, lead -> booked) once the
+    // deposit clears.
     await context.env.DB.prepare(
-      `UPDATE projects SET status='awaiting_deposit', updated_at=datetime('now') WHERE id=?1`
+      `UPDATE projects SET status='proposed', updated_at=datetime('now') WHERE id=?1`
     ).bind(k.project_id).run();
   } else {
     // No deposit required → book immediately on signing, with the booked email.

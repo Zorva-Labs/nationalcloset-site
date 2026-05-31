@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Jobs · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc10"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc11"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc10"></script>
+<script src="/crm/crm-app.js?v=ncc11"></script>
 <script>
-// A project only counts as a "Job" once the customer signs the contract.
-// Pre-contract projects (in 'new','scheduled','measured','quoted','proposed')
-// live on their lead and aren't shown here.
+// A project only counts as a "Job" once the contract is signed AND the deposit
+// is paid (status 'contracted'). Until then the deal stays a LEAD in the
+// proposal stage (project 'proposed' / lead 'proposal') — those live on their
+// lead and aren't shown here.
 //
 // The sidebar Jobs drill-down (see crm-app.js JOB_STATUSES_NAV) deep-links
 // here with ?status=contracted | scheduled_install | installing | completed — when present we

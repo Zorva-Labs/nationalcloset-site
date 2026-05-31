@@ -97,9 +97,8 @@ async function mount({ title = "", subtitle = "", actions = "", wide = false } =
 
   document.body.innerHTML = `
     <nav class="tnav">
-      <a href="/crm/" class="tnav__brand">
+      <a href="/crm/" class="tnav__brand" aria-label="National Closet Company">
         <img class="tnav__brand-logo" src="/img/ncc-logo-nc.png" alt="National Closet Company" />
-        <span>National Closet Co.</span>
       </a>
       <div class="tnav__search">
         ${iconSearch()}

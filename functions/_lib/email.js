@@ -139,7 +139,17 @@ const BRAND = {
   logo: "https://nationalclosetco.com/img/ncc-logo-nc.png",
 };
 
-export function brandedEmail({ title, preheader, body, ctaLabel, ctaUrl, footer }) {
+const DEFAULT_SIGNATURE = `
+    <div style="margin-top:28px;padding-top:18px;border-top:1px solid ${BRAND.line};font-size:14px;line-height:1.7;color:${BRAND.inkSoft}">
+      Thanks,<br/>
+      <strong style="color:${BRAND.ink}">Michael Blair</strong><br/>
+      National Closet Co.<br/>
+      <a href="https://nationalclosetco.com" style="color:${BRAND.brass};text-decoration:none">NationalClosetCo.com</a><br/>
+      <a href="mailto:hello@nationalclosetco.com" style="color:${BRAND.brass};text-decoration:none">hello@nationalclosetco.com</a><br/>
+      <a href="tel:+16292988241" style="color:${BRAND.brass};text-decoration:none">629-298-8241</a>
+    </div>`;
+
+export function brandedEmail({ title, preheader, body, ctaLabel, ctaUrl, footer, signature }) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -170,6 +180,7 @@ export function brandedEmail({ title, preheader, body, ctaLabel, ctaUrl, footer 
     <h1>${title}</h1>
     ${body}
     ${ctaUrl ? `<p style="text-align:center;margin-top:24px"><a class="cta" href="${ctaUrl}" style="display:inline-block;background:${BRAND.brass};color:#ffffff;text-decoration:none;padding:15px 30px;font-size:14px;font-weight:700;border-radius:6px;font-family:'Montserrat','Helvetica Neue',Arial,sans-serif">${escapeHtml(ctaLabel || "Open")}</a></p>` : ""}
+    ${signature === false ? "" : (signature || DEFAULT_SIGNATURE)}
   </div>
   <div class="footer">
     ${footer || `National Closet Company · Custom Closets &amp; Closet Systems<br/><a href="tel:+16292988241">629-298-8241</a> · <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> · <a href="https://nationalclosetco.com">nationalclosetco.com</a>`}

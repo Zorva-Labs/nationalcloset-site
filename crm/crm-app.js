@@ -371,6 +371,15 @@ function fmtDate(iso) {
   if (diff < 86400 * 7) return Math.floor(diff / 86400) + "d ago";
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: d.getFullYear() === now.getFullYear() ? undefined : "numeric" });
 }
+// Absolute calendar date (no relative "Xh ago"). Use for dates that are about
+// the day itself — e.g. an install date — not a recency timestamp. Parsed as a
+// local date so a "YYYY-MM-DD" value never shifts a day across timezones.
+function fmtDay(iso) {
+  if (!iso) return "";
+  const [y, m, d] = (iso + "").slice(0, 10).split("-").map((n) => parseInt(n, 10));
+  if (!y || !m || !d) return iso;
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
 function fmtDateTime(iso) { if (!iso) return ""; const d = new Date((iso + "").replace(" ", "T")); return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); }
 function fmtTime(iso) { if (!iso) return ""; const [, t] = iso.split("T"); const [h, m] = (t || "00:00").split(":").map((n) => parseInt(n, 10)); const ap = h < 12 ? "am" : "pm"; return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${ap}`; }
 function esc(s) {
@@ -1194,7 +1203,7 @@ function safeJSON(s) { try { return JSON.parse(s); } catch { return null; } }
 function stripHtmlClient(s) { return s ? String(s).replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() : ""; }
 
 window.SSCrm = {
-  fetchJSON, mount, fmtMoney, fmtMoneyShort, parseMoney, fmtDate, fmtDateTime, fmtTime, esc, pill, logout, toast, confirmDialog,
+  fetchJSON, mount, fmtMoney, fmtMoneyShort, parseMoney, fmtDate, fmtDay, fmtDateTime, fmtTime, esc, pill, logout, toast, confirmDialog,
   pickContact, pickJob, openModal, pickProduct,
   quickAddContact, quickAddJob, quickAddAppointment, quickAddEstimate, quickAddProposal, quickAddContract,
   composeEmail, renderEmailTimeline,

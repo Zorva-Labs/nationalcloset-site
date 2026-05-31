@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Jobs · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc8"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc9"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc8"></script>
+<script src="/crm/crm-app.js?v=ncc9"></script>
 <script>
 // A project only counts as a "Job" once the customer signs the contract.
 // Pre-contract projects (in 'new','scheduled','measured','quoted','proposed')
@@ -50,7 +50,7 @@ const JOB_STATUS_LABELS = { contracted: "Booked", scheduled_install: "Scheduled"
       <td>${p.contact_city ? SSCrm.esc(p.contact_city) : `<span class="muted">—</span>`}</td>
       <td class="money">${p.job_total_cents != null ? SSCrm.fmtMoney(p.job_total_cents) : `<span class="muted">—</span>`}</td>
       <td>${SSCrm.pill(p.status)}</td>
-      <td>${p.install_date ? SSCrm.fmtDate(p.install_date) : `<span class="muted">—</span>`}</td>
+      <td>${p.install_date ? SSCrm.fmtDay(p.install_date) : `<span class="muted">—</span>`}</td>
       <td class="muted">${SSCrm.fmtDate(p.updated_at)}</td>
     </tr>`).join("")}</tbody></table></div>`;
 })();

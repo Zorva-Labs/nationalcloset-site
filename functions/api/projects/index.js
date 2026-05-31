@@ -32,7 +32,9 @@ export async function onRequestGet(context) {
                                  WHEN 'sent'              THEN 2
                                  ELSE 3 END,
                                datetime(k.created_at) DESC
-                      LIMIT 1) AS job_total_cents
+                      LIMIT 1) AS job_total_cents,
+                    (SELECT COALESCE(SUM(iv.amount_cents), 0) FROM invoices iv
+                      WHERE iv.project_id = p.id AND iv.status = 'paid') AS paid_cents
              FROM projects p JOIN contacts c ON c.id = p.contact_id WHERE 1=1`;
   const binds = [];
   if (status) { binds.push(status); sql += ` AND p.status=?${binds.length}`; }

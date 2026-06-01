@@ -187,6 +187,11 @@ function render() {
           ${l.quoted_amount_cents ? `<p class="muted" style="font-size:13px;margin:12px 0 0">Quoted: <strong class="money">${SSCrm.fmtMoney(l.quoted_amount_cents)}</strong></p>` : ""}
         </div>
 
+        <div class="card" style="margin-top:14px">
+          <div class="card-head"><h2>Invoices</h2></div>
+          <div id="lead-invoices" class="muted" style="font-size:13px">Loading…</div>
+        </div>
+
         ${l.contact_id ? `
           <div class="card" style="margin-top:14px">
             <div class="card-head"><h2>Linked contact</h2></div>
@@ -246,6 +251,26 @@ function render() {
   } else if (emailHost) {
     emailHost.innerHTML = `<p class="muted" style="font-size:13px;padding:8px 0">Add the lead's email above and save to start emailing from the CRM.</p>`;
   }
+  loadLeadInvoices();
+}
+
+async function loadLeadInvoices() {
+  const host = document.getElementById("lead-invoices");
+  if (!host) return;
+  try {
+    const { invoices } = await SSCrm.fetchJSON("/api/invoices?lead_id=" + id);
+    if (!invoices || !invoices.length) {
+      host.innerHTML = '<p class="muted" style="font-size:13px;margin:0">No invoices yet — create them on the job page once the project is set up.</p>';
+      return;
+    }
+    const LAB = { deposit: "Deposit", balance: "Balance", full: "Full", custom: "Custom" };
+    const ST = { open: "Open", paid: "Paid", void: "Void" };
+    host.classList.remove("muted");
+    host.innerHTML = invoices.map((iv) => `<a href="/crm/invoice.html?id=${iv.id}" style="display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-top:1px solid var(--line);color:inherit">
+        <span><strong>${SSCrm.esc(iv.number)}</strong> <span class="muted" style="font-size:12px">· ${LAB[iv.type] || iv.type} · ${ST[iv.status] || iv.status}</span></span>
+        <strong class="money">${SSCrm.fmtMoney(iv.amount_cents)}</strong></a>`).join("")
+      + '<p class="muted" style="font-size:12px;margin:10px 0 0">Tap an invoice to view, edit or print it.</p>';
+  } catch (e) { host.innerHTML = '<p class="muted" style="font-size:13px;margin:0">Couldn\'t load invoices.</p>'; }
 }
 
 // ============================================================

@@ -1,5 +1,5 @@
-// GET  /api/invoices?project_id=…   — list invoices for a project (admin)
-// POST /api/invoices                 — create + send an invoice (admin, manual)
+// GET  /api/invoices?project_id=… | ?lead_id=…   — list invoices (admin)
+// POST /api/invoices                              — create + send an invoice (admin, manual)
 import { requireAuth, json } from "../../_lib/auth.js";
 import { createInvoice } from "../../_lib/invoices.js";
 
@@ -7,10 +7,20 @@ export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const url = new URL(context.request.url);
   const projectId = parseInt(url.searchParams.get("project_id") || "", 10);
-  if (!Number.isFinite(projectId)) return json({ error: "project_id required" }, 400);
-  const rows = (await context.env.DB.prepare(
-    `SELECT * FROM invoices WHERE project_id=?1 ORDER BY created_at DESC`
-  ).bind(projectId).all()).results || [];
+  const leadId = parseInt(url.searchParams.get("lead_id") || "", 10);
+  let rows;
+  if (Number.isFinite(projectId)) {
+    rows = (await context.env.DB.prepare(
+      `SELECT * FROM invoices WHERE project_id=?1 ORDER BY created_at DESC`
+    ).bind(projectId).all()).results || [];
+  } else if (Number.isFinite(leadId)) {
+    // A lead's invoices = invoices on any project that descends from the lead.
+    rows = (await context.env.DB.prepare(
+      `SELECT * FROM invoices WHERE project_id IN (SELECT id FROM projects WHERE lead_id=?1) ORDER BY created_at DESC`
+    ).bind(leadId).all()).results || [];
+  } else {
+    return json({ error: "project_id or lead_id required" }, 400);
+  }
   return json({ invoices: rows });
 }
 

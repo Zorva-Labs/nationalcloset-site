@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice · National Closet Company CRM</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc11" />
+  <link rel="icon" href="/img/ncc-logo-nc.png" />
+  <style>
+    .inv-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:16px; }
+    .inv-actions .spacer { flex:1; }
+    .inv-sheet { background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 10px 34px -18px rgba(22,20,15,.25); max-width:820px; margin:0 auto; padding:40px 44px; color:#16140f; }
+    .inv-top { display:flex; justify-content:space-between; gap:24px; flex-wrap:wrap; align-items:flex-start; border-bottom:2px solid #16140f; padding-bottom:20px; }
+    .inv-biz { display:flex; gap:12px; align-items:flex-start; }
+    .inv-biz img { height:46px; width:auto; }
+    .inv-biz b { font-family:'Montserrat',sans-serif; font-weight:800; font-size:1.05rem; display:block; }
+    .inv-biz span { font-size:12.5px; color:#6B6457; line-height:1.5; display:block; }
+    .inv-meta { text-align:right; }
+    .inv-meta h1 { font-family:'Montserrat',sans-serif; font-weight:900; font-size:1.9rem; letter-spacing:.04em; margin:0 0 6px; }
+    .inv-meta div { font-size:13px; color:#3A362F; }
+    .inv-meta .num { font-weight:700; color:#16140f; }
+    .inv-badge { display:inline-block; margin-top:8px; padding:4px 12px; border-radius:999px; font-size:12px; font-weight:700; }
+    .inv-badge.open { background:#FEF3C7; color:#B45309; }
+    .inv-badge.paid { background:#ECFDF5; color:#067647; }
+    .inv-badge.void { background:#F1F5F9; color:#64748B; }
+    .inv-parties { display:flex; justify-content:space-between; gap:24px; flex-wrap:wrap; margin:22px 0 8px; }
+    .inv-parties .lbl { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#9A9488; margin-bottom:4px; }
+    .inv-parties .who { font-size:14px; line-height:1.55; }
+    .inv-parties .who b { font-weight:700; }
+    table.inv-lines { width:100%; border-collapse:collapse; margin:18px 0 0; font-size:14px; }
+    table.inv-lines th { text-align:left; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#9A9488; border-bottom:1px solid var(--line); padding:8px 10px; }
+    table.inv-lines th.r, table.inv-lines td.r { text-align:right; }
+    table.inv-lines td { padding:11px 10px; border-bottom:1px solid #efeee9; vertical-align:top; }
+    table.inv-lines input, table.inv-lines textarea { width:100%; font:inherit; padding:7px 9px; border:1px solid var(--line); border-radius:6px; box-sizing:border-box; }
+    table.inv-lines td.q input, table.inv-lines td.u input { text-align:right; }
+    .inv-rm { color:#B91C1C; font-weight:700; cursor:pointer; background:none; border:0; font-size:18px; line-height:1; }
+    .inv-add { margin-top:10px; }
+    .inv-totals { display:flex; justify-content:flex-end; margin-top:14px; }
+    .inv-totals table { font-size:14px; }
+    .inv-totals td { padding:5px 0 5px 32px; }
+    .inv-totals .grand td { font-size:1.25rem; font-weight:800; border-top:2px solid #16140f; padding-top:10px; }
+    .inv-note { margin-top:24px; font-size:13px; color:#3A362F; line-height:1.6; }
+    .inv-note .lbl { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#9A9488; margin-bottom:4px; }
+    .inv-foot { margin-top:26px; padding-top:16px; border-top:1px solid var(--line); font-size:12.5px; color:#6B6457; text-align:center; }
+    .inv-foot a { color:#B9542F; font-weight:700; }
+    .inv-field { font:inherit; padding:6px 8px; border:1px solid var(--line); border-radius:6px; }
+    @media (max-width:640px){ .inv-sheet{ padding:24px 18px; } .inv-meta{ text-align:left; } }
+    @media print {
+      .tnav, .inv-actions, .toast-host, .modal-bg { display:none !important; }
+      body { background:#fff !important; }
+      #page { padding:0 !important; margin:0 !important; max-width:none !important; }
+      .inv-sheet { box-shadow:none !important; border:0 !important; border-radius:0; margin:0 !important; max-width:none !important; padding:0 !important; }
+      @page { margin:14mm; }
+    }
+  </style>
+</head>
+<body>
+<script src="/crm/crm-app.js?v=ncc11"></script>
+<script>
+const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
+if (!id) location.href = "/crm/projects.html";
+let data = null, editing = false;
+const e = (s) => SSCrm.esc(s);
+const m = (c) => SSCrm.fmtMoney(c);
+const TYPE_LABEL = { deposit: "Deposit", balance: "Final balance", full: "Full payment", custom: "Invoice" };
+const STATUS = { open: ["open","Awaiting payment"], paid: ["paid","Paid"], void: ["void","Void"], draft: ["open","Draft"] };
+
+(async () => {
+  const user = await SSCrm.mount({ title: "Invoice", actions: `<a class="btn ghost" href="javascript:history.back()">← Back</a>`, wide: true });
+  if (!user) return;
+  await load();
+})();
+
+async function load() {
+  data = await SSCrm.fetchJSON("/api/invoices/" + id);
+  // Seed an editable line from the single amount if there are no line items yet.
+  if (!data.lines || !data.lines.length) {
+    data.lines = [{ description: data.invoice.description || (TYPE_LABEL[data.invoice.type] || "Custom closet project"), qty: 1, unit_cents: data.invoice.amount_cents || 0 }];
+  }
+  render();
+}
+
+function fmtDay(iso) { return iso ? SSCrm.fmtDay(iso) : ""; }
+
+function render() {
+  const iv = data.invoice;
+  const paid = iv.status === "paid", isVoid = iv.status === "void", locked = paid || isVoid;
+  const [bcls, blabel] = STATUS[iv.status] || ["open", iv.status];
+  const payUrl = "https://nationalclosetco.com/invoice/?t=" + iv.view_token;
+  const total = data.lines.reduce((s, l) => s + Math.round((Number(l.qty)||0) * (Number(l.unit_cents)||0)), 0);
+
+  const rows = data.lines.map((l, i) => editing ? `
+    <tr>
+      <td><input data-ln="${i}" data-k="description" value="${e(l.description)}" placeholder="Description" /></td>
+      <td class="q" style="width:80px"><input data-ln="${i}" data-k="qty" type="number" min="0" step="1" value="${Number(l.qty)||0}" /></td>
+      <td class="u" style="width:120px"><input data-ln="${i}" data-k="unit" value="${((Number(l.unit_cents)||0)/100).toFixed(2)}" /></td>
+      <td class="r" style="width:110px">${m(Math.round((Number(l.qty)||0)*(Number(l.unit_cents)||0)))}</td>
+      <td style="width:30px"><button class="inv-rm" title="Remove" onclick="rmLine(${i})">×</button></td>
+    </tr>` : `
+    <tr>
+      <td>${e(l.description)}</td>
+      <td class="r">${Number(l.qty)||0}</td>
+      <td class="r">${m(Number(l.unit_cents)||0)}</td>
+      <td class="r">${m(Math.round((Number(l.qty)||0)*(Number(l.unit_cents)||0)))}</td>
+      ${editing ? "<td></td>" : ""}
+    </tr>`).join("");
+
+  const c = iv;
+  const addr = [c.address_street, [c.address_city, c.address_state].filter(Boolean).join(", "), c.address_zip].filter(Boolean).join(" · ");
+
+  document.getElementById("page").innerHTML = `
+    <div class="inv-actions">
+      <a class="btn ghost" href="/crm/project.html?id=${iv.project_id}#tab=invoices">← Job</a>
+      <span class="spacer"></span>
+      ${locked ? "" : (editing
+        ? `<button class="btn primary" onclick="save()">Save</button><button class="btn ghost" onclick="editing=false;render()">Cancel</button>`
+        : `<button class="btn secondary" onclick="editing=true;render()">✏️ Edit</button>`)}
+      <button class="btn secondary" onclick="window.print()">🖨️ Print / PDF</button>
+      ${locked ? "" : `<button class="btn ghost" onclick="resend()">✉️ Send</button>`}
+      <button class="btn ghost" onclick="copyLink('${e(payUrl)}')">Copy pay link</button>
+      ${locked ? "" : `<button class="btn ghost" onclick="markPaid()">Mark paid</button><button class="btn ghost" onclick="voidInv()">Void</button>`}
+    </div>
+
+    <div class="inv-sheet">
+      <div class="inv-top">
+        <div class="inv-biz">
+          <img src="/img/ncc-logo-nc.png" alt="National Closet Company" />
+          <div>
+            <b>National Closet Company</b>
+            <span>Custom Closets &amp; Closet Systems</span>
+            <span>Gallatin, TN</span>
+            <span>629-298-8241 · hello@nationalclosetco.com</span>
+            <span>nationalclosetco.com</span>
+          </div>
+        </div>
+        <div class="inv-meta">
+          <h1>INVOICE</h1>
+          <div class="num">${e(iv.number)}</div>
+          <div>Issued ${fmtDay(iv.created_at)}</div>
+          <div>${editing
+            ? `Due <input class="inv-field" type="date" id="f-due" value="${iv.due_date ? String(iv.due_date).slice(0,10) : ""}" style="width:150px" />`
+            : (iv.due_date ? "Due " + fmtDay(iv.due_date) : "")}</div>
+          <span class="inv-badge ${bcls}">${blabel}</span>
+          ${paid && iv.paid_at ? `<div style="margin-top:6px;color:#067647">Paid ${fmtDay(iv.paid_at)}${iv.paid_method ? " · " + e(iv.paid_method) : ""}</div>` : ""}
+        </div>
+      </div>
+
+      <div class="inv-parties">
+        <div>
+          <div class="lbl">Bill to</div>
+          <div class="who"><b>${e(c.contact_name || "—")}</b>${addr ? "<br>" + e(addr) : ""}${c.contact_email ? "<br>" + e(c.contact_email) : ""}${c.contact_phone ? "<br>" + e(c.contact_phone) : ""}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="lbl">${editing ? "Invoice type" : "For"}</div>
+          <div class="who">${editing
+            ? `<select id="f-type" class="inv-field"><option value="deposit" ${iv.type==='deposit'?'selected':''}>Deposit</option><option value="balance" ${iv.type==='balance'?'selected':''}>Final balance</option><option value="full" ${iv.type==='full'?'selected':''}>Full payment</option><option value="custom" ${iv.type==='custom'?'selected':''}>Custom</option></select>`
+            : `${TYPE_LABEL[iv.type] || "Invoice"}${iv.project_name ? "<br><span class='muted'>" + e(iv.project_name) + "</span>" : ""}`}</div>
+        </div>
+      </div>
+
+      <table class="inv-lines">
+        <thead><tr><th>Description</th><th class="r" style="width:70px">Qty</th><th class="r" style="width:110px">Unit</th><th class="r" style="width:110px">Amount</th>${editing ? "<th></th>" : ""}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${editing ? `<button class="btn ghost sm inv-add" onclick="addLine()">+ Add line</button>` : ""}
+
+      <div class="inv-totals">
+        <table><tr class="grand"><td>Total due</td><td class="r" style="text-align:right">${m(total)}</td></tr></table>
+      </div>
+
+      <div class="inv-note">
+        <div class="lbl">Notes</div>
+        ${editing
+          ? `<textarea id="f-notes" class="inv-field" rows="3" style="width:100%;box-sizing:border-box">${e(iv.notes || "")}</textarea>`
+          : (iv.notes ? e(iv.notes) : `<span class="muted">${iv.type==='deposit' ? 'Deposit to begin your custom closet project. Balance billed at completion.' : 'Thank you for your business.'}</span>`)}
+      </div>
+
+      <div class="inv-foot">
+        Pay securely online at <a href="${e(payUrl)}">${e(payUrl)}</a><br>
+        National Closet Company · Gallatin, TN · 629-298-8241
+      </div>
+    </div>
+  `;
+}
+
+function collectLines() {
+  const map = {};
+  document.querySelectorAll("[data-ln]").forEach((el) => {
+    const i = el.getAttribute("data-ln"), k = el.getAttribute("data-k");
+    map[i] = map[i] || { description: "", qty: 1, unit_cents: 0 };
+    if (k === "description") map[i].description = el.value;
+    if (k === "qty") map[i].qty = Number(el.value) || 0;
+    if (k === "unit") map[i].unit_cents = SSCrm.parseMoney(el.value);
+  });
+  return Object.keys(map).sort((a,b)=>a-b).map((i) => map[i]);
+}
+function syncFromInputs() { if (editing) data.lines = collectLines(); }
+function addLine() { syncFromInputs(); data.lines.push({ description: "", qty: 1, unit_cents: 0 }); render(); }
+function rmLine(i) { syncFromInputs(); data.lines.splice(i, 1); if (!data.lines.length) data.lines.push({ description:"", qty:1, unit_cents:0 }); render(); }
+
+async function save() {
+  const lines = collectLines().filter((l) => l.description || l.unit_cents);
+  const payload = { lines };
+  const due = document.getElementById("f-due"); if (due) payload.due_date = due.value || "";
+  const type = document.getElementById("f-type"); if (type) payload.type = type.value;
+  const notes = document.getElementById("f-notes"); if (notes) payload.notes = notes.value;
+  try {
+    await SSCrm.fetchJSON("/api/invoices/" + id, { method: "PATCH", body: JSON.stringify(payload) });
+    SSCrm.toast("Invoice saved", "success");
+    editing = false; await load();
+  } catch (err) { SSCrm.toast(err.message || "Could not save", "error"); }
+}
+async function resend() {
+  try { await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "resend" }) }); SSCrm.toast("Invoice emailed", "success"); }
+  catch (err) { SSCrm.toast(err.message || "Could not send", "error"); }
+}
+async function markPaid() {
+  if (!(await SSCrm.confirmDialog("Mark this invoice paid (e.g. cash/check received)?"))) return;
+  try { await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "mark_paid", method: "manual" }) }); SSCrm.toast("Marked paid", "success"); await load(); }
+  catch (err) { SSCrm.toast(err.message || "Could not update", "error"); }
+}
+async function voidInv() {
+  if (!(await SSCrm.confirmDialog("Void this invoice? The customer will no longer be able to pay it."))) return;
+  try { await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "void" }) }); SSCrm.toast("Invoice voided", "success"); editing = false; await load(); }
+  catch (err) { SSCrm.toast(err.message || "Could not void", "error"); }
+}
+function copyLink(url) { navigator.clipboard.writeText(url).then(() => SSCrm.toast("Pay link copied", "success"), () => SSCrm.toast(url, "info")); }
+</script>
+</body>
+</html>

@@ -358,34 +358,25 @@ function renderInvoices(host, invoices) {
       </div>
     </div>`;
 
-  const sendBtns = (iv) => {
-    const payUrl = `https://nationalclosetco.com/invoice/?t=${iv.view_token}`;
-    const smsBody = encodeURIComponent(`Here's your invoice (${iv.number}) from National Closet Company. Pay securely: ${payUrl}`);
-    return `<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-        <button class="btn ghost sm" onclick="copyPayLink('${e(payUrl)}')">Copy link</button>
-        <button class="btn ghost sm" onclick="resendInvoice(${iv.id})">Email</button>
-        ${phone ? `<a class="btn ghost sm" href="sms:${e(phone)}?&body=${smsBody}">Text</a>` : ""}
-        <button class="btn ghost sm" onclick="markInvoicePaid(${iv.id})">Mark paid</button>
-        <button class="btn ghost sm" onclick="voidInvoice(${iv.id})">Void</button>
-      </div>`;
-  };
+  const numLink = (iv) => `<a href="/crm/invoice.html?id=${iv.id}" style="color:inherit"><strong>${e(iv.number)}</strong></a>`;
+  const openBtn = (iv) => `<a class="btn primary sm" href="/crm/invoice.html?id=${iv.id}">Open →</a>`;
 
   const openRows = open.map((iv) => `<tr>
-      <td><strong>${e(iv.number)}</strong><div class="muted" style="font-size:12px">${e(INV_TYPE[iv.type] || iv.type)} · ${e(iv.description || "")}</div></td>
+      <td>${numLink(iv)}<div class="muted" style="font-size:12px">${e(INV_TYPE[iv.type] || iv.type)}${iv.description ? " · " + e(iv.description) : ""}</div></td>
       <td class="money">${m(iv.amount_cents)}</td>
-      <td style="text-align:right">${sendBtns(iv)}</td>
+      <td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="copyPayLink('https://nationalclosetco.com/invoice/?t=${e(iv.view_token)}')">Copy link</button> ${openBtn(iv)}</td>
     </tr>`).join("");
 
   const paidRows = paid.map((iv) => `<tr>
-      <td><strong>${e(iv.number)}</strong><div class="muted" style="font-size:12px">${e(INV_TYPE[iv.type] || iv.type)} · paid ${e(SSCrm.fmtDate(iv.paid_at))}${iv.paid_method ? ` · ${e(iv.paid_method)}` : ""}</div></td>
+      <td>${numLink(iv)}<div class="muted" style="font-size:12px">${e(INV_TYPE[iv.type] || iv.type)} · paid ${e(SSCrm.fmtDate(iv.paid_at))}${iv.paid_method ? ` · ${e(iv.paid_method)}` : ""}</div></td>
       <td class="money">${m(iv.amount_cents)}</td>
-      <td style="text-align:right"><a class="btn ghost sm" href="https://nationalclosetco.com/invoice/?t=${e(iv.view_token)}" target="_blank" rel="noopener">View receipt</a></td>
+      <td style="text-align:right">${openBtn(iv)}</td>
     </tr>`).join("");
 
   const voidRows = voided.map((iv) => `<tr style="opacity:.55">
-      <td><strong>${e(iv.number)}</strong> <span class="muted" style="font-size:12px">${e(INV_TYPE[iv.type] || iv.type)}</span></td>
+      <td>${numLink(iv)} <span class="muted" style="font-size:12px">${e(INV_TYPE[iv.type] || iv.type)}</span></td>
       <td class="money">${m(iv.amount_cents)}</td>
-      <td style="text-align:right" class="muted">Voided</td>
+      <td style="text-align:right">${openBtn(iv)}</td>
     </tr>`).join("");
 
   const section = (title, rows, n, color) => rows ? `<div class="card">

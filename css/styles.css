@@ -518,3 +518,14 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 
 /* Mobile: breathing room between the contact details and the form in the bottom consult band */
 @media (max-width: 939px) { .cta-band .form-card { margin-top: 2.25rem; } }
+
+/* ===== Playful hand-drawn accents (cohesive with the Process flight path) ===== */
+.u-squig {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 16' preserveAspectRatio='none'%3E%3Cpath d='M3,10 C 48,2 82,2 112,7 S 168,13 197,5' fill='none' stroke='%23d2683f' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat left bottom / 100% 0.32em;
+  padding-bottom: .08em;
+}
+.u-circle { position: relative; display: inline-block; }
+.u-circle::after {
+  content: ""; position: absolute; inset: -34% -22%; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 60' preserveAspectRatio='none'%3E%3Cpath d='M62,4 C 98,5 117,17 116,31 C 115,47 90,57 56,56 C 24,55 4,43 5,29 C 6,15 30,4 66,5' fill='none' stroke='%23d2683f' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+}

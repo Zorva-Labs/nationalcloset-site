@@ -105,16 +105,22 @@
     .sched-confirm:hover { background: var(--color-espresso-2); }
     .sched-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
 
+    .doc-foot { display: none; }
     @media print {
-      @page { size: letter; margin: 0.6in; }
-      body { background: #fff; color: #14110D; }
-      .sign-btn, .sign-bar, .sign-bar button, .sched-box, .no-print { display: none !important; }
+      @page { size: letter; margin: 0.55in; }
+      body { background: #fff; color: #14110D; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .sign-box, .sign-btn, .sign-bar, .sign-bar button, .sched-box, .no-print { display: none !important; }
       .doc { max-width: none; padding: 0; }
+      .doc-mast { padding-bottom: 12pt; border-bottom: 2px solid #14110D; margin-bottom: 8pt; }
+      .doc-brand img { height: 46pt; }
+      .doc-biz { font-size: 8.5pt !important; }
       .signed-box { background: transparent !important; color: #14110D !important; border: 2px solid #14110D; padding: 18pt; text-align: left; }
       .signed-box h2 { color: #14110D !important; font-size: 14pt; margin: 0 0 6pt; }
       .signed-box p { color: #14110D !important; font-size: 10pt; opacity: 1; }
       h1, h2, h3 { color: #14110D !important; page-break-after: avoid; }
       .doc-intro, .doc-mast small { color: #56493C !important; }
+      .doc-meta { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .doc-foot { display: block !important; margin-top: 26pt; padding-top: 8pt; border-top: 1px solid #D8D6D0; font-size: 7.5pt; color: #6C665B; text-align: center; letter-spacing: 0.04em; }
     }
   </style>
 </head>
@@ -143,7 +149,10 @@ function render(k, lines) {
   document.getElementById("root").innerHTML = `
     <div class="doc-mast">
       <div class="doc-brand"><img src="/img/ncc-logo-nc.png" alt="National Closet Company"/><span>National Closet Co.<small>Custom Closets &amp; Closet Systems</small></span></div>
-      <div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--color-ink-soft)">${esc(k.number)}</div>
+      <div class="doc-biz" style="text-align:right;font-size:0.78rem;color:var(--color-ink-soft);line-height:1.65">
+        <div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--color-ink);margin-bottom:5px">${esc(k.number)}</div>
+        Gallatin, TN<br/>629-298-8241<br/>hello@nationalclosetco.com<br/>nationalclosetco.com
+      </div>
     </div>
     <h1>Custom closet <em>agreement.</em></h1>
     <p class="doc-intro">${esc(k.intro || "")}</p>
@@ -202,6 +211,8 @@ function render(k, lines) {
         <button class="sign-btn" id="sign-btn" onclick="sign()">Sign &amp; book the job</button>
       </div>
     `}
+
+    <div class="doc-foot">National Closet Company · Custom Closets &amp; Closet Systems · Gallatin, TN · 629-298-8241 · hello@nationalclosetco.com · nationalclosetco.com</div>
   `;
 
   if (!isSigned) wirePad();

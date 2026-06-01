@@ -7,39 +7,94 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/crm/crm-app.css?v=ncc11" />
 <style>
-  /* Print stylesheet — admins hit "Print / Save PDF" to download a clean
-     copy of the contract. Strips the CRM chrome and renders just the
-     legal document: header, line items, scope, terms, signatures. The
-     browser's print dialog "Save as PDF" produces a permanent PDF copy. */
+  /* ── Printable contract document ────────────────────────────────────────
+     The CRM screen shows an *editable* form (textareas, inputs) for admins.
+     But that form is NOT what we print — printing the form gave raw HTML in
+     textareas, clipped content, and no letterhead. Instead we render a
+     separate, fully-formatted legal document (.print-doc) with a branded
+     letterhead (logo + business info), the scope/terms rendered as real HTML,
+     a clean line-item table and signature blocks. On screen .print-doc is
+     hidden; in print it's the ONLY thing shown. Browser "Save as PDF"
+     produces a permanent, professional copy. */
+  .print-doc { display: none; }
+
   @media print {
-    @page { size: letter; margin: 0.6in; }
-    body { background: #fff !important; color: #14110D !important; font-size: 11pt; line-height: 1.5; }
-    .tnav, .page-head, .no-print, .banner, button, .actions, .card-head .btn, .pill[data-s] { display: none !important; }
-    .app, .app--wide { max-width: none !important; margin-left: 0 !important; padding: 0 !important; }
-    .card { border: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 0 14pt !important; background: transparent !important; page-break-inside: avoid; }
-    .card-head { border-bottom: 1px solid #999 !important; padding: 0 0 4pt !important; margin-bottom: 8pt !important; }
-    .card-head h2 { font-size: 13pt !important; font-weight: 600 !important; color: #14110D !important; margin: 0 !important; }
-    table.lines { width: 100%; border-collapse: collapse; font-size: 10pt; }
-    table.lines th, table.lines td { padding: 4pt 6pt; border-bottom: 1px solid #ddd; text-align: left; }
-    table.lines th { background: #F7F2EA; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.04em; }
-    table.lines .num { text-align: right; font-variant-numeric: tabular-nums; }
-    table.lines input, table.lines select, table.lines button.rm, .add, button { display: none !important; }
-    table.lines input[readonly], table.lines td input { border: 0 !important; background: transparent !important; padding: 0 !important; color: #14110D !important; }
-    /* Inline inputs in the line items table — render their value as plain text */
-    table.lines td input[type="text"], table.lines td input[type="number"] { background: transparent; border: 0; padding: 0; color: inherit; width: 100%; }
-    .totals { margin-top: 10pt; padding-top: 8pt; border-top: 2px solid #14110D; font-size: 11pt; }
-    .totals .r { display: flex; justify-content: space-between; padding: 2pt 0; }
-    .form textarea { display: block; width: 100%; border: 0 !important; background: transparent !important; padding: 0 !important; color: #14110D !important; font-family: inherit !important; font-size: 11pt !important; resize: none !important; }
-    .form label > span:first-child { font-size: 9pt; text-transform: uppercase; letter-spacing: 0.04em; color: #56493C; display: block; margin: 8pt 0 2pt; }
-    .form input[type="text"] { border: 0 !important; padding: 0 !important; background: transparent !important; color: #14110D !important; font: inherit !important; }
-    /* Signature blocks — make them prominent */
-    img[alt$="signature"] { border: 1px solid #999 !important; max-width: 280px !important; }
-    /* Hide form-actions row that holds Save buttons */
-    .form-actions { display: none !important; }
+    @page { size: letter; margin: 0.55in; }
+    /* Hide the entire CRM app + the editable screen view; show only the doc. */
+    html, body { background: #fff !important; }
+    .tnav, .page-head { display: none !important; }
+    #page > *:not(.print-doc) { display: none !important; }
+    .app, .app--wide, #page { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+
+    .print-doc {
+      display: block !important;
+      color: #16140F; font-family: "Montserrat", system-ui, sans-serif;
+      font-size: 10.5pt; line-height: 1.55;
+    }
+    .print-doc * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Letterhead */
+    .pd-mast { display: flex; justify-content: space-between; align-items: flex-start;
+      padding-bottom: 12pt; border-bottom: 2px solid #16140F; margin-bottom: 4pt; }
+    .pd-brand { display: flex; align-items: center; gap: 11pt; }
+    .pd-brand img { height: 46pt; width: auto; display: block; }
+    .pd-brand-txt strong { display: block; font-size: 15pt; font-weight: 800; letter-spacing: -0.01em; line-height: 1.1; }
+    .pd-brand-txt span { display: block; font-size: 7.5pt; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #B9542F; margin-top: 3pt; }
+    .pd-biz { text-align: right; font-size: 8.5pt; line-height: 1.65; color: #3A362F; }
+    .pd-biz a { color: #3A362F; text-decoration: none; }
+
+    /* Title bar */
+    .pd-titlebar { display: flex; justify-content: space-between; align-items: baseline; margin: 16pt 0 4pt; }
+    .pd-titlebar h1 { font-size: 19pt; font-weight: 800; letter-spacing: -0.02em; margin: 0; }
+    .pd-num { text-align: right; font-size: 9pt; color: #3A362F; }
+    .pd-num strong { display: block; font-size: 11pt; color: #16140F; font-weight: 700; }
+    .pd-num span { display: block; font-size: 8pt; color: #6C665B; margin-top: 2pt; }
+
+    /* Meta grid */
+    .pd-meta { display: flex; flex-wrap: wrap; gap: 6pt 28pt; padding: 10pt 14pt; margin: 12pt 0 4pt;
+      background: #F6E6DF; border-radius: 4pt; }
+    .pd-meta div { font-size: 9.5pt; }
+    .pd-meta span { display: block; font-size: 7pt; letter-spacing: 0.1em; text-transform: uppercase; color: #6C665B; margin-bottom: 1pt; }
+    .pd-meta strong { font-weight: 600; }
+
+    .pd-intro { font-size: 10.5pt; color: #3A362F; margin: 14pt 0; }
+
+    .print-doc h2 { font-size: 12.5pt; font-weight: 800; letter-spacing: -0.01em; margin: 20pt 0 7pt;
+      padding-bottom: 3pt; border-bottom: 1px solid #D8D6D0; page-break-after: avoid; }
+    .pd-rich { font-size: 10pt; line-height: 1.6; }
+    .pd-rich p { margin: 0 0 7pt; }
+    .pd-rich ul, .pd-rich ol { margin: 0 0 7pt; padding-left: 18pt; }
+    .pd-rich li { margin-bottom: 3pt; }
+    .pd-rich h3 { font-size: 10.5pt; font-weight: 700; margin: 10pt 0 4pt; }
+    .pd-rich strong, .pd-rich b { font-weight: 700; }
+
+    /* Line items */
+    table.pd-lines { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin: 6pt 0; }
+    table.pd-lines th { text-align: left; font-size: 7pt; letter-spacing: 0.08em; text-transform: uppercase;
+      color: #56493C; padding: 5pt 7pt; border-bottom: 1.5px solid #16140F; }
+    table.pd-lines td { padding: 6pt 7pt; border-bottom: 1px solid #E3E1DC; vertical-align: top; }
+    table.pd-lines .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .pd-totals { margin-left: auto; width: 46%; min-width: 240pt; margin-top: 8pt; font-variant-numeric: tabular-nums; }
+    .pd-totals .r { display: flex; justify-content: space-between; padding: 3pt 0; font-size: 10pt; }
+    .pd-totals .r.grand { border-top: 1.5px solid #16140F; margin-top: 4pt; padding-top: 7pt; font-size: 12pt; font-weight: 700; }
+    .pd-totals .r.deposit { color: #B9542F; font-weight: 700; }
+
+    /* Signatures */
+    .pd-sigs { display: grid; grid-template-columns: 1fr 1fr; gap: 26pt; margin-top: 14pt; page-break-inside: avoid; }
+    .pd-sig-label { font-size: 7pt; letter-spacing: 0.1em; text-transform: uppercase; color: #6C665B; margin-bottom: 5pt; }
+    .pd-sig img { max-width: 100%; height: 60pt; object-fit: contain; object-position: left bottom; display: block; }
+    .pd-sig-line { border-bottom: 1.5px solid #16140F; height: 46pt; margin-bottom: 5pt; }
+    .pd-sig-name { font-size: 10pt; font-weight: 600; border-top: 1px solid #D8D6D0; padding-top: 4pt; }
+    .pd-sig-date { font-size: 8pt; color: #6C665B; margin-top: 2pt; }
+    .pd-hash { font-size: 6.5pt; color: #9b958a; margin-top: 3pt; word-break: break-all; }
+
+    .pd-foot { margin-top: 22pt; padding-top: 8pt; border-top: 1px solid #D8D6D0;
+      font-size: 7.5pt; color: #6C665B; text-align: center; letter-spacing: 0.04em; }
+
+    /* Avoid orphaned section headers / split signature blocks */
+    .pd-section { page-break-inside: avoid; }
   }
-  /* Hide print-only helpers on screen */
-  .print-only { display: none; }
-  @media print { .print-only { display: block !important; } }
 </style>
 </head>
 <body>
@@ -71,6 +126,10 @@ function render() {
   // hint and a one-click "Mark as booked" button below to clear it.
   const stuckSignedByCustomer = k.status === "signed_by_customer";
   const isBooked = k.status === "fully_executed";
+  // The manual-deposit card is relevant once the customer has signed (either
+  // fully executed or legacy stuck-signed state) so an admin can record an
+  // off-platform deposit (check / Venmo / cash / ACH).
+  const canCountersign = stuckSignedByCustomer;
 
   document.getElementById("page").innerHTML = `
     ${isBooked ? `
@@ -160,7 +219,7 @@ function render() {
           </div>
           ${k.counter_signature_image ? `
             <div>
-              <div class="muted" style="font-size:12px;margin-bottom:6px">STATELY SHADES SIGNATURE</div>
+              <div class="muted" style="font-size:12px;margin-bottom:6px">NATIONAL CLOSET COMPANY SIGNATURE</div>
               <img src="${SSCrm.esc(k.counter_signature_image)}" style="border:1px solid var(--line);max-width:100%;background:#fff" alt="Counter signature"/>
               <div style="font-size:13px;margin-top:8px"><strong>${SSCrm.esc(k.counter_signer_name)}</strong></div>
               <div class="muted" style="font-size:12px">${SSCrm.fmtDateTime(k.counter_signed_at)}</div>
@@ -170,7 +229,120 @@ function render() {
             </div>`}
         </div>
       </div>` : ""}
+
+    ${renderContractDoc(k, lines)}
   `;
+}
+
+// Branded, fully-rendered legal document used for Print / Save PDF. This is a
+// SEPARATE element from the editable form above — it renders scope_html /
+// terms_html as real HTML (not raw text in a textarea), carries the company
+// letterhead (logo + business info), a clean line-item table and signature
+// blocks. Hidden on screen (.print-doc { display:none }); the @media print
+// stylesheet hides everything else and shows only this.
+function renderContractDoc(k, lines) {
+  const esc = SSCrm.esc;
+  const typeLabel = contractTypeLabel(k.contract_type || "custom_order");
+  const docDate = k.created_at ? SSCrm.fmtDate(k.created_at) : "";
+  const rows = (lines && lines.length ? lines : []).map((l) => {
+    const total = l.line_total_cents != null ? l.line_total_cents : (Number(l.quantity || 1) * (l.unit_price_cents || 0));
+    return `<tr>
+      <td><strong>${esc(l.description || "")}</strong></td>
+      <td>${esc(l.room || "")}</td>
+      <td class="num">${l.quantity || 1}</td>
+      <td class="num">${SSCrm.fmtMoney(l.unit_price_cents || 0)}</td>
+      <td class="num"><strong>${SSCrm.fmtMoney(total)}</strong></td>
+    </tr>`;
+  }).join("");
+
+  // Customer signature block — drawn image if signed, blank rule otherwise.
+  const custSig = k.signature_image
+    ? `<div class="pd-sig"><img src="${esc(k.signature_image)}" alt="Customer signature"/></div>
+       <div class="pd-sig-name">${esc(k.signer_name || k.contact_name || "")}</div>
+       ${k.signed_by_customer_at ? `<div class="pd-sig-date">Signed ${SSCrm.fmtDateTime(k.signed_by_customer_at)}</div>` : ""}
+       ${k.document_hash_at_sign ? `<div class="pd-hash">Document hash: ${esc(String(k.document_hash_at_sign))}</div>` : ""}`
+    : `<div class="pd-sig-line"></div>
+       <div class="pd-sig-name">${esc(k.contact_name || "Customer")}</div>
+       <div class="pd-sig-date">Signature &amp; date</div>`;
+
+  // Company counter-signature.
+  const compSig = k.counter_signature_image
+    ? `<div class="pd-sig"><img src="${esc(k.counter_signature_image)}" alt="National Closet Company signature"/></div>
+       <div class="pd-sig-name">${esc(k.counter_signer_name || "National Closet Company")}</div>
+       ${k.counter_signed_at ? `<div class="pd-sig-date">Signed ${SSCrm.fmtDateTime(k.counter_signed_at)}</div>` : ""}`
+    : (k.counter_signer_name
+      ? `<div class="pd-sig-line" style="display:flex;align-items:flex-end;padding-bottom:6pt;font-family:'Montserrat';font-size:15pt;font-style:italic">${esc(k.counter_signer_name)}</div>
+         <div class="pd-sig-name">${esc(k.counter_signer_name)}</div>
+         ${k.counter_signed_at ? `<div class="pd-sig-date">Signed ${SSCrm.fmtDateTime(k.counter_signed_at)}</div>` : ""}`
+      : `<div class="pd-sig-line"></div>
+         <div class="pd-sig-name">National Closet Company</div>
+         <div class="pd-sig-date">Authorized signature &amp; date</div>`);
+
+  return `
+    <article class="print-doc">
+      <header class="pd-mast">
+        <div class="pd-brand">
+          <img src="/img/ncc-logo-nc.png" alt="National Closet Company"/>
+          <div class="pd-brand-txt">
+            <strong>National Closet Company</strong>
+            <span>Custom Closets &amp; Closet Systems</span>
+          </div>
+        </div>
+        <div class="pd-biz">
+          Gallatin, TN<br/>
+          629-298-8241<br/>
+          hello@nationalclosetco.com<br/>
+          nationalclosetco.com
+        </div>
+      </header>
+
+      <div class="pd-titlebar">
+        <h1>Custom Closet Agreement</h1>
+        <div class="pd-num"><strong>${esc(k.number || "")}</strong><span>${esc(typeLabel)}</span></div>
+      </div>
+
+      <div class="pd-meta">
+        <div><span>Customer</span><strong>${esc(k.contact_name || "")}</strong></div>
+        <div><span>Project</span><strong>${esc(k.project_name || "")}</strong></div>
+        ${k.site_address ? `<div><span>Site address</span><strong>${esc(k.site_address)}</strong></div>` : ""}
+        <div><span>Install window</span><strong>${esc(k.estimated_install_window || "TBD")}</strong></div>
+        ${docDate ? `<div><span>Date</span><strong>${esc(docDate)}</strong></div>` : ""}
+      </div>
+
+      ${k.intro ? `<p class="pd-intro">${esc(k.intro)}</p>` : ""}
+
+      <section class="pd-section">
+        <h2>Scope of work</h2>
+        ${k.scope_html ? `<div class="pd-rich">${k.scope_html}</div>` : ""}
+        <table class="pd-lines">
+          <thead><tr>
+            <th style="width:46%">Description</th><th>Room / Area</th>
+            <th class="num">Qty</th><th class="num">Unit</th><th class="num">Total</th>
+          </tr></thead>
+          <tbody>${rows || `<tr><td colspan="5" style="color:#9b958a">No line items.</td></tr>`}</tbody>
+        </table>
+        <div class="pd-totals">
+          <div class="r grand"><span>Total</span><span>${SSCrm.fmtMoney(k.total_cents)}</span></div>
+          ${k.deposit_cents ? `<div class="r deposit"><span>Deposit due at signing</span><span>${SSCrm.fmtMoney(k.deposit_cents)}</span></div>` : ""}
+        </div>
+      </section>
+
+      ${k.terms_html ? `
+        <section class="pd-section">
+          <h2>Terms &amp; conditions</h2>
+          <div class="pd-rich">${k.terms_html}</div>
+        </section>` : ""}
+
+      <section class="pd-section">
+        <h2>Signatures</h2>
+        <div class="pd-sigs">
+          <div><div class="pd-sig-label">Customer</div>${custSig}</div>
+          <div><div class="pd-sig-label">National Closet Company</div>${compSig}</div>
+        </div>
+      </section>
+
+      <div class="pd-foot">National Closet Company · Custom Closets &amp; Closet Systems · Gallatin, TN · 629-298-8241 · hello@nationalclosetco.com · nationalclosetco.com</div>
+    </article>`;
 }
 
 function lineRow(l, i) {

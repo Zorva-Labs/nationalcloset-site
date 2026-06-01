@@ -184,17 +184,14 @@
       svg.setAttribute("width", W); svg.setAttribute("height", Hh); svg.setAttribute("viewBox", "0 0 " + W + " " + Hh);
       var cs = [];
       els.forEach(function (d) { var r = d.getBoundingClientRect(); cs.push({ x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top, r: r.width / 2 }); });
-      var cy = cs[0].y, rad = cs[0].r, LR = rad + 10;
-      // Loop ~270° around each number (left→top→right→bottom), swooping smoothly between — a natural flight line.
-      var pts = [{ x: cs[0].x - rad - 52, y: cy + LR * 0.45 }];
-      cs.forEach(function (c) {
-        pts.push({ x: c.x - LR, y: cy });
-        pts.push({ x: c.x, y: cy - LR });
-        pts.push({ x: c.x + LR, y: cy });
-        pts.push({ x: c.x, y: cy + LR });
+      var cy = cs[0].y, rad = cs[0].r, amp = rad + 12;
+      // A gentle, natural glide that weaves just above/below each step (no looping).
+      var pts = [{ x: cs[0].x - rad - 50, y: cy }];
+      cs.forEach(function (c, i) {
+        pts.push({ x: c.x, y: cy + (i % 2 === 0 ? -amp : amp) });
       });
       var last = cs[cs.length - 1];
-      pts.push({ x: last.x + rad + 52, y: cy - rad });
+      pts.push({ x: last.x + rad + 50, y: cy - rad * 0.6 });
       var d = spline(pts);
       guide.setAttribute("d", d);
       plane.style.setProperty("offset-path", 'path("' + d + '")');

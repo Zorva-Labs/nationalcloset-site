@@ -170,6 +170,42 @@
     document.body.appendChild(plane);
 
     var W = 0, H = 0, len = 0, ticking = false;
+    // Waypoints: the focal points we want the plane to guide the eye toward,
+    // in top-to-bottom order (headings, the hero form, the process steps,
+    // testimonials, CTAs). The plane swoops through these as you scroll.
+    function waypoints(W, H) {
+      var sel = ".hero__copy h1, .hero__form .form-card, section h2, .fp-node__dot, .tcard, .cta-band__inner, .phero h1, .prose h2, .post-card";
+      var sx = window.pageXOffset || 0, sy = window.pageYOffset || 0, raw = [];
+      document.querySelectorAll(sel).forEach(function (el) {
+        var r = el.getBoundingClientRect();
+        if (!r.width && !r.height) return;
+        raw.push({ x: r.left + r.width / 2 + sx, y: r.top + r.height / 2 + sy });
+      });
+      raw.sort(function (a, b) { return a.y - b.y; });
+      var pts = [], lastY = -1e9;
+      for (var i = 0; i < raw.length; i++) {
+        var p = raw[i];
+        p.x = Math.max(W * 0.12, Math.min(W * 0.88, p.x));
+        if (pts.length && p.y - lastY < 40 && Math.abs(p.x - pts[pts.length - 1].x) < 30) continue;
+        pts.push(p); lastY = p.y;
+      }
+      if (!pts.length) return [{ x: W * 0.5, y: 0 }, { x: W * 0.5, y: H }];
+      if (pts[0].y > 180) pts.unshift({ x: W * 0.28, y: 40 });
+      if (pts[pts.length - 1].y < H - 220) pts.push({ x: W * 0.5, y: H - 90 });
+      return pts;
+    }
+    // Smooth Catmull-Rom spline through the waypoints.
+    function spline(pts) {
+      if (pts.length < 2) return "M 0 0";
+      var d = "M " + pts[0].x.toFixed(1) + " " + pts[0].y.toFixed(1);
+      for (var i = 0; i < pts.length - 1; i++) {
+        var p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || pts[i + 1];
+        var c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
+        var c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
+        d += " C " + c1x.toFixed(1) + " " + c1y.toFixed(1) + " " + c2x.toFixed(1) + " " + c2y.toFixed(1) + " " + p2.x.toFixed(1) + " " + p2.y.toFixed(1);
+      }
+      return d;
+    }
     function build() {
       // Collapse our own overlay BEFORE measuring so the full-height SVG can't
       // inflate the document's scrollHeight (which would feed back and grow H).
@@ -180,15 +216,7 @@
       plane.style.display = "";
       svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", "0 0 " + W + " " + H);
       svg.style.width = W + "px"; svg.style.height = H + "px";
-      var amp = Math.min(W * 0.36, 420), cx = W * 0.5;
-      var seg = Math.max(window.innerHeight * 0.85, 560);
-      var pts = [], y = 0, i = 0;
-      while (y < H + seg) { pts.push([cx + (i % 2 === 0 ? -amp : amp), Math.min(y, H)]); y += seg; i++; }
-      var d = "M " + pts[0][0] + " " + pts[0][1];
-      for (var k = 1; k < pts.length; k++) {
-        var p0 = pts[k - 1], p1 = pts[k], my = (p0[1] + p1[1]) / 2;
-        d += " C " + p0[0] + " " + my + " " + p1[0] + " " + my + " " + p1[0] + " " + p1[1];
-      }
+      var d = spline(waypoints(W, H));
       ghost.setAttribute("d", d); trail.setAttribute("d", d);
       clipRect.setAttribute("width", W);
       len = trail.getTotalLength();

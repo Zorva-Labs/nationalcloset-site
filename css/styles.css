@@ -529,3 +529,31 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
   content: ""; position: absolute; inset: -34% -22%; pointer-events: none;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 60' preserveAspectRatio='none'%3E%3Cpath d='M62,4 C 98,5 117,17 116,31 C 115,47 90,57 56,56 C 24,55 4,43 5,29 C 6,15 30,4 66,5' fill='none' stroke='%23d2683f' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
 }
+
+/* ===== Handwritten doodle note + arrow (Caveat) ===== */
+.doodle-note { font-family: "Caveat", "Montserrat", cursive; color: var(--clay-deep); font-size: 1.6rem; font-weight: 700; line-height: 1.1; display: inline-flex; align-items: center; gap: .55rem; transform: rotate(-3deg); }
+.doodle-note .doodle-arrow { width: 40px; height: 34px; flex: none; color: var(--clay); }
+.doodle-note .doodle-arrow svg { width: 100%; height: 100%; display: block; }
+.section--ink .doodle-note { color: #f3c9b6; }
+.section--ink .doodle-note .doodle-arrow { color: var(--clay); }
+
+/* ===== Sky divider: dashed flight motif between sections ===== */
+.sky-divider { position: relative; max-width: 720px; margin: .4rem auto; height: 38px; }
+.sky-divider__line { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sky-divider__line path { fill: none; stroke: var(--line); stroke-width: 2; stroke-dasharray: 2 11; stroke-linecap: round; }
+.sky-divider__plane { position: absolute; right: -4px; top: 3px; color: var(--clay); }
+.sky-divider__plane svg { width: 30px; height: 30px; display: block; transform: rotate(-8deg); }
+
+/* ===== Process: plane glides along the path as the section scrolls in ===== */
+.flightpath__plane { right: auto; left: calc(100% - 52px); }
+@keyframes fp-fly {
+  0%   { left: 1%;  top: 30px; transform: rotate(-15deg); }
+  45%  { top: 0; }
+  100% { left: calc(100% - 52px); top: 10px; transform: rotate(-5deg); }
+}
+@media (min-width: 761px) and (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .flightpath { view-timeline-name: --flightpath; }
+    .flightpath__plane { animation: fp-fly linear both; animation-timeline: --flightpath; animation-range: entry 0% cover 60%; }
+  }
+}

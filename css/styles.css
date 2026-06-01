@@ -561,9 +561,10 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 /* ===== Process: a paper plane loops around the four steps ===== */
 .fpfly { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; overflow: visible; }
 .fpfly__line { fill: none; stroke: var(--line); stroke-width: 2.5; stroke-dasharray: 0.1 14; stroke-linecap: round; opacity: .6; }
-.fpfly__plane { position: absolute; top: 0; left: 0; width: 26px; height: 26px; z-index: 4; color: var(--clay); pointer-events: none; offset-rotate: auto; filter: drop-shadow(0 3px 4px rgba(22,20,15,.2)); }
+.fpfly__plane { position: absolute; top: 0; left: 0; width: 26px; height: 26px; z-index: 4; color: var(--clay); pointer-events: none; offset-rotate: auto; opacity: 0; filter: drop-shadow(0 3px 4px rgba(22,20,15,.2)); }
 .fpfly__plane svg { width: 100%; height: 100%; display: block; }
-.flightpath.is-flying .fpfly__plane { animation: fpfly-orbit 12s linear infinite; }
-@keyframes fpfly-orbit { from { offset-distance: 0%; } to { offset-distance: 100%; } }
-@media (prefers-reduced-motion: reduce) { .flightpath.is-flying .fpfly__plane { animation: none; } }
+/* fly through the four steps once, slowly, then park at the end */
+.flightpath.is-flying .fpfly__plane { opacity: 1; animation: fpfly-through 16s cubic-bezier(.45, 0, .55, 1) forwards; }
+@keyframes fpfly-through { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+@media (prefers-reduced-motion: reduce) { .flightpath.is-flying .fpfly__plane { opacity: 1; animation: none; offset-distance: 100%; } }
 @media (max-width: 760px) { .fpfly { display: none; } }

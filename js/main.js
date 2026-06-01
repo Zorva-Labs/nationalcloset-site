@@ -184,14 +184,32 @@
       svg.setAttribute("width", W); svg.setAttribute("height", Hh); svg.setAttribute("viewBox", "0 0 " + W + " " + Hh);
       var cs = [];
       els.forEach(function (d) { var r = d.getBoundingClientRect(); cs.push({ x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top, r: r.width / 2 }); });
-      var cy = cs[0].y, rad = cs[0].r, amp = rad + 12;
-      // A gentle, natural glide that weaves just above/below each step (no looping).
-      var pts = [{ x: cs[0].x - rad - 50, y: cy }];
-      cs.forEach(function (c, i) {
-        pts.push({ x: c.x, y: cy + (i % 2 === 0 ? -amp : amp) });
-      });
+      var rad = cs[0].r;
+      // Detect layout: horizontal row (desktop) vs vertically stacked (mobile).
+      var minX = cs[0].x, maxX = cs[0].x, minY = cs[0].y, maxY = cs[0].y;
+      cs.forEach(function (c) { if (c.x < minX) minX = c.x; if (c.x > maxX) maxX = c.x; if (c.y < minY) minY = c.y; if (c.y > maxY) maxY = c.y; });
+      var vertical = (maxY - minY) > (maxX - minX);
       var last = cs[cs.length - 1];
-      pts.push({ x: last.x + rad + 50, y: cy - rad * 0.6 });
+      var pts;
+      if (vertical) {
+        // Mobile: glide straight DOWN, just to the right of the stacked step
+        // markers (in the gap before the text), weaving gently past each one.
+        var ampV = 8;
+        pts = [{ x: cs[0].x + rad + 6, y: cs[0].y - rad - 40 }];
+        cs.forEach(function (c, i) {
+          pts.push({ x: c.x + rad + 6 + (i % 2 === 0 ? -ampV : ampV), y: c.y });
+        });
+        pts.push({ x: last.x + rad + 6, y: last.y + rad + 40 });
+      } else {
+        // Desktop: a gentle glide that weaves just above/below each step across
+        // the row (no looping).
+        var cy = cs[0].y, amp = rad + 12;
+        pts = [{ x: cs[0].x - rad - 50, y: cy }];
+        cs.forEach(function (c, i) {
+          pts.push({ x: c.x, y: cy + (i % 2 === 0 ? -amp : amp) });
+        });
+        pts.push({ x: last.x + rad + 50, y: cy - rad * 0.6 });
+      }
       var d = spline(pts);
       guide.setAttribute("d", d);
       plane.style.setProperty("offset-path", 'path("' + d + '")');

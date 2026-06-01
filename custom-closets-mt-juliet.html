@@ -20,7 +20,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <link rel="icon" type="image/png" href="/img/favicon-nc.png" />
 <link rel="apple-touch-icon" href="/img/favicon-nc.png" />
-<link rel="stylesheet" href="/css/styles.css?v=ncc19" />
+<link rel="stylesheet" href="/css/styles.css?v=ncc20" />
 <script type="application/ld+json">{ "@context":"https://schema.org","@type":"Service","serviceType":"Custom Closets & Closet Systems","provider":{"@type":"HomeAndConstructionBusiness","name":"National Closet Company","telephone":"+1-629-298-8241","url":"https://nationalclosetco.com/","image":"https://nationalclosetco.com/img/hero-closet.webp","priceRange":"$$"},"areaServed":{"@type":"City","name":"Mt. Juliet, TN"},"url":"https://nationalclosetco.com/custom-closets-mt-juliet.html","description":"Custom closets, walk-in and reach-in systems, garages, pantries and home offices in Mt. Juliet, TN."}</script>
 <script type="application/ld+json">{ "@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Do you install custom closets in Mt. Juliet, TN?","acceptedAnswer":{"@type":"Answer","upvoteCount":0,"text":"Yes. National Closet Company designs, builds and installs custom closets and whole-home storage systems throughout Mt. Juliet and the surrounding Middle Tennessee area. Your in-home design consultation is free."}},{"@type":"Question","name":"How much does a custom closet cost in Mt. Juliet?","acceptedAnswer":{"@type":"Answer","upvoteCount":0,"text":"Most custom closets run $1,000 to $10,000 or more depending on size, materials and accessories. You'll get an exact, all-in price at your free in-home design — no obligation."}},{"@type":"Question","name":"How soon can you start a project in Mt. Juliet?","acceptedAnswer":{"@type":"Answer","upvoteCount":0,"text":"After your free design and approval, custom systems are typically manufactured in 2–4 weeks and installed in about a single day."}}]}</script>
 <script type="application/ld+json">{ "@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://nationalclosetco.com/"},{"@type":"ListItem","position":2,"name":"Service Areas","item":"https://nationalclosetco.com/service-areas.html"},{"@type":"ListItem","position":3,"name":"Mt. Juliet","item":"https://nationalclosetco.com/custom-closets-mt-juliet.html"}]}</script>
@@ -30,24 +30,46 @@
 <body id="top">
 <header class="nav">
   <div class="nav__inner">
-    <a href="/#top" class="brand"><span class="brand__mark"><img src="/img/ncc-logo-nc.png" alt="National Closet Company NC monogram logo" width="62" height="38" /></span><span>National Closet Co.<small>Custom Closets &amp; Systems</small></span></a>
+    <a href="/#top" class="brand" aria-label="National Closet Company — home">
+      <span class="brand__mark"><img src="/img/ncc-logo-nc.png" alt="National Closet Company NC monogram logo" width="62" height="38" /></span><span>National Closet Co.<small>Custom Closets &amp; Systems</small></span>
+    </a>
+
     <nav class="nav__links" aria-label="Primary">
-      <a class="nav__link" href="/#top">Home</a><a class="nav__link" href="/#services">Services</a>
-      <a class="nav__link" href="/#work">Our Work</a><a class="nav__link" href="/service-areas.html">Service Areas</a>
-      <a class="nav__link" href="/closet-cases.html">Closet Cases</a><a class="nav__link" href="/#faq">FAQ</a>
+      <a class="nav__link" href="/#top">Home</a>
+      <a class="nav__link" href="/#services">Services</a>
+      <a class="nav__link" href="/#work">Our Work</a>
+      <a class="nav__link" href="/#process">Process</a>
+      <a class="nav__link" href="/closet-cases.html">Closet Cases</a>
+      <a class="nav__link" href="/#faq">FAQ</a>
     </nav>
-    <div class="nav__cta"><a class="nav__phone" href="tel:+16292988241">📞 629-298-8241</a><a class="btn btn--primary" href="#consult">Free Design <span class="arr">→</span></a></div>
-    <button class="hamburger" aria-label="Open menu" aria-controls="drawer" aria-expanded="false"><span></span><span></span><span></span></button>
+
+    <div class="nav__cta">
+      <a class="nav__phone" href="tel:+16292988241" aria-label="Call or text 629-298-8241">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/></svg>
+        629-298-8241
+      </a>
+      <a class="btn btn--primary" href="#consult">Free Design <span class="arr">→</span></a>
+    </div>
+
+    <button class="hamburger" aria-label="Open menu" aria-controls="drawer" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </header>
 <div class="drawer" id="drawer">
   <a class="drawer__link" href="/#top"><span>Home</span><span class="n">01</span></a>
   <a class="drawer__link" href="/#services"><span>Services</span><span class="n">02</span></a>
   <a class="drawer__link" href="/#work"><span>Our Work</span><span class="n">03</span></a>
-  <a class="drawer__link" href="/service-areas.html"><span>Service Areas</span><span class="n">04</span></a>
+  <a class="drawer__link" href="/#process"><span>Process</span><span class="n">04</span></a>
   <a class="drawer__link" href="/closet-cases.html"><span>Closet Cases</span><span class="n">05</span></a>
   <a class="drawer__link" href="/#faq"><span>FAQ</span><span class="n">06</span></a>
-  <div class="drawer__foot"><div class="drawer__contact"><a href="tel:+16292988241">📞 629-298-8241</a><a href="mailto:hello@nationalclosetco.com">✉️ hello@nationalclosetco.com</a></div><a class="btn btn--primary btn--block" href="#consult">Book Free Consultation <span class="arr">→</span></a></div>
+  <div class="drawer__foot">
+    <div class="drawer__contact">
+      <a href="tel:+16292988241">📞 629-298-8241</a>
+      <a href="mailto:hello@nationalclosetco.com">✉️ hello@nationalclosetco.com</a>
+    </div>
+    <a class="btn btn--primary btn--block" href="#consult">Book Free Consultation <span class="arr">→</span></a>
+  </div>
 </div>
 <article>
 <section class="phero">
@@ -129,10 +151,63 @@
   </div>
 </section>
 <footer class="footer">
-  <div class="wrap"><div class="footer__bottom" style="border-top:none;padding-top:0">
-    <p>© <span data-year>2026</span> National Closet Company. All rights reserved. · Custom Closets &amp; Closet Systems · Gallatin, TN. · <a href="/service-areas.html">All service areas →</a></p>
-    <p class="zorva"><a href="https://zorvalabs.com" target="_blank" rel="noopener">Website Design by Zorva Labs</a></p>
-  </div></div>
+  <div class="wrap">
+    <div class="footer__top">
+      <div class="footer__brand">
+        <a href="/#top" class="footer__logo" aria-label="National Closet Company — home">
+          <img src="/img/favicon-nc.png" alt="National Closet Company NC monogram logo" width="64" height="39" />
+          <span>National Closet Co.<small>Custom Closets &amp; Systems</small></span>
+        </a>
+        <p style="max-width:36ch">Custom closets, closet systems and whole-home storage — designed, built and installed around the way you live.</p>
+        <div class="footer__contact" style="margin-top:1.2rem">
+          <a href="tel:+16292988241">📞 629-298-8241</a>
+          <a href="mailto:hello@nationalclosetco.com">✉️ hello@nationalclosetco.com</a>
+        </div>
+        <a class="btn btn--primary" href="#consult" style="margin-top:1.4rem">Free Design Consultation <span class="arr">→</span></a>
+      </div>
+
+      <div class="footer__cols">
+        <div class="footer__col">
+          <h4>Services</h4>
+          <a href="/#services">Custom Walk-In Closets</a>
+          <a href="/#services">Reach-In Closet Systems</a>
+          <a href="/#services">Home Offices</a>
+          <a href="/#services">Garage Storage</a>
+          <a href="/#services">Pantries</a>
+          <a href="/#services">Murphy &amp; Wall Beds</a>
+        </div>
+        <div class="footer__col">
+          <h4>Company</h4>
+          <a href="/#top">Home</a>
+          <a href="/#work">Our Work</a>
+          <a href="/#process">Our Process</a>
+          <a href="/closet-cases.html">Closet Cases Blog</a>
+          <a href="/#faq">FAQ</a>
+          <a href="#consult">Free Consultation</a>
+        </div>
+        <div class="footer__col">
+          <h4>Get Started</h4>
+          <a href="#consult">Book a Free Design</a>
+          <a href="tel:+16292988241">Call or Text Us</a>
+          <a href="mailto:hello@nationalclosetco.com">Email Us</a>
+          <p style="margin-top:.6rem;font-size:.9rem">Mon–Fri 8–6 · Sat 9–4<br>Serving Gallatin, Nashville &amp; Middle TN</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer__areas">
+      <h4>Areas We Serve — Custom Closets Across Middle Tennessee</h4>
+      <p>Proudly serving every city within about 90 miles of Gallatin, TN — including custom closets in
+      Gallatin, Hendersonville, Nashville, Goodlettsville, Mount Juliet, Lebanon, Brentwood, Franklin,
+      Murfreesboro, Smyrna, La Vergne, Nolensville, Belle Meade, Green Hills, Hermitage, Old Hickory, Spring Hill, Columbia, Springfield, Portland, White House,
+      Clarksville, Dickson, Cookeville, Shelbyville and Bowling Green, KY, plus the surrounding communities. <a href="/service-areas.html">See all service areas &rarr;</a></p>
+    </div>
+
+    <div class="footer__bottom">
+      <p>© <span data-year>2026</span> National Closet Company. All rights reserved. · Custom Closets &amp; Closet Systems · Gallatin, TN.</p>
+      <p class="zorva"><a href="https://zorvalabs.com" target="_blank" rel="noopener">Website Design by Zorva Labs</a></p>
+    </div>
+  </div>
 </footer>
 <div class="mobicta"><a class="call" href="tel:+16292988241">📞 Call / Text</a><a class="quote" href="#consult">✨ Free Design</a></div>
 <script src="/js/main.js?v=ncc19" defer></script>

@@ -149,44 +149,69 @@
   });
 })();
 
-/* ===== Process section: a paper plane that loops around the four steps ===== */
+/* ===== Process section: paper plane flies through the 4 steps once; dotted trail appears only behind it (CSS-driven) ===== */
 (function () {
   try {
     var fp = document.querySelector(".flightpath");
     if (!fp) return;
+    var DUR = 14; // seconds — must match the CSS animation-duration on .fpfly__plane
     var NS = "http://www.w3.org/2000/svg";
     var svg = document.createElementNS(NS, "svg"); svg.setAttribute("class", "fpfly"); svg.setAttribute("aria-hidden", "true");
-    var line = document.createElementNS(NS, "path"); line.setAttribute("class", "fpfly__line"); svg.appendChild(line);
+    var guide = document.createElementNS(NS, "path"); guide.setAttribute("fill", "none"); guide.setAttribute("stroke", "none"); svg.appendChild(guide);
+    var dotsG = document.createElementNS(NS, "g"); svg.appendChild(dotsG);
     fp.insertBefore(svg, fp.firstChild);
     var plane = document.createElement("div"); plane.className = "fpfly__plane"; plane.setAttribute("aria-hidden", "true");
     plane.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
     fp.appendChild(plane);
 
+    function spline(p) {
+      if (p.length < 2) return "";
+      var d = "M " + p[0].x.toFixed(1) + " " + p[0].y.toFixed(1);
+      for (var i = 0; i < p.length - 1; i++) {
+        var p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p[i + 1];
+        d += " C " + (p1.x + (p2.x - p0.x) / 6).toFixed(1) + " " + (p1.y + (p2.y - p0.y) / 6).toFixed(1)
+          + " " + (p2.x - (p3.x - p1.x) / 6).toFixed(1) + " " + (p2.y - (p3.y - p1.y) / 6).toFixed(1)
+          + " " + p2.x.toFixed(1) + " " + p2.y.toFixed(1);
+      }
+      return d;
+    }
+
     function build() {
-      var dots = fp.querySelectorAll(".fp-node__dot");
-      if (!dots.length) return;
+      var els = fp.querySelectorAll(".fp-node__dot");
+      if (!els.length) return;
       var box = fp.getBoundingClientRect();
       var W = fp.clientWidth, Hh = fp.clientHeight;
       svg.setAttribute("width", W); svg.setAttribute("height", Hh); svg.setAttribute("viewBox", "0 0 " + W + " " + Hh);
       var cs = [];
-      dots.forEach(function (d) { var r = d.getBoundingClientRect(); cs.push({ x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top, r: r.width / 2 }); });
-      var cy = cs[0].y, rad = cs[0].r, LR = rad + 8;
-      var f = function (n) { return n.toFixed(1); };
-      var x0 = cs[0].x - rad - 46, x1 = cs[cs.length - 1].x + rad + 46;
-      // Start at the left, then loop a full circle around each number (connected
-      // along the bottom), and finally fly off up to the right. Open path → the
-      // plane flies through ONCE.
-      var d = "M " + f(x0) + " " + f(cy);
-      for (var i = 0; i < cs.length; i++) {
-        var x = cs[i].x, by = cy + LR, prevX = i === 0 ? x0 : cs[i - 1].x;
-        d += " Q " + f((prevX + x) / 2) + " " + f(by + 22) + " " + f(x) + " " + f(by); // glide to the bottom of this number
-        d += " A " + f(LR) + " " + f(LR) + " 0 0 1 " + f(x) + " " + f(cy - LR);        // up & around the left/top
-        d += " A " + f(LR) + " " + f(LR) + " 0 0 1 " + f(x) + " " + f(by);             // around the right/bottom — full circle
-      }
-      d += " Q " + f(x1) + " " + f(cy + LR) + " " + f(x1) + " " + f(cy - rad);          // fly off up to the right
-      line.setAttribute("d", d);
+      els.forEach(function (d) { var r = d.getBoundingClientRect(); cs.push({ x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top, r: r.width / 2 }); });
+      var cy = cs[0].y, rad = cs[0].r, LR = rad + 10;
+      // Loop ~270° around each number (left→top→right→bottom), swooping smoothly between — a natural flight line.
+      var pts = [{ x: cs[0].x - rad - 52, y: cy + LR * 0.45 }];
+      cs.forEach(function (c) {
+        pts.push({ x: c.x - LR, y: cy });
+        pts.push({ x: c.x, y: cy - LR });
+        pts.push({ x: c.x + LR, y: cy });
+        pts.push({ x: c.x, y: cy + LR });
+      });
+      var last = cs[cs.length - 1];
+      pts.push({ x: last.x + rad + 52, y: cy - rad });
+      var d = spline(pts);
+      guide.setAttribute("d", d);
       plane.style.setProperty("offset-path", 'path("' + d + '")');
       plane.style.setProperty("-webkit-offset-path", 'path("' + d + '")');
+      var len = guide.getTotalLength();
+      // Dots along the route; each fades in (via per-dot animation-delay) exactly
+      // as the plane — moving linearly over DUR — reaches it, so the trail only
+      // ever appears BEHIND the plane.
+      while (dotsG.firstChild) dotsG.removeChild(dotsG.firstChild);
+      for (var L = 0; L <= len; L += 13) {
+        var pt = guide.getPointAtLength(L);
+        var c = document.createElementNS(NS, "circle");
+        c.setAttribute("class", "fpfly__dot");
+        c.setAttribute("cx", pt.x.toFixed(1)); c.setAttribute("cy", pt.y.toFixed(1)); c.setAttribute("r", "2.7");
+        c.style.animationDelay = (L / len * DUR).toFixed(2) + "s";
+        dotsG.appendChild(c);
+      }
     }
 
     var rt;
@@ -194,12 +219,12 @@
     window.addEventListener("load", function () { setTimeout(build, 120); });
     build();
 
-    // Fly through ONCE, the first time the section scrolls into view.
+    // Fly through once, the first time the section comes into view.
     if ("IntersectionObserver" in window) {
-      var io2 = new IntersectionObserver(function (en) {
-        en.forEach(function (e) { if (e.isIntersecting) { fp.classList.add("is-flying"); io2.unobserve(fp); } });
-      }, { rootMargin: "0px 0px -12% 0px" });
-      io2.observe(fp);
+      var io = new IntersectionObserver(function (en) {
+        en.forEach(function (x) { if (x.isIntersecting) { fp.classList.add("is-flying"); io.unobserve(fp); } });
+      }, { rootMargin: "0px 0px -14% 0px" });
+      io.observe(fp);
     } else { fp.classList.add("is-flying"); }
   } catch (e) { /* never break the page over a flourish */ }
 })();

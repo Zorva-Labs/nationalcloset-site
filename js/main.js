@@ -148,3 +148,71 @@
     el.textContent = new Date().getFullYear();
   });
 })();
+
+/* ===== Site-wide paper plane: flies down the page on scroll with a dotted trail ===== */
+(function () {
+  try {
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.innerWidth < 1024) return;
+    var NS = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("class", "skyfly"); svg.setAttribute("aria-hidden", "true");
+    var defs = document.createElementNS(NS, "defs");
+    var clip = document.createElementNS(NS, "clipPath"); clip.setAttribute("id", "skyfly-clip");
+    var clipRect = document.createElementNS(NS, "rect");
+    clipRect.setAttribute("x", "0"); clipRect.setAttribute("y", "0"); clipRect.setAttribute("width", "0"); clipRect.setAttribute("height", "0");
+    clip.appendChild(clipRect); defs.appendChild(clip); svg.appendChild(defs);
+    var ghost = document.createElementNS(NS, "path"); ghost.setAttribute("class", "skyfly__ghost"); svg.appendChild(ghost);
+    var trail = document.createElementNS(NS, "path"); trail.setAttribute("class", "skyfly__trail"); trail.setAttribute("clip-path", "url(#skyfly-clip)"); svg.appendChild(trail);
+    document.body.appendChild(svg);
+    var plane = document.createElement("div"); plane.className = "skyfly__plane"; plane.setAttribute("aria-hidden", "true");
+    plane.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+    document.body.appendChild(plane);
+
+    var W = 0, H = 0, len = 0, ticking = false;
+    function build() {
+      // Collapse our own overlay BEFORE measuring so the full-height SVG can't
+      // inflate the document's scrollHeight (which would feed back and grow H).
+      svg.setAttribute("height", 0); svg.style.height = "0px";
+      plane.style.display = "none";
+      W = document.documentElement.clientWidth;
+      H = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+      plane.style.display = "";
+      svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+      svg.style.width = W + "px"; svg.style.height = H + "px";
+      var amp = Math.min(W * 0.36, 420), cx = W * 0.5;
+      var seg = Math.max(window.innerHeight * 0.85, 560);
+      var pts = [], y = 0, i = 0;
+      while (y < H + seg) { pts.push([cx + (i % 2 === 0 ? -amp : amp), Math.min(y, H)]); y += seg; i++; }
+      var d = "M " + pts[0][0] + " " + pts[0][1];
+      for (var k = 1; k < pts.length; k++) {
+        var p0 = pts[k - 1], p1 = pts[k], my = (p0[1] + p1[1]) / 2;
+        d += " C " + p0[0] + " " + my + " " + p1[0] + " " + my + " " + p1[0] + " " + p1[1];
+      }
+      ghost.setAttribute("d", d); trail.setAttribute("d", d);
+      clipRect.setAttribute("width", W);
+      len = trail.getTotalLength();
+      update();
+    }
+    function update() {
+      ticking = false;
+      if (!len) return;
+      var max = H - window.innerHeight;
+      var sc = window.pageYOffset || document.documentElement.scrollTop || 0;
+      var prog = max > 0 ? Math.min(1, Math.max(0, sc / max)) : 0;
+      var dist = prog * len;
+      var pt = trail.getPointAtLength(dist);
+      var pt2 = trail.getPointAtLength(Math.min(len, dist + 2));
+      var ang = Math.atan2(pt2.y - pt.y, pt2.x - pt.x) * 180 / Math.PI;
+      plane.style.transform = "translate(" + pt.x + "px," + pt.y + "px) translate(-50%,-50%) rotate(" + ang + "deg)";
+      clipRect.setAttribute("height", Math.max(0, pt.y));
+    }
+    function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+    var rt;
+    function onResize() { clearTimeout(rt); rt = setTimeout(build, 200); }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    window.addEventListener("load", function () { setTimeout(build, 120); setTimeout(build, 600); });
+    build();
+  } catch (e) { /* never break the page over a flourish */ }
+})();

@@ -557,3 +557,12 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
     .flightpath__plane { animation: fp-fly linear both; animation-timeline: --flightpath; animation-range: entry 0% cover 60%; }
   }
 }
+
+/* ===== Site-wide paper plane that flies down the page on scroll (dotted trail follows it) ===== */
+.skyfly { position: absolute; top: 0; left: 0; z-index: 40; pointer-events: none; overflow: visible; }
+.skyfly__ghost { fill: none; stroke: var(--line); stroke-width: 2.5; stroke-dasharray: 0.1 15; stroke-linecap: round; opacity: .45; }
+.skyfly__trail { fill: none; stroke: var(--clay); stroke-width: 2.5; stroke-dasharray: 0.1 15; stroke-linecap: round; opacity: .7; }
+.skyfly__plane { position: absolute; top: 0; left: 0; width: 30px; height: 30px; z-index: 41; pointer-events: none; color: var(--clay); will-change: transform; filter: drop-shadow(0 4px 6px rgba(22,20,15,.18)); }
+.skyfly__plane svg { width: 100%; height: 100%; display: block; }
+@media (max-width: 1023px) { .skyfly, .skyfly__plane { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { .skyfly, .skyfly__plane { display: none !important; } }

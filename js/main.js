@@ -149,113 +149,56 @@
   });
 })();
 
-/* ===== Site-wide paper plane: flies down the page on scroll with a dotted trail ===== */
+/* ===== Process section: a paper plane that loops around the four steps ===== */
 (function () {
   try {
-    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if (window.innerWidth < 1024) return;
+    var fp = document.querySelector(".flightpath");
+    if (!fp) return;
     var NS = "http://www.w3.org/2000/svg";
-    var svg = document.createElementNS(NS, "svg");
-    svg.setAttribute("class", "skyfly"); svg.setAttribute("aria-hidden", "true");
-    var defs = document.createElementNS(NS, "defs");
-    var clip = document.createElementNS(NS, "clipPath"); clip.setAttribute("id", "skyfly-clip");
-    var clipRect = document.createElementNS(NS, "rect");
-    clipRect.setAttribute("x", "0"); clipRect.setAttribute("y", "0"); clipRect.setAttribute("width", "0"); clipRect.setAttribute("height", "0");
-    clip.appendChild(clipRect); defs.appendChild(clip); svg.appendChild(defs);
-    var ghost = document.createElementNS(NS, "path"); ghost.setAttribute("class", "skyfly__ghost"); svg.appendChild(ghost);
-    var trail = document.createElementNS(NS, "path"); trail.setAttribute("class", "skyfly__trail"); trail.setAttribute("clip-path", "url(#skyfly-clip)"); svg.appendChild(trail);
-    document.body.appendChild(svg);
-    var plane = document.createElement("div"); plane.className = "skyfly__plane"; plane.setAttribute("aria-hidden", "true");
+    var svg = document.createElementNS(NS, "svg"); svg.setAttribute("class", "fpfly"); svg.setAttribute("aria-hidden", "true");
+    var line = document.createElementNS(NS, "path"); line.setAttribute("class", "fpfly__line"); svg.appendChild(line);
+    fp.insertBefore(svg, fp.firstChild);
+    var plane = document.createElement("div"); plane.className = "fpfly__plane"; plane.setAttribute("aria-hidden", "true");
     plane.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
-    document.body.appendChild(plane);
+    fp.appendChild(plane);
 
-    var W = 0, H = 0, ticking = false, wp = [];
-    // Per-load randomness so the flight pattern is different every visit
-    // (kept stable across rebuilds within the same session).
-    var JIT = []; for (var jj = 0; jj < 128; jj++) JIT.push(Math.random() * 2 - 1);
-    var AMP = 0.08 + Math.random() * 0.12;       // random weave width (8–20% of W)
-    var SIDE = Math.random() < 0.5 ? -1 : 1;     // random first direction
-    // Waypoints: the focal points we want the plane to guide the eye toward,
-    // in top-to-bottom order (headings, the hero form, the process steps,
-    // testimonials, CTAs). The plane swoops through these as you scroll.
-    function waypoints(W, H) {
-      var sel = ".hero__copy h1, .hero__form .form-card, section h2, .fp-node__dot, .tcard, .cta-band__inner, .phero h1, .prose h2, .post-card";
-      var sx = window.pageXOffset || 0, sy = window.pageYOffset || 0, raw = [];
-      document.querySelectorAll(sel).forEach(function (el) {
-        var r = el.getBoundingClientRect();
-        if (!r.width && !r.height) return;
-        raw.push({ x: r.left + r.width / 2 + sx, y: r.top + r.height / 2 + sy });
-      });
-      raw.sort(function (a, b) { return a.y - b.y; });
-      var pts = [], lastY = -1e9, idx = 0;
-      for (var i = 0; i < raw.length; i++) {
-        var p = raw[i];
-        if (pts.length && p.y - lastY < 60) continue;          // one focal point per Y band (x must be single-valued)
-        p.x += SIDE * JIT[idx % JIT.length] * AMP * W;          // randomized horizontal weave
-        p.x = Math.max(W * 0.12, Math.min(W * 0.88, p.x));
-        pts.push(p); lastY = p.y; idx++;
-      }
-      if (!pts.length) pts = [{ x: W * 0.5, y: 0 }];
-      if (pts[0].y > 120) pts.unshift({ x: W * 0.3, y: 0 });
-      pts.push({ x: pts[pts.length - 1].x, y: H + 1 });        // extend to the bottom
-      return pts;
-    }
-    // The plane's x at a document y — smoothstep between the bracketing focal
-    // points, so it eases toward (settles on) each one as you scroll past.
-    function planeXAt(y) {
-      var p = wp; if (!p.length) return W * 0.5;
-      if (y <= p[0].y) return p[0].x;
-      for (var i = 0; i < p.length - 1; i++) {
-        if (y <= p[i + 1].y) {
-          var span = (p[i + 1].y - p[i].y) || 1;
-          var t = (y - p[i].y) / span; if (t < 0) t = 0; else if (t > 1) t = 1;
-          var e = t * t * (3 - 2 * t);
-          return p[i].x + (p[i + 1].x - p[i].x) * e;
-        }
-      }
-      return p[p.length - 1].x;
-    }
     function build() {
-      // Collapse our own overlay BEFORE measuring so the full-height SVG can't
-      // inflate the document's scrollHeight (which would feed back and grow H).
-      svg.setAttribute("height", 0); svg.style.height = "0px";
-      plane.style.display = "none";
-      W = document.documentElement.clientWidth;
-      H = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
-      plane.style.display = "";
-      svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", "0 0 " + W + " " + H);
-      svg.style.width = W + "px"; svg.style.height = H + "px";
-      wp = waypoints(W, H);
-      // Trail = the plane's route expressed as x(y), sampled — dotted.
-      var step = 12, d = "M " + planeXAt(0).toFixed(1) + " 0";
-      for (var y = step; y <= H; y += step) d += " L " + planeXAt(y).toFixed(1) + " " + y;
-      ghost.setAttribute("d", d); trail.setAttribute("d", d);
-      clipRect.setAttribute("width", W);
-      update();
+      var dots = fp.querySelectorAll(".fp-node__dot");
+      if (!dots.length) return;
+      var box = fp.getBoundingClientRect();
+      var W = fp.clientWidth, Hh = fp.clientHeight;
+      svg.setAttribute("width", W); svg.setAttribute("height", Hh); svg.setAttribute("viewBox", "0 0 " + W + " " + Hh);
+      var cs = [];
+      dots.forEach(function (d) { var r = d.getBoundingClientRect(); cs.push({ x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top, r: r.width / 2 }); });
+      var cy = cs[0].y, rad = cs[0].r;
+      var x0 = cs[0].x - rad - 34, x1 = cs[cs.length - 1].x + rad + 34;
+      var top = cy - rad - 18, bot = cy + rad + 10;
+      // wavy pass over the tops of the circles, left -> right
+      var d = "M " + x0.toFixed(1) + " " + cy.toFixed(1);
+      for (var i = 0; i < cs.length; i++) {
+        var prevX = i === 0 ? x0 : cs[i - 1].x;
+        d += " Q " + ((prevX + cs[i].x) / 2).toFixed(1) + " " + top.toFixed(1) + " " + cs[i].x.toFixed(1) + " " + cy.toFixed(1);
+      }
+      // round the right end, glide back underneath, round the left end, close the loop
+      d += " Q " + x1.toFixed(1) + " " + cy.toFixed(1) + " " + x1.toFixed(1) + " " + bot.toFixed(1);
+      d += " L " + x0.toFixed(1) + " " + bot.toFixed(1);
+      d += " Q " + (x0 - 8).toFixed(1) + " " + bot.toFixed(1) + " " + (x0 - 8).toFixed(1) + " " + cy.toFixed(1);
+      d += " Q " + (x0 - 8).toFixed(1) + " " + cy.toFixed(1) + " " + x0.toFixed(1) + " " + cy.toFixed(1) + " Z";
+      line.setAttribute("d", d);
+      plane.style.setProperty("offset-path", 'path("' + d + '")');
+      plane.style.setProperty("-webkit-offset-path", 'path("' + d + '")');
     }
-    function update() {
-      ticking = false;
-      if (!wp.length) return;
-      var vh = window.innerHeight;
-      var sc = window.pageYOffset || document.documentElement.scrollTop || 0;
-      var max = H - vh, prog = max > 0 ? Math.min(1, Math.max(0, sc / max)) : 0;
-      // Keep the plane ON SCREEN: it rides ~34%–62% down the viewport (drifting
-      // gently lower as you scroll) and weaves horizontally toward the current
-      // focal point, leaving the dotted trail above it.
-      var band = 0.34 + 0.28 * prog;
-      var py = Math.max(0, Math.min(H, sc + vh * band));
-      var px = planeXAt(py);
-      var py2 = Math.min(H, py + 10), px2 = planeXAt(py2);
-      var ang = Math.atan2(py2 - py, px2 - px) * 180 / Math.PI; // tangent: down + lean toward the weave
-      plane.style.transform = "translate(" + px + "px," + py + "px) translate(-50%,-50%) rotate(" + ang + "deg)";
-      clipRect.setAttribute("height", Math.max(0, py));
-    }
-    function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
+
     var rt;
-    function onResize() { clearTimeout(rt); rt = setTimeout(build, 200); }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
-    window.addEventListener("load", function () { setTimeout(build, 120); setTimeout(build, 600); });
+    window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(build, 200); });
+    window.addEventListener("load", function () { setTimeout(build, 120); });
     build();
+
+    // Only animate while the section is on screen.
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (en) {
+        en.forEach(function (e) { fp.classList.toggle("is-flying", e.isIntersecting); });
+      }, { rootMargin: "0px 0px -10% 0px" }).observe(fp);
+    } else { fp.classList.add("is-flying"); }
   } catch (e) { /* never break the page over a flourish */ }
 })();

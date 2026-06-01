@@ -558,11 +558,12 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
   }
 }
 
-/* ===== Site-wide paper plane that flies down the page on scroll (dotted trail follows it) ===== */
-.skyfly { position: absolute; top: 0; left: 0; z-index: 40; pointer-events: none; overflow: visible; }
-.skyfly__ghost { fill: none; stroke: var(--line); stroke-width: 2.5; stroke-dasharray: 0.1 15; stroke-linecap: round; opacity: .45; }
-.skyfly__trail { fill: none; stroke: var(--clay); stroke-width: 2.5; stroke-dasharray: 0.1 15; stroke-linecap: round; opacity: .7; }
-.skyfly__plane { position: absolute; top: 0; left: 0; width: 30px; height: 30px; z-index: 41; pointer-events: none; color: var(--clay); will-change: transform; filter: drop-shadow(0 4px 6px rgba(22,20,15,.18)); }
-.skyfly__plane svg { width: 100%; height: 100%; display: block; }
-@media (max-width: 1023px) { .skyfly, .skyfly__plane { display: none !important; } }
-@media (prefers-reduced-motion: reduce) { .skyfly, .skyfly__plane { display: none !important; } }
+/* ===== Process: a paper plane loops around the four steps ===== */
+.fpfly { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; overflow: visible; }
+.fpfly__line { fill: none; stroke: var(--line); stroke-width: 2.5; stroke-dasharray: 0.1 14; stroke-linecap: round; opacity: .6; }
+.fpfly__plane { position: absolute; top: 0; left: 0; width: 26px; height: 26px; z-index: 4; color: var(--clay); pointer-events: none; offset-rotate: auto; filter: drop-shadow(0 3px 4px rgba(22,20,15,.2)); }
+.fpfly__plane svg { width: 100%; height: 100%; display: block; }
+.flightpath.is-flying .fpfly__plane { animation: fpfly-orbit 12s linear infinite; }
+@keyframes fpfly-orbit { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+@media (prefers-reduced-motion: reduce) { .flightpath.is-flying .fpfly__plane { animation: none; } }
+@media (max-width: 760px) { .fpfly { display: none; } }

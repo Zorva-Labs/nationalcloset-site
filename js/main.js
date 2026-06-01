@@ -169,7 +169,12 @@
     plane.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
     document.body.appendChild(plane);
 
-    var W = 0, H = 0, len = 0, ticking = false;
+    var W = 0, H = 0, len = 0, ticking = false, fracs = [];
+    // Per-load randomness so the flight pattern is different every visit
+    // (kept stable across rebuilds within the same session).
+    var JIT = []; for (var jj = 0; jj < 128; jj++) JIT.push(Math.random() * 2 - 1);
+    var AMP = 0.08 + Math.random() * 0.12;       // random weave width (8–20% of W)
+    var SIDE = Math.random() < 0.5 ? -1 : 1;     // random first direction
     // Waypoints: the focal points we want the plane to guide the eye toward,
     // in top-to-bottom order (headings, the hero form, the process steps,
     // testimonials, CTAs). The plane swoops through these as you scroll.
@@ -182,12 +187,13 @@
         raw.push({ x: r.left + r.width / 2 + sx, y: r.top + r.height / 2 + sy });
       });
       raw.sort(function (a, b) { return a.y - b.y; });
-      var pts = [], lastY = -1e9;
+      var pts = [], lastY = -1e9, idx = 0;
       for (var i = 0; i < raw.length; i++) {
         var p = raw[i];
-        p.x = Math.max(W * 0.12, Math.min(W * 0.88, p.x));
         if (pts.length && p.y - lastY < 40 && Math.abs(p.x - pts[pts.length - 1].x) < 30) continue;
-        pts.push(p); lastY = p.y;
+        p.x += SIDE * JIT[idx % JIT.length] * AMP * W;        // randomized horizontal weave
+        p.x = Math.max(W * 0.1, Math.min(W * 0.9, p.x));
+        pts.push(p); lastY = p.y; idx++;
       }
       if (!pts.length) return [{ x: W * 0.5, y: 0 }, { x: W * 0.5, y: H }];
       if (pts[0].y > 180) pts.unshift({ x: W * 0.28, y: 40 });
@@ -206,6 +212,25 @@
       }
       return d;
     }
+    // Find each waypoint's fractional position along the path (0–1) by sampling,
+    // so we can ease the plane to slow down exactly AT each focal point.
+    function computeFracs(pts) {
+      if (!len || pts.length < 2) return [0, 1];
+      var samples = 240, sp = [];
+      for (var s = 0; s <= samples; s++) { var L = len * s / samples; var q = trail.getPointAtLength(L); sp.push([L, q.x, q.y]); }
+      var fr = [];
+      for (var i = 0; i < pts.length; i++) {
+        var best = Infinity, bestL = 0;
+        for (var j = 0; j < sp.length; j++) {
+          var dx = sp[j][1] - pts[i].x, dy = sp[j][2] - pts[i].y, dd = dx * dx + dy * dy;
+          if (dd < best) { best = dd; bestL = sp[j][0]; }
+        }
+        fr.push(bestL / len);
+      }
+      fr[0] = 0; fr[fr.length - 1] = 1;
+      for (var k = 1; k < fr.length; k++) if (fr[k] <= fr[k - 1]) fr[k] = Math.min(1, fr[k - 1] + 0.0001);
+      return fr;
+    }
     function build() {
       // Collapse our own overlay BEFORE measuring so the full-height SVG can't
       // inflate the document's scrollHeight (which would feed back and grow H).
@@ -216,10 +241,12 @@
       plane.style.display = "";
       svg.setAttribute("width", W); svg.setAttribute("height", H); svg.setAttribute("viewBox", "0 0 " + W + " " + H);
       svg.style.width = W + "px"; svg.style.height = H + "px";
-      var d = spline(waypoints(W, H));
+      var pts = waypoints(W, H);
+      var d = spline(pts);
       ghost.setAttribute("d", d); trail.setAttribute("d", d);
       clipRect.setAttribute("width", W);
       len = trail.getTotalLength();
+      fracs = computeFracs(pts);
       update();
     }
     function update() {
@@ -228,7 +255,21 @@
       var max = H - window.innerHeight;
       var sc = window.pageYOffset || document.documentElement.scrollTop || 0;
       var prog = max > 0 ? Math.min(1, Math.max(0, sc / max)) : 0;
-      var dist = prog * len;
+      // Map scroll → distance with a smoothstep within each waypoint segment, so
+      // the plane decelerates approaching each focal point and accelerates away
+      // (it visibly "pauses" to point things out).
+      var dist;
+      var N = fracs.length;
+      if (N >= 2) {
+        var segs = N - 1;
+        var s = Math.min(segs - 1e-6, Math.max(0, prog * segs));
+        var si = Math.floor(s);
+        var lt = s - si;
+        var e = lt * lt * (3 - 2 * lt);
+        dist = (fracs[si] + e * (fracs[si + 1] - fracs[si])) * len;
+      } else {
+        dist = prog * len;
+      }
       var pt = trail.getPointAtLength(dist);
       var pt2 = trail.getPointAtLength(Math.min(len, dist + 2));
       var ang = Math.atan2(pt2.y - pt.y, pt2.x - pt.x) * 180 / Math.PI;

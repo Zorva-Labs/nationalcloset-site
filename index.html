@@ -26,7 +26,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <link rel="icon" type="image/png" href="/img/ncc-logo-nc.png" />
 <link rel="apple-touch-icon" href="/img/ncc-logo-nc.png" />
-<link rel="stylesheet" href="/css/styles.css?v=ncc6" />
+<link rel="stylesheet" href="/css/styles.css?v=ncc7" />
 
 <!-- ============ JSON-LD: Organization + LocalBusiness + WebSite ============ -->
 <script type="application/ld+json">
@@ -505,43 +505,45 @@
 <!-- ================= PROCESS ================= -->
 <section class="section section--fog" id="process">
   <div class="wrap">
-    <div class="two-col">
-      <div data-reveal>
-        <span class="eyebrow">How it works</span>
-        <h2 class="h2" style="margin:1rem 0 1.2rem">Four simple steps to a closet you'll love.</h2>
-        <p class="lead">From first call to final reveal, one dedicated team guides your project so the whole thing feels effortless.</p>
-        <a class="btn btn--primary" href="#consult" style="margin-top:1.6rem">Book Step One — It's Free <span class="arr">→</span></a>
-      </div>
-      <div class="steps">
-        <div class="step" data-reveal>
-          <div class="step__n">01</div>
-          <div>
-            <h3>Free consultation</h3>
-            <p>We come to your home, measure your space in person, and walk through your options and finishes — learning how you really use the space. No pressure, no obligation.</p>
-          </div>
+    <div class="sec-head" style="text-align:center;max-width:62ch;margin-inline:auto" data-reveal>
+      <span class="eyebrow">How it works</span>
+      <h2 class="h2">Four simple steps to a closet you'll love.</h2>
+      <p class="lead" style="margin-inline:auto">From first call to final reveal, one dedicated team guides your project so the whole thing feels effortless.</p>
+    </div>
+
+    <div class="flightpath" data-reveal>
+      <svg class="flightpath__line" viewBox="0 0 1200 64" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <path d="M0,44 C 150,6 270,8 410,38 S 660,66 820,34 S 1060,6 1200,30" />
+      </svg>
+      <span class="flightpath__plane" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9z"/></svg>
+      </span>
+      <div class="fp-nodes">
+        <div class="fp-node">
+          <div class="fp-node__dot">1</div>
+          <h3 class="fp-node__title">Free consultation</h3>
+          <p class="fp-node__text">We come to your home, measure in person, and walk through your options and finishes — no pressure, no obligation.</p>
         </div>
-        <div class="step" data-reveal data-delay="1">
-          <div class="step__n">02</div>
-          <div>
-            <h3>Photorealistic design</h3>
-            <p>Your designer builds your closet system so you can see every finish, drawer and detail — and get an exact price on the spot.</p>
-          </div>
+        <div class="fp-node">
+          <div class="fp-node__dot">2</div>
+          <h3 class="fp-node__title">Photorealistic design</h3>
+          <p class="fp-node__text">See every finish, drawer and detail in your space — and get an exact price on the spot.</p>
         </div>
-        <div class="step" data-reveal data-delay="2">
-          <div class="step__n">03</div>
-          <div>
-            <h3>Precision manufacturing</h3>
-            <p>Your approved design is custom-built to the millimeter in our facility — typically ready in 2–4 weeks.</p>
-          </div>
+        <div class="fp-node">
+          <div class="fp-node__dot">3</div>
+          <h3 class="fp-node__title">Precision manufacturing</h3>
+          <p class="fp-node__text">Your approved design is custom-built to the millimeter — typically ready in 2–4 weeks.</p>
         </div>
-        <div class="step" data-reveal data-delay="3">
-          <div class="step__n">04</div>
-          <div>
-            <h3>Professional install</h3>
-            <p>Our certified installers handle everything, usually in a single day, and leave your space spotless and ready to fill.</p>
-          </div>
+        <div class="fp-node">
+          <div class="fp-node__dot">4</div>
+          <h3 class="fp-node__title">Professional install</h3>
+          <p class="fp-node__text">Certified installers handle everything in about a day and leave your space spotless.</p>
         </div>
       </div>
+    </div>
+
+    <div style="text-align:center;margin-top:var(--sp-4)" data-reveal>
+      <a class="btn btn--primary" href="#consult">Book Step One — It's Free <span class="arr">→</span></a>
     </div>
   </div>
 </section>
@@ -900,6 +902,6 @@
   <a class="quote" href="#consult">✨ Free Design</a>
 </div>
 
-<script src="/js/main.js?v=ncc6" defer></script>
+<script src="/js/main.js?v=ncc7" defer></script>
 </body>
 </html>

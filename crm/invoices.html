@@ -15,6 +15,9 @@
   .inv-filter.is-active { background: var(--bg); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
   .inv-filter .n { color: var(--ink-soft); font-weight: 600; margin-left: 5px; }
   .inv-filter.is-active .n { color: var(--clay, #B9542F); }
+  .inv-del { border: 1px solid var(--line); background: var(--bg); color: #B91C1C; font: inherit; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: var(--r-sm, 6px); cursor: pointer; transition: background 120ms ease, border-color 120ms ease; }
+  .inv-del:hover { background: #FEF2F2; border-color: #FECACA; }
+  .tbl td.inv-act { text-align: right; white-space: nowrap; }
 </style></head>
 <body>
 <script src="/crm/crm-app.js?v=ncc12"></script>
@@ -32,66 +35,88 @@
     return;
   }
 
+  let filter = "all";
+  const init = new URLSearchParams(location.search).get("filter");
+  if (init === "open" || init === "paid") filter = init;
+
   const isOpen = (i) => i.status === "open" || i.status === "draft";
   const isPaid = (i) => i.status === "paid";
-
-  const counts = {
-    all:  invoices.length,
-    open: invoices.filter(isOpen).length,
-    paid: invoices.filter(isPaid).length,
-  };
-  const outstanding = invoices.filter(isOpen).reduce((s, i) => s + (i.amount_cents || 0), 0);
-  const collected   = invoices.filter(isPaid).reduce((s, i) => s + (i.amount_cents || 0), 0);
-
   const TYPE_LABEL = { deposit: "Deposit", balance: "Balance", full: "Full", custom: "Custom" };
+
   function statusPill(s) {
     if (s === "paid")  return `<span class="pill" data-s="completed">Paid</span>`;
     if (s === "void")  return `<span class="pill" data-s="lost">Void</span>`;
     if (s === "draft") return `<span class="pill" data-s="new">Draft</span>`;
     return `<span class="pill" data-s="sent">Open</span>`; // open
   }
-
-  function rowsFor(filter) {
-    return invoices.filter((i) => filter === "all" ? true : filter === "open" ? isOpen(i) : isPaid(i));
+  function rowsFor(f) {
+    return invoices.filter((i) => f === "all" ? true : f === "open" ? isOpen(i) : isPaid(i));
   }
 
-  function tableHTML(filter) {
+  function render() {
+    const counts = { all: invoices.length, open: invoices.filter(isOpen).length, paid: invoices.filter(isPaid).length };
+    const outstanding = invoices.filter(isOpen).reduce((s, i) => s + (i.amount_cents || 0), 0);
+    const collected   = invoices.filter(isPaid).reduce((s, i) => s + (i.amount_cents || 0), 0);
     const rows = rowsFor(filter);
-    if (!rows.length) return `<div class="tbl"><div class="empty">No ${filter === "all" ? "" : filter + " "}invoices.</div></div>`;
-    return `<div class="tbl"><table>
-      <thead><tr><th>#</th><th>Customer / Job</th><th>Type</th><th>Status</th><th class="num">Amount</th><th>Created</th><th>Paid</th></tr></thead>
-      <tbody>${rows.map((i) => `<tr class="clickable" onclick="location.href='/crm/invoice.html?id=${i.id}'">
-        <td><strong>${SSCrm.esc(i.number)}</strong></td>
-        <td>${SSCrm.esc(i.contact_name || "—")}<div class="muted" style="font-size:12px">${SSCrm.esc(i.project_name || "")}</div></td>
-        <td class="muted">${SSCrm.esc(TYPE_LABEL[i.type] || i.type || "—")}</td>
-        <td>${statusPill(i.status)}</td>
-        <td class="money">${SSCrm.fmtMoney(i.amount_cents)}</td>
-        <td class="muted">${SSCrm.fmtDate(i.created_at)}</td>
-        <td class="muted">${i.paid_at ? SSCrm.fmtDate(i.paid_at) : "—"}</td>
-      </tr>`).join("")}</tbody></table></div>`;
+    const table = !rows.length
+      ? `<div class="tbl"><div class="empty">No ${filter === "all" ? "" : filter + " "}invoices.</div></div>`
+      : `<div class="tbl"><table>
+          <thead><tr><th>#</th><th>Customer / Job</th><th>Type</th><th>Status</th><th class="num">Amount</th><th>Created</th><th>Paid</th><th></th></tr></thead>
+          <tbody>${rows.map((i) => `<tr class="clickable" data-href="/crm/invoice.html?id=${i.id}">
+            <td><strong>${SSCrm.esc(i.number)}</strong></td>
+            <td>${SSCrm.esc(i.contact_name || "—")}<div class="muted" style="font-size:12px">${SSCrm.esc(i.project_name || "")}</div></td>
+            <td class="muted">${SSCrm.esc(TYPE_LABEL[i.type] || i.type || "—")}</td>
+            <td>${statusPill(i.status)}</td>
+            <td class="money">${SSCrm.fmtMoney(i.amount_cents)}</td>
+            <td class="muted">${SSCrm.fmtDate(i.created_at)}</td>
+            <td class="muted">${i.paid_at ? SSCrm.fmtDate(i.paid_at) : "—"}</td>
+            <td class="inv-act"><button class="inv-del" data-id="${i.id}" data-num="${SSCrm.esc(i.number)}" data-status="${i.status}">Delete</button></td>
+          </tr>`).join("")}</tbody></table></div>`;
+
+    page.innerHTML = `
+      <div class="inv-stats">
+        <div class="inv-stat"><div class="inv-stat__label">All invoices</div><div class="inv-stat__value">${counts.all}</div></div>
+        <div class="inv-stat inv-stat--open"><div class="inv-stat__label">Outstanding · ${counts.open}</div><div class="inv-stat__value">${SSCrm.fmtMoney(outstanding)}</div></div>
+        <div class="inv-stat inv-stat--paid"><div class="inv-stat__label">Collected · ${counts.paid}</div><div class="inv-stat__value">${SSCrm.fmtMoney(collected)}</div></div>
+      </div>
+      <div class="inv-filters" role="tablist">
+        <button class="inv-filter ${filter === "all" ? "is-active" : ""}" data-f="all">All <span class="n">${counts.all}</span></button>
+        <button class="inv-filter ${filter === "open" ? "is-active" : ""}" data-f="open">Open <span class="n">${counts.open}</span></button>
+        <button class="inv-filter ${filter === "paid" ? "is-active" : ""}" data-f="paid">Paid <span class="n">${counts.paid}</span></button>
+      </div>
+      <div id="inv-table">${table}</div>`;
+
+    // Filter tabs
+    page.querySelectorAll(".inv-filter").forEach((b) => b.addEventListener("click", () => { filter = b.dataset.f; render(); }));
+    // Row click → detail (ignore clicks on the Delete button)
+    page.querySelectorAll("tr.clickable").forEach((tr) => tr.addEventListener("click", (e) => {
+      if (e.target.closest(".inv-del")) return;
+      location.href = tr.dataset.href;
+    }));
+    // Delete buttons
+    page.querySelectorAll(".inv-del").forEach((btn) => btn.addEventListener("click", (e) => { e.stopPropagation(); delInvoice(btn); }));
   }
 
-  page.innerHTML = `
-    <div class="inv-stats">
-      <div class="inv-stat"><div class="inv-stat__label">All invoices</div><div class="inv-stat__value">${counts.all}</div></div>
-      <div class="inv-stat inv-stat--open"><div class="inv-stat__label">Outstanding · ${counts.open}</div><div class="inv-stat__value">${SSCrm.fmtMoney(outstanding)}</div></div>
-      <div class="inv-stat inv-stat--paid"><div class="inv-stat__label">Collected · ${counts.paid}</div><div class="inv-stat__value">${SSCrm.fmtMoney(collected)}</div></div>
-    </div>
-    <div class="inv-filters" role="tablist">
-      <button class="inv-filter is-active" data-f="all">All <span class="n">${counts.all}</span></button>
-      <button class="inv-filter" data-f="open">Open <span class="n">${counts.open}</span></button>
-      <button class="inv-filter" data-f="paid">Paid <span class="n">${counts.paid}</span></button>
-    </div>
-    <div id="inv-table">${tableHTML("all")}</div>
-  `;
-
-  // Deep-link support: /crm/invoices.html?filter=open
-  const initial = new URLSearchParams(location.search).get("filter");
-  function setFilter(f) {
-    page.querySelectorAll(".inv-filter").forEach((b) => b.classList.toggle("is-active", b.dataset.f === f));
-    document.getElementById("inv-table").innerHTML = tableHTML(f);
+  async function delInvoice(btn) {
+    const id = parseInt(btn.dataset.id, 10);
+    const num = btn.dataset.num;
+    const paid = btn.dataset.status === "paid";
+    const msg = paid
+      ? `Delete invoice ${num}? It is marked PAID — deleting it removes the payment record and adjusts the job's billing totals. This cannot be undone.`
+      : `Delete invoice ${num}? This cannot be undone.`;
+    if (!(await SSCrm.confirmDialog(msg))) return;
+    btn.disabled = true; btn.textContent = "Deleting…";
+    try {
+      await SSCrm.fetchJSON("/api/invoices/" + id, { method: "DELETE" });
+      invoices = invoices.filter((i) => i.id !== id);
+      SSCrm.toast("Invoice deleted", "success");
+      render();
+    } catch (e) {
+      SSCrm.toast(e.message || "Couldn't delete", "error");
+      btn.disabled = false; btn.textContent = "Delete";
+    }
   }
-  page.querySelectorAll(".inv-filter").forEach((b) => b.addEventListener("click", () => setFilter(b.dataset.f)));
-  if (initial === "open" || initial === "paid") setFilter(initial);
+
+  render();
 })();
 </script></body></html>

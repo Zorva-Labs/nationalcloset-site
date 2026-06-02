@@ -93,3 +93,22 @@ export async function onRequestPost(context) {
   }
   return json({ error: "Unknown action" }, 400);
 }
+
+// DELETE /api/invoices/[id] — permanently remove an invoice + its line items.
+// (Line items are removed explicitly since D1 doesn't always enforce the
+// ON DELETE CASCADE foreign key.) Logged to the project's activity feed.
+export async function onRequestDelete(context) {
+  const auth = await requireAuth(context); if (auth instanceof Response) return auth;
+  const id = parseInt(context.params.id, 10);
+  const { DB } = context.env;
+  const inv = await DB.prepare(`SELECT * FROM invoices WHERE id=?1`).bind(id).first();
+  if (!inv) return json({ error: "Not found" }, 404);
+  await DB.prepare(`DELETE FROM invoice_lines WHERE invoice_id=?1`).bind(id).run();
+  await DB.prepare(`DELETE FROM invoices WHERE id=?1`).bind(id).run();
+  await recordActivity(DB, {
+    entityType: "project", entityId: inv.project_id, action: "invoice-deleted",
+    actorKind: "admin", actorId: auth.id, actorName: auth.email,
+    details: { invoice_id: id, number: inv.number, amount_cents: inv.amount_cents, status: inv.status },
+  }).catch(() => {});
+  return json({ ok: true });
+}

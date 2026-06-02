@@ -78,9 +78,9 @@ export async function onRequestDelete(context) {
   if (guard instanceof Response) return guard;
   const id = parseInt(context.params.id, 10);
   if (!Number.isFinite(id)) return json({ error: "Invalid id" }, 400);
-  // Cascade: delete the lead's projects (and their full subtree) so nothing is
-  // orphaned. D1 doesn't enforce FK cascades, so this must be explicit.
-  const purge = new URL(context.request.url).searchParams.get("purge") === "1";
-  await deleteLeadCascade(context.env.DB, id, { purge });
+  // Deleting a lead purges EVERYTHING tied to it — its projects/jobs and their
+  // full subtrees (contracts, invoices, proposals, estimates…), plus emails and
+  // appointments. (D1 doesn't enforce FK cascades, so this is explicit.)
+  await deleteLeadCascade(context.env.DB, id, { purge: true });
   return json({ ok: true });
 }

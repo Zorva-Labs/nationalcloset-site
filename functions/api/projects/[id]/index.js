@@ -128,8 +128,9 @@ export async function onRequestPatch(context) {
 export async function onRequestDelete(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const id = parseInt(context.params.id, 10);
-  const url = new URL(context.request.url);
-  const purge = url.searchParams.get("purge") === "1";
+  // Deleting a job purges EVERYTHING tied to it — its full subtree plus emails,
+  // appointments, and the originating lead (if no other job references it).
+  const purge = true;
   const { DB } = context.env;
 
   // Pull the project's lead_id + contact_id BEFORE we delete it, so we can

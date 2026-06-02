@@ -1,6 +1,7 @@
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { recomputeTierTotals, recordActivity } from "../../../_lib/db.js";
 import { syncLeadQuotedFromProposal } from "../../../_lib/lifecycle.js";
+import { deleteProposalDeep } from "../../../_lib/cascade.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -83,6 +84,8 @@ export async function onRequestPatch(context) {
 
 export async function onRequestDelete(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
-  await context.env.DB.prepare(`DELETE FROM proposals WHERE id=?1`).bind(parseInt(context.params.id, 10)).run();
+  // Deleting a proposal also removes the contracts + invoices it generated,
+  // but leaves the parent project (job) and lead in place.
+  await deleteProposalDeep(context.env.DB, parseInt(context.params.id, 10));
   return json({ ok: true });
 }

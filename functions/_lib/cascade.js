@@ -18,11 +18,43 @@ async function ids(DB, sql, ...binds) {
   return (r.results || []).map((x) => x.id);
 }
 
-// Delete a single contract and its line items + activity.
+// Delete a single invoice + its line items.
+export async function deleteInvoiceDeep(DB, invoiceId) {
+  await run(DB, `DELETE FROM invoice_lines WHERE invoice_id=?1`, invoiceId);
+  await run(DB, `DELETE FROM invoices WHERE id=?1`, invoiceId);
+}
+
+// Delete a single contract: its line items, any invoices generated from it
+// (deposit/balance), and activity.
 export async function deleteContractDeep(DB, contractId) {
+  for (const iid of await ids(DB, `SELECT id FROM invoices WHERE contract_id=?1`, contractId)) {
+    await deleteInvoiceDeep(DB, iid);
+  }
   await run(DB, `DELETE FROM contract_lines WHERE contract_id=?1`, contractId);
   await run(DB, `DELETE FROM activity_log WHERE entity_type='contract' AND entity_id=?1`, contractId);
   await run(DB, `DELETE FROM contracts WHERE id=?1`, contractId);
+}
+
+// Delete a proposal and everything it generated — its tiers/lines/comments,
+// AND the contracts + invoices created from it — but LEAVE the parent project
+// and lead intact (deleting a proposal just unwinds that quote, not the job).
+export async function deleteProposalDeep(DB, proposalId) {
+  // Contracts generated from this proposal (each takes its own invoices + lines)
+  for (const cid of await ids(DB, `SELECT id FROM contracts WHERE proposal_id=?1`, proposalId)) {
+    await deleteContractDeep(DB, cid);
+  }
+  // Invoices tied directly to the proposal (not via a contract)
+  for (const iid of await ids(DB, `SELECT id FROM invoices WHERE proposal_id=?1`, proposalId)) {
+    await deleteInvoiceDeep(DB, iid);
+  }
+  // The proposal's own subtree
+  for (const tid of await ids(DB, `SELECT id FROM proposal_tiers WHERE proposal_id=?1`, proposalId)) {
+    await run(DB, `DELETE FROM proposal_tier_lines WHERE tier_id=?1`, tid);
+  }
+  await run(DB, `DELETE FROM proposal_tiers WHERE proposal_id=?1`, proposalId);
+  await run(DB, `DELETE FROM proposal_comments WHERE proposal_id=?1`, proposalId);
+  await run(DB, `DELETE FROM activity_log WHERE entity_type='proposal' AND entity_id=?1`, proposalId);
+  await run(DB, `DELETE FROM proposals WHERE id=?1`, proposalId);
 }
 
 // Delete a project and EVERYTHING under it: contracts(+lines), estimates(+lines),

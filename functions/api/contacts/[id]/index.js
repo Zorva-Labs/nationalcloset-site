@@ -1,4 +1,5 @@
 import { requireAuth, json } from "../../../_lib/auth.js";
+import { deleteProjectCascade, deleteLeadCascade } from "../../../_lib/cascade.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -95,45 +96,24 @@ export async function onRequestDelete(context) {
   }
 
   if (purge) {
-    // Gather project + lead IDs so we can clean their activity log entries
+    // Delete every project belonging to this contact, with its full subtree
+    // (contracts+lines, estimates+lines, proposals+tiers/lines/comments,
+    // invoices+lines, windows, documents, communications). D1 doesn't enforce
+    // FK cascades, so we walk it explicitly via the shared cascade helper.
     const projIds = ((await DB.prepare(`SELECT id FROM projects WHERE contact_id=?1`).bind(id).all()).results || []).map((p) => p.id);
+    for (const pid of projIds) await deleteProjectCascade(DB, pid, { purge: true });
+
+    // Delete every lead belonging to this contact, with its subtree (any
+    // projects already removed above are simply no-ops).
     const leadIds = ((await DB.prepare(`SELECT id FROM leads WHERE contact_id=?1`).bind(id).all()).results || []).map((l) => l.id);
-    // Proposals + contracts under those projects (need their activity rows too)
-    let propIds = [], kIds = [];
-    if (projIds.length) {
-      propIds = ((await DB.prepare(`SELECT id FROM proposals WHERE project_id IN (${projIds.map(() => "?").join(",")})`).bind(...projIds).all()).results || []).map((x) => x.id);
-      kIds    = ((await DB.prepare(`SELECT id FROM contracts WHERE project_id IN (${projIds.map(() => "?").join(",")})`).bind(...projIds).all()).results || []).map((x) => x.id);
-    }
+    for (const lid of leadIds) await deleteLeadCascade(DB, lid, { purge: true });
 
-    // 1) Email messages tied to this contact OR its projects OR its leads
-    await DB.prepare(
-      `DELETE FROM email_messages
-        WHERE contact_id=?1
-           OR project_id IN (SELECT id FROM projects WHERE contact_id=?1)
-           OR lead_id    IN (SELECT id FROM leads    WHERE contact_id=?1)`
-    ).bind(id).run();
-
-    // 2) Appointments
-    await DB.prepare(
-      `DELETE FROM appointments
-        WHERE contact_id=?1
-           OR project_id IN (SELECT id FROM projects WHERE contact_id=?1)`
-    ).bind(id).run();
-
-    // 3) Activity log — for contact + each project/lead/proposal/contract
+    // Contact-scoped leftovers (anything attached directly to the contact).
+    await DB.prepare(`DELETE FROM appointments WHERE contact_id=?1`).bind(id).run();
+    await DB.prepare(`DELETE FROM email_messages WHERE contact_id=?1`).bind(id).run();
     await DB.prepare(`DELETE FROM activity_log WHERE entity_type='contact' AND entity_id=?1`).bind(id).run();
-    for (const pid of projIds) await DB.prepare(`DELETE FROM activity_log WHERE entity_type='project' AND entity_id=?1`).bind(pid).run();
-    for (const lid of leadIds) await DB.prepare(`DELETE FROM activity_log WHERE entity_type='lead' AND entity_id=?1`).bind(lid).run();
-    for (const pid of propIds) await DB.prepare(`DELETE FROM activity_log WHERE entity_type='proposal' AND entity_id=?1`).bind(pid).run();
-    for (const kid of kIds)    await DB.prepare(`DELETE FROM activity_log WHERE entity_type='contract' AND entity_id=?1`).bind(kid).run();
-
-    // 4) Leads (cascade-deletes lead_notes)
-    await DB.prepare(`DELETE FROM leads WHERE contact_id=?1`).bind(id).run();
   }
 
-  // 5) Finally: delete the contact. FK ON DELETE CASCADE on projects.contact_id
-  //    removes every project + cascades to windows/proposals(+tiers+lines+
-  //    comments)/contracts(+lines).
   await DB.prepare(`DELETE FROM contacts WHERE id=?1`).bind(id).run();
   return json({ ok: true, purge, summary });
 }

@@ -1,4 +1,5 @@
 import { requireAuth, json } from "../../../_lib/auth.js";
+import { deleteLeadCascade } from "../../../_lib/cascade.js";
 
 const ALLOWED_STATUSES = new Set([
   "new",
@@ -77,6 +78,9 @@ export async function onRequestDelete(context) {
   if (guard instanceof Response) return guard;
   const id = parseInt(context.params.id, 10);
   if (!Number.isFinite(id)) return json({ error: "Invalid id" }, 400);
-  await context.env.DB.prepare(`DELETE FROM leads WHERE id = ?1`).bind(id).run();
+  // Cascade: delete the lead's projects (and their full subtree) so nothing is
+  // orphaned. D1 doesn't enforce FK cascades, so this must be explicit.
+  const purge = new URL(context.request.url).searchParams.get("purge") === "1";
+  await deleteLeadCascade(context.env.DB, id, { purge });
   return json({ ok: true });
 }

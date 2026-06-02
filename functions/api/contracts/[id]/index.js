@@ -1,5 +1,6 @@
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { recordActivity } from "../../../_lib/db.js";
+import { deleteContractDeep } from "../../../_lib/cascade.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -66,6 +67,7 @@ export async function onRequestPatch(context) {
 
 export async function onRequestDelete(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
-  await context.env.DB.prepare(`DELETE FROM contracts WHERE id=?1`).bind(parseInt(context.params.id, 10)).run();
+  // Delete the contract's line items + activity too (D1 won't cascade for us).
+  await deleteContractDeep(context.env.DB, parseInt(context.params.id, 10));
   return json({ ok: true });
 }

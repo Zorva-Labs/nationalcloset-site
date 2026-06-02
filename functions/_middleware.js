@@ -31,8 +31,22 @@ const BOT_UA = [
   "diffbot", "petalbot", "ia_archiver", "slurp",
 ];
 
+// Static assets (images, css, js, fonts, icons, sitemap, etc.) must NEVER be
+// geo-gated. There's no reason to block an image by country, and gating them
+// breaks social-share previews: Facebook/LinkedIn fetch the og:image from
+// their own datacenters, which may be outside the US/CA — a 403 there means
+// the link shows no image.
+const STATIC_EXT = /\.(png|jpe?g|webp|gif|svg|ico|avif|css|js|mjs|woff2?|ttf|otf|eot|map|txt|xml|webmanifest|json|pdf|mp4|webm)$/i;
+function isStaticAsset(pathname) {
+  return STATIC_EXT.test(pathname) ||
+    pathname.startsWith("/img/") || pathname.startsWith("/css/") ||
+    pathname.startsWith("/js/")  || pathname.startsWith("/assets/") ||
+    pathname.startsWith("/fonts/");
+}
+
 // Path prefixes that bypass the geo gate entirely (server-to-server + owner).
 function isBypassPath(pathname) {
+  if (isStaticAsset(pathname)) return true;                 // images/css/js/fonts — never geo-block
   if (pathname.startsWith("/crm/")) return true;            // owner CRM (auth-gated)
   if (pathname.startsWith("/api/")) {
     // Allow the CRM data/auth/internal/webhook APIs; only the public-facing

@@ -117,7 +117,12 @@ export async function runImapSync(env, { mailbox = MAILBOX, maxPerRun = 50 } = {
           matched++;
         }
 
-        await client.markSeen(uid);
+        // NOTE: intentionally do NOT mark the message \Seen. The sync tracks
+        // its position via the UID high-watermark (uid_next in
+        // email_sync_state), so flagging messages read is unnecessary — and
+        // doing so made every inbound email show up already-read in the
+        // Purelymail inbox, causing real messages to be missed. Leave the
+        // \Seen flag untouched so the human inbox still shows them as unread.
         processed++;
         highWatermark = Math.max(highWatermark, uid);
       } catch (e) {

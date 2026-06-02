@@ -19,7 +19,20 @@ export async function onRequestGet(context) {
       `SELECT * FROM invoices WHERE project_id IN (SELECT id FROM projects WHERE lead_id=?1) ORDER BY created_at DESC`
     ).bind(leadId).all()).results || [];
   } else {
-    return json({ error: "project_id or lead_id required" }, 400);
+    // No project/lead filter → list ALL invoices for the global Invoices page,
+    // joined with customer + project names. Optional ?status=open|paid|void
+    // narrows the set (the UI also filters client-side for instant tabs).
+    const status = (url.searchParams.get("status") || "").toLowerCase();
+    const allowed = { open: "open", paid: "paid", void: "void", draft: "draft" };
+    const where = allowed[status] ? `WHERE i.status = '${allowed[status]}'` : "";
+    rows = (await context.env.DB.prepare(
+      `SELECT i.*, c.name AS contact_name, p.name AS project_name
+         FROM invoices i
+         LEFT JOIN contacts c ON c.id = i.contact_id
+         LEFT JOIN projects p ON p.id = i.project_id
+         ${where}
+        ORDER BY i.created_at DESC`
+    ).all()).results || [];
   }
   return json({ invoices: rows });
 }

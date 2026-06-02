@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Invoices · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc12"/>
+<style>
+  .inv-stats { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; }
+  .inv-stat { flex: 1 1 160px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
+  .inv-stat__label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); }
+  .inv-stat__value { font-size: 22px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .inv-stat--open .inv-stat__value { color: #B45309; }
+  .inv-stat--paid .inv-stat__value { color: #047857; }
+  .inv-filters { display: inline-flex; gap: 4px; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 999px; padding: 4px; margin-bottom: 16px; }
+  .inv-filter { border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink-soft); padding: 7px 16px; border-radius: 999px; cursor: pointer; transition: background 120ms ease, color 120ms ease; }
+  .inv-filter:hover { color: var(--ink); }
+  .inv-filter.is-active { background: var(--bg); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .inv-filter .n { color: var(--ink-soft); font-weight: 600; margin-left: 5px; }
+  .inv-filter.is-active .n { color: var(--clay, #B9542F); }
+</style></head>
+<body>
+<script src="/crm/crm-app.js?v=ncc12"></script>
+<script>
+(async () => {
+  const user = await SSCrm.mount({ title: "Invoices", subtitle: "Every invoice across all jobs", wide: true });
+  if (!user) return;
+  const page = document.getElementById("page");
+
+  let invoices = [];
+  try {
+    invoices = (await SSCrm.fetchJSON("/api/invoices")).invoices || [];
+  } catch (e) {
+    page.innerHTML = `<div class="tbl"><div class="empty">Couldn't load invoices: ${SSCrm.esc(e.message)}</div></div>`;
+    return;
+  }
+
+  const isOpen = (i) => i.status === "open" || i.status === "draft";
+  const isPaid = (i) => i.status === "paid";
+
+  const counts = {
+    all:  invoices.length,
+    open: invoices.filter(isOpen).length,
+    paid: invoices.filter(isPaid).length,
+  };
+  const outstanding = invoices.filter(isOpen).reduce((s, i) => s + (i.amount_cents || 0), 0);
+  const collected   = invoices.filter(isPaid).reduce((s, i) => s + (i.amount_cents || 0), 0);
+
+  const TYPE_LABEL = { deposit: "Deposit", balance: "Balance", full: "Full", custom: "Custom" };
+  function statusPill(s) {
+    if (s === "paid")  return `<span class="pill" data-s="completed">Paid</span>`;
+    if (s === "void")  return `<span class="pill" data-s="lost">Void</span>`;
+    if (s === "draft") return `<span class="pill" data-s="new">Draft</span>`;
+    return `<span class="pill" data-s="sent">Open</span>`; // open
+  }
+
+  function rowsFor(filter) {
+    return invoices.filter((i) => filter === "all" ? true : filter === "open" ? isOpen(i) : isPaid(i));
+  }
+
+  function tableHTML(filter) {
+    const rows = rowsFor(filter);
+    if (!rows.length) return `<div class="tbl"><div class="empty">No ${filter === "all" ? "" : filter + " "}invoices.</div></div>`;
+    return `<div class="tbl"><table>
+      <thead><tr><th>#</th><th>Customer / Job</th><th>Type</th><th>Status</th><th class="num">Amount</th><th>Created</th><th>Paid</th></tr></thead>
+      <tbody>${rows.map((i) => `<tr class="clickable" onclick="location.href='/crm/invoice.html?id=${i.id}'">
+        <td><strong>${SSCrm.esc(i.number)}</strong></td>
+        <td>${SSCrm.esc(i.contact_name || "—")}<div class="muted" style="font-size:12px">${SSCrm.esc(i.project_name || "")}</div></td>
+        <td class="muted">${SSCrm.esc(TYPE_LABEL[i.type] || i.type || "—")}</td>
+        <td>${statusPill(i.status)}</td>
+        <td class="money">${SSCrm.fmtMoney(i.amount_cents)}</td>
+        <td class="muted">${SSCrm.fmtDate(i.created_at)}</td>
+        <td class="muted">${i.paid_at ? SSCrm.fmtDate(i.paid_at) : "—"}</td>
+      </tr>`).join("")}</tbody></table></div>`;
+  }
+
+  page.innerHTML = `
+    <div class="inv-stats">
+      <div class="inv-stat"><div class="inv-stat__label">All invoices</div><div class="inv-stat__value">${counts.all}</div></div>
+      <div class="inv-stat inv-stat--open"><div class="inv-stat__label">Outstanding · ${counts.open}</div><div class="inv-stat__value">${SSCrm.fmtMoney(outstanding)}</div></div>
+      <div class="inv-stat inv-stat--paid"><div class="inv-stat__label">Collected · ${counts.paid}</div><div class="inv-stat__value">${SSCrm.fmtMoney(collected)}</div></div>
+    </div>
+    <div class="inv-filters" role="tablist">
+      <button class="inv-filter is-active" data-f="all">All <span class="n">${counts.all}</span></button>
+      <button class="inv-filter" data-f="open">Open <span class="n">${counts.open}</span></button>
+      <button class="inv-filter" data-f="paid">Paid <span class="n">${counts.paid}</span></button>
+    </div>
+    <div id="inv-table">${tableHTML("all")}</div>
+  `;
+
+  // Deep-link support: /crm/invoices.html?filter=open
+  const initial = new URLSearchParams(location.search).get("filter");
+  function setFilter(f) {
+    page.querySelectorAll(".inv-filter").forEach((b) => b.classList.toggle("is-active", b.dataset.f === f));
+    document.getElementById("inv-table").innerHTML = tableHTML(f);
+  }
+  page.querySelectorAll(".inv-filter").forEach((b) => b.addEventListener("click", () => setFilter(b.dataset.f)));
+  if (initial === "open" || initial === "paid") setFilter(initial);
+})();
+</script></body></html>

@@ -28,6 +28,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <!-- Preload the LCP hero image so it starts downloading before CSS parses -->
 <link rel="preload" as="image" href="/img/hero-closet.webp" fetchpriority="high" />
+<!-- Preload the Montserrat latin woff2 (one file covers all weights, incl. the hero H1)
+     so the LCP text doesn't repaint late when the webfont swaps in. -->
+<link rel="preload" as="font" type="font/woff2" crossorigin href="https://fonts.gstatic.com/s/montserrat/v31/JTUSjIg1_i6t8kCHKm459WlhyyTh89Y.woff2" />
 <!-- Load Google Fonts without blocking render (font-display:swap handles FOUT) -->
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" />
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />

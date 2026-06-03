@@ -26,9 +26,9 @@
 
 <!-- Fonts are self-hosted on the homepage (same-origin) to remove third-party
      DNS/TLS/bandwidth contention on the critical path — keeps LCP fast + stable.
-     Preload the LCP hero image and the Montserrat file (covers the hero H1). -->
+     Only the hero image (the LCP element) is preloaded so it wins the bandwidth
+     race; fonts load as the inlined CSS @font-face is parsed (FOUT via swap). -->
 <link rel="preload" as="image" href="/img/hero-closet.webp" fetchpriority="high" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/montserrat-latin.woff2" />
 <link rel="icon" type="image/png" href="/img/favicon-nc.png" />
 <link rel="apple-touch-icon" href="/img/favicon-nc.png" />
 <!-- styles.css inlined to eliminate the render-blocking request and speed up LCP.

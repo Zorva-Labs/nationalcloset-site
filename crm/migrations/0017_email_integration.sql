@@ -78,7 +78,7 @@ Thanks for the inquiry on {{interest}} — got it in front of me and I would lov
 What does the rest of this week look like for you? I can usually get out within a day or two. If a phone call is easier first, my number is 629-298-8241.
 
 Looking forward to it,
-James
+Michael Blair
 National Closet Company — Gallatin, TN',
    '["first_name","interest"]', 1),
   ('Consultation confirmation', 'consult_confirm',
@@ -95,7 +95,7 @@ I will bring the full sample kit (faux wood, real wood, cellular, roller, solar,
 If you need to reschedule, just text 629-298-8241 — no problem at all.
 
 See you then,
-James',
+Michael Blair',
    '["first_name","appointment_date","appointment_time","address"]', 1),
   ('Proposal sent — follow up', 'proposal_followup',
    'A few options for your {{interest}} — proposal inside',
@@ -110,7 +110,7 @@ The link is yours to come back to anytime. Once you are ready, accepting on the 
 
 Any questions, just reply here or call/text 629-298-8241.
 
-James',
+Michael Blair',
    '["first_name","interest","proposal_link"]', 1),
   ('Contract follow-up', 'contract_followup',
    'Final step: signature on the contract',
@@ -123,7 +123,7 @@ Once it is signed I will get the order placed and reach out to schedule install.
 
 Reply with any questions or hit me at 629-298-8241.
 
-James',
+Michael Blair',
    '["first_name","contract_link"]', 1),
   ('Install scheduled', 'install_scheduled',
    'Install scheduled — {{appointment_date}}',
@@ -138,7 +138,7 @@ I usually need a couple of hours per main area (more for plantation shutters or 
 
 Day-of, if anything shifts, I will text. Otherwise see you then.
 
-James',
+Michael Blair',
    '["first_name","appointment_date","appointment_time","address"]', 1),
   ('Post-install thank-you', 'post_install_thanks',
    'All done — thank you for trusting National Closet Company',
@@ -152,7 +152,7 @@ https://g.page/r/CIpL2ZyDdrPjEAE/review
 And of course if anyone you know is shopping for window treatments, send them my way.
 
 Thank you,
-James — National Closet Company',
+Michael Blair — National Closet Company',
    '["first_name"]', 1),
   ('Generic touch-base', 'touch_base',
    'Quick check-in',
@@ -162,6 +162,6 @@ Just circling back on your {{interest}} project — let me know if anything has 
 
 Happy to send updated samples by mail if it helps.
 
-James
+Michael Blair
 629-298-8241',
    '["first_name","interest"]', 0);

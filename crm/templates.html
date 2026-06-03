@@ -188,7 +188,7 @@ async function newTemplate() {
         body: JSON.stringify({
           name, kind,
           subject: "Subject here — use {{first_name}} etc.",
-          body_text: "Hi {{first_name}},\n\nBody…\n\nJames\nNational Closet Company",
+          body_text: "Hi {{first_name}},\n\nBody…\n\nMichael Blair\nNational Closet Company",
         }),
       });
       await loadAll(); render();

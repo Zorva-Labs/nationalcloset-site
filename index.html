@@ -24,10 +24,10 @@
 <meta name="twitter:description" content="Custom closets, walk-in &amp; reach-in systems, garages &amp; pantries — designed, built and installed across Nashville &amp; Middle Tennessee. Free in-home design." />
 <meta name="twitter:image" content="https://nationalclosetco.com/img/hero-closet-og.jpg" />
 
-<!-- Fonts are self-hosted on the homepage (same-origin) to remove third-party
-     DNS/TLS/bandwidth contention on the critical path — keeps LCP fast + stable.
-     Only the hero image (the LCP element) is preloaded so it wins the bandwidth
-     race; fonts load as the inlined CSS @font-face is parsed (FOUT via swap). -->
+<!-- Fonts are self-hosted (same-origin). The hero image is inlined as a data-URI
+     (no request), so the LCP element is the H1 text — preload Montserrat so it
+     swaps in early and LCP stays low + stable. -->
+<link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/montserrat-latin.woff2" />
 <link rel="icon" type="image/png" href="/img/favicon-nc.png" />
 <link rel="apple-touch-icon" href="/img/favicon-nc.png" />
 <!-- styles.css inlined to eliminate the render-blocking request and speed up LCP.

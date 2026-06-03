@@ -24,22 +24,19 @@
 <meta name="twitter:description" content="Custom closets, walk-in &amp; reach-in systems, garages &amp; pantries — designed, built and installed across Nashville &amp; Middle Tennessee. Free in-home design." />
 <meta name="twitter:image" content="https://nationalclosetco.com/img/hero-closet-og.jpg" />
 
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<!-- Preload the LCP hero image so it starts downloading before CSS parses -->
+<!-- Fonts are self-hosted on the homepage (same-origin) to remove third-party
+     DNS/TLS/bandwidth contention on the critical path — keeps LCP fast + stable.
+     Preload the LCP hero image and the Montserrat file (covers the hero H1). -->
 <link rel="preload" as="image" href="/img/hero-closet.webp" fetchpriority="high" />
-<!-- Preload the Montserrat latin woff2 (one file covers all weights, incl. the hero H1)
-     so the LCP text doesn't repaint late when the webfont swaps in. -->
-<link rel="preload" as="font" type="font/woff2" crossorigin href="https://fonts.gstatic.com/s/montserrat/v31/JTUSjIg1_i6t8kCHKm459WlhyyTh89Y.woff2" />
-<!-- Load Google Fonts without blocking render (font-display:swap handles FOUT) -->
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" />
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-<noscript><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
+<link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/montserrat-latin.woff2" />
 <link rel="icon" type="image/png" href="/img/favicon-nc.png" />
 <link rel="apple-touch-icon" href="/img/favicon-nc.png" />
 <!-- styles.css inlined to eliminate the render-blocking request and speed up LCP.
      If css/styles.css changes, re-run the inline. Other pages load it externally. -->
 <style id="ncc-inline-css">
+/* Self-hosted fonts (same-origin) — no third-party font request on the critical path */
+@font-face{font-family:'Montserrat';font-style:normal;font-weight:100 900;font-display:swap;src:url(/fonts/montserrat-latin.woff2) format('woff2')}
+@font-face{font-family:'Caveat';font-style:normal;font-weight:400 700;font-display:swap;src:url(/fonts/caveat-latin.woff2) format('woff2')}
 /* ============================================================
    National Closet Company — Crisp Architectural design system
    White · Charcoal · Terracotta · Fog

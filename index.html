@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Custom Closets &amp; Closet Systems | National Closet Co.</title>
-<meta name="description" content="Custom closets, walk-in &amp; reach-in systems, garages, pantries &amp; home offices — designed, built and installed across Nashville &amp; Middle Tennessee. Free in-home design." />
+<meta name="description" content="Custom closets, walk-in and reach-in systems, garages and pantries — designed, built and installed across Nashville and Middle Tennessee. Free in-home design." />
 <link rel="canonical" href="https://nationalclosetco.com/" />
 <meta name="robots" content="index, follow, max-image-preview:large" />
 <meta name="theme-color" content="#16140f" />
@@ -26,7 +26,12 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<!-- Preload the LCP hero image so it starts downloading before CSS parses -->
+<link rel="preload" as="image" href="/img/hero-closet.webp" fetchpriority="high" />
+<!-- Load Google Fonts without blocking render (font-display:swap handles FOUT) -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+<noscript><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
 <link rel="icon" type="image/png" href="/img/favicon-nc.png" />
 <link rel="apple-touch-icon" href="/img/favicon-nc.png" />
 <link rel="stylesheet" href="/css/styles.css?v=ncc24" />
@@ -113,6 +118,27 @@
         "@type": "SearchAction",
         "target": { "@type": "EntryPoint", "urlTemplate": "https://nationalclosetco.com/closet-cases.html?q={search_term_string}" },
         "query-input": "required name=search_term_string"
+      }
+    },
+    {
+      "@type": "Person",
+      "@id": "https://nationalclosetco.com/#founder",
+      "name": "Michael Blair",
+      "jobTitle": "Founder & Owner",
+      "worksFor": { "@id": "https://nationalclosetco.com/#org" },
+      "knowsAbout": ["Custom closets", "Walk-in closet design", "Home storage systems", "Closet installation"]
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://nationalclosetco.com/#webpage",
+      "url": "https://nationalclosetco.com/",
+      "name": "Custom Closets & Closet Systems | National Closet Co.",
+      "isPartOf": { "@id": "https://nationalclosetco.com/#website" },
+      "about": { "@id": "https://nationalclosetco.com/#org" },
+      "primaryImageOfPage": "https://nationalclosetco.com/img/hero-closet-og.jpg",
+      "speakable": {
+        "@type": "SpeakableSpecification",
+        "cssSelector": ["h1", ".hero__slogan", ".hero__sub"]
       }
     }
   ]

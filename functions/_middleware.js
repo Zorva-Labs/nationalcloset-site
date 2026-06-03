@@ -28,7 +28,7 @@ const BOT_UA = [
   // Other popular AI / search crawlers
   "applebot", "amazonbot", "ccbot", "duckduckbot", "yandex", "baiduspider",
   "bytespider", "meta-externalagent", "facebookexternalhit", "cohere-ai",
-  "diffbot", "petalbot", "ia_archiver", "slurp",
+  "diffbot", "petalbot", "ia_archiver", "slurp", "zorvalabsscanner",
 ];
 
 // Static assets (images, css, js, fonts, icons, sitemap, etc.) must NEVER be

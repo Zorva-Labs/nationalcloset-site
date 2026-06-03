@@ -236,7 +236,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 /* ---------- Hero ---------- */
 .hero { position: relative; padding-top: calc(var(--nav-h) + 3rem); padding-bottom: var(--sp-6); overflow: hidden; }
 .hero__bg { position: absolute; inset: 0; z-index: -2; overflow: hidden; }
-.hero__bg img { width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: 0; animation: imgIn 1.4s var(--ease) .1s forwards; }
+.hero__bg img { width: 100%; height: 100%; object-fit: cover; object-position: center; animation: imgIn 1.4s var(--ease) .1s forwards; }
 .hero__bg::after { content: ""; position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(255,255,255,.95) 0%, rgba(255,255,255,.86) 34%, rgba(255,255,255,.74) 100%); }
 @media (min-width: 940px) {
@@ -268,8 +268,10 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 
 .hero__visual { position: relative; }
 .hero__photo { position: relative; border-radius: var(--radius); overflow: hidden; background: var(--ink); aspect-ratio: 4/5; box-shadow: 0 40px 80px -40px rgba(0,0,0,.5); }
-.hero__photo img { width: 100%; height: 100%; object-fit: cover; opacity: 0; animation: imgIn 1.2s var(--ease) .3s forwards; }
-@keyframes imgIn { from { opacity:0; transform: scale(1.08);} to { opacity:1; transform: scale(1);} }
+.hero__photo img { width: 100%; height: 100%; object-fit: cover; animation: imgIn 1.2s var(--ease) .3s forwards; }
+/* Ken-burns zoom only — NO opacity fade. An opacity:0 start would hide the
+   hero image (the LCP element) until the animation runs, wrecking LCP. */
+@keyframes imgIn { from { transform: scale(1.06);} to { transform: scale(1);} }
 .hero__chip {
   position: absolute; background: #fff; border-radius: var(--radius);
   padding: 0.85rem 1.05rem; box-shadow: 0 20px 40px -20px rgba(0,0,0,.45);

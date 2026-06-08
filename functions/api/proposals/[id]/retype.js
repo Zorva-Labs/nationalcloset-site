@@ -30,8 +30,8 @@ export async function onRequestPost(context) {
   const tiers = proposalTiersForKind(kind, tpl);
   for (const t of tiers) {
     await context.env.DB.prepare(
-      `INSERT INTO proposal_tiers (proposal_id, tier, title, contract_type) VALUES (?1,?2,?3,?4)`
-    ).bind(id, t.key, t.title, t.contract_type).run();
+      `INSERT INTO proposal_tiers (proposal_id, tier, title, description, contract_type) VALUES (?1,?2,?3,?4,?5)`
+    ).bind(id, t.key, t.title, t.description || null, t.contract_type).run();
   }
 
   await context.env.DB.prepare(

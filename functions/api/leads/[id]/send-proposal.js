@@ -90,7 +90,7 @@ export async function onRequestPost(context) {
   ).bind(projectId, number, token, intro, validUntil, defaultContractType, auth.id).first();
 
   for (const t of tiers) {
-    await DB.prepare(`INSERT INTO proposal_tiers (proposal_id, tier, title, contract_type) VALUES (?1, ?2, ?3, ?4)`).bind(proposalRow.id, t.key, t.title, t.contract_type).run();
+    await DB.prepare(`INSERT INTO proposal_tiers (proposal_id, tier, title, description, contract_type) VALUES (?1, ?2, ?3, ?4, ?5)`).bind(proposalRow.id, t.key, t.title, t.description || null, t.contract_type).run();
   }
   // Pre-populate each tier from the windows the admin already entered on the lead
   await seedTiersFromWindows(DB, proposalRow.id, projectId);

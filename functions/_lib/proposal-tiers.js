@@ -17,8 +17,16 @@ export function proposalTiersForKind(kind, tpl) {
   }
   // custom (default)
   return [
-    { key: "good",   title: tpl?.tier_good_title   || "Option 1 · Design & Install (walls as-is)",                 contract_type: "custom_order" },
-    { key: "better", title: tpl?.tier_better_title || "Option 2 · Design & Install + Wall Repair & Fresh Paint",   contract_type: "wallprep" },
+    {
+      key: "good", contract_type: "custom_order",
+      title: tpl?.tier_good_title || "The Essentials · Design & Install",
+      description: tpl?.tier_good_desc || "Walls as-is. Before we install, you handle the prep — remove the old shelving, patch the walls, and paint. We then design, build, and professionally install your new custom closet system.",
+    },
+    {
+      key: "better", contract_type: "wallprep",
+      title: tpl?.tier_better_title || "The Full Service · Turnkey Install + Wall Refresh",
+      description: tpl?.tier_better_desc || "Turnkey — we do it all. National Closet Company removes your old shelving, patches and repairs the walls, and paints, then designs, builds, and installs your new custom closet system. Nothing for you to do.",
+    },
   ];
 }
 

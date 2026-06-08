@@ -155,7 +155,9 @@
         variables: { colorPrimary: "#D2683F", fontFamily: "Montserrat, system-ui, sans-serif", borderRadius: "10px", colorText: "#16140F" },
       };
       elements = stripe.elements({ clientSecret: data.client_secret, appearance });
-      const paymentElement = elements.create("payment");
+      // Card + ACH only — turn off the Apple Pay / Google Pay wallet buttons
+      // (Link and other methods are already excluded via payment_method_types).
+      const paymentElement = elements.create("payment", { wallets: { applePay: "never", googlePay: "never" } });
       paymentElement.mount("#payment-element");
       // Track which method the customer has selected so we can surcharge cards.
       paymentElement.on("change", (ev) => {

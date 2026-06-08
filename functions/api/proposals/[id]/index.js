@@ -1,6 +1,6 @@
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { recomputeTierTotals, recordActivity } from "../../../_lib/db.js";
-import { syncLeadQuotedFromProposal } from "../../../_lib/lifecycle.js";
+import { syncLeadQuotedFromProposal, autoMirrorOption2 } from "../../../_lib/lifecycle.js";
 import { deleteProposalDeep } from "../../../_lib/cascade.js";
 
 export async function onRequestGet(context) {
@@ -72,6 +72,8 @@ export async function onRequestPatch(context) {
         await recomputeTierTotals(context.env.DB, t.id);
       }
     }
+    // Option 2 defaults to Option 1 + a Wall Finishing line when it's left empty.
+    await autoMirrorOption2(context.env.DB, id);
     // Tier line items changed → push the new "best"-tier total back to the lead
     await syncLeadQuotedFromProposal(context.env.DB, id);
   }

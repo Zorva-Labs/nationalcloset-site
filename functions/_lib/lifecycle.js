@@ -106,6 +106,38 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
 }
 
 /**
+ * Auto-mirror: Option 2 (the "better" tier) defaults to "everything in Option 1
+ * (the "good" tier) + a Wall Finishing line." This only fires when Option 2 is
+ * EMPTY and Option 1 has line items, so manual edits to Option 2 are preserved.
+ * The admin can re-sync any time with the "Copy Option 1 + Wall Finishing"
+ * button in the proposal editor.
+ */
+export async function autoMirrorOption2(db, proposalId) {
+  const good = await db.prepare(`SELECT id FROM proposal_tiers WHERE proposal_id=?1 AND tier='good'`).bind(proposalId).first();
+  const better = await db.prepare(`SELECT id FROM proposal_tiers WHERE proposal_id=?1 AND tier='better'`).bind(proposalId).first();
+  if (!good || !better) return;
+  const betterCount = (await db.prepare(`SELECT COUNT(*) AS c FROM proposal_tier_lines WHERE tier_id=?1`).bind(better.id).first())?.c || 0;
+  if (betterCount > 0) return; // Option 2 has its own content — leave it alone
+  const goodLines = (await db.prepare(
+    `SELECT description, room, color, options, width_in, height_in, quantity, unit_price_cents, line_total_cents, product_id
+       FROM proposal_tier_lines WHERE tier_id=?1 ORDER BY position, id`
+  ).bind(good.id).all()).results || [];
+  if (!goodLines.length) return; // nothing to mirror yet
+  let pos = 0;
+  for (const l of goodLines) {
+    await db.prepare(
+      `INSERT INTO proposal_tier_lines (tier_id, description, room, color, options, width_in, height_in, quantity, unit_price_cents, line_total_cents, position, product_id)
+       VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)`
+    ).bind(better.id, l.description, l.room, l.color, l.options, l.width_in, l.height_in, l.quantity, l.unit_price_cents, l.line_total_cents, pos++, l.product_id).run();
+  }
+  await db.prepare(
+    `INSERT INTO proposal_tier_lines (tier_id, description, room, quantity, unit_price_cents, line_total_cents, position)
+     VALUES (?1, 'Wall Finishing — wall repair & fresh paint', 'Whole project', 1, 0, 0, ?2)`
+  ).bind(better.id, pos).run();
+  await recomputeTierTotals(db, better.id);
+}
+
+/**
  * Seed every tier on a proposal with one line per window from the project,
  * pulling product + price from the catalog. Called when a proposal is
  * created so the admin doesn't have to manually re-enter what was already

@@ -149,9 +149,11 @@ function renderTier(t) {
       <th class="num" style="width:100px">Total</th><th style="width:32px"></th>
     </tr></thead>
     <tbody class="tier-lines">${(t.lines || []).map(tierLineRow).join("") || tierLineRow({})}</tbody></table>
-    <div class="add" style="display:flex;gap:8px"><button onclick="addFromCatalog(this)">+ Add from catalog</button><button onclick="addTierLine(this)">+ Custom line</button></div>
-    <div style="border-top:1px solid var(--line-soft);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;font-weight:600">
-      <span>Subtotal</span><span class="tier-total money">${SSCrm.fmtMoney(t.total_cents)}</span>
+    <div class="add" style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="addFromCatalog(this)">+ Add from catalog</button><button onclick="addTierLine(this)">+ Custom line</button>${t.tier !== "good" ? `<button onclick="copyFromOption1(this)" title="Copy Option 1's line items here and add a Wall Finishing line">⧉ Copy Option 1 + Wall Finishing</button>` : ""}</div>
+    <div style="border-top:1px solid var(--line-soft);margin-top:10px;padding-top:10px">
+      <div style="display:flex;justify-content:space-between;color:var(--ink-soft);font-weight:500"><span>Subtotal</span><span class="tier-subtotal money">${SSCrm.fmtMoney(t.subtotal_cents || 0)}</span></div>
+      <div style="display:flex;justify-content:space-between;color:var(--ink-soft);font-weight:500;margin-top:3px"><span>Sales tax (9.75%)</span><span class="tier-tax money">${SSCrm.fmtMoney(t.tax_cents || 0)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:6px;padding-top:6px;border-top:1px solid var(--line-soft)"><span>Total</span><span class="tier-total money">${SSCrm.fmtMoney(t.total_cents || 0)}</span></div>
     </div>
   </div>`;
 }
@@ -191,6 +193,7 @@ function recalcTier(input) {
   tr.querySelector(".tier-line-money").textContent = SSCrm.fmtMoney(qty * unit);
   recalcTierEl(input.closest(".card"));
 }
+const QUOTE_TAX_RATE = 0.0975; // 9.75% — must match recomputeTierTotals on the server
 function recalcTierEl(card) {
   let sub = 0;
   card.querySelectorAll(".tier-lines tr").forEach((tr) => {
@@ -198,7 +201,37 @@ function recalcTierEl(card) {
     const unit = SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value);
     sub += qty * unit;
   });
-  card.querySelector(".tier-total").textContent = SSCrm.fmtMoney(sub);
+  const tax = sub > 0 ? Math.round(sub * QUOTE_TAX_RATE) : 0;
+  const subEl = card.querySelector(".tier-subtotal"); if (subEl) subEl.textContent = SSCrm.fmtMoney(sub);
+  const taxEl = card.querySelector(".tier-tax"); if (taxEl) taxEl.textContent = SSCrm.fmtMoney(tax);
+  card.querySelector(".tier-total").textContent = SSCrm.fmtMoney(sub + tax);
+}
+
+// Copy Option 1's (the "good" tier) line items into this option, then append a
+// Wall Finishing line — Option 2 is typically "everything in Option 1 + wall
+// repair & fresh paint". Prices stay editable; the Wall Finishing line is added
+// blank for the admin to price.
+function copyFromOption1(btn) {
+  const card = btn.closest(".card");
+  const src = document.querySelector('.card[data-tier="good"]');
+  if (!src) { SSCrm.toast("No Option 1 to copy from.", "error"); return; }
+  const rows = [...src.querySelectorAll(".tier-lines tr")].map((tr) => ({
+    description: tr.querySelector("[data-f=description]").value.trim(),
+    product_id: (tr.querySelector("[data-f=product_id]")?.value || "") ? parseInt(tr.querySelector("[data-f=product_id]").value, 10) : null,
+    color: tr.querySelector("[data-f=color]")?.value || "",
+    options: tr.querySelector("[data-f=options]")?.value || "",
+    room: tr.querySelector("[data-f=room]")?.value || "",
+    quantity: Number(tr.querySelector("[data-f=quantity]").value || 1),
+    unit_price_cents: SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value),
+  })).filter((r) => r.description);
+  const hasExisting = [...card.querySelectorAll(".tier-lines tr")].some((tr) => tr.querySelector("[data-f=description]").value.trim());
+  if (hasExisting && !confirm("Replace this option's line items with a copy of Option 1 (plus a Wall Finishing line)?")) return;
+  if (!rows.length && !confirm("Option 1 has no line items yet. Add just the Wall Finishing line?")) return;
+  const tbody = card.querySelector(".tier-lines");
+  tbody.innerHTML = rows.map(tierLineRow).join("");
+  tbody.insertAdjacentHTML("beforeend", tierLineRow({ description: "Wall Finishing — wall repair & fresh paint", room: "Whole project", quantity: 1 }));
+  recalcTierEl(card);
+  SSCrm.toast("Copied Option 1 and added a Wall Finishing line.", "success");
 }
 
 async function saveAll() {

@@ -43,6 +43,9 @@
     .opt__lines li:last-child{border-bottom:0}
     .opt__lines .ln-money{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:700;flex-shrink:0}
     .opt__empty{color:var(--muted);font-size:.9rem;font-style:italic;padding:8px 0 4px}
+    .opt__sum{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+    .opt__sum-row{display:flex;justify-content:space-between;gap:12px;font-size:.92rem;color:var(--ink-soft);padding:3px 0;font-variant-numeric:tabular-nums}
+    .opt__sum-total{margin-top:6px;padding-top:8px;border-top:1px solid var(--line);font-weight:800;font-size:1.05rem;color:var(--ink)}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-family:var(--font);font-weight:700;font-size:.95rem;border:0;border-radius:7px;padding:13px 22px;cursor:pointer;min-height:48px;transition:transform .25s cubic-bezier(.22,1,.36,1),background .2s}
     .opt-btn{margin-top:20px;width:100%;background:var(--ink);color:#fff}
     .opt:hover .opt-btn{background:#000}
@@ -110,7 +113,12 @@ function render(p, tiers) {
         <h3 class="opt__title">${esc(t.title || "")}</h3>
         <div class="opt__total">${money(t.total_cents)} ${t.total_cents ? `<span class="sub">total</span>` : ""}</div>
         ${t.description ? `<div class="opt__desc">${esc(t.description)}</div>` : ""}
-        ${(t.lines && t.lines.length) ? `<ul class="opt__lines">${t.lines.map((l) => `<li><span>${esc(l.description)}${l.room ? ` <em style="color:var(--muted);font-size:.85em;font-style:normal">— ${esc(l.room)}</em>` : ""}</span><span class="ln-money">${money(l.line_total_cents)}</span></li>`).join("")}</ul>` : `<div class="opt__empty">Itemized details to follow.</div>`}
+        ${(t.lines && t.lines.length) ? `<ul class="opt__lines">${t.lines.map((l) => `<li><span>${esc(l.description)}${l.room ? ` <em style="color:var(--muted);font-size:.85em;font-style:normal">— ${esc(l.room)}</em>` : ""}</span><span class="ln-money">${money(l.line_total_cents)}</span></li>`).join("")}</ul>
+        <div class="opt__sum">
+          <div class="opt__sum-row"><span>Subtotal</span><span>${money(t.subtotal_cents)}</span></div>
+          <div class="opt__sum-row"><span>Sales tax (9.75%)</span><span>${money(t.tax_cents)}</span></div>
+          <div class="opt__sum-row opt__sum-total"><span>Total</span><span>${money(t.total_cents)}</span></div>
+        </div>` : `<div class="opt__empty">Itemized details to follow.</div>`}
         ${!isAccepted ? `<button class="btn opt-btn" type="button" onclick="event.stopPropagation();pickTier('${esc(t.tier)}')">${p.selected_tier === t.tier ? "✓ Selected" : (many ? "Choose this option" : "Select")}</button>` : ""}
       </div>`).join("")}
     </div>

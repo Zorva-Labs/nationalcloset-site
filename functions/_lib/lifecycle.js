@@ -1,7 +1,7 @@
 // Shared lifecycle helpers — used by both admin endpoints (manual conversion)
 // and the public token endpoints (auto-conversion on customer accept/sign).
 import { genToken, nextSequence, formatDocNumber } from "./tokens.js";
-import { recordActivity } from "./db.js";
+import { recordActivity, recomputeTierTotals } from "./db.js";
 
 const FALLBACK_TERMS = {
   custom_order: `<h3>Materials &amp; Manufacture</h3><p>Made-to-order, 2-6 week lead.</p><h3>Deposit</h3><p>50% deposit due at signing.</p><h3>Warranty</h3><p>Original manufacturer warranty + 90-day workmanship.</p>`,
@@ -84,6 +84,14 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
       l.quantity, l.unit_price_cents, l.line_total_cents, l.position
     ).run();
   }
+  // Carry the quote's sales tax onto the contract as its own line so the
+  // itemized line items reconcile to the contract's (tax-inclusive) total.
+  if (tier.tax_cents > 0) {
+    await db.prepare(
+      `INSERT INTO contract_lines (contract_id, description, room, quantity, unit_price_cents, line_total_cents, position)
+       VALUES (?1, 'Sales tax (9.75%)', NULL, 1, ?2, ?2, ?3)`
+    ).bind(r.id, tier.tax_cents, lines.length).run();
+  }
 
   // Advance the project status — accepting a proposal moves the job into "proposed"
   await db.prepare(`UPDATE projects SET status='proposed', updated_at=datetime('now') WHERE id=?1`).bind(proposal.project_id).run();
@@ -150,11 +158,8 @@ export async function seedTiersFromWindows(db, proposalId, projectId) {
       ).run();
       subtotal += total;
     }
-    if (subtotal > 0) {
-      await db.prepare(
-        `UPDATE proposal_tiers SET subtotal_cents = ?1, total_cents = ?1 WHERE id = ?2`
-      ).bind(subtotal, tier.id).run();
-    }
+    // Recompute subtotal + 9.75% sales tax + total from the lines just inserted.
+    await recomputeTierTotals(db, tier.id);
   }
 }
 

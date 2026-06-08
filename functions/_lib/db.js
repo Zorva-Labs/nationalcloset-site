@@ -66,18 +66,24 @@ export async function recomputeEstimateTotals(db, estimateId) {
   return { subtotal: sum.subtotal || 0, total };
 }
 
+// Sales tax rate applied to every quote (proposal option). Gallatin / Middle TN
+// combined rate = 9.75%. Tax is auto-computed on the subtotal, NOT hand-entered.
+export const QUOTE_TAX_RATE = 0.0975;
+
 export async function recomputeTierTotals(db, tierId) {
   const sum = await db
     .prepare(`SELECT COALESCE(SUM(line_total_cents), 0) AS subtotal FROM proposal_tier_lines WHERE tier_id = ?1`)
     .bind(tierId)
     .first();
-  const t = await db.prepare(`SELECT tax_cents FROM proposal_tiers WHERE id = ?1`).bind(tierId).first();
-  const total = (sum.subtotal || 0) + (t.tax_cents || 0);
+  const subtotal = sum.subtotal || 0;
+  // Only tax a quote that actually has line items — an empty option stays $0.
+  const tax = subtotal > 0 ? Math.round(subtotal * QUOTE_TAX_RATE) : 0;
+  const total = subtotal + tax;
   await db
-    .prepare(`UPDATE proposal_tiers SET subtotal_cents=?1, total_cents=?2 WHERE id=?3`)
-    .bind(sum.subtotal || 0, total, tierId)
+    .prepare(`UPDATE proposal_tiers SET subtotal_cents=?1, tax_cents=?2, total_cents=?3 WHERE id=?4`)
+    .bind(subtotal, tax, total, tierId)
     .run();
-  return { subtotal: sum.subtotal || 0, total };
+  return { subtotal, tax, total };
 }
 
 export async function trackView(db, table, id) {

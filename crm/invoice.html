@@ -48,6 +48,8 @@
     .inv-foot { margin-top:26px; padding-top:16px; border-top:1px solid var(--line); font-size:12.5px; color:#6B6457; text-align:center; }
     .inv-foot a { color:#B9542F; font-weight:700; }
     .inv-field { font:inherit; padding:6px 8px; border:1px solid var(--line); border-radius:6px; }
+    .rp-lbl { display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:12px; }
+    .rp-lbl .inv-field { margin-top:4px; font-size:14px; font-weight:400; color:var(--ink); }
     @media (max-width:640px){ .inv-sheet{ padding:24px 18px; } .inv-meta{ text-align:left; } }
     @media print {
       .tnav, .inv-actions, .toast-host, .modal-bg { display:none !important; }
@@ -122,7 +124,7 @@ function render() {
       <button class="btn secondary" onclick="window.print()">🖨️ Print / PDF</button>
       ${locked ? "" : `<button class="btn ghost" onclick="resend()">✉️ Send</button>`}
       <button class="btn ghost" onclick="copyLink('${e(payUrl)}')">Copy pay link</button>
-      ${locked ? "" : `<button class="btn ghost" onclick="markPaid()">Mark paid</button><button class="btn ghost" onclick="voidInv()">Void</button>`}
+      ${locked ? "" : `<button class="btn ghost" onclick="recordPayment()">💵 Record payment</button><button class="btn ghost" onclick="voidInv()">Void</button>`}
     </div>
 
     <div class="inv-sheet">
@@ -219,10 +221,56 @@ async function resend() {
   try { await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "resend" }) }); SSCrm.toast("Invoice emailed", "success"); }
   catch (err) { SSCrm.toast(err.message || "Could not send", "error"); }
 }
-async function markPaid() {
-  if (!(await SSCrm.confirmDialog("Mark this invoice paid (e.g. cash/check received)?"))) return;
-  try { await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "mark_paid", method: "manual" }) }); SSCrm.toast("Marked paid", "success"); await load(); }
-  catch (err) { SSCrm.toast(err.message || "Could not update", "error"); }
+// Record a payment collected in person (cash, check, card on a reader, Venmo…).
+function recordPayment() {
+  const iv = data.invoice;
+  const today = new Date().toISOString().slice(0, 10);
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `
+    <div class="modal" style="max-width:440px">
+      <div class="modal-head">Record payment</div>
+      <div class="modal-body">
+        <p style="margin:0 0 14px;color:var(--ink-soft);font-size:13px">Mark <strong>${e(iv.number)}</strong> (${m(iv.amount_cents)}) paid from an in-person payment.</p>
+        <label class="rp-lbl">Payment method
+          <select id="rp-method" class="inv-field" style="width:100%">
+            <option>Cash</option>
+            <option>Check</option>
+            <option>Card (in person)</option>
+            <option>Venmo / Zelle / Cash App</option>
+            <option>Bank transfer (ACH)</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label class="rp-lbl">Reference / note <span style="color:var(--ink-soft);font-weight:400">(optional)</span>
+          <input id="rp-ref" class="inv-field" style="width:100%" placeholder="Check #1234, last 4, memo…" />
+        </label>
+        <label class="rp-lbl">Date received
+          <input id="rp-date" class="inv-field" type="date" value="${today}" max="${today}" style="width:170px" />
+        </label>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" id="rp-cancel">Cancel</button>
+        <button class="btn primary" id="rp-save">Record payment</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  const close = () => bg.remove();
+  bg.addEventListener("click", (ev) => { if (ev.target === bg) close(); });
+  bg.querySelector("#rp-cancel").onclick = close;
+  bg.querySelector("#rp-method").focus();
+  bg.querySelector("#rp-save").onclick = async () => {
+    const btn = bg.querySelector("#rp-save"); btn.disabled = true; btn.textContent = "Recording…";
+    const method = bg.querySelector("#rp-method").value;
+    const reference = bg.querySelector("#rp-ref").value.trim();
+    const paid_at = bg.querySelector("#rp-date").value || "";
+    try {
+      await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "mark_paid", method, reference, paid_at }) });
+      close();
+      SSCrm.toast("Payment recorded", "success");
+      await load();
+    } catch (err) { btn.disabled = false; btn.textContent = "Record payment"; SSCrm.toast(err.message || "Could not record payment", "error"); }
+  };
 }
 async function voidInv() {
   if (!(await SSCrm.confirmDialog("Void this invoice? The customer will no longer be able to pay it."))) return;

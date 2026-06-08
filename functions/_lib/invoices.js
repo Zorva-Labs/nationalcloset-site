@@ -165,22 +165,25 @@ export async function sendInvoiceEmail(env, invoice, project) {
 }
 
 // Mark an invoice paid (called by the Stripe webhook or a manual admin action).
-export async function markInvoicePaid(env, invoice, { method = "card", paymentIntentId } = {}) {
+export async function markInvoicePaid(env, invoice, { method = "card", paymentIntentId, paidAt } = {}) {
   const db = env.DB;
   // Re-check the live status (the passed row may be stale) so the webhook and
   // the on-page sync can't both run the booking/receipt twice.
   const fresh = await db.prepare(`SELECT status FROM invoices WHERE id=?1`).bind(invoice.id).first().catch(() => null);
   if ((fresh?.status || invoice.status) === "paid") return { already: true };
+  // paidAt lets an admin record an in-person payment on the date it was actually
+  // collected; falls back to now (e.g. Stripe webhook).
+  const when = paidAt || null;
   await db.prepare(
-    `UPDATE invoices SET status='paid', paid_at=datetime('now'), paid_method=?1,
-       stripe_payment_intent_id=COALESCE(?2, stripe_payment_intent_id), updated_at=datetime('now') WHERE id=?3`
-  ).bind(method, paymentIntentId || null, invoice.id).run();
+    `UPDATE invoices SET status='paid', paid_at=COALESCE(?1, datetime('now')), paid_method=?2,
+       stripe_payment_intent_id=COALESCE(?3, stripe_payment_intent_id), updated_at=datetime('now') WHERE id=?4`
+  ).bind(when, method, paymentIntentId || null, invoice.id).run();
 
   // If this was the deposit, reflect it on the contract.
   if (invoice.type === "deposit" && invoice.contract_id) {
     await db.prepare(
-      `UPDATE contracts SET deposit_paid=1, deposit_paid_at=datetime('now'), deposit_paid_method=?1, updated_at=datetime('now') WHERE id=?2`
-    ).bind(method, invoice.contract_id).run().catch(() => {});
+      `UPDATE contracts SET deposit_paid=1, deposit_paid_at=COALESCE(?1, datetime('now')), deposit_paid_method=?2, updated_at=datetime('now') WHERE id=?3`
+    ).bind(when, method, invoice.contract_id).run().catch(() => {});
   }
 
   // Booking happens HERE — when the deposit is paid, not at signing. Promote

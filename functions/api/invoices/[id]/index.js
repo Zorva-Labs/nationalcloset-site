@@ -88,7 +88,14 @@ export async function onRequestPost(context) {
     return json({ ok: true });
   }
   if (action === "mark_paid") {
-    await markInvoicePaid(context.env, inv, { method: body.method || "manual" });
+    // In-person / manual payment: method label (Cash, Check, Card in person…),
+    // an optional reference (check #, note), and the date it was collected.
+    const label = (body.method || "manual").toString().slice(0, 40);
+    const ref = (body.reference || "").toString().trim().slice(0, 60);
+    const paid_method = ref ? `${label} · ${ref}` : label;
+    let paidAt = null;
+    if (body.paid_at && /^\d{4}-\d{2}-\d{2}$/.test(body.paid_at)) paidAt = `${body.paid_at} 12:00:00`;
+    await markInvoicePaid(context.env, inv, { method: paid_method, paidAt });
     return json({ ok: true });
   }
   return json({ error: "Unknown action" }, 400);

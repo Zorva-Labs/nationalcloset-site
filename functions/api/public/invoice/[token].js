@@ -1,11 +1,19 @@
-// GET /api/public/invoice/[token]
-// Public (token-gated) endpoint backing the on-site card form. Returns the
-// invoice summary + the Stripe publishable key + a PaymentIntent client_secret
-// so Stripe Elements can collect a card. Creates the PaymentIntent lazily and
-// reuses it across reloads.
+// GET  /api/public/invoice/[token]  — invoice summary + Stripe key + PaymentIntent client_secret
+// POST /api/public/invoice/[token]  { action: "set_method", method: "card" | "bank" }
+//   Card payments carry a processing-fee surcharge; bank (ACH) does not. This
+//   sets the PaymentIntent amount to base (bank) or base + surcharge (card)
+//   right before the customer confirms.
 import { json } from "../../../_lib/auth.js";
-import { createPaymentIntent, retrievePaymentIntent } from "../../../_lib/stripe.js";
+import { createPaymentIntent, retrievePaymentIntent, updatePaymentIntentAmount } from "../../../_lib/stripe.js";
 import { markInvoicePaid } from "../../../_lib/invoices.js";
+
+// Card surcharge rate (e.g. 0.03 = 3%). Configurable via wrangler [vars]
+// CARD_SURCHARGE_RATE; defaults to 3% and is clamped to a sane range.
+function surchargeRate(env) {
+  const r = parseFloat(env.CARD_SURCHARGE_RATE);
+  return Number.isFinite(r) && r >= 0 && r <= 0.06 ? r : 0.03;
+}
+const surchargeCents = (baseCents, rate) => Math.round(baseCents * rate);
 
 function publicView(inv, project) {
   return {
@@ -35,17 +43,23 @@ export async function onRequestGet(context) {
 
   if (!context.env.STRIPE_SECRET_KEY) return json({ error: "Payments not configured" }, 500);
 
+  const rate = surchargeRate(context.env);
   try {
     let pi = null;
     if (inv.stripe_payment_intent_id) {
       pi = await retrievePaymentIntent(context.env, inv.stripe_payment_intent_id).catch(() => null);
       // If a prior intent already succeeded, sync + report paid.
       if (pi && pi.status === "succeeded") {
-        await markInvoicePaid(context.env, inv, { method: "card", paymentIntentId: pi.id });
+        const method = pi.charges?.data?.[0]?.payment_method_details?.type || "card";
+        await markInvoicePaid(context.env, inv, { method, paymentIntentId: pi.id });
         return json({ paid: true, invoice: publicView({ ...inv, status: "paid" }, project) });
       }
-      // Reuse only if still chargeable for the same amount.
-      if (pi && (pi.status === "canceled" || pi.amount !== inv.amount_cents)) pi = null;
+      if (pi && pi.status === "canceled") pi = null;
+      // Always reload the page at the base amount — reset any leftover card
+      // surcharge from an abandoned attempt so the customer re-chooses cleanly.
+      else if (pi && pi.amount !== inv.amount_cents) {
+        pi = await updatePaymentIntentAmount(context.env, pi.id, inv.amount_cents).catch(() => pi);
+      }
     }
     if (!pi) {
       pi = await createPaymentIntent(context.env, {
@@ -62,7 +76,34 @@ export async function onRequestGet(context) {
       invoice: publicView(inv, project),
       publishable_key: context.env.STRIPE_PUBLISHABLE_KEY,
       client_secret: pi.client_secret,
+      surcharge_rate: rate,
+      card_surcharge_cents: surchargeCents(inv.amount_cents, rate),
     });
+  } catch (e) {
+    return json({ error: e.message || "Stripe error" }, 502);
+  }
+}
+
+// Set the PaymentIntent amount to match the chosen method, right before confirm.
+export async function onRequestPost(context) {
+  const token = context.params.token;
+  const db = context.env.DB;
+  const body = await context.request.json().catch(() => ({}));
+  if (body.action !== "set_method") return json({ error: "Unknown action" }, 400);
+
+  const inv = await db.prepare(`SELECT * FROM invoices WHERE view_token=?1`).bind(token).first();
+  if (!inv) return json({ error: "Invoice not found" }, 404);
+  if (inv.status === "paid") return json({ paid: true });
+  if (inv.status === "void") return json({ error: "Invoice canceled" }, 400);
+  if (!inv.stripe_payment_intent_id) return json({ error: "No payment in progress" }, 400);
+
+  const rate = surchargeRate(context.env);
+  const base = inv.amount_cents;
+  const isCard = body.method === "card";
+  const amount = isCard ? base + surchargeCents(base, rate) : base;
+  try {
+    const pi = await updatePaymentIntentAmount(context.env, inv.stripe_payment_intent_id, amount);
+    return json({ ok: true, amount_cents: pi.amount, surcharged: isCard });
   } catch (e) {
     return json({ error: e.message || "Stripe error" }, 502);
   }

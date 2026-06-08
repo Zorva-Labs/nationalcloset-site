@@ -60,7 +60,10 @@ export async function createPaymentIntent(env, { amountCents, currency = "usd", 
     currency,
     description,
     receipt_email: receiptEmail || undefined,
-    automatic_payment_methods: { enabled: true },
+    // Only card + ACH bank debit. Explicit list (not automatic_payment_methods)
+    // so wallets / Link / Klarna / Affirm are never offered.
+    payment_method_types: ["card", "us_bank_account"],
+    payment_method_options: { us_bank_account: { verification_method: "automatic" } },
     metadata: metadata || {},
   };
   // Idempotency so a double-tap on the pay page doesn't make two intents.
@@ -79,6 +82,12 @@ export async function createPaymentIntent(env, { amountCents, currency = "usd", 
   const json = await res.json().catch(() => ({}));
   if (!res.ok) { const e = new Error(json?.error?.message || `Stripe ${res.status}`); e.stripe = json?.error; throw e; }
   return json;
+}
+
+// Update an unconfirmed PaymentIntent's amount (used to apply the card
+// surcharge at pay time, or reset to the base amount for ACH).
+export function updatePaymentIntentAmount(env, id, amountCents) {
+  return stripeRequest(env, "POST", `/payment_intents/${id}`, { amount: Math.round(amountCents) });
 }
 
 export function retrievePaymentIntent(env, id) {

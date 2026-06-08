@@ -48,6 +48,10 @@
     @keyframes s{to{transform:rotate(360deg)}}
     .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:22px}
     .foot a{color:var(--muted)}
+    .fee-note{font-size:12.5px;color:var(--muted);margin:10px 0 0;line-height:1.5}
+    .fee-line{margin:0 0 16px;padding:12px 14px;background:var(--fog);border-radius:10px;font-size:13.5px}
+    .fee-row{display:flex;justify-content:space-between;padding:2px 0;color:var(--ink-soft)}
+    .fee-row--total{margin-top:4px;padding-top:6px;border-top:1px solid var(--line);font-weight:800;color:var(--ink)}
   </style>
 </head>
 <body>
@@ -100,6 +104,13 @@
       if (data.voided) return voidState(data.invoice);
 
       const inv = data.invoice;
+      const base = inv.amount_cents;
+      const surcharge = data.card_surcharge_cents || 0;
+      const ratePct = +(((data.surcharge_rate || 0) * 100).toFixed(2));
+      // Default to "card" so the displayed total is never lower than what a card
+      // payment will actually charge; switching to bank (ACH) drops the fee.
+      let selectedMethod = "card";
+
       const typeLabel = { deposit: "Deposit", balance: "Final balance", full: "Payment", custom: "Invoice" }[inv.type] || "Invoice";
       root.innerHTML = `
         <div class="card">
@@ -107,14 +118,20 @@
             <div class="eyebrow">${esc(typeLabel)} · Invoice ${esc(inv.number)}</div>
             <h1>${esc(inv.project_name || "Custom closet project")}</h1>
             <p class="sub">${esc(inv.contact_name ? "For " + inv.contact_name : "")}</p>
-            <div class="amount">${money(inv.amount_cents)} <small>due</small></div>
+            <div class="amount">${money(base)} <small>due</small></div>
             <p class="desc">${esc(inv.description || "")}</p>
+            ${surcharge > 0 ? `<p class="fee-note">Pay by <strong>bank (ACH)</strong> with no fee. Paying by <strong>card</strong> adds a ${ratePct}% processing fee (${money(surcharge)}).</p>` : ""}
             <div class="divider"></div>
           </div>
           <div class="pay">
             <form id="pay-form">
               <div id="payment-element"></div>
-              <button class="btn" id="pay-btn" type="submit">Pay ${money(inv.amount_cents)}</button>
+              ${surcharge > 0 ? `<div id="fee-line" class="fee-line" hidden>
+                <div class="fee-row"><span>Subtotal</span><span>${money(base)}</span></div>
+                <div class="fee-row"><span>Card processing fee (${ratePct}%)</span><span>+${money(surcharge)}</span></div>
+                <div class="fee-row fee-row--total"><span>Total</span><span>${money(base + surcharge)}</span></div>
+              </div>` : ""}
+              <button class="btn" id="pay-btn" type="submit">Pay ${money(base)}</button>
               <div class="msg" id="msg"></div>
             </form>
             <div class="secure">
@@ -124,6 +141,14 @@
           </div>
         </div>`;
 
+      function currentTotal() { return selectedMethod === "card" ? base + surcharge : base; }
+      function updateTotals() {
+        const btn = document.getElementById("pay-btn");
+        if (btn && !btn.disabled) btn.textContent = `Pay ${money(currentTotal())}`;
+        const fl = document.getElementById("fee-line");
+        if (fl) fl.hidden = !(selectedMethod === "card" && surcharge > 0);
+      }
+
       stripe = Stripe(data.publishable_key);
       const appearance = {
         theme: "stripe",
@@ -132,12 +157,30 @@
       elements = stripe.elements({ clientSecret: data.client_secret, appearance });
       const paymentElement = elements.create("payment");
       paymentElement.mount("#payment-element");
+      // Track which method the customer has selected so we can surcharge cards.
+      paymentElement.on("change", (ev) => {
+        const t = ev && ev.value && ev.value.type;
+        if (t) { selectedMethod = t; updateTotals(); }
+      });
+      updateTotals();
 
       document.getElementById("pay-form").addEventListener("submit", async (e) => {
         e.preventDefault();
         const btn = document.getElementById("pay-btn");
         const msg = document.getElementById("msg");
         btn.disabled = true; btn.textContent = "Processing…"; msg.textContent = "";
+        const method = selectedMethod === "card" ? "card" : "bank";
+        // Sync the PaymentIntent amount to the chosen method (card = + fee) before confirming.
+        try {
+          const r = await fetch(`/api/public/invoice/${encodeURIComponent(token)}`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "set_method", method }),
+          });
+          const d = await r.json();
+          if (!r.ok || d.error) throw new Error(d.error || "Couldn't prepare the payment. Please try again.");
+        } catch (err) {
+          msg.textContent = err.message; btn.disabled = false; updateTotals(); return;
+        }
         const { error, paymentIntent } = await stripe.confirmPayment({
           elements,
           confirmParams: { return_url: location.href },
@@ -145,14 +188,14 @@
         });
         if (error) {
           msg.textContent = error.message || "Payment failed. Please try again.";
-          btn.disabled = false; btn.textContent = `Pay ${money(inv.amount_cents)}`;
+          btn.disabled = false; updateTotals();
           return;
         }
         if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing")) {
-          paidState({ number: inv.number, amount_cents: inv.amount_cents });
+          paidState({ number: inv.number, amount_cents: currentTotal() });
         } else {
           msg.textContent = "Payment status: " + (paymentIntent ? paymentIntent.status : "unknown");
-          btn.disabled = false; btn.textContent = `Pay ${money(inv.amount_cents)}`;
+          btn.disabled = false; updateTotals();
         }
       });
     }

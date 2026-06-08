@@ -61,13 +61,16 @@ export async function sendEmail(env, {
   const headers = { "Message-ID": mid };
   if (inReplyTo)  headers["In-Reply-To"] = inReplyTo;
   if (references) headers["References"] = references;
+  // List-Unsubscribe signals a legitimate sender to Gmail/Yahoo and helps inbox
+  // placement (mailto form — no suppression logic, just the signal/courtesy).
+  headers["List-Unsubscribe"] = "<mailto:hello@nationalclosetco.com?subject=Unsubscribe>";
 
   const payload = {
     from: fromHeader,
     to:  toList.map(extractAddr),
     subject,
     html: html || undefined,
-    text: text || (html ? stripHtml(html) : undefined),
+    text: text || (html ? htmlToText(html) : undefined),
     reply_to: reply,
     headers,
   };
@@ -117,9 +120,24 @@ function extractAddr(s) {
   return (m ? m[1] : s).trim();
 }
 
-function stripHtml(html) {
+// Build a readable plain-text alternative from the branded HTML. A real
+// text/plain part (not a single stripped line) improves spam scores and
+// renders properly in text-only clients.
+function htmlToText(html) {
   if (!html) return "";
-  return html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  let t = String(html);
+  t = t.replace(/<(style|script|head)[\s\S]*?<\/\1>/gi, " ");      // drop non-content
+  t = t.replace(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_m, href, inner) => {
+    const label = inner.replace(/<[^>]+>/g, "").trim();
+    const url = href.trim();
+    return label && label !== url ? `${label} (${url})` : url;       // links → "text (url)"
+  });
+  t = t.replace(/<(?:br|\/p|\/div|\/tr|\/li|\/h[1-6]|\/table|\/ul|\/ol)[^>]*>/gi, "\n"); // blocks → newlines
+  t = t.replace(/<[^>]+>/g, "");                                    // strip remaining tags
+  t = t.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<")
+       .replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'")
+       .replace(/&mdash;/gi, "—").replace(/&hellip;/gi, "…").replace(/&rarr;/gi, "→");
+  return t.replace(/[ \t]+/g, " ").replace(/ *\n */g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 // --------------------------------------------------------------

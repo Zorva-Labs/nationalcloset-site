@@ -279,26 +279,32 @@ export async function markInvoicePaid(env, invoice, { method = "card", paymentIn
     ).bind(invoice.project_id).first().catch(() => null);
     const paidSum = paidRow?.paid || 0;
     const hasTotal = (billing.totalCents || 0) > 0;
-    const balance = Math.max(0, (billing.totalCents || 0) - paidSum);
-    const balanceLabel = balance > 0 ? money(balance) : "$0.00 — paid in full 🎉";
+    // Project-level amount still to come AFTER this invoice (e.g. the final
+    // balance that follows a deposit). This is NOT a balance owed on the
+    // invoice the customer just paid — that invoice is paid in full.
+    const futureBalance = Math.max(0, (billing.totalCents || 0) - paidSum);
+    const futureLabel = invoice.type === "deposit" ? "Final balance (due at completion)" : "Remaining project balance";
 
-    const subject = `Payment received — ${money(invoice.amount_cents)} (${invoice.number})`;
+    const subject = `Receipt — ${money(invoice.amount_cents)} paid in full (${invoice.number})`;
     const html = brandedEmail({
       title: "Payment received — thank you!",
       body: `
         <p>Hi ${first},</p>
-        <p>We've received your payment of <strong>${money(invoice.amount_cents)}</strong> for invoice <strong>${invoice.number}</strong>. Thank you!</p>
+        <p>We've received your payment of <strong>${money(invoice.amount_cents)}</strong> — invoice <strong>${invoice.number}</strong> is <strong>paid in full</strong>. Thank you!</p>
         <table style="border-collapse:collapse;margin:8px 0 4px">
-          <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Amount paid</td><td style="padding:4px 0;font-weight:600">${money(invoice.amount_cents)}</td></tr>
-          ${hasTotal ? `<tr><td style="padding:4px 16px 4px 0;color:#6B6457">Project total</td><td style="padding:4px 0">${money(billing.totalCents)}</td></tr>
-          <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Remaining balance</td><td style="padding:4px 0;font-weight:700">${balanceLabel}</td></tr>` : ""}
+          <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Amount paid</td><td style="padding:4px 0;font-weight:700;font-size:18px">${money(invoice.amount_cents)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Invoice ${invoice.number}</td><td style="padding:4px 0;color:#067647;font-weight:600">Paid in full ✓</td></tr>
+          ${hasTotal && futureBalance > 0 ? `<tr><td style="padding:4px 16px 4px 0;color:#6B6457">Project total</td><td style="padding:4px 0">${money(billing.totalCents)}</td></tr>
+          <tr><td style="padding:4px 16px 4px 0;color:#6B6457">${futureLabel}</td><td style="padding:4px 0;font-weight:600">${money(futureBalance)}</td></tr>` : ""}
         </table>
-        ${invoice.type === "deposit" ? `<p>Your order is now moving forward — we'll be in touch to schedule your installation.</p>` : ""}
-        ${hasTotal && balance > 0 ? `<p>Your remaining balance of <strong>${money(balance)}</strong> will be invoiced when it's due.</p>` : ""}
+        ${invoice.type === "deposit"
+          ? `<p>Your order is now moving forward — we'll be in touch to schedule your installation.${hasTotal && futureBalance > 0 ? ` The final balance of <strong>${money(futureBalance)}</strong> will be invoiced once your installation is complete.` : ""}</p>`
+          : (hasTotal && futureBalance > 0 ? `<p>Your remaining project balance of <strong>${money(futureBalance)}</strong> will be invoiced when it's due.</p>` : "")}
+        ${hasTotal && futureBalance <= 0 ? `<p>Your project is now paid in full. 🎉 Thank you for choosing National Closet Company!</p>` : ""}
       `,
     });
-    const text = `Payment received: ${money(invoice.amount_cents)} for ${invoice.number}. Thank you!`
-      + (hasTotal ? `\nRemaining balance: ${balance > 0 ? money(balance) : "$0.00 (paid in full)"}` : "");
+    const text = `Payment received: ${money(invoice.amount_cents)} — invoice ${invoice.number} paid in full. Thank you!`
+      + (hasTotal && futureBalance > 0 ? `\n${futureLabel}: ${money(futureBalance)}` : (hasTotal ? `\nProject paid in full.` : ""));
     const messageId = makeMessageId();
     const to = project.contact_name ? `${project.contact_name} <${project.contact_email}>` : project.contact_email;
     const res = await sendEmail(env, { to, subject, html, text, messageId });

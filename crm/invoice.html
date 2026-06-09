@@ -263,6 +263,12 @@ function recordPayment() {
         <label class="rp-lbl">Date received
           <input id="rp-date" class="inv-field" type="date" value="${today}" max="${today}" style="width:170px" />
         </label>
+        ${iv.contact_email
+          ? `<label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13px;cursor:pointer">
+               <input id="rp-receipt" type="checkbox" checked style="width:16px;height:16px" />
+               Email receipt to ${e(iv.contact_email)}
+             </label>`
+          : `<p style="margin:14px 0 0;color:var(--ink-soft);font-size:12px">No email on file — receipt won't be sent.</p>`}
       </div>
       <div class="modal-foot">
         <button class="btn ghost" id="rp-cancel">Cancel</button>
@@ -281,10 +287,12 @@ function recordPayment() {
     const method = bg.querySelector("#rp-method").value;
     const reference = bg.querySelector("#rp-ref").value.trim();
     const paid_at = bg.querySelector("#rp-date").value || "";
+    const send_receipt = bg.querySelector("#rp-receipt") ? bg.querySelector("#rp-receipt").checked : false;
     try {
-      const r = await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "mark_paid", method, reference, paid_at, amount_cents }) });
+      const r = await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "mark_paid", method, reference, paid_at, amount_cents, send_receipt }) });
       close();
-      SSCrm.toast(r.paid ? "Payment recorded — invoice paid in full" : `Partial payment recorded — ${m(r.remaining)} remaining`, "success");
+      const base = r.paid ? "Payment recorded — invoice paid in full" : `Partial payment recorded — ${m(r.remaining)} remaining`;
+      SSCrm.toast(send_receipt ? `${base} · receipt emailed` : base, "success");
       await load();
     } catch (err) { btn.disabled = false; btn.textContent = "Record payment"; SSCrm.toast(err.message || "Could not record payment", "error"); }
   };

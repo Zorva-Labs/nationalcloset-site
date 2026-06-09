@@ -2,7 +2,7 @@
 // PATCH /api/invoices/[id]            — edit description/type/notes/due_date + line items
 // POST  /api/invoices/[id]  { action: "resend" | "void" | "mark_paid" }  (admin)
 import { requireAuth, json } from "../../../_lib/auth.js";
-import { sendInvoiceEmail, markInvoicePaid } from "../../../_lib/invoices.js";
+import { sendInvoiceEmail, markInvoicePaid, sendPaymentReceipt } from "../../../_lib/invoices.js";
 import { recordActivity } from "../../../_lib/db.js";
 
 export async function onRequestGet(context) {
@@ -107,10 +107,13 @@ export async function onRequestPost(context) {
     let amt = body.amount_cents != null ? Math.round(Number(body.amount_cents)) : remaining;
     if (!Number.isFinite(amt) || amt <= 0) amt = remaining;
 
+    // The admin can suppress the customer receipt (e.g. they'll hand over a paper one).
+    const sendReceipt = body.send_receipt !== false;
+
     if (priorPaid + amt >= total) {
       // Covers the balance → settle in full (books deposit, sends receipt).
       // markInvoicePaid logs the completing (remaining) amount in the ledger.
-      await markInvoicePaid(context.env, inv, { method: paid_method, paidAt });
+      await markInvoicePaid(context.env, inv, { method: paid_method, paidAt, sendReceipt });
       return json({ ok: true, paid: true });
     }
     // Partial payment → log it, bump amount paid, keep the invoice open.
@@ -123,7 +126,14 @@ export async function onRequestPost(context) {
       actorKind: "admin", actorId: auth.id, actorName: auth.email,
       details: { invoice_id: id, number: inv.number, amount_cents: amt, method: paid_method, paid_total: newPaid, remaining: total - newPaid },
     }).catch(() => {});
-    return json({ ok: true, paid: false, amount_paid_cents: newPaid, remaining: total - newPaid });
+    // Email the customer a receipt for this partial payment (best-effort).
+    let receipt = null;
+    if (sendReceipt) {
+      receipt = await sendPaymentReceipt(context.env, { ...inv, amount_paid_cents: newPaid }, {
+        amountCents: amt, method: paid_method, paidAt, paidToDate: newPaid,
+      }).catch((e) => { console.error("[invoice/partial-receipt]", String(e)); return { ok: false }; });
+    }
+    return json({ ok: true, paid: false, amount_paid_cents: newPaid, remaining: total - newPaid, receipt_sent: !!receipt?.ok });
   }
   return json({ error: "Unknown action" }, 400);
 }

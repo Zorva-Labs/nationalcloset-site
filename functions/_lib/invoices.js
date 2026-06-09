@@ -164,8 +164,57 @@ export async function sendInvoiceEmail(env, invoice, project) {
   return { ok: !failed };
 }
 
+// Email a receipt for a single payment that does NOT settle the invoice in full
+// (a partial in-person payment). markInvoicePaid sends its own "paid in full"
+// receipt; this one shows the remaining balance on the invoice so the customer
+// knows what's still owed. Best-effort + logged to Messages.
+export async function sendPaymentReceipt(env, invoice, { amountCents, method = "manual", paidAt, paidToDate } = {}) {
+  const db = env.DB;
+  const project = await db.prepare(
+    `SELECT p.*, c.name AS contact_name, c.email AS contact_email FROM projects p JOIN contacts c ON c.id=p.contact_id WHERE p.id=?1`
+  ).bind(invoice.project_id).first().catch(() => null);
+  if (!project?.contact_email) return { skipped: true, reason: "no_email" };
+
+  const first = (project.contact_name || "there").split(" ")[0];
+  const total = invoice.amount_cents || 0;
+  const paid = paidToDate != null ? paidToDate : (invoice.amount_paid_cents || 0);
+  const balance = Math.max(0, total - paid);
+  const whenLabel = paidAt ? new Date(paidAt.replace(" ", "T") + "Z").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" }) : null;
+
+  const subject = `Payment received — ${money(amountCents)} (${invoice.number})`;
+  const html = brandedEmail({
+    title: "Payment received — thank you!",
+    body: `
+      <p>Hi ${first},</p>
+      <p>This confirms we've received your payment of <strong>${money(amountCents)}</strong> toward invoice <strong>${invoice.number}</strong>${method && method !== "manual" ? ` (${method})` : ""}.${whenLabel ? ` Received ${whenLabel}.` : ""} Thank you!</p>
+      <table style="border-collapse:collapse;margin:8px 0 4px">
+        <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Payment received</td><td style="padding:4px 0;font-weight:600">${money(amountCents)}</td></tr>
+        <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Invoice total</td><td style="padding:4px 0">${money(total)}</td></tr>
+        <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Paid to date</td><td style="padding:4px 0">${money(paid)}</td></tr>
+        <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Balance due</td><td style="padding:4px 0;font-weight:700;font-size:18px">${money(balance)}</td></tr>
+      </table>
+      <p>Your remaining balance of <strong>${money(balance)}</strong> can be paid online anytime using the button below.</p>
+    `,
+    ctaLabel: `Pay remaining ${money(balance)}`,
+    ctaUrl: `${SITE_URL}/invoice/?t=${invoice.view_token}`,
+  });
+  const text = `Payment received: ${money(amountCents)} toward ${invoice.number}.\n`
+    + `Paid to date: ${money(paid)} of ${money(total)}.\nBalance due: ${money(balance)}.\n`
+    + `Pay the remaining balance: ${SITE_URL}/invoice/?t=${invoice.view_token}`;
+  const messageId = makeMessageId();
+  const to = project.contact_name ? `${project.contact_name} <${project.contact_email}>` : project.contact_email;
+  const res = await sendEmail(env, { to, subject, html, text, messageId });
+  const failed = res?.skipped || res?.error || (res?.status && res.status >= 400);
+  await logOutboundEmail(env, {
+    to, subject, html, text, messageId,
+    projectId: invoice.project_id, contactId: project.contact_id, leadId: project.lead_id || null,
+    templateKind: "invoice_receipt", status: failed ? "failed" : "sent",
+  }).catch(() => {});
+  return { ok: !failed };
+}
+
 // Mark an invoice paid (called by the Stripe webhook or a manual admin action).
-export async function markInvoicePaid(env, invoice, { method = "card", paymentIntentId, paidAt } = {}) {
+export async function markInvoicePaid(env, invoice, { method = "card", paymentIntentId, paidAt, sendReceipt = true } = {}) {
   const db = env.DB;
   // Re-check the live status (the passed row may be stale) so the webhook and
   // the on-page sync can't both run the booking/receipt twice.
@@ -219,7 +268,7 @@ export async function markInvoicePaid(env, invoice, { method = "card", paymentIn
   const project = await db.prepare(
     `SELECT p.*, c.name AS contact_name, c.email AS contact_email FROM projects p JOIN contacts c ON c.id=p.contact_id WHERE p.id=?1`
   ).bind(invoice.project_id).first().catch(() => null);
-  if (project?.contact_email) {
+  if (sendReceipt && project?.contact_email) {
     const first = (project.contact_name || "there").split(" ")[0];
 
     // Remaining balance on the whole project = job total − everything paid so

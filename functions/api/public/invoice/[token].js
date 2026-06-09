@@ -15,10 +15,22 @@ function surchargeRate(env) {
 }
 const surchargeCents = (baseCents, rate) => Math.round(baseCents * rate);
 
+// A PI is "restricted" (good) only if it offers exactly card + ACH. Older
+// intents created with automatic_payment_methods still offer Klarna/Affirm/Link,
+// so we recreate those.
+const ALLOWED_PM = ["card", "us_bank_account"];
+function piIsRestricted(pi) {
+  if (!pi) return false;
+  if (pi.automatic_payment_methods && pi.automatic_payment_methods.enabled) return false;
+  const types = pi.payment_method_types || [];
+  return types.length > 0 && types.every((t) => ALLOWED_PM.includes(t));
+}
+
 function publicView(inv, project) {
   return {
     number: inv.number,
     amount_cents: inv.amount_cents,
+    amount_paid_cents: inv.amount_paid_cents || 0,
     currency: inv.currency,
     description: inv.description,
     type: inv.type,
@@ -43,6 +55,14 @@ export async function onRequestGet(context) {
 
   if (!context.env.STRIPE_SECRET_KEY) return json({ error: "Payments not configured" }, 500);
 
+  // Only the unpaid balance is charged online (in-person payments may have
+  // already covered part of it).
+  const due = Math.max(0, (inv.amount_cents || 0) - (inv.amount_paid_cents || 0));
+  if (due <= 0) {
+    await markInvoicePaid(context.env, inv, { method: inv.paid_method || "manual" }).catch(() => {});
+    return json({ paid: true, invoice: publicView({ ...inv, status: "paid" }, project) });
+  }
+
   const rate = surchargeRate(context.env);
   try {
     let pi = null;
@@ -54,30 +74,32 @@ export async function onRequestGet(context) {
         await markInvoicePaid(context.env, inv, { method, paymentIntentId: pi.id });
         return json({ paid: true, invoice: publicView({ ...inv, status: "paid" }, project) });
       }
-      if (pi && pi.status === "canceled") pi = null;
-      // Always reload the page at the base amount — reset any leftover card
-      // surcharge from an abandoned attempt so the customer re-chooses cleanly.
-      else if (pi && pi.amount !== inv.amount_cents) {
-        pi = await updatePaymentIntentAmount(context.env, pi.id, inv.amount_cents).catch(() => pi);
+      // Recreate stale intents: canceled, or ones that still offer methods other
+      // than card + ACH (e.g. Klarna from the old automatic_payment_methods setup).
+      if (pi && (pi.status === "canceled" || !piIsRestricted(pi))) pi = null;
+      // Otherwise reset to the current balance (also clears any leftover surcharge).
+      else if (pi && pi.amount !== due) {
+        pi = await updatePaymentIntentAmount(context.env, pi.id, due).catch(() => pi);
       }
     }
     if (!pi) {
       pi = await createPaymentIntent(context.env, {
-        amountCents: inv.amount_cents,
+        amountCents: due,
         currency: inv.currency || "usd",
         description: `${inv.number} — ${inv.description}`,
         receiptEmail: project?.contact_email || undefined,
         metadata: { invoice_id: String(inv.id), invoice_number: inv.number, project_id: String(inv.project_id) },
-        idempotencyKey: `inv_${inv.id}`,
+        idempotencyKey: `inv_${inv.id}_cardach`,   // namespaced so old Klarna-enabled intents aren't replayed
       });
       await db.prepare(`UPDATE invoices SET stripe_payment_intent_id=?1, updated_at=datetime('now') WHERE id=?2`).bind(pi.id, inv.id).run();
     }
     return json({
       invoice: publicView(inv, project),
+      due_cents: due,
       publishable_key: context.env.STRIPE_PUBLISHABLE_KEY,
       client_secret: pi.client_secret,
       surcharge_rate: rate,
-      card_surcharge_cents: surchargeCents(inv.amount_cents, rate),
+      card_surcharge_cents: surchargeCents(due, rate),
     });
   } catch (e) {
     return json({ error: e.message || "Stripe error" }, 502);
@@ -98,7 +120,7 @@ export async function onRequestPost(context) {
   if (!inv.stripe_payment_intent_id) return json({ error: "No payment in progress" }, 400);
 
   const rate = surchargeRate(context.env);
-  const base = inv.amount_cents;
+  const base = Math.max(0, (inv.amount_cents || 0) - (inv.amount_paid_cents || 0));  // remaining balance
   const isCard = body.method === "card";
   const amount = isCard ? base + surchargeCents(base, rate) : base;
   try {

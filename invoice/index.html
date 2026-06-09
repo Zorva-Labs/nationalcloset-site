@@ -104,7 +104,9 @@
       if (data.voided) return voidState(data.invoice);
 
       const inv = data.invoice;
-      const base = inv.amount_cents;
+      // Only the unpaid balance is charged online; in-person payments may cover part of it.
+      const base = data.due_cents != null ? data.due_cents : inv.amount_cents;
+      const alreadyPaid = inv.amount_paid_cents || 0;
       const surcharge = data.card_surcharge_cents || 0;
       const ratePct = +(((data.surcharge_rate || 0) * 100).toFixed(2));
       // Default to "card" so the displayed total is never lower than what a card
@@ -119,6 +121,7 @@
             <h1>${esc(inv.project_name || "Custom closet project")}</h1>
             <p class="sub">${esc(inv.contact_name ? "For " + inv.contact_name : "")}</p>
             <div class="amount">${money(base)} <small>due</small></div>
+            ${alreadyPaid > 0 ? `<p class="sub" style="margin-top:-2px">${money(alreadyPaid)} of ${money(inv.amount_cents)} already paid — balance shown above.</p>` : ""}
             <p class="desc">${esc(inv.description || "")}</p>
             ${surcharge > 0 ? `<p class="fee-note">Pay by <strong>bank (ACH)</strong> with no fee. Paying by <strong>card</strong> adds a ${ratePct}% processing fee (${money(surcharge)}).</p>` : ""}
             <div class="divider"></div>

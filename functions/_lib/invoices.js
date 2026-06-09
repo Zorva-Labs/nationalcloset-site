@@ -169,15 +169,25 @@ export async function markInvoicePaid(env, invoice, { method = "card", paymentIn
   const db = env.DB;
   // Re-check the live status (the passed row may be stale) so the webhook and
   // the on-page sync can't both run the booking/receipt twice.
-  const fresh = await db.prepare(`SELECT status FROM invoices WHERE id=?1`).bind(invoice.id).first().catch(() => null);
+  const fresh = await db.prepare(`SELECT status, amount_cents, amount_paid_cents FROM invoices WHERE id=?1`).bind(invoice.id).first().catch(() => null);
   if ((fresh?.status || invoice.status) === "paid") return { already: true };
   // paidAt lets an admin record an in-person payment on the date it was actually
   // collected; falls back to now (e.g. Stripe webhook).
   const when = paidAt || null;
+  // This call settles the invoice IN FULL (online payment, or a manual payment
+  // that covers the balance) — record the remaining amount as a ledger entry.
+  const total = fresh?.amount_cents ?? invoice.amount_cents ?? 0;
+  const priorPaid = fresh?.amount_paid_cents ?? invoice.amount_paid_cents ?? 0;
+  const completing = Math.max(0, total - priorPaid);
   await db.prepare(
-    `UPDATE invoices SET status='paid', paid_at=COALESCE(?1, datetime('now')), paid_method=?2,
-       stripe_payment_intent_id=COALESCE(?3, stripe_payment_intent_id), updated_at=datetime('now') WHERE id=?4`
-  ).bind(when, method, paymentIntentId || null, invoice.id).run();
+    `UPDATE invoices SET status='paid', paid_at=COALESCE(?1, datetime('now')), paid_method=?2, amount_paid_cents=?3,
+       stripe_payment_intent_id=COALESCE(?4, stripe_payment_intent_id), updated_at=datetime('now') WHERE id=?5`
+  ).bind(when, method, total, paymentIntentId || null, invoice.id).run();
+  if (completing > 0) {
+    await db.prepare(
+      `INSERT INTO invoice_payments (invoice_id, amount_cents, method, paid_at) VALUES (?1, ?2, ?3, COALESCE(?4, datetime('now')))`
+    ).bind(invoice.id, completing, method, when).run().catch(() => {});
+  }
 
   // If this was the deposit, reflect it on the contract.
   if (invoice.type === "deposit" && invoice.contract_id) {

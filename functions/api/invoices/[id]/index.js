@@ -21,7 +21,10 @@ export async function onRequestGet(context) {
   const lines = (await context.env.DB.prepare(
     `SELECT id, description, qty, unit_cents, position FROM invoice_lines WHERE invoice_id=?1 ORDER BY position, id`
   ).bind(id).all()).results || [];
-  return json({ invoice: inv, lines });
+  const payments = (await context.env.DB.prepare(
+    `SELECT id, amount_cents, method, note, paid_at FROM invoice_payments WHERE invoice_id=?1 ORDER BY paid_at, id`
+  ).bind(id).all().catch(() => ({ results: [] }))).results || [];
+  return json({ invoice: inv, lines, payments });
 }
 
 export async function onRequestPatch(context) {
@@ -89,14 +92,38 @@ export async function onRequestPost(context) {
   }
   if (action === "mark_paid") {
     // In-person / manual payment: method label (Cash, Check, Card in person…),
-    // an optional reference (check #, note), and the date it was collected.
+    // an optional reference (check #, note), an amount, and the date collected.
+    const DB = context.env.DB;
     const label = (body.method || "manual").toString().slice(0, 40);
     const ref = (body.reference || "").toString().trim().slice(0, 60);
     const paid_method = ref ? `${label} · ${ref}` : label;
     let paidAt = null;
     if (body.paid_at && /^\d{4}-\d{2}-\d{2}$/.test(body.paid_at)) paidAt = `${body.paid_at} 12:00:00`;
-    await markInvoicePaid(context.env, inv, { method: paid_method, paidAt });
-    return json({ ok: true });
+
+    const total = inv.amount_cents || 0;
+    const priorPaid = inv.amount_paid_cents || 0;
+    const remaining = Math.max(0, total - priorPaid);
+    // Amount entered by the admin (cents); defaults to the full remaining balance.
+    let amt = body.amount_cents != null ? Math.round(Number(body.amount_cents)) : remaining;
+    if (!Number.isFinite(amt) || amt <= 0) amt = remaining;
+
+    if (priorPaid + amt >= total) {
+      // Covers the balance → settle in full (books deposit, sends receipt).
+      // markInvoicePaid logs the completing (remaining) amount in the ledger.
+      await markInvoicePaid(context.env, inv, { method: paid_method, paidAt });
+      return json({ ok: true, paid: true });
+    }
+    // Partial payment → log it, bump amount paid, keep the invoice open.
+    await DB.prepare(`INSERT INTO invoice_payments (invoice_id, amount_cents, method, note, paid_at) VALUES (?1,?2,?3,?4, COALESCE(?5, datetime('now')))`)
+      .bind(id, amt, label, ref || null, paidAt).run();
+    const newPaid = priorPaid + amt;
+    await DB.prepare(`UPDATE invoices SET amount_paid_cents=?1, paid_method=?2, updated_at=datetime('now') WHERE id=?3`).bind(newPaid, paid_method, id).run();
+    await recordActivity(DB, {
+      entityType: "project", entityId: inv.project_id, action: "invoice-partial-payment",
+      actorKind: "admin", actorId: auth.id, actorName: auth.email,
+      details: { invoice_id: id, number: inv.number, amount_cents: amt, method: paid_method, paid_total: newPaid, remaining: total - newPaid },
+    }).catch(() => {});
+    return json({ ok: true, paid: false, amount_paid_cents: newPaid, remaining: total - newPaid });
   }
   return json({ error: "Unknown action" }, 400);
 }

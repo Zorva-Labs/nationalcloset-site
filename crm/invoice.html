@@ -171,8 +171,19 @@ function render() {
       ${editing ? `<button class="btn ghost sm inv-add" onclick="addLine()">+ Add line</button>` : ""}
 
       <div class="inv-totals">
-        <table><tr class="grand"><td>Total due</td><td class="r" style="text-align:right">${m(total)}</td></tr></table>
+        <table>
+        ${(iv.amount_paid_cents > 0) ? `
+          <tr><td>Invoice total</td><td class="r" style="text-align:right">${m(iv.amount_cents)}</td></tr>
+          <tr><td>Paid</td><td class="r" style="text-align:right;color:#047857">−${m(iv.amount_paid_cents)}</td></tr>
+          <tr class="grand"><td>${iv.status === "paid" ? "Paid in full" : "Balance due"}</td><td class="r" style="text-align:right">${m(Math.max(0, (iv.amount_cents || 0) - (iv.amount_paid_cents || 0)))}</td></tr>
+        ` : `<tr class="grand"><td>${iv.status === "paid" ? "Paid in full" : "Total due"}</td><td class="r" style="text-align:right">${m(total)}</td></tr>`}
+        </table>
       </div>
+      ${(data.payments && data.payments.length) ? `
+        <div class="inv-note no-print">
+          <div class="lbl">Payments received</div>
+          ${data.payments.map((pmt) => `<div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:4px 0;border-bottom:1px solid #eee"><span>${fmtDay(pmt.paid_at)} · ${e(pmt.method || "—")}${pmt.note ? ` · ${e(pmt.note)}` : ""}</span><span style="font-weight:700">${m(pmt.amount_cents)}</span></div>`).join("")}
+        </div>` : ""}
 
       <div class="inv-note">
         <div class="lbl">Notes</div>
@@ -225,13 +236,17 @@ async function resend() {
 function recordPayment() {
   const iv = data.invoice;
   const today = new Date().toISOString().slice(0, 10);
+  const remaining = Math.max(0, (iv.amount_cents || 0) - (iv.amount_paid_cents || 0));
   const bg = document.createElement("div");
   bg.className = "modal-bg";
   bg.innerHTML = `
     <div class="modal" style="max-width:440px">
       <div class="modal-head">Record payment</div>
       <div class="modal-body">
-        <p style="margin:0 0 14px;color:var(--ink-soft);font-size:13px">Mark <strong>${e(iv.number)}</strong> (${m(iv.amount_cents)}) paid from an in-person payment.</p>
+        <p style="margin:0 0 14px;color:var(--ink-soft);font-size:13px">Record an in-person payment on <strong>${e(iv.number)}</strong>${iv.amount_paid_cents ? ` — ${m(iv.amount_paid_cents)} of ${m(iv.amount_cents)} already paid` : ""}. Balance due: <strong>${m(remaining)}</strong>.</p>
+        <label class="rp-lbl">Amount received
+          <input id="rp-amount" class="inv-field" style="width:170px" value="${m(remaining)}" />
+        </label>
         <label class="rp-lbl">Payment method
           <select id="rp-method" class="inv-field" style="width:100%">
             <option>Cash</option>
@@ -260,14 +275,16 @@ function recordPayment() {
   bg.querySelector("#rp-cancel").onclick = close;
   bg.querySelector("#rp-method").focus();
   bg.querySelector("#rp-save").onclick = async () => {
+    const amount_cents = SSCrm.parseMoney(bg.querySelector("#rp-amount").value);
+    if (!(amount_cents > 0)) { SSCrm.toast("Enter an amount.", "error"); return; }
     const btn = bg.querySelector("#rp-save"); btn.disabled = true; btn.textContent = "Recording…";
     const method = bg.querySelector("#rp-method").value;
     const reference = bg.querySelector("#rp-ref").value.trim();
     const paid_at = bg.querySelector("#rp-date").value || "";
     try {
-      await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "mark_paid", method, reference, paid_at }) });
+      const r = await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "mark_paid", method, reference, paid_at, amount_cents }) });
       close();
-      SSCrm.toast("Payment recorded", "success");
+      SSCrm.toast(r.paid ? "Payment recorded — invoice paid in full" : `Partial payment recorded — ${m(r.remaining)} remaining`, "success");
       await load();
     } catch (err) { btn.disabled = false; btn.textContent = "Record payment"; SSCrm.toast(err.message || "Could not record payment", "error"); }
   };

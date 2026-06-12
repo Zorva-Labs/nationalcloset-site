@@ -1,22 +1,29 @@
+# National Closet Company — robots.txt
+# Public marketing pages: open to all crawlers.
+# Private app routes (CRM, API, tokenized invoice/proposal/contract pages):
+# blocked from crawling so they don't waste crawl budget or clutter indexing.
+
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /crm/
+Disallow: /invoice/
+Disallow: /proposal/
 
-# AI / Answer engines — explicitly welcomed (AEO/GEO)
+# AI / Answer engines — explicitly welcomed on public content (AEO/GEO),
+# but kept out of the same private app & customer-document routes.
 User-agent: GPTBot
-Allow: /
 User-agent: OAI-SearchBot
-Allow: /
 User-agent: ChatGPT-User
-Allow: /
 User-agent: PerplexityBot
-Allow: /
 User-agent: ClaudeBot
-Allow: /
 User-agent: Claude-Web
-Allow: /
 User-agent: Google-Extended
-Allow: /
 User-agent: Applebot-Extended
 Allow: /
+Disallow: /api/
+Disallow: /crm/
+Disallow: /invoice/
+Disallow: /proposal/
 
 Sitemap: https://nationalclosetco.com/sitemap.xml

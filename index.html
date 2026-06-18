@@ -1128,69 +1128,89 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 <!-- ========== WHY HOMEOWNERS CHOOSE US (family-owned · choices · process) ========== -->
 <section class="section section--fog" id="family-owned">
   <style>
-    #why .lead-emph{font-weight:700;color:var(--ink);font-size:1.25rem;margin:1.1rem auto 0;max-width:60ch}
-    #why .subhead{text-align:center;font-family:var(--display);font-weight:800;font-size:clamp(1.5rem,3.2vw,2rem);line-height:1.14;margin:0}
-    #two-quotes .tq-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.8rem}
-    #two-quotes .tq{position:relative;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:1.6rem 1.5rem;display:flex;flex-direction:column;text-align:left}
-    #two-quotes .tq--feat{border-color:var(--clay);box-shadow:0 24px 50px -34px rgba(198,90,51,.5)}
-    #two-quotes .tq__tag{display:inline-block;align-self:flex-start;font-weight:800;font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--clay-deep);background:var(--clay-wash);padding:.3rem .7rem;border-radius:100px}
-    #two-quotes .tq__only{display:inline-block;align-self:flex-start;margin-top:.5rem;font-weight:800;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--clay);padding:.3rem .7rem;border-radius:100px}
-    #two-quotes .tq__std{display:inline-block;align-self:flex-start;margin-top:.5rem;font-weight:700;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);background:var(--fog);border:1px solid var(--line);padding:.3rem .7rem;border-radius:100px}
-    #two-quotes .tq h4{font-size:1.25rem;margin:.85rem 0 .3rem;font-family:var(--display)}
-    #two-quotes .tq>p{color:var(--ink-soft);margin:0}
-    #two-quotes .tq__role{margin-top:1rem}
-    #two-quotes .tq__role .lbl{display:inline-block;font-weight:800;font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;padding:.2rem .6rem;border-radius:100px}
-    #two-quotes .tq__role .you{background:var(--clay-wash);color:var(--clay-deep)}
-    #two-quotes .tq__role .we{background:#e6f4ec;color:#067647}
-    #two-quotes .tq__role ul{list-style:disc;padding-left:1.25rem;margin:.4rem 0 0;color:var(--ink-soft);font-size:.95rem}
-    #two-quotes .tq__role li{margin:.2rem 0}
+    #why{text-align:center}
+    #why .subhead{font-family:var(--display);font-weight:800;font-size:clamp(1.5rem,3.2vw,2rem);line-height:1.14;margin:0}
+    #why .lead{margin-left:auto;margin-right:auto}
+    /* Two-quote cards */
+    #two-quotes .tq-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;margin-top:2rem}
+    #two-quotes .tq{position:relative;background:#fff;border:1px solid var(--line);border-radius:18px;padding:2rem 1.6rem 1.6rem;display:flex;flex-direction:column;text-align:center;overflow:hidden}
+    #two-quotes .tq--feat{border:2px solid var(--clay);box-shadow:0 30px 60px -36px rgba(198,90,51,.55)}
+    #two-quotes .tq__ribbon{position:absolute;top:0;left:0;right:0;height:6px;background:var(--line)}
+    #two-quotes .tq--feat .tq__ribbon{background:linear-gradient(90deg,#e07a4f,var(--clay-deep))}
+    #two-quotes .tq__tag{align-self:center;font-weight:800;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--clay-deep);background:var(--clay-wash);padding:.32rem .85rem;border-radius:100px}
+    #two-quotes .tq__badge{align-self:center;margin-top:.6rem;font-weight:800;font-size:.7rem;letter-spacing:.04em;text-transform:uppercase;padding:.28rem .75rem;border-radius:100px}
+    #two-quotes .tq__badge--std{color:var(--ink-soft);background:var(--fog);border:1px solid var(--line)}
+    #two-quotes .tq__badge--only{color:#fff;background:var(--clay)}
+    #two-quotes .tq h4{font-family:var(--display);font-size:1.4rem;margin:.95rem 0 .25rem}
+    #two-quotes .tq__sub{color:var(--ink-soft);margin:0 0 1.3rem;font-size:.97rem}
+    #two-quotes .tq__panels{display:grid;gap:.8rem;margin-top:auto;text-align:left}
+    #two-quotes .tq__panel{border-radius:12px;padding:.95rem 1.05rem;background:var(--fog)}
+    #two-quotes .tq__panel--we{background:#edf7f0}
+    #two-quotes .tq__panel .lbl{display:block;text-align:center;font-weight:800;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.55rem}
+    #two-quotes .tq__panel--you .lbl{color:var(--clay-deep)}
+    #two-quotes .tq__panel--we .lbl{color:#067647}
+    #two-quotes .tq__panel ul{list-style:none;padding:0;margin:0;display:grid;gap:.42rem;font-size:.93rem}
+    #two-quotes .tq__panel li{display:flex;gap:.55rem;align-items:flex-start;color:var(--ink)}
+    #two-quotes .tq__panel li::before{content:"✓";font-weight:800;flex:0 0 auto}
+    #two-quotes .tq__panel--you li::before{color:var(--clay)}
+    #two-quotes .tq__panel--we li::before{color:#067647}
     @media(max-width:640px){#two-quotes .tq-grid{grid-template-columns:1fr}}
   </style>
   <div class="wrap" id="why">
 
-    <div class="sec-head" style="text-align:center;max-width:70ch;margin-inline:auto" data-reveal>
+    <div class="sec-head" style="max-width:70ch;margin-inline:auto" data-reveal>
       <span class="eyebrow" style="justify-content:center">Why homeowners choose us</span>
       <h2 class="h2" style="margin-top:1rem">Why Homeowners Choose National Closet Company</h2>
-      <p class="lead-emph">We're not a franchise — and you'll feel it in the price.</p>
-      <p class="lead" style="margin:1.1rem auto 0">National Closet Company is 100% family-owned and operated, which means every dollar goes into premium materials, expert craftsmanship, and exceptional service instead of franchise royalties, corporate overhead, or national advertising funds. You get the same caliber of custom closets offered by the big-name showroom brands — without the franchise markup.</p>
-      <p class="lead" style="margin:1rem auto 0">We're passionate about what we do. In fact, you could call us <span style="font-family:'Caveat','Montserrat',cursive;color:var(--clay-deep);font-weight:700;font-size:1.5em;line-height:1">closet freaks</span>. We're happily obsessed with every shelf, drawer, pull-out, and finishing detail until your space is exactly right.</p>
+      <h3 class="subhead" style="margin-top:1.2rem">We're not a franchise — and you'll feel it in the price.</h3>
+      <p class="lead" style="margin-top:1.1rem">National Closet Company is 100% family-owned and operated, which means every dollar goes into premium materials, expert craftsmanship, and exceptional service instead of franchise royalties, corporate overhead, or national advertising funds. You get the same caliber of custom closets offered by the big-name showroom brands — without the franchise markup.</p>
+      <p class="lead" style="margin-top:1rem">We're passionate about what we do. In fact, you could call us <span style="font-family:'Caveat','Montserrat',cursive;color:var(--clay-deep);font-weight:700;font-size:1.5em;line-height:1">closet freaks</span>. We're happily obsessed with every shelf, drawer, pull-out, and finishing detail until your space is exactly right.</p>
     </div>
 
     <div id="two-quotes" style="margin-top:3.2rem">
-      <div class="sec-head" style="text-align:center" data-reveal>
+      <div class="sec-head" data-reveal>
         <h3 class="subhead">Real Local Craftsmanship. Real Choices.</h3>
-        <p class="lead" style="max-width:64ch;margin:.6rem auto 0">Unlike other closet companies, every project includes <strong>two clear quotes</strong>, so you can choose the level of service that fits your budget and lifestyle.</p>
+        <p class="lead" style="max-width:64ch;margin:.7rem auto 0">Unlike other closet companies, every project includes <strong>two clear quotes</strong>, so you can choose the level of service that fits your budget and lifestyle.</p>
       </div>
       <div class="tq-grid">
-        <div class="tq">
+        <div class="tq" data-reveal>
+          <span class="tq__ribbon"></span>
           <span class="tq__tag">Option 1</span>
-          <span class="tq__std">The only option other companies offer</span>
+          <span class="tq__badge tq__badge--std">The only option other companies offer</span>
           <h4>You handle the prep</h4>
-          <p>The most budget-friendly route.</p>
-          <div class="tq__role"><span class="lbl you">You</span>
-            <ul><li>Remove existing shelving</li><li>Patch holes</li><li>Paint the space</li></ul>
-          </div>
-          <div class="tq__role"><span class="lbl we">We</span>
-            <ul><li>Design</li><li>Build</li><li>Professionally install your custom closet</li></ul>
+          <p class="tq__sub">The most budget-friendly route.</p>
+          <div class="tq__panels">
+            <div class="tq__panel tq__panel--you">
+              <span class="lbl">You handle</span>
+              <ul><li>Remove existing shelving</li><li>Patch holes</li><li>Paint the space</li></ul>
+            </div>
+            <div class="tq__panel tq__panel--we">
+              <span class="lbl">We handle</span>
+              <ul><li>Design</li><li>Build</li><li>Professionally install your custom closet</li></ul>
+            </div>
           </div>
         </div>
-        <div class="tq tq--feat">
+        <div class="tq tq--feat" data-reveal data-delay="1">
+          <span class="tq__ribbon"></span>
           <span class="tq__tag">Option 2 · Turnkey</span>
-          <span class="tq__only">★ Only National Closet Co. offers this</span>
+          <span class="tq__badge tq__badge--only">★ Only National Closet Co. offers this</span>
           <h4>Fully turnkey</h4>
-          <p>Simply empty your belongings from the space — we handle everything else.</p>
-          <div class="tq__role"><span class="lbl you">You</span>
-            <ul><li>Remove personal belongings</li></ul>
-          </div>
-          <div class="tq__role"><span class="lbl we">We</span>
-            <ul><li>Remove old shelving</li><li>Patch &amp; repair walls</li><li>Paint</li><li>Design</li><li>Build</li><li>Professionally install</li></ul>
+          <p class="tq__sub">Simply empty your belongings — we handle everything else.</p>
+          <div class="tq__panels">
+            <div class="tq__panel tq__panel--you">
+              <span class="lbl">You handle</span>
+              <ul><li>Remove personal belongings</li></ul>
+            </div>
+            <div class="tq__panel tq__panel--we">
+              <span class="lbl">We handle</span>
+              <ul><li>Remove old shelving</li><li>Patch &amp; repair walls</li><li>Paint</li><li>Design</li><li>Build</li><li>Professionally install</li></ul>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <div id="process" style="margin-top:3.4rem">
-      <div class="sec-head" style="text-align:center" data-reveal>
+      <div class="sec-head" data-reveal>
         <h3 class="subhead">Our Simple 4-Step Process</h3>
       </div>
       <div class="flightpath" data-reveal>
@@ -1203,8 +1223,8 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
       </div>
     </div>
 
-    <p style="text-align:center;max-width:62ch;margin:2.8rem auto 0;font-weight:800;font-size:1.14rem;line-height:1.45">No franchise fees. No corporate markup. Just beautifully organized spaces built by people who genuinely care about getting every detail right.</p>
-    <div style="text-align:center;margin-top:1.6rem" data-reveal>
+    <p style="max-width:62ch;margin:2.8rem auto 0;font-weight:800;font-size:1.14rem;line-height:1.45">No franchise fees. No corporate markup. Just beautifully organized spaces built by people who genuinely care about getting every detail right.</p>
+    <div style="margin-top:1.6rem" data-reveal>
       <a class="btn btn--primary" href="#consult">Book Your Free Design <span class="arr">→</span></a>
     </div>
 

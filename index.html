@@ -1132,6 +1132,13 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
     #why .sec-head{margin-left:auto;margin-right:auto}
     #why .subhead{font-family:var(--display);font-weight:800;font-size:clamp(1.5rem,3.2vw,2rem);line-height:1.14;margin:0}
     #why .lead{margin-left:auto;margin-right:auto}
+    /* Yellow post-it note with curled corner + straighten-on-hover */
+    #why .postit{position:relative;max-width:42ch;margin:1.6rem auto 0;background:linear-gradient(170deg,#fff27a 0%,#ffe85c 100%);color:#3a3320;padding:2.2rem 2.1rem 2.4rem;border-radius:3px 3px 3px 2px;transform:rotate(-2.2deg);box-shadow:7px 13px 28px -10px rgba(0,0,0,.33),0 2px 6px rgba(0,0,0,.12);transition:transform .4s cubic-bezier(.2,.75,.25,1),box-shadow .4s ease}
+    #why .postit:hover{transform:rotate(0deg) translateY(-7px) scale(1.02);box-shadow:10px 22px 42px -14px rgba(0,0,0,.42),0 4px 10px rgba(0,0,0,.16)}
+    #why .postit__tape{position:absolute;top:-11px;left:50%;transform:translateX(-50%) rotate(2.5deg);width:98px;height:26px;background:rgba(255,255,255,.5);border:1px solid rgba(0,0,0,.06);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+    #why .postit__text{font-family:'Caveat','Montserrat',cursive;font-weight:700;font-size:clamp(1.7rem,3.8vw,2.45rem);line-height:1.22;margin:0}
+    #why .postit::after{content:"";position:absolute;left:0;bottom:0;width:42px;height:42px;background:linear-gradient(135deg,transparent 45%,rgba(120,100,20,.3) 48%,#fff3a0 52%,#fffadf 100%);clip-path:polygon(0 0,0 100%,100% 100%);border-bottom-left-radius:4px;box-shadow:-2px 3px 7px -1px rgba(0,0,0,.22)}
+    @media (prefers-reduced-motion: reduce){#why .postit{transition:none}}
     /* Two-quote cards */
     #two-quotes .tq-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;margin-top:2rem}
     #two-quotes .tq{position:relative;background:#fff;border:1px solid var(--line);border-radius:18px;padding:2rem 1.6rem 1.6rem;display:flex;flex-direction:column;text-align:center;overflow:hidden}
@@ -1169,9 +1176,9 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 
     <div id="two-quotes" style="margin-top:3.2rem">
       <div class="sec-head" data-reveal>
-        <div style="position:relative;max-width:42ch;margin:1.6rem auto 0;background:linear-gradient(170deg,#fff27a 0%,#ffe85c 100%);color:#3a3320;padding:2.2rem 2.1rem 2.4rem;border-radius:3px;transform:rotate(-2.2deg);box-shadow:7px 13px 28px -10px rgba(0,0,0,.33), 0 2px 6px rgba(0,0,0,.12)">
-          <span aria-hidden="true" style="position:absolute;top:-11px;left:50%;transform:translateX(-50%) rotate(2.5deg);width:98px;height:26px;background:rgba(255,255,255,.5);border:1px solid rgba(0,0,0,.06);box-shadow:0 1px 3px rgba(0,0,0,.12)"></span>
-          <p style="font-family:'Caveat','Montserrat',cursive;font-weight:700;font-size:clamp(1.7rem,3.8vw,2.45rem);line-height:1.22;margin:0">Unlike other closet companies, every project includes <span style="text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-color:var(--clay-deep)">two clear quotes</span>, so you can choose the level of service that fits your budget and lifestyle.</p>
+        <div class="postit">
+          <span class="postit__tape" aria-hidden="true"></span>
+          <p class="postit__text">Unlike other closet companies, every project includes <span style="text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;text-decoration-color:var(--clay-deep)">two clear quotes</span>, so you can choose the level of service that fits your budget and lifestyle.</p>
         </div>
       </div>
       <div class="tq-grid">

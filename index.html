@@ -1125,80 +1125,89 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
   </div>
 </section>
 
-<!-- ========== FAMILY-OWNED · HOW IT WORKS · TWO QUOTES (merged) ========== -->
+<!-- ========== WHY HOMEOWNERS CHOOSE US (family-owned · choices · process) ========== -->
 <section class="section section--fog" id="family-owned">
-  <div class="wrap">
-    <div class="sec-head" style="text-align:center;max-width:66ch;margin-inline:auto" data-reveal>
-      <span class="eyebrow" style="justify-content:center">Family owned &amp; operated</span>
-      <h2 class="h2" style="margin-top:1rem">We're not a franchise — and you'll feel it in the price.</h2>
-      <p class="lead" style="margin:1.1rem auto 0"><strong>Beautiful custom-designed closets at a price normal families can afford</strong> — that's the whole idea. National Closet Company is 100% family owned, so every dollar goes into premium materials and master craftsmanship, <strong>not franchise royalties, national ad funds or an overpriced brand name</strong>. It's the same caliber of custom closets the big franchise showrooms sell, without the franchise markup.</p>
-      <p class="lead" style="margin:1rem auto 0">Call it what it is — we're <span style="font-family:'Caveat','Montserrat',cursive;color:var(--clay-deep);font-weight:700;font-size:1.5em;line-height:1">Closet Freaks</span>. Happily obsessed with every shelf, drawer and pull-out until your space is flawless.</p>
-      <div class="nofran__chips" style="justify-content:center">
-        <span class="nofran__chip nofran__chip--no">No franchise fees</span>
-        <span class="nofran__chip nofran__chip--no">No corporate markup</span>
-        <span class="nofran__chip nofran__chip--yes">Real local craftsmanship</span>
-      </div>
-    </div>
+  <style>
+    #why .lead-emph{font-weight:700;color:var(--ink);font-size:1.25rem;margin:1.1rem auto 0;max-width:60ch}
+    #why .subhead{text-align:center;font-family:var(--display);font-weight:800;font-size:clamp(1.5rem,3.2vw,2rem);line-height:1.14;margin:0}
+    #two-quotes .tq-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.8rem}
+    #two-quotes .tq{position:relative;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:1.6rem 1.5rem;display:flex;flex-direction:column;text-align:left}
+    #two-quotes .tq--feat{border-color:var(--clay);box-shadow:0 24px 50px -34px rgba(198,90,51,.5)}
+    #two-quotes .tq__tag{display:inline-block;align-self:flex-start;font-weight:800;font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--clay-deep);background:var(--clay-wash);padding:.3rem .7rem;border-radius:100px}
+    #two-quotes .tq__only{display:inline-block;align-self:flex-start;margin-top:.5rem;font-weight:800;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--clay);padding:.3rem .7rem;border-radius:100px}
+    #two-quotes .tq__std{display:inline-block;align-self:flex-start;margin-top:.5rem;font-weight:700;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);background:var(--fog);border:1px solid var(--line);padding:.3rem .7rem;border-radius:100px}
+    #two-quotes .tq h4{font-size:1.25rem;margin:.85rem 0 .3rem;font-family:var(--display)}
+    #two-quotes .tq>p{color:var(--ink-soft);margin:0}
+    #two-quotes .tq__role{margin-top:1rem}
+    #two-quotes .tq__role .lbl{display:inline-block;font-weight:800;font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;padding:.2rem .6rem;border-radius:100px}
+    #two-quotes .tq__role .you{background:var(--clay-wash);color:var(--clay-deep)}
+    #two-quotes .tq__role .we{background:#e6f4ec;color:#067647}
+    #two-quotes .tq__role ul{list-style:disc;padding-left:1.25rem;margin:.4rem 0 0;color:var(--ink-soft);font-size:.95rem}
+    #two-quotes .tq__role li{margin:.2rem 0}
+    @media(max-width:640px){#two-quotes .tq-grid{grid-template-columns:1fr}}
+  </style>
+  <div class="wrap" id="why">
 
-    <!-- How it works — subordinate part of the same section -->
-    <div id="process" style="margin-top:3.2rem">
-      <h3 data-reveal style="text-align:center;font-family:var(--display);font-weight:800;font-size:clamp(1.55rem,3.2vw,2.05rem);line-height:1.12;margin:0">How it works — four simple steps</h3>
-      <p class="lead" data-reveal style="text-align:center;max-width:60ch;margin:.55rem auto 0">From first call to final reveal, one dedicated team guides your project so the whole thing feels effortless.</p>
-      <div class="flightpath" data-reveal>
-        <div class="fp-nodes">
-          <div class="fp-node"><div class="fp-node__dot">1</div><h3 class="fp-node__title">Free consultation</h3><p class="fp-node__text">We come to your home, measure in person, and walk through your options and finishes — no pressure, no obligation.</p></div>
-          <div class="fp-node"><div class="fp-node__dot">2</div><h3 class="fp-node__title">Photorealistic design</h3><p class="fp-node__text">See every finish, drawer and detail in your space — and get an exact price on the spot.</p></div>
-          <div class="fp-node"><div class="fp-node__dot">3</div><h3 class="fp-node__title">Precision manufacturing</h3><p class="fp-node__text">Your approved design is custom-built to the millimeter — typically ready in 2–4 weeks.</p></div>
-          <div class="fp-node"><div class="fp-node__dot">4</div><h3 class="fp-node__title">Professional install</h3><p class="fp-node__text">Certified installers handle everything in about a day and leave your space spotless.</p></div>
-        </div>
-      </div>
+    <div class="sec-head" style="text-align:center;max-width:70ch;margin-inline:auto" data-reveal>
+      <span class="eyebrow" style="justify-content:center">Why homeowners choose us</span>
+      <h2 class="h2" style="margin-top:1rem">Why Homeowners Choose National Closet Company</h2>
+      <p class="lead-emph">We're not a franchise — and you'll feel it in the price.</p>
+      <p class="lead" style="margin:1.1rem auto 0">National Closet Company is 100% family-owned and operated, which means every dollar goes into premium materials, expert craftsmanship, and exceptional service instead of franchise royalties, corporate overhead, or national advertising funds. You get the same caliber of custom closets offered by the big-name showroom brands — without the franchise markup.</p>
+      <p class="lead" style="margin:1rem auto 0">We're passionate about what we do. In fact, you could call us <span style="font-family:'Caveat','Montserrat',cursive;color:var(--clay-deep);font-weight:700;font-size:1.5em;line-height:1">closet freaks</span>. We're happily obsessed with every shelf, drawer, pull-out, and finishing detail until your space is exactly right.</p>
     </div>
 
     <div id="two-quotes" style="margin-top:3.2rem">
-      <style>
-        #two-quotes .tq-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.8rem}
-        #two-quotes .tq{position:relative;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:1.6rem 1.5rem;display:flex;flex-direction:column}
-        #two-quotes .tq--feat{border-color:var(--clay);box-shadow:0 24px 50px -34px rgba(198,90,51,.5)}
-        #two-quotes .tq__tag{display:inline-block;align-self:flex-start;font-weight:800;font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--clay-deep);background:var(--clay-wash);padding:.3rem .7rem;border-radius:100px}
-        #two-quotes .tq__only{display:inline-block;align-self:flex-start;margin-top:.5rem;font-weight:800;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--clay);padding:.3rem .7rem;border-radius:100px}
-        #two-quotes .tq__std{display:inline-block;align-self:flex-start;margin-top:.5rem;font-weight:700;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);background:var(--fog);border:1px solid var(--line);padding:.3rem .7rem;border-radius:100px}
-        #two-quotes .tq h3{font-size:1.3rem;margin:.8rem 0 .5rem}
-        #two-quotes .tq>p{color:var(--ink-soft);margin:0 0 1rem}
-        #two-quotes .tq ul{list-style:none;padding:0;margin:auto 0 0;display:grid;gap:.55rem;font-size:.96rem}
-        #two-quotes .tq li{display:flex;gap:.5rem;align-items:flex-start}
-        #two-quotes .tq .you{color:var(--clay-deep);font-weight:800;flex:0 0 auto}
-        #two-quotes .tq .us{color:#067647;font-weight:800;flex:0 0 auto}
-        @media(max-width:640px){#two-quotes .tq-grid{grid-template-columns:1fr}}
-      </style>
-      <div class="sec-head" style="text-align:center">
-        <h3 data-reveal style="text-align:center;font-family:var(--display);font-weight:800;font-size:clamp(1.55rem,3.2vw,2.05rem);line-height:1.12;margin:0">Two quotes — your prep, or ours</h3>
-        <p class="lead" data-reveal style="max-width:62ch;margin:.55rem auto 0">Every project comes with <strong>two clear quotes</strong>, so you choose whether to handle the prep yourself or leave every last bit to us. <strong>Every other closet company stops at Option 1 — National Closet Co. is the only one that also offers Option 2, fully turnkey.</strong></p>
+      <div class="sec-head" style="text-align:center" data-reveal>
+        <h3 class="subhead">Real Local Craftsmanship. Real Choices.</h3>
+        <p class="lead" style="max-width:64ch;margin:.6rem auto 0">Unlike other closet companies, every project includes <strong>two clear quotes</strong>, so you can choose the level of service that fits your budget and lifestyle.</p>
       </div>
       <div class="tq-grid">
         <div class="tq">
           <span class="tq__tag">Option 1</span>
           <span class="tq__std">The only option other companies offer</span>
-          <h3>You handle the prep</h3>
-          <p>The most budget-friendly route — you get the space ready, then we build and install.</p>
-          <ul>
-            <li><span class="you">You:</span> <span>remove the old shelving, patch the holes &amp; paint</span></li>
-            <li><span class="us">Us:</span> <span>design, build &amp; professionally install your custom closet</span></li>
-          </ul>
+          <h4>You handle the prep</h4>
+          <p>The most budget-friendly route.</p>
+          <div class="tq__role"><span class="lbl you">You</span>
+            <ul><li>Remove existing shelving</li><li>Patch holes</li><li>Paint the space</li></ul>
+          </div>
+          <div class="tq__role"><span class="lbl we">We</span>
+            <ul><li>Design</li><li>Build</li><li>Professionally install your custom closet</li></ul>
+          </div>
         </div>
         <div class="tq tq--feat">
           <span class="tq__tag">Option 2 · Turnkey</span>
           <span class="tq__only">★ Only National Closet Co. offers this</span>
-          <h3>We handle everything</h3>
-          <p>Just empty the space of your belongings — we take it from there. Nothing else for you to do.</p>
-          <ul>
-            <li><span class="you">You:</span> <span>empty the space of your items &amp; belongings</span></li>
-            <li><span class="us">Us:</span> <span>remove old shelving, patch &amp; repair the walls, paint — then design, build &amp; install</span></li>
-          </ul>
+          <h4>Fully turnkey</h4>
+          <p>Simply empty your belongings from the space — we handle everything else.</p>
+          <div class="tq__role"><span class="lbl you">You</span>
+            <ul><li>Remove personal belongings</li></ul>
+          </div>
+          <div class="tq__role"><span class="lbl we">We</span>
+            <ul><li>Remove old shelving</li><li>Patch &amp; repair walls</li><li>Paint</li><li>Design</li><li>Build</li><li>Professionally install</li></ul>
+          </div>
         </div>
       </div>
-      <p class="muted" style="text-align:center;margin-top:1.4rem">Both quotes are spelled out line by line in your free in-home design — no surprises.</p>
-      <div style="text-align:center;margin-top:1rem"><a class="btn btn--primary" href="#consult">Get Your Two Quotes — Free <span class="arr">→</span></a></div>
     </div>
+
+    <div id="process" style="margin-top:3.4rem">
+      <div class="sec-head" style="text-align:center" data-reveal>
+        <h3 class="subhead">Our Simple 4-Step Process</h3>
+      </div>
+      <div class="flightpath" data-reveal>
+        <div class="fp-nodes">
+          <div class="fp-node"><div class="fp-node__dot">1</div><h3 class="fp-node__title">Free In-Home Consultation</h3><p class="fp-node__text">We measure your space, discuss your goals, and explore finishes and options — no pressure, no obligation.</p></div>
+          <div class="fp-node"><div class="fp-node__dot">2</div><h3 class="fp-node__title">Photorealistic Design</h3><p class="fp-node__text">See your new closet before it's built and receive an exact price on the spot.</p></div>
+          <div class="fp-node"><div class="fp-node__dot">3</div><h3 class="fp-node__title">Precision Manufacturing</h3><p class="fp-node__text">Your design is custom-built to the millimeter and typically ready in 2–4 weeks.</p></div>
+          <div class="fp-node"><div class="fp-node__dot">4</div><h3 class="fp-node__title">Professional Installation</h3><p class="fp-node__text">Our experienced installers complete the project, usually in a single day, and leave your home spotless.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <p style="text-align:center;max-width:62ch;margin:2.8rem auto 0;font-weight:800;font-size:1.14rem;line-height:1.45">No franchise fees. No corporate markup. Just beautifully organized spaces built by people who genuinely care about getting every detail right.</p>
+    <div style="text-align:center;margin-top:1.6rem" data-reveal>
+      <a class="btn btn--primary" href="#consult">Book Your Free Design <span class="arr">→</span></a>
+    </div>
+
   </div>
 </section>
 

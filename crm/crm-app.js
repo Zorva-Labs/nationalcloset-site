@@ -7,6 +7,7 @@
 const NAV = [
   { href: "/crm/",            label: "Dashboard", match: ["/crm/", "/crm/index.html"], icon: iconDash() },
   { href: "/crm/pipeline.html", label: "Pipeline", icon: iconKanban() },
+  { href: "/crm/inbox.html",  label: "Inbox", icon: iconMail() },
   { href: "/crm/leads.html",  label: "Leads", icon: iconLead(), expandable: "leads" },
   { href: "/crm/contacts.html", label: "Contacts", icon: iconUsers() },
   { href: "/crm/projects.html", label: "Jobs", icon: iconBriefcase(), expandable: "jobs" },
@@ -47,7 +48,7 @@ const JOB_STATUSES_NAV = [
 
 // Sidebar groups — all links visible (we have room in the vertical rail)
 const NAV_GROUPS = [
-  { label: null, items: ["/crm/", "/crm/pipeline.html"] },
+  { label: null, items: ["/crm/", "/crm/pipeline.html", "/crm/inbox.html"] },
   { label: "People", items: ["/crm/leads.html", "/crm/contacts.html", "/crm/projects.html"] },
   { label: "Sales", items: ["/crm/estimates.html", "/crm/proposals.html", "/crm/contracts.html", "/crm/invoices.html"] },
   { label: "Operations", items: ["/crm/calendar.html", "/crm/availability.html"] },

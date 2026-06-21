@@ -17,6 +17,24 @@ export async function onRequestGet(context) {
   const threadKey = url.searchParams.get("thread_key");
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "200", 10), 500);
 
+  // Global inbox view: every inbound message, attached or not. Admin-only
+  // (requireAuth above). This is what makes unmatched mail — senders who aren't
+  // yet a contact/lead — visible instead of silently invisible.
+  if (url.searchParams.get("inbox")) {
+    const rows = (await context.env.DB.prepare(
+      `SELECT m.id, m.from_name, m.from_addr, m.subject, m.body_text,
+              m.received_at, m.created_at, m.contact_id, m.lead_id, m.project_id,
+              c.name AS contact_name, p.name AS project_name
+         FROM email_messages m
+         LEFT JOIN contacts c ON c.id = m.contact_id
+         LEFT JOIN projects p ON p.id = m.project_id
+        WHERE m.direction = 'in'
+        ORDER BY COALESCE(m.received_at, m.created_at) DESC
+        LIMIT ${limit}`
+    ).all()).results || [];
+    return json({ messages: rows });
+  }
+
   const where = []; const binds = [];
   // When the caller filters by project_id, ALSO include any messages whose
   // lead_id matches the project's originating lead — that covers the

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Inbox · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc12"/>
+<style>
+  .ibx-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .ibx-filters{display:inline-flex;gap:4px;background:var(--bg-soft);border:1px solid var(--line);border-radius:999px;padding:4px}
+  .ibx-filter{border:0;background:transparent;font:inherit;font-size:13px;font-weight:600;color:var(--ink-soft);padding:7px 16px;border-radius:999px;cursor:pointer}
+  .ibx-filter:hover{color:var(--ink)}
+  .ibx-filter.is-active{background:var(--bg);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .ibx-filter .n{color:var(--ink-soft);margin-left:5px}
+  .ibx-sync{margin-left:auto;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:13px;font-weight:600;padding:8px 14px;border-radius:var(--r-sm,6px);cursor:pointer}
+  .ibx-sync:hover{background:var(--bg-soft)}
+  .ibx-from{font-weight:600}
+  .ibx-sub-snip{color:var(--ink-soft);font-size:12px;max-width:62ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ibx-unmatched{display:inline-block;background:#FEF3C7;color:#92400E;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .ibx-body{white-space:pre-wrap;background:var(--bg-soft);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:4px 0;font-size:13px;line-height:1.5;max-height:360px;overflow:auto}
+  tr.clickable{cursor:pointer}
+</style></head>
+<body>
+<script src="/crm/crm-app.js?v=ncc12"></script>
+<script>
+(async () => {
+  const user = await SSCrm.mount({ title: "Inbox", subtitle: "All inbound email — including senders not yet in your CRM", wide: true });
+  if (!user) return;
+  const page = document.getElementById("page");
+  let msgs = [];
+  let filter = "all";
+
+  function linkFor(m) {
+    if (m.project_id) return { href: `/crm/project.html?id=${m.project_id}`, label: m.project_name || ("Job #" + m.project_id) };
+    if (m.contact_id) return { href: `/crm/contact.html?id=${m.contact_id}`, label: m.contact_name || ("Contact #" + m.contact_id) };
+    if (m.lead_id)    return { href: `/crm/lead.html?id=${m.lead_id}`, label: "Lead #" + m.lead_id };
+    return null;
+  }
+  const snippet = (m) => (m.body_text || "").replace(/\s+/g, " ").trim().slice(0, 130);
+
+  function render() {
+    const unmatched = msgs.filter((m) => !linkFor(m));
+    const rows = filter === "unmatched" ? unmatched : msgs;
+    const table = !rows.length
+      ? `<div class="tbl"><div class="empty">No ${filter === "unmatched" ? "unmatched " : ""}messages yet. New mail syncs automatically.</div></div>`
+      : `<div class="tbl"><table>
+          <thead><tr><th>From</th><th>Subject</th><th>Linked to</th><th>Received</th></tr></thead>
+          <tbody>${rows.map((m) => {
+            const lk = linkFor(m);
+            return `<tr class="clickable" data-id="${m.id}">
+              <td><div class="ibx-from">${SSCrm.esc(m.from_name || m.from_addr || "—")}</div><div class="ibx-sub-snip">${SSCrm.esc(m.from_addr || "")}</div></td>
+              <td>${SSCrm.esc(m.subject || "(no subject)")}<div class="ibx-sub-snip">${SSCrm.esc(snippet(m))}</div></td>
+              <td>${lk ? `<a href="${lk.href}" onclick="event.stopPropagation()">${SSCrm.esc(lk.label)}</a>` : `<span class="ibx-unmatched">Unmatched</span>`}</td>
+              <td class="muted" style="white-space:nowrap">${SSCrm.fmtDate(m.received_at || m.created_at)}</td>
+            </tr>
+            <tr class="ibx-detail" data-for="${m.id}" style="display:none"><td colspan="4"><div class="ibx-body">${SSCrm.esc(m.body_text || "(no plain-text body)")}</div></td></tr>`;
+          }).join("")}</tbody></table></div>`;
+
+    page.innerHTML = `
+      <div class="ibx-bar">
+        <div class="ibx-filters">
+          <button class="ibx-filter ${filter === "all" ? "is-active" : ""}" data-f="all">All <span class="n">${msgs.length}</span></button>
+          <button class="ibx-filter ${filter === "unmatched" ? "is-active" : ""}" data-f="unmatched">Unmatched <span class="n">${unmatched.length}</span></button>
+        </div>
+        <button class="ibx-sync" id="ibx-sync">↻ Sync now</button>
+      </div>
+      ${table}`;
+
+    page.querySelectorAll(".ibx-filter").forEach((b) => b.addEventListener("click", () => { filter = b.dataset.f; render(); }));
+    page.querySelectorAll("tr.clickable").forEach((tr) => tr.addEventListener("click", () => {
+      const d = page.querySelector(`.ibx-detail[data-for="${tr.dataset.id}"]`);
+      if (d) d.style.display = d.style.display === "none" ? "" : "none";
+    }));
+    const sync = document.getElementById("ibx-sync");
+    if (sync) sync.addEventListener("click", syncNow);
+  }
+
+  async function syncNow() {
+    const btn = document.getElementById("ibx-sync");
+    if (btn) { btn.disabled = true; btn.textContent = "Syncing…"; }
+    try {
+      const r = await SSCrm.fetchJSON("/api/internal/email-sync", { method: "POST" });
+      SSCrm.toast(`Synced — ${r.processed || 0} new message${(r.processed || 0) === 1 ? "" : "s"}`, "success");
+      await load();
+    } catch (e) {
+      SSCrm.toast(e.message || "Sync failed", "error");
+      if (btn) { btn.disabled = false; btn.textContent = "↻ Sync now"; }
+    }
+  }
+
+  async function load() {
+    try {
+      msgs = (await SSCrm.fetchJSON("/api/email-messages?inbox=1&limit=300")).messages || [];
+    } catch (e) {
+      page.innerHTML = `<div class="tbl"><div class="empty">Couldn't load inbox: ${SSCrm.esc(e.message)}</div></div>`;
+      return;
+    }
+    render();
+  }
+
+  load();
+})();
+</script></body></html>

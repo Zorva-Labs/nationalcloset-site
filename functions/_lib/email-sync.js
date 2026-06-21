@@ -392,49 +392,73 @@ function decodeMimeWords(s) {
 
 async function resolveSenderAttribution(db, fromAddr, parsed) {
   const out = { contact_id: null, lead_id: null, project_id: null };
-  if (!fromAddr) return out;
 
-  // 1) Try threading: if In-Reply-To matches an existing message, inherit its
-  // entity attachments. This catches replies even when the sender's display
-  // address has changed (e.g. they switched email providers).
-  if (parsed.inReplyTo) {
+  // 1) Threading: if this is a reply to one of OUR messages, inherit the
+  // parent's attribution. Check In-Reply-To first, then every Message-ID in the
+  // References chain (newest first). This catches replies even when the sender
+  // writes from a different address than we have on file — the strongest signal.
+  const threadIds = [];
+  if (parsed.inReplyTo) threadIds.push(parsed.inReplyTo.trim());
+  if (parsed.references) {
+    for (const r of (parsed.references.match(/<[^>]+>/g) || []).reverse()) {
+      if (!threadIds.includes(r)) threadIds.push(r);
+    }
+  }
+  for (const mid of threadIds) {
     const parent = await db.prepare(
       `SELECT contact_id, lead_id, project_id FROM email_messages WHERE message_id_header=?1 LIMIT 1`
-    ).bind(parsed.inReplyTo).first().catch(() => null);
-    if (parent) {
-      if (parent.contact_id) out.contact_id = parent.contact_id;
-      if (parent.lead_id)    out.lead_id    = parent.lead_id;
-      if (parent.project_id) out.project_id = parent.project_id;
-      if (out.contact_id || out.lead_id || out.project_id) return out;
+    ).bind(mid).first().catch(() => null);
+    if (parent && (parent.contact_id || parent.lead_id || parent.project_id)) {
+      out.contact_id = parent.contact_id || null;
+      out.lead_id    = parent.lead_id    || null;
+      out.project_id = parent.project_id || null;
+      return out;
     }
   }
 
+  if (!fromAddr) return out;
+
+  // Match on the raw sender AND a normalized form (strip +tag; remove dots for
+  // Gmail) so a lead who replies from a slightly different variant of the same
+  // inbox (e.g. jane+homes@gmail.com vs jane@gmail.com) still auto-attaches.
+  const candidates = [...new Set([fromAddr.toLowerCase(), normalizeEmail(fromAddr)])];
+
   // 2) Match contacts by email (most authoritative — they've already engaged)
-  const contact = await db.prepare(
-    `SELECT id FROM contacts WHERE LOWER(email)=?1 LIMIT 1`
-  ).bind(fromAddr).first().catch(() => null);
-  if (contact) {
-    out.contact_id = contact.id;
-    // Find the most recent open project for this contact
-    const proj = await db.prepare(
-      `SELECT id, lead_id FROM projects WHERE contact_id=?1 ORDER BY id DESC LIMIT 1`
-    ).bind(contact.id).first().catch(() => null);
-    if (proj) {
-      out.project_id = proj.id;
-      if (proj.lead_id) out.lead_id = proj.lead_id;
+  for (const e of candidates) {
+    const contact = await db.prepare(
+      `SELECT id FROM contacts WHERE LOWER(email)=?1 LIMIT 1`
+    ).bind(e).first().catch(() => null);
+    if (contact) {
+      out.contact_id = contact.id;
+      const proj = await db.prepare(
+        `SELECT id, lead_id FROM projects WHERE contact_id=?1 ORDER BY id DESC LIMIT 1`
+      ).bind(contact.id).first().catch(() => null);
+      if (proj) { out.project_id = proj.id; if (proj.lead_id) out.lead_id = proj.lead_id; }
+      return out;
     }
-    return out;
   }
 
   // 3) Match leads by email
-  const lead = await db.prepare(
-    `SELECT id FROM leads WHERE LOWER(email)=?1 ORDER BY id DESC LIMIT 1`
-  ).bind(fromAddr).first().catch(() => null);
-  if (lead) {
-    out.lead_id = lead.id;
-    return out;
+  for (const e of candidates) {
+    const lead = await db.prepare(
+      `SELECT id FROM leads WHERE LOWER(email)=?1 ORDER BY id DESC LIMIT 1`
+    ).bind(e).first().catch(() => null);
+    if (lead) { out.lead_id = lead.id; return out; }
   }
 
-  // 4) Unmatched — message still saved with NULL FKs (admin can manually attach)
+  // 4) Unmatched — saved with NULL FKs; still visible in the global Inbox.
   return out;
+}
+
+// Normalize an email for matching: lowercase, drop +tag sub-addressing, and
+// remove dots in the local part for Gmail (Google ignores them). Used only for
+// attribution lookups — the message still stores the raw From address.
+function normalizeEmail(e) {
+  const lower = String(e || "").toLowerCase().trim();
+  const at = lower.lastIndexOf("@");
+  if (at < 1) return lower;
+  let local = lower.slice(0, at).split("+")[0];
+  const dom = lower.slice(at + 1);
+  if (dom === "gmail.com" || dom === "googlemail.com") local = local.replace(/\./g, "");
+  return local + "@" + dom;
 }

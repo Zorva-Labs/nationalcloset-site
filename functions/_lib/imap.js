@@ -21,13 +21,27 @@ import { connect } from "cloudflare:sockets";
 const CRLF = "\r\n";
 
 export class ImapClient {
-  constructor({ host = "imap.purelymail.com", port = 993, user, password }) {
+  constructor({ host = "imap.purelymail.com", port = 993, user, password, readTimeoutMs = 15000 }) {
     this.host = host; this.port = port; this.user = user; this.password = password;
     this.socket = null; this.writer = null; this.reader = null;
     this.encoder = new TextEncoder(); this.decoder = new TextDecoder();
     this.inbuf = "";        // string buffer of decoded chars (line-based responses)
     this.byteBuf = new Uint8Array(0); // byte buffer (for IMAP literals — pre-decode)
     this.tagSeq = 0;
+    this.readTimeoutMs = readTimeoutMs;
+  }
+
+  // reader.read() guarded by a timeout — a stalled socket (server not sending
+  // the rest of a literal, dropped connection, etc.) must NOT hang the Worker
+  // until Cloudflare cancels the whole stream. On timeout we throw, which the
+  // sync treats as fatal and skips past so the queue keeps moving.
+  async _read() {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error("IMAP read timeout")), this.readTimeoutMs);
+    });
+    try { return await Promise.race([this.reader.read(), timeout]); }
+    finally { clearTimeout(timer); }
   }
 
   // ──────────── connection lifecycle ────────────
@@ -119,8 +133,11 @@ export class ImapClient {
   }
 
   // Fetch raw RFC 822 source for one UID. Returns { uid, raw } or null.
+  // Capped at the first 512 KB (BODY.PEEK[]<0.524288>) — we only need the
+  // headers + text/html body, and pulling whole multi-MB attachment emails
+  // can exhaust the Worker's CPU/time budget and cancel the socket stream.
   async fetchRaw(uid) {
-    await this._write(`${this.newTag()} UID FETCH ${uid} (BODY.PEEK[])${CRLF}`);
+    await this._write(`${this.newTag()} UID FETCH ${uid} (BODY.PEEK[]<0.524288>)${CRLF}`);
     // The response is multi-line, with a literal block containing the message.
     //   * 7 FETCH (UID 12 BODY[] {1234}
     //   <1234 bytes here>
@@ -160,7 +177,7 @@ export class ImapClient {
   // Read raw bytes from the socket into byteBuf until we have at least `want` bytes.
   async _fillBytes(want) {
     while (this.byteBuf.length < want) {
-      const { value, done } = await this.reader.read();
+      const { value, done } = await this._read();
       if (done) throw new Error("IMAP socket closed unexpectedly");
       const merged = new Uint8Array(this.byteBuf.length + value.length);
       merged.set(this.byteBuf, 0);
@@ -185,7 +202,7 @@ export class ImapClient {
         }
       }
       // Need more data
-      const { value, done } = await this.reader.read();
+      const { value, done } = await this._read();
       if (done) throw new Error("IMAP socket closed unexpectedly");
       const merged = new Uint8Array(this.byteBuf.length + value.length);
       merged.set(this.byteBuf, 0);

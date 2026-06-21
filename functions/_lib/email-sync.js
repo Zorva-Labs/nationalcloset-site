@@ -32,7 +32,13 @@ export async function runImapSync(env, { mailbox = MAILBOX, maxPerRun = 50 } = {
   let processed = 0;
   let matched = 0;
   let skipped = 0;
+  let highWatermark = lastUidSeen;
   const errors = [];
+  // Socket-level failures (notably Cloudflare's "Stream was cancelled") leave
+  // the connection unusable — we must stop reading and reconnect next run.
+  const FATAL_SOCKET = /cancell?ed|socket closed|closed unexpectedly|connection (lost|reset|closed)|aborted|broken pipe|timeout|timed out/i;
+  const startedAt = Date.now();
+  const DEADLINE_MS = 22000;
 
   try {
     await client.connect();
@@ -51,8 +57,8 @@ export async function runImapSync(env, { mailbox = MAILBOX, maxPerRun = 50 } = {
 
     // Fetch new UIDs
     const uids = await client.searchUidsFrom(startUid);
-    let highWatermark = lastUidSeen;
     for (const uid of uids.slice(0, maxPerRun)) {
+      if (Date.now() - startedAt > DEADLINE_MS) break;  // leave time to persist state + logout
       try {
         const fetched = await client.fetchRaw(uid);
         if (!fetched?.raw) { skipped++; continue; }
@@ -126,8 +132,14 @@ export async function runImapSync(env, { mailbox = MAILBOX, maxPerRun = 50 } = {
         processed++;
         highWatermark = Math.max(highWatermark, uid);
       } catch (e) {
-        errors.push({ uid, error: e?.message || String(e) });
-        // Don't abort the whole sync on one bad message — keep advancing
+        const msg = e?.message || String(e);
+        errors.push({ uid, error: msg });
+        // Advance the cursor PAST this message so a poison/oversized email can't
+        // block the entire queue forever (the original bug — a single bad UID
+        // stalled all mail behind it indefinitely). If the socket itself died,
+        // stop this run; the next cron run reconnects fresh and resumes here.
+        highWatermark = Math.max(highWatermark, uid);
+        if (FATAL_SOCKET.test(msg)) break;
       }
     }
 
@@ -144,9 +156,13 @@ export async function runImapSync(env, { mailbox = MAILBOX, maxPerRun = 50 } = {
       mailbox,
     ).run();
   } catch (e) {
+    // Persist whatever progress we made so a mid-run failure doesn't reprocess
+    // — or get permanently stuck on — the same UID next time.
     await DB.prepare(
-      `UPDATE email_sync_state SET last_run_at=datetime('now'), last_result=?1 WHERE mailbox=?2`
-    ).bind(("err: " + (e?.message || String(e))).slice(0, 200), mailbox).run();
+      `UPDATE email_sync_state SET uid_validity=COALESCE(?1, uid_validity), uid_next=?2,
+         last_run_at=datetime('now'), last_result=?3 WHERE mailbox=?4`
+    ).bind(info?.uidValidity || null, highWatermark, ("err: " + (e?.message || String(e))).slice(0, 200), mailbox)
+     .run().catch(() => {});
     throw e;
   } finally {
     try { await client.logout(); } catch (_) {}

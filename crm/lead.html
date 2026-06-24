@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc14" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc15" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc14"></script>
+<script src="/crm/crm-app.js?v=ncc15"></script>
 <script src="/crm/windows-editor.js?v=ncc11"></script>
 <script>
 // Lead pipeline ends at "Proposal" or "Lost". Once the contract is signed
@@ -23,6 +23,7 @@
 // records under Jobs.
 const LEAD_STATUSES = [
   { key: "new",       label: "New" },
+  { key: "contacted", label: "Contacted" },
   { key: "replied",   label: "Replied" },
   { key: "consult",   label: "Consult" },
   { key: "proposal",  label: "Proposal" },
@@ -72,7 +73,7 @@ function render() {
   // somehow has one (auto-bump just fired but the page hasn't been reloaded
   // to the Jobs view), the stepper still renders sensibly because indexOf
   // returns -1 → no stage is highlighted.
-  const flow = ["new", "replied", "consult", "proposal"];
+  const flow = ["new", "contacted", "replied", "consult", "proposal"];
   const isTerminal = l.status === "lost" || l.status === "booked" || l.status === "installed";
   const currentIdx = flow.indexOf(l.status);
   const stepper = `

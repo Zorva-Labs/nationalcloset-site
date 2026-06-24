@@ -384,6 +384,7 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 }
 .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .pill[data-s="new"]                { color: var(--s-new); }
+.pill[data-s="contacted"]          { color: #0369A1; background: #E0F2FE; border-color: #BAE6FD; }
 .pill[data-s="replied"]            { color: var(--s-quoted); background: #FEF9C3; border-color: #FDE68A; }
 .pill[data-s="consult"],
 .pill[data-s="scheduled"],

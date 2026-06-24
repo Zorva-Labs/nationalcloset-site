@@ -7,6 +7,7 @@
 import { ImapClient } from "./imap.js";
 import { deriveThreadKey } from "./email-vars.js";
 import { recordActivity } from "./db.js";
+import { bumpLeadStatusForward } from "./lifecycle.js";
 
 const MAILBOX = "INBOX";
 
@@ -121,6 +122,11 @@ export async function runImapSync(env, { mailbox = MAILBOX, maxPerRun = 50 } = {
             details: { subject: parsed.subject, message_id: parsed.messageId },
           });
           matched++;
+          // A lead writing back is a real reply — move them forward to "replied"
+          // (forward-only; a lead already at consult/proposal/booked stays put).
+          if (resolved.lead_id) {
+            await bumpLeadStatusForward(DB, resolved.lead_id, "replied", { actor: { kind: "customer", name: parsed.fromName || fromAddr } }).catch(() => {});
+          }
         }
 
         // NOTE: intentionally do NOT mark the message \Seen. The sync tracks

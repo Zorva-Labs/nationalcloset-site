@@ -2,12 +2,13 @@
 // Lead pipeline only: booked + installed are job statuses now (see Jobs).
 const STATUS_LABELS = {
   new: "New",
+  contacted: "Contacted",
   replied: "Replied",
   consult: "Consult",
   proposal: "Proposal",
   lost: "Lost",
 };
-const STATUS_ORDER = ["new", "replied", "consult", "proposal", "lost"];
+const STATUS_ORDER = ["new", "contacted", "replied", "consult", "proposal", "lost"];
 
 async function fetchJSON(url, opts = {}) {
   const res = await fetch(url, {

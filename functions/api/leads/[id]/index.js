@@ -3,6 +3,7 @@ import { deleteLeadCascade } from "../../../_lib/cascade.js";
 
 const ALLOWED_STATUSES = new Set([
   "new",
+  "contacted",
   "replied",
   "consult",
   "proposal",

@@ -204,17 +204,18 @@ export async function onRequestPost(context) {
     `UPDATE email_messages SET status='sent', sent_at=datetime('now') WHERE id=?1`
   ).bind(msgId).run();
 
-  // Auto-advance the lead to "replied" the first time we send them anything.
-  // Forward-only — a lead already at proposal/booked stays put. If the email is
-  // attached to a project (later stage of the relationship) we look up the
-  // lead via project.lead_id so post-contact emails still attribute properly.
+  // Auto-advance the lead to "contacted" the first time we email them.
+  // Forward-only — a lead already at replied/proposal/booked stays put. If the
+  // email is attached to a project (later stage of the relationship) we look up
+  // the lead via project.lead_id so post-contact emails still attribute properly.
+  // (An inbound REPLY from the lead bumps them on to "replied" — see email-sync.)
   let leadIdForBump = body.lead_id || null;
   if (!leadIdForBump && body.project_id) {
     const proj = await DB.prepare(`SELECT lead_id FROM projects WHERE id=?1`).bind(body.project_id).first().catch(() => null);
     leadIdForBump = proj?.lead_id || null;
   }
   if (leadIdForBump) {
-    await bumpLeadStatusForward(DB, leadIdForBump, "replied", { actor: { kind: "admin", id: auth.id, name: auth.email } });
+    await bumpLeadStatusForward(DB, leadIdForBump, "contacted", { actor: { kind: "admin", id: auth.id, name: auth.email } });
   }
 
   await recordActivity(DB, {

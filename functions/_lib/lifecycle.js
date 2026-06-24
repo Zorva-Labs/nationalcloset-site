@@ -265,7 +265,7 @@ export async function syncLeadQuotedFromProposal(db, proposalId) {
 // terminal forward-progress and only set manually; "lost" is a hard terminal
 // the admin chose, and we never auto-revive a lost lead.
 const LEAD_STATUS_RANK = {
-  new: 1, replied: 2, consult: 3, proposal: 4, booked: 5, installed: 6, lost: 99,
+  new: 1, contacted: 2, replied: 3, consult: 4, proposal: 5, booked: 6, installed: 7, lost: 99,
 };
 
 /**

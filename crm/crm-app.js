@@ -30,6 +30,7 @@ const NAV = [
 // /crm/projects.html.
 const LEAD_STATUSES_NAV = [
   { key: "new",       label: "New Leads",     color: "#94A3B8" },
+  { key: "contacted", label: "Contacted",     color: "#0EA5E9" },
   { key: "replied",   label: "Replied",       color: "#F59E0B" },
   { key: "consult",   label: "Consult",       color: "#6366F1" },
   { key: "proposal",  label: "Proposal Sent", color: "#8B5CF6" },

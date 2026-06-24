@@ -3,8 +3,9 @@
 // see _lib/email.js for env vars). DB save is the source of truth — a mail
 // failure logs but never blocks the customer response.
 
-import { sendEmail } from "../_lib/email.js";
+import { sendEmail, brandedEmail, makeMessageId } from "../_lib/email.js";
 import { upsertContact } from "../_lib/db.js";
+import { logOutboundEmail } from "../_lib/email-log.js";
 
 const TO_ADDRESS = "hello@nationalclosetco.com";
 
@@ -95,6 +96,8 @@ https://nationalclosetco.com/crm/
   // disappear silently).
   let dbOk = false;
   let dbError = null;
+  let leadId = null;
+  let contactId = null;
   if (env.DB) {
     try {
       const ipRaw = request.headers.get("CF-Connecting-IP") || "";
@@ -113,7 +116,6 @@ https://nationalclosetco.com/crm/
       // captured — if the email matches an existing contact (repeat
       // customer, second inquiry, etc.) we re-use that row instead of
       // creating a duplicate.
-      let contactId = null;
       try {
         contactId = await upsertContact(env.DB, {
           name, email, phone,
@@ -124,14 +126,15 @@ https://nationalclosetco.com/crm/
         console.error("[contact.js] upsertContact failed (continuing):", e?.message || e);
       }
 
-      await env.DB.prepare(
+      const leadRow = await env.DB.prepare(
         `INSERT INTO leads
           (name, phone, email,
            address_street, address_city, address_state, address_zip, location,
            interest, message,
            source_page, utm_source, utm_medium, utm_campaign, utm_term, utm_content,
            referrer, user_agent, ip_hash, contact_id)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)`
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
+         RETURNING id`
       )
         .bind(
           name, phone, email,
@@ -141,7 +144,8 @@ https://nationalclosetco.com/crm/
           utm_source, utm_medium, utm_campaign, utm_term, utm_content,
           ref, ua, ipHash, contactId
         )
-        .run();
+        .first();
+      leadId = leadRow?.id || null;
       dbOk = true;
     } catch (e) {
       console.error("D1 lead insert failed:", e?.message || e);
@@ -168,6 +172,37 @@ https://nationalclosetco.com/crm/
     text: textBody,
     html: htmlBody,
   });
+
+  // 2b) Send the customer a branded acknowledgment AND log it to the CRM so the
+  // lead's Messages timeline reflects the conversation from the very first touch.
+  // Best-effort — never blocks the customer response. (Leaves the lead in "New";
+  // it advances to "Contacted" when a team member personally emails them.)
+  if (dbOk && email) {
+    try {
+      const first = (name || "there").split(" ")[0];
+      const ackSubject = `Thanks for reaching out to National Closet Company, ${first}`;
+      const ackHtml = brandedEmail({
+        title: "Thanks for reaching out!",
+        body: `
+          <p>Hi ${esc(first)},</p>
+          <p>Thank you for contacting National Closet Company${interest ? ` about your ${esc(String(interest).toLowerCase())}` : ""}. We've received your request, and a member of our family-owned team will reach out within one business day to schedule your <strong>free in-home design</strong>.</p>
+          <p>If you'd like to talk sooner, just call or text us at <strong>629-298-8241</strong>.</p>
+          <p>We look forward to helping you build a beautiful custom space at a price that makes sense.</p>
+          <p>Warmly,<br>Michael Blair<br>National Closet Company</p>`,
+      });
+      const ackText = `Hi ${first},\n\nThank you for contacting National Closet Company. We've received your request and will reach out within one business day to schedule your free in-home design.\n\nCall or text us anytime at 629-298-8241.\n\nWarmly,\nMichael Blair\nNational Closet Company`;
+      const ackMsgId = makeMessageId();
+      const ackTo = name ? `${name} <${email}>` : email;
+      const res = await sendEmail(env, { to: ackTo, subject: ackSubject, html: ackHtml, text: ackText, messageId: ackMsgId });
+      const failed = res?.skipped || res?.error || (res?.status && res.status >= 400);
+      await logOutboundEmail(env, {
+        to: ackTo, subject: ackSubject, html: ackHtml, text: ackText, messageId: ackMsgId,
+        leadId, contactId, templateKind: "lead_ack", status: failed ? "failed" : "sent",
+      });
+    } catch (e) {
+      console.error("[contact.js] lead acknowledgment failed:", e?.message || e);
+    }
+  }
 
   // 3) Surface the outcome. DB failure is the only reason we'd refuse the lead
   // (because then it's truly lost). Mail failure is invisible to the customer.

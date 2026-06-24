@@ -16,8 +16,8 @@
 <script>
 // booked + installed are Job statuses, not Lead statuses — see crm-app.js
 // JOB_STATUSES_NAV for the parallel set under Jobs.
-const STATUS_LABELS = { new: "New", replied: "Replied", consult: "Consult", proposal: "Proposal", lost: "Lost" };
-const STATUS_ORDER = ["new", "replied", "consult", "proposal", "lost"];
+const STATUS_LABELS = { new: "New", contacted: "Contacted", replied: "Replied", consult: "Consult", proposal: "Proposal", lost: "Lost" };
+const STATUS_ORDER = ["new", "contacted", "replied", "consult", "proposal", "lost"];
 
 (async () => {
   const url = new URL(location.href);

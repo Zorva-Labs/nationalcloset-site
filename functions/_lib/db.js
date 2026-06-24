@@ -76,9 +76,10 @@ export async function recomputeTierTotals(db, tierId) {
     .bind(tierId)
     .first();
   const subtotal = sum.subtotal || 0;
-  // Only tax a quote that actually has line items — an empty option stays $0.
-  const tax = subtotal > 0 ? Math.round(subtotal * QUOTE_TAX_RATE) : 0;
-  const total = subtotal + tax;
+  // All-inclusive pricing: line-item prices already include shipping, tax and
+  // installation, so there is no separate tax line. Total equals the subtotal.
+  const tax = 0;
+  const total = subtotal;
   await db
     .prepare(`UPDATE proposal_tiers SET subtotal_cents=?1, tax_cents=?2, total_cents=?3 WHERE id=?4`)
     .bind(subtotal, tax, total, tierId)

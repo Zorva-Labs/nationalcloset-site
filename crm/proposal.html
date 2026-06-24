@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc15" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc16" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc15"></script>
+<script src="/crm/crm-app.js?v=ncc16"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -149,9 +149,7 @@ function renderTier(t) {
     <tbody class="tier-lines">${(t.lines || []).map(tierLineRow).join("") || tierLineRow({})}</tbody></table>
     <div class="add" style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="addFromCatalog(this)">+ Add from catalog</button><button onclick="addTierLine(this)">+ Custom line</button>${t.tier !== "good" ? `<button onclick="copyFromOption1(this)" title="Copy Option 1's line items here and add a Wall Finishing line">⧉ Copy Option 1 + Wall Finishing</button>` : ""}</div>
     <div style="border-top:1px solid var(--line-soft);margin-top:10px;padding-top:10px">
-      <div style="display:flex;justify-content:space-between;color:var(--ink-soft);font-weight:500"><span>Subtotal</span><span class="tier-subtotal money">${SSCrm.fmtMoney(t.subtotal_cents || 0)}</span></div>
-      <div style="display:flex;justify-content:space-between;color:var(--ink-soft);font-weight:500;margin-top:3px"><span>Sales tax (9.75%)</span><span class="tier-tax money">${SSCrm.fmtMoney(t.tax_cents || 0)}</span></div>
-      <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:6px;padding-top:6px;border-top:1px solid var(--line-soft)"><span>Total</span><span class="tier-total money">${SSCrm.fmtMoney(t.total_cents || 0)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total <span style="font-weight:400;color:var(--ink-soft);font-size:12px">· incl. shipping, tax &amp; install</span></span><span class="tier-total money">${SSCrm.fmtMoney(t.total_cents || 0)}</span></div>
     </div>
   </div>`;
 }
@@ -196,7 +194,7 @@ function fmtUnit(input) {
   input.value = v ? SSCrm.fmtMoney(SSCrm.parseMoney(v)) : "";
   recalcTier(input);
 }
-const QUOTE_TAX_RATE = 0.0975; // 9.75% — must match recomputeTierTotals on the server
+const QUOTE_TAX_RATE = 0; // all-inclusive pricing — no separate tax line (matches recomputeTierTotals)
 function recalcTierEl(card) {
   let sub = 0;
   card.querySelectorAll(".tier-lines tr").forEach((tr) => {

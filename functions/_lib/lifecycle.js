@@ -84,14 +84,9 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
       l.quantity, l.unit_price_cents, l.line_total_cents, l.position
     ).run();
   }
-  // Carry the quote's sales tax onto the contract as its own line so the
-  // itemized line items reconcile to the contract's (tax-inclusive) total.
-  if (tier.tax_cents > 0) {
-    await db.prepare(
-      `INSERT INTO contract_lines (contract_id, description, room, quantity, unit_price_cents, line_total_cents, position)
-       VALUES (?1, 'Sales tax (9.75%)', NULL, 1, ?2, ?2, ?3)`
-    ).bind(r.id, tier.tax_cents, lines.length).run();
-  }
+  // No separate tax or shipping line — the quote's line-item prices are all-
+  // inclusive (shipping, tax and installation), so the contract lines already
+  // reconcile to the contract total.
 
   // Advance the project status — accepting a proposal moves the job into "proposed"
   await db.prepare(`UPDATE projects SET status='proposed', updated_at=datetime('now') WHERE id=?1`).bind(proposal.project_id).run();

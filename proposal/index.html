@@ -117,15 +117,14 @@ function render(p, tiers) {
         ${t.description ? `<div class="opt__desc">${esc(t.description)}</div>` : ""}
         ${(t.lines && t.lines.length) ? `<ul class="opt__lines">${t.lines.map((l) => `<li><span>${esc(l.description)}${l.room ? ` <em style="color:var(--muted);font-size:.85em;font-style:normal">— ${esc(l.room)}</em>` : ""}</span><span class="ln-money">${money(l.line_total_cents)}</span></li>`).join("")}</ul>
         <div class="opt__sum">
-          <div class="opt__sum-row"><span>Subtotal</span><span>${money(t.subtotal_cents)}</span></div>
-          <div class="opt__sum-row"><span>Sales tax (9.75%)</span><span>${money(t.tax_cents)}</span></div>
           <div class="opt__sum-row opt__sum-total"><span>Total</span><span>${money(t.total_cents)}</span></div>
+          <div class="opt__sum-row" style="border:0;color:var(--muted);font-size:.82rem;font-weight:500"><span>Includes shipping, tax &amp; installation</span><span></span></div>
         </div>` : `<div class="opt__empty">Itemized details to follow.</div>`}
         ${!isAccepted ? `<button class="btn opt-btn" type="button" onclick="event.stopPropagation();pickTier('${esc(t.tier)}')">${p.selected_tier === t.tier ? "✓ Selected" : (many ? "Choose this option" : "Select")}</button>` : ""}
       </div>`).join("")}
     </div>
 
-    <p class="pay-note">Prices include 9.75% sales tax. <strong>Payment:</strong> a 3% processing fee applies to <strong>card</strong> payments — pay by <strong>bank transfer (ACH)</strong> at checkout to avoid the fee.</p>
+    <p class="pay-note">Your price is all-inclusive — it <strong>includes shipping, tax &amp; installation</strong>, with no hidden fees. <strong>Payment:</strong> a 3% processing fee applies to <strong>card</strong> payments — pay by <strong>bank transfer (ACH)</strong> at checkout to avoid the fee.</p>
 
     ${isAccepted ? `
       <div class="status">

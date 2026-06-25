@@ -27,3 +27,8 @@ STRIPE_PUBLISHABLE_KEY = "pk_live_51TdEjnFwmijYgch1dzNcdPvBh4ecSA1sYWmRKBSJt3ORY
 binding = "DB"
 database_name = "nationalcloset-crm"
 database_id = "f5787ce4-29f9-43be-bf0e-cb486f1ec8e9"
+
+# R2 bucket for uploaded files (proposal job-drawing PDFs, etc.)
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "nationalcloset-files"

@@ -89,11 +89,12 @@ async function load() {
     const data = await (await fetch("/api/public/proposal/" + token)).json();
     if (data.error) throw new Error(data.error);
     proposal = data.proposal;
-    render(data.proposal, data.tiers);
+    render(data.proposal, data.tiers, data.attachments || []);
   } catch (e) { document.getElementById("root").innerHTML = `<p class="err">${esc(e.message)}</p>`; }
 }
 
-function render(p, tiers) {
+function render(p, tiers, attachments) {
+  attachments = attachments || [];
   const isAccepted = p.status === "accepted";
   const many = (tiers || []).length > 1;
   document.title = `${p.number} · Your Proposal · National Closet Company`;
@@ -126,6 +127,25 @@ function render(p, tiers) {
 
     <p class="pay-note">Your price is all-inclusive — it <strong>includes shipping, tax &amp; installation</strong>, with no hidden fees. <strong>Payment:</strong> a 3% processing fee applies to <strong>card</strong> payments — pay by <strong>bank transfer (ACH)</strong> at checkout to avoid the fee.</p>
 
+    ${p.job_notes ? `
+      <div style="margin-top:24px;background:var(--fog);border-radius:12px;padding:20px clamp(18px,3vw,26px)">
+        <h2 style="font-family:var(--font);font-weight:800;font-size:1.15rem;margin:0 0 8px;color:var(--ink)">What's included</h2>
+        <div style="color:var(--ink-soft);font-size:.97rem;line-height:1.6;white-space:pre-wrap">${esc(p.job_notes)}</div>
+      </div>` : ""}
+
+    ${attachments.length ? `
+      <div style="margin-top:24px;border:1.5px solid var(--clay);border-radius:12px;padding:22px clamp(18px,3vw,28px);background:#fff">
+        <h2 style="font-family:var(--font);font-weight:800;font-size:1.2rem;margin:0 0 4px;color:var(--ink)">Job drawings</h2>
+        <p style="color:var(--muted);margin:0 0 14px;font-size:.95rem">Please review the attached drawing${attachments.length > 1 ? "s" : ""} of your project before accepting.</p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${attachments.map((a) => `<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid #e7e1d6;border-radius:8px">
+            <span style="font-size:20px">📄</span>
+            <a href="/api/public/proposal/${token}/file/${a.id}" target="_blank" rel="noopener" style="flex:1;font-weight:700;color:var(--ink);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.filename)}</a>
+            <a href="/api/public/proposal/${token}/file/${a.id}?dl=1" style="color:var(--clay-deep);font-weight:700;font-size:.9rem;white-space:nowrap">Download</a>
+          </div>`).join("")}
+        </div>
+      </div>` : ""}
+
     ${isAccepted ? `
       <div class="status">
         <h2>Accepted — thank you!</h2>
@@ -135,6 +155,11 @@ function render(p, tiers) {
       <div class="accept">
         <h2>Ready to book it?</h2>
         <p>Type your full name to accept this proposal — we'll prepare your contract to sign and reserve your install.</p>
+        ${attachments.length ? `
+        <div style="background:#211d17;border:1.5px solid #2a261f;border-radius:9px;padding:14px 16px;margin:0 auto 16px;max-width:520px;text-align:left">
+          <label for="accept-initials" style="display:block;color:#cbc6bc;font-size:.9rem;line-height:1.5;margin-bottom:9px">By entering your initials, you confirm the attached drawing${attachments.length > 1 ? "s are" : " is"} of the project you want built.</label>
+          <input id="accept-initials" type="text" maxlength="6" placeholder="Initials" autocomplete="off" style="width:130px;font-family:var(--font);font-size:1rem;padding:11px 13px;border-radius:7px;border:1.5px solid #2a261f;background:#1a1712;color:#fff;text-transform:uppercase;letter-spacing:.12em;min-height:48px;box-sizing:border-box"/>
+        </div>` : ""}
         <div class="accept__form">
           <input id="accept-name" type="text" placeholder="Your full name" autocomplete="name" onkeydown="if(event.key==='Enter')accept()"/>
           <button class="btn accept-btn" type="button" onclick="accept()">Accept &amp; book →</button>
@@ -164,8 +189,11 @@ async function accept() {
   const input = document.getElementById("accept-name");
   const name = (input && input.value || "").trim();
   if (!name) { if (input) input.focus(); alert("Please type your full name to accept."); return; }
+  const initialsEl = document.getElementById("accept-initials");
+  const initials = initialsEl ? initialsEl.value.trim() : "";
+  if (initialsEl && !initials) { initialsEl.focus(); alert("Please enter your initials to confirm the attached drawings are of your project."); return; }
   try {
-    const res = await fetch("/api/public/proposal/" + token, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "accept", name }) });
+    const res = await fetch("/api/public/proposal/" + token, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "accept", name, initials }) });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Could not accept.");
     if (data.contract_token) {

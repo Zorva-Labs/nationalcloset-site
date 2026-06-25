@@ -18,7 +18,8 @@ export async function onRequestGet(context) {
     t.lines = (await context.env.DB.prepare(`SELECT * FROM proposal_tier_lines WHERE tier_id=?1 ORDER BY position, id`).bind(t.id).all()).results || [];
   }
   const comments = (await context.env.DB.prepare(`SELECT * FROM proposal_comments WHERE proposal_id=?1 ORDER BY created_at DESC`).bind(id).all()).results || [];
-  return json({ proposal, tiers, comments });
+  const attachments = (await context.env.DB.prepare(`SELECT id, filename, size_bytes, created_at FROM proposal_attachments WHERE proposal_id=?1 ORDER BY created_at`).bind(id).all()).results || [];
+  return json({ proposal, tiers, comments, attachments });
 }
 
 export async function onRequestPatch(context) {
@@ -27,7 +28,7 @@ export async function onRequestPatch(context) {
   const body = await context.request.json().catch(() => ({}));
 
   // Update proposal-level fields
-  const allowed = ["status","intro","notes_internal","valid_until","default_contract_type"];
+  const allowed = ["status","intro","notes_internal","valid_until","default_contract_type","job_notes"];
   const fields = []; const binds = [];
   for (const k of allowed) {
     if (body[k] !== undefined) { fields.push(`${k}=?${binds.length+1}`); binds.push(body[k]); }

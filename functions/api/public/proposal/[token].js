@@ -19,10 +19,11 @@ export async function onRequestGet(context) {
     t.lines = (await context.env.DB.prepare(`SELECT * FROM proposal_tier_lines WHERE tier_id=?1 ORDER BY position, id`).bind(t.id).all()).results || [];
   }
   const comments = (await context.env.DB.prepare(`SELECT id, tier, author_kind, author_name, body, created_at FROM proposal_comments WHERE proposal_id=?1 ORDER BY created_at ASC`).bind(p.id).all()).results || [];
+  const attachments = (await context.env.DB.prepare(`SELECT id, filename, size_bytes FROM proposal_attachments WHERE proposal_id=?1 ORDER BY created_at`).bind(p.id).all()).results || [];
   await trackView(context.env.DB, "proposals", p.id);
   if (p.status === "sent") await context.env.DB.prepare(`UPDATE proposals SET status='viewed' WHERE id=?1`).bind(p.id).run();
   const safe = { ...p }; delete safe.notes_internal; delete safe.author_user_id;
-  return json({ proposal: safe, tiers, comments });
+  return json({ proposal: safe, tiers, comments, attachments });
 }
 
 export async function onRequestPost(context) {
@@ -51,14 +52,24 @@ export async function onRequestPost(context) {
     if (!body.name) return json({ error: "Please type your name to accept." }, 400);
     if (!p.selected_tier) return json({ error: "Pick a tier first." }, 400);
 
+    // When drawings are attached, the customer must initial to confirm the
+    // drawings are of the project they want before they can accept.
+    const attCount = (await context.env.DB.prepare(`SELECT COUNT(*) n FROM proposal_attachments WHERE proposal_id=?1`).bind(p.id).first())?.n || 0;
+    const initials = (body.initials || "").trim();
+    if (attCount > 0 && !initials) {
+      return json({ error: "Please initial to confirm the attached drawings are of your project." }, 400);
+    }
+
     // 1) Mark the proposal accepted
     await context.env.DB.prepare(
-      `UPDATE proposals SET status='accepted', accepted_at=datetime('now'), accepted_by_name=?1, accepted_ip_hash=?2, updated_at=datetime('now') WHERE id=?3`
-    ).bind(body.name, ipHash, p.id).run();
+      `UPDATE proposals SET status='accepted', accepted_at=datetime('now'), accepted_by_name=?1, accepted_ip_hash=?2,
+         drawings_initials=?3, drawings_confirmed_at=CASE WHEN ?3 <> '' THEN datetime('now') ELSE drawings_confirmed_at END,
+         updated_at=datetime('now') WHERE id=?4`
+    ).bind(body.name, ipHash, initials, p.id).run();
     await recordActivity(context.env.DB, {
       entityType: "proposal", entityId: p.id, action: "accepted",
       actorKind: "customer", actorName: body.name,
-      details: { ip_hash: ipHash, tier: p.selected_tier },
+      details: { ip_hash: ipHash, tier: p.selected_tier, drawings_confirmed: attCount > 0, initials: initials || null },
     });
 
     // 2) Auto-create a draft contract from the accepted tier

@@ -563,6 +563,26 @@ function renderOverview(s) {
           <div class="card-head"><h3>Expenses &amp; profit</h3></div>
           <div id="fin-host" class="muted" style="font-size:13px">Loading…</div>
         </div>
+
+        <!-- Job drawings — PDFs attached to the proposal follow the client here -->
+        <div class="card" style="margin-top:14px">
+          <div class="card-head"><h3>Job drawings</h3></div>
+          ${(s.drawings && s.drawings.length) ? `<div style="display:flex;flex-direction:column;gap:2px">${s.drawings.map((d) => `
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line-soft)">
+              <span style="font-size:16px">📄</span>
+              <a href="/api/attachments/${d.id}" target="_blank" rel="noopener" style="flex:1;font-weight:600;color:var(--ink);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e(d.filename)}</a>
+              <a class="btn ghost sm" href="/api/attachments/${d.id}?dl=1">Download</a>
+            </div>`).join("")}</div>
+            ${(() => { const ap = (s.proposals || []).find((p) => p.drawings_initials); return ap ? `<p style="font-size:12px;margin:10px 0 0;color:#15803D">✓ Customer initialed “${e(ap.drawings_initials)}” confirming these drawings${ap.drawings_confirmed_at ? ` · ${SSCrm.fmtDate(ap.drawings_confirmed_at)}` : ""}</p>` : ""; })()}`
+            : `<p class="muted" style="font-size:13px;margin:0">No drawings attached. Add them on the proposal.</p>`}
+        </div>
+
+        <!-- Job notes — extra details promised to the client (from the proposal) -->
+        <div class="card" style="margin-top:14px">
+          <div class="card-head"><h3>Job notes</h3></div>
+          ${s.job_notes ? `<div style="font-size:13px;line-height:1.6;white-space:pre-wrap;color:var(--ink)">${e(s.job_notes)}</div>`
+            : `<p class="muted" style="font-size:13px;margin:0">No job notes yet. Add them on the proposal.</p>`}
+        </div>
       </div>
 
       <div class="lead-grid__side">

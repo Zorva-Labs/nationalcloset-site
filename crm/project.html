@@ -656,10 +656,10 @@ const finDollars = (cents) => (Math.max(0, cents || 0) / 100).toFixed(2);
 const finToCents = (v) => Math.max(0, Math.round((parseFloat(v) || 0) * 100));
 
 function finCalc(priceCents) {
-  const base = priceCents * 0.65;                            // remove 35% markup first
-  const b = base / 100;
-  const disc = b >= 4500 ? 0.30 : b >= 2500 ? 0.25 : 0.20;   // tier from the remaining number
-  const materials = Math.round(base * (1 - disc));
+  const list = priceCents / 1.35;                           // remove the 35% markup → list
+  const b = list / 100;
+  const disc = b >= 4500 ? 0.30 : b >= 2500 ? 0.25 : 0.20;   // tier discount off the list
+  const materials = Math.round(list * (1 - disc));
   const shipping = Math.round(materials * 0.05);
   const tax = Math.round((materials + shipping) * 0.0975);
   const labor = Math.round(materials * 0.15);

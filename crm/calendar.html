@@ -187,6 +187,7 @@ async function openAppt(id) {
       </div>
       <div class="modal-foot">
         <button class="btn ghost" data-close>Close</button>
+        ${(a.email && ["consultation", "measure"].includes((a.type || "").toLowerCase())) ? `<button class="btn secondary" data-confirm>✉ Send confirmation</button>` : ""}
         ${a.status !== "completed" ? `<button class="btn secondary" data-status="completed">Mark completed</button>` : ""}
         ${a.status !== "cancelled" ? `<button class="btn danger" data-status="cancelled">Cancel</button>` : ""}
       </div>
@@ -199,6 +200,18 @@ async function openAppt(id) {
     try { await SSCrm.fetchJSON("/api/appointments/" + id, { method: "PATCH", body: JSON.stringify({ status: b.dataset.status }) }); SSCrm.toast("Updated", "success"); bg.remove(); render(); }
     catch (e) { SSCrm.toast(e.message, "error"); }
   });
+  const confirmBtn = bg.querySelector("[data-confirm]");
+  if (confirmBtn) confirmBtn.onclick = async () => {
+    confirmBtn.disabled = true; confirmBtn.textContent = "Sending…";
+    try {
+      await SSCrm.fetchJSON("/api/appointments/" + id, { method: "POST", body: JSON.stringify({ action: "send_confirmation" }) });
+      SSCrm.toast("Confirmation emailed to " + a.email, "success");
+      bg.remove();
+    } catch (e) {
+      SSCrm.toast(e.message || "Could not send confirmation", "error");
+      confirmBtn.disabled = false; confirmBtn.textContent = "✉ Send confirmation";
+    }
+  };
 }
 
 function prettyDate(iso) {

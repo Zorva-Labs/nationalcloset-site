@@ -3,6 +3,12 @@ import { requireAuth, json } from "../../_lib/auth.js";
 import { genToken } from "../../_lib/tokens.js";
 import { recordActivity, upsertContact } from "../../_lib/db.js";
 import { bumpLeadStatusForward } from "../../_lib/lifecycle.js";
+import { sendEmail, brandedEmail, escapeHtml, makeMessageId } from "../../_lib/email.js";
+import { buildIcs } from "../../_lib/ical.js";
+import { fmtPretty } from "../../_lib/dates.js";
+import { logOutboundEmail } from "../../_lib/email-log.js";
+
+const SITE_URL = "https://nationalclosetco.com";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context);
@@ -81,5 +87,71 @@ export async function onRequestPost(context) {
     actorKind: "admin", actorId: auth.id, actorName: auth.email,
     details: { lead_id: leadIdForBump, type: body.type || "consultation" },
   });
+
+  // Email the client their appointment details (consultation / measure visits).
+  // Best-effort — never blocks the booking response. Logged to the client's CRM
+  // timeline so the conversation is captured from the first touch.
+  const apptType = (body.type || "consultation").toLowerCase();
+  if (["consultation", "measure"].includes(apptType) && body.email) {
+    const isMeasure = apptType === "measure";
+    const visitLabel = isMeasure ? "measure & design visit" : "in-home consultation";
+    const when = fmtPretty(body.start_at);
+    const address = body.site_address || null;
+    const first = (body.name || "there").split(" ")[0];
+    const cancelUrl = `${SITE_URL}/book/?cancel=${cancelToken}`;
+    const subject = `Your ${visitLabel} is confirmed — ${when}`;
+    const html = brandedEmail({
+      title: "You're confirmed.",
+      preheader: `${visitLabel} on ${when}.`,
+      body: `
+        <p>Hi ${escapeHtml(first)},</p>
+        <p>Your free ${escapeHtml(visitLabel)} with National Closet Company is booked for:</p>
+        <p style="font-size:18px;color:#16140F;font-weight:600;margin:14px 0">${escapeHtml(when)}</p>
+        ${address ? `<p>We'll come to:<br/><strong>${escapeHtml(address)}</strong></p>` : ""}
+        ${body.rooms ? `<p><strong>Rooms / scope:</strong> ${escapeHtml(body.rooms)}</p>` : ""}
+        ${body.notes ? `<p><strong>Notes:</strong> ${escapeHtml(body.notes)}</p>` : ""}
+        <p>We'll bring samples, take measurements, and leave you with a written quote on the visit — no obligation.</p>
+        <p>If anything changes, you can <a href="${cancelUrl}">reschedule or cancel here</a>, or call/text us at <a href="tel:+16292988241">629-298-8241</a>.</p>
+        <p style="margin-top:24px">Looking forward to meeting you,<br/>— National Closet Company</p>`,
+    });
+    const text = `Your ${visitLabel} is confirmed for ${when}.\n\n` +
+      (address ? `We'll come to:\n${address}\n\n` : "") +
+      (body.rooms ? `Rooms/scope: ${body.rooms}\n\n` : "") +
+      `Reschedule/cancel: ${cancelUrl}\nQuestions: 629-298-8241\n`;
+    const ics = buildIcs({
+      uid: `appt-${r.id}@nationalclosetco.com`,
+      start: body.start_at, end: body.end_at,
+      summary: `National Closet Company · ${isMeasure ? "Measure & Design" : "In-Home Consultation"}`,
+      description: `Your ${visitLabel} with National Closet Company.\\n\\nQuestions? Call 629-298-8241.\\n\\nReschedule or cancel: ${cancelUrl}`,
+      location: address || "Your home",
+      organizer: "hello@nationalclosetco.com", organizerName: "National Closet Company",
+      url: cancelUrl,
+    });
+    const messageId = makeMessageId();
+    const work = (async () => {
+      const res = await sendEmail(context.env, {
+        to: body.name ? `${body.name} <${body.email}>` : body.email,
+        subject, html, text, messageId,
+        attachments: [{ filename: "ncc-consultation.ics", contentType: "text/calendar; method=REQUEST", content: utf8ToBase64(ics) }],
+      });
+      const failed = res?.skipped || res?.error || (res?.status && res.status >= 400);
+      await logOutboundEmail(context.env, {
+        to: body.email, subject, html, text, messageId,
+        leadId: leadIdForBump, contactId, templateKind: "consult_confirm",
+        status: failed ? "failed" : "sent",
+      });
+    })().catch((e) => console.error("[appointments] consult email failed:", e?.message || e));
+    if (context.waitUntil) context.waitUntil(work); else await work;
+  }
+
   return json({ id: r.id, cancel_token: cancelToken });
+}
+
+// UTF-8-safe base64 for the iCal attachment (btoa() only handles Latin1, so
+// em-dashes / smart quotes / accents would otherwise throw).
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
 }

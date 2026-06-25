@@ -1,19 +1,21 @@
 // Job cost model. The client price is all-inclusive; the expense breakdown and
 // profit are derived FROM it (confirmed with the owner):
-//   discount tier by client price:  <$2,500 → 20%,  $2,500–$4,499.99 → 25%,  ≥$4,500 → 30%
-//   materials = price × (1 − discount) ÷ 1.35   (removes discount + 35% markup)
-//   shipping  = 5%   of materials
-//   tax       = 9.75% of (materials + shipping)
-//   labor     = 15%  of materials
-//   profit    = price − (materials + shipping + tax + labor + misc)
+//   1. remove the 35% markup first:   base = price × (1 − 0.35)
+//   2. discount tier from THAT base:  <$2,500 → 20%, $2,500–$4,499.99 → 25%, ≥$4,500 → 30%
+//   3. materials = base × (1 − discount)
+//   4. shipping  = 5%   of materials
+//      tax       = 9.75% of (materials + shipping)
+//      labor     = 15%  of materials
+//   5. profit    = price − (materials + shipping + tax + labor + misc)
 
-export const MARKUP = 1.35;
+export const MARKUP_RATE = 0.35;
 export const SHIPPING_RATE = 0.05;
 export const TAX_RATE = 0.0975;
 export const LABOR_RATE = 0.15;
 
-export function discountForPrice(priceCents) {
-  const dollars = (priceCents || 0) / 100;
+// Tier is keyed off the post-markup base, not the client price.
+export function discountForBase(baseCents) {
+  const dollars = (baseCents || 0) / 100;
   if (dollars >= 4500) return 0.30;
   if (dollars >= 2500) return 0.25;
   return 0.20;
@@ -21,8 +23,9 @@ export function discountForPrice(priceCents) {
 
 export function computeBreakdown(priceCents) {
   const price = Math.max(0, Math.round(priceCents || 0));
-  const discount = discountForPrice(price);
-  const materials = Math.round((price * (1 - discount)) / MARKUP);
+  const base = price * (1 - MARKUP_RATE);          // remove 35% markup first
+  const discount = discountForBase(base);          // tier from the remaining number
+  const materials = Math.round(base * (1 - discount));
   const shipping = Math.round(materials * SHIPPING_RATE);
   const tax = Math.round((materials + shipping) * TAX_RATE);
   const labor = Math.round(materials * LABOR_RATE);

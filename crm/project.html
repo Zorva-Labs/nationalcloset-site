@@ -627,9 +627,10 @@ const finDollars = (cents) => (Math.max(0, cents || 0) / 100).toFixed(2);
 const finToCents = (v) => Math.max(0, Math.round((parseFloat(v) || 0) * 100));
 
 function finCalc(priceCents) {
-  const d = priceCents / 100;
-  const disc = d >= 4500 ? 0.30 : d >= 2500 ? 0.25 : 0.20;
-  const materials = Math.round((priceCents * (1 - disc)) / 1.35);
+  const base = priceCents * 0.65;                            // remove 35% markup first
+  const b = base / 100;
+  const disc = b >= 4500 ? 0.30 : b >= 2500 ? 0.25 : 0.20;   // tier from the remaining number
+  const materials = Math.round(base * (1 - disc));
   const shipping = Math.round(materials * 0.05);
   const tax = Math.round((materials + shipping) * 0.0975);
   const labor = Math.round(materials * 0.15);
@@ -666,7 +667,7 @@ function finRender() {
   host.innerHTML = `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <tr>
-        <td style="padding:6px 0"><strong>Client price</strong> <span class="muted" style="font-size:11px">· ${Math.round(f.discount * 100)}% tier</span></td>
+        <td style="padding:6px 0"><strong>Client price</strong> <span class="muted" style="font-size:11px">· <span id="fin-tier">${Math.round(f.discount * 100)}</span>% tier</span></td>
         <td style="text-align:right;white-space:nowrap">
           <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-price-auto" ${f.price_auto ? "checked" : ""} onchange="finToggle('price')"/> auto</label>
           <span style="color:var(--ink-soft)">$</span>
@@ -688,7 +689,7 @@ function finRender() {
       <button class="btn primary sm" onclick="saveFinancials()">Save</button>
       <button class="btn ghost sm" onclick="resetFinancials()">Reset to formula</button>
     </div>
-    <p class="muted" style="font-size:11px;margin:8px 0 0">Materials = price × (1 − discount) ÷ 1.35. Uncheck “auto” to override any line. Feeds Reports → P&amp;L.</p>`;
+    <p class="muted" style="font-size:11px;margin:8px 0 0">Materials = (price − 35% markup) × (1 − tier discount). Uncheck “auto” to override any line. Feeds Reports → P&amp;L.</p>`;
 }
 
 function finReadPrice() {
@@ -710,6 +711,8 @@ function finRecalc() {
   const price = finReadPrice();
   if (document.getElementById("fin-price-auto").checked) document.getElementById("fin-price").value = finDollars(price);
   const calc = finCalc(price);
+  const tierEl = document.getElementById("fin-tier");
+  if (tierEl) tierEl.textContent = Math.round(calc.disc * 100);
   ["materials", "shipping", "tax", "labor"].forEach((k) => {
     if (document.getElementById(`fin-${k}-auto`).checked) document.getElementById(`fin-${k}`).value = finDollars(calc[k]);
   });

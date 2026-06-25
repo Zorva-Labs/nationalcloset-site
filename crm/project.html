@@ -345,9 +345,10 @@ function renderInvoices(host, invoices) {
       ${stat("Balance due", m(balanceDue), balanceDue > 0 ? "#B45309" : "#10B981")}
       ${(jobTotal && balanceDue === 0 && paidCents >= jobTotal) ? `<div style="background:#ECFDF5;color:#15803D;font-weight:700;font-size:13px;padding:6px 12px;border-radius:999px">✓ Paid in full</div>` : ""}
       <div style="flex:1;min-width:200px;text-align:right;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">
+        <button class="btn primary sm" onclick="createFullInvoice()">+ Full payment</button>
         <button class="btn secondary sm" onclick="createInvoiceUI('deposit')">+ Deposit</button>
         <button class="btn secondary sm" onclick="createInvoiceUI('balance')">+ Balance</button>
-        <button class="btn primary sm" onclick="createInvoiceUI('custom')">+ Custom</button>
+        <button class="btn secondary sm" onclick="createInvoiceUI('custom')">+ Custom</button>
       </div>
     </div>`;
 
@@ -401,6 +402,32 @@ async function createInvoiceUI(type) {
     if (description) body.description = description;
     const r = await SSCrm.fetchJSON("/api/invoices", { method: "POST", body: JSON.stringify(body) });
     SSCrm.toast(r.deduped ? "Invoice already existed" : "Invoice created & emailed", "success");
+    loadInvoices();
+  } catch (e) { SSCrm.toast(e.message || "Could not create invoice", "error"); }
+}
+// Bill the full job total in a single invoice — bypasses the deposit/balance
+// split. Voids any open deposit/balance first so the job isn't double-billed.
+async function createFullInvoice() {
+  const total = jobTotalCents();
+  if (total == null || total <= 0) { SSCrm.toast("This job has no contract total to bill.", "error"); return; }
+  let invoices = [];
+  try { invoices = (await SSCrm.fetchJSON("/api/invoices?project_id=" + id)).invoices || []; } catch (e) {}
+  const active = invoices.filter((iv) => iv.status !== "void");
+  if (active.some((iv) => iv.status === "paid" || (iv.amount_paid_cents || 0) > 0)) {
+    SSCrm.toast("Payments have already started on this job — use “+ Balance” for the remainder.", "error");
+    return;
+  }
+  const openOnes = active.filter((iv) => iv.status === "open");
+  const msg = openOnes.length
+    ? `Bill the full ${SSCrm.fmtMoney(total)} in one invoice? This voids the ${openOnes.length} open invoice${openOnes.length === 1 ? "" : "s"} (deposit/balance) so the job isn't double-billed.`
+    : `Create a single full-payment invoice for ${SSCrm.fmtMoney(total)}?`;
+  if (!(await SSCrm.confirmDialog(msg))) return;
+  try {
+    for (const iv of openOnes) {
+      await SSCrm.fetchJSON(`/api/invoices/${iv.id}`, { method: "POST", body: JSON.stringify({ action: "void" }) });
+    }
+    await SSCrm.fetchJSON("/api/invoices", { method: "POST", body: JSON.stringify({ project_id: id, type: "full" }) });
+    SSCrm.toast("Full-payment invoice created & emailed", "success");
     loadInvoices();
   } catch (e) { SSCrm.toast(e.message || "Could not create invoice", "error"); }
 }

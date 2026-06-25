@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Reports · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc17"/>
+<style>
+  .rpt-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .rpt-presets{display:inline-flex;gap:4px;background:var(--bg-soft);border:1px solid var(--line);border-radius:999px;padding:4px}
+  .rpt-preset{border:0;background:transparent;font:inherit;font-size:13px;font-weight:600;color:var(--ink-soft);padding:7px 14px;border-radius:999px;cursor:pointer}
+  .rpt-preset:hover{color:var(--ink)}
+  .rpt-preset.is-active{background:var(--bg);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .rpt-dates{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-soft)}
+  .rpt-dates input{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r-sm,6px);background:var(--bg);color:var(--ink)}
+  .rpt-scope{margin-left:auto;display:inline-flex;gap:4px;background:var(--bg-soft);border:1px solid var(--line);border-radius:999px;padding:4px}
+  .rpt-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+  .rpt-kpi{background:var(--bg);border:1px solid var(--line);border-radius:var(--r,10px);padding:16px 18px}
+  .rpt-kpi .lbl{font-size:12px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em}
+  .rpt-kpi .val{font-size:28px;font-weight:800;margin-top:6px;line-height:1.1}
+  .rpt-kpi .sub{font-size:12px;color:var(--ink-soft);margin-top:4px}
+  .rpt-kpi.accent .val{color:#15803D}
+  .rpt-pnl{width:100%;border-collapse:collapse;font-size:14px}
+  .rpt-pnl td{padding:9px 4px;border-bottom:1px solid var(--line)}
+  .rpt-pnl td.amt{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .rpt-pnl td.pct{text-align:right;white-space:nowrap;color:var(--ink-soft);font-size:12px;width:64px}
+  .rpt-pnl tr.exp td:first-child{padding-left:18px;color:var(--ink-soft)}
+  .rpt-pnl tr.sum td{font-weight:700;border-top:2px solid var(--ink);border-bottom:0}
+  .rpt-pnl tr.profit td{font-weight:800;font-size:16px}
+  .rpt-pnl tr.profit td.amt{color:#15803D}
+  .num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+</style></head>
+<body>
+<script src="/crm/crm-app.js?v=ncc17"></script>
+<script>
+(async () => {
+  const user = await SSCrm.mount({ title: "Reports", subtitle: "Gross income & profit-and-loss across jobs", wide: true });
+  if (!user) return;
+  const page = document.getElementById("page");
+  const M = SSCrm.fmtMoney;
+
+  const iso = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  function presetRange(key) {
+    const now = new Date();
+    if (key === "month") return [iso(new Date(now.getFullYear(), now.getMonth(), 1)), iso(now)];
+    if (key === "ytd")   return [iso(new Date(now.getFullYear(), 0, 1)), iso(now)];
+    if (key === "30")    return [iso(new Date(now.getTime() - 29 * 864e5)), iso(now)];
+    if (key === "12mo")  return [iso(new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())), iso(now)];
+    return ["2000-01-01", "2999-12-31"]; // all
+  }
+
+  let preset = "ytd";
+  let [from, to] = presetRange(preset);
+  let all = false;
+  let data = null;
+
+  const STATUS_LABEL = { contracted: "Booked", scheduled_install: "Scheduled", installing: "Installing", completed: "Completed" };
+
+  function pct(part, whole) { return whole ? Math.round((part / whole) * 100) + "%" : "—"; }
+
+  function render() {
+    const t = data ? data.totals : { revenue: 0, materials: 0, shipping: 0, tax: 0, labor: 0, misc: 0, expenses: 0, profit: 0 };
+    const rev = t.revenue;
+    const expRow = (label, cents) => `<tr class="exp"><td>${label}</td><td class="amt">${cents ? "(" + M(cents) + ")" : "—"}</td><td class="pct">${pct(cents, rev)}</td></tr>`;
+
+    const jobsRows = (data && data.jobs.length) ? data.jobs.map((j) => `
+      <tr>
+        <td><a href="/crm/project.html?id=${j.id}">${SSCrm.esc(j.name || "Job #" + j.id)}</a><div class="muted" style="font-size:12px">${SSCrm.esc(j.contact_name || "")} · ${SSCrm.fmtDate(j.created_at)}</div></td>
+        <td>${SSCrm.pill(STATUS_LABEL[j.status] || j.status, j.status)}</td>
+        <td class="num">${M(j.price_cents)}</td>
+        <td class="num">${M(j.materials_cents)}</td>
+        <td class="num">${M(j.shipping_cents)}</td>
+        <td class="num">${M(j.tax_cents)}</td>
+        <td class="num">${M(j.labor_cents)}</td>
+        <td class="num">${M(j.misc_cents)}</td>
+        <td class="num" style="font-weight:700;color:#15803D">${M(j.profit_cents)}</td>
+      </tr>`).join("")
+      : `<tr><td colspan="9" class="empty" style="padding:24px">No jobs in this range.</td></tr>`;
+
+    page.innerHTML = `
+      <div class="rpt-bar">
+        <div class="rpt-presets">
+          ${[["month", "This month"], ["ytd", "Year to date"], ["30", "Last 30 days"], ["12mo", "Last 12 mo"], ["all", "All time"]]
+            .map(([k, lbl]) => `<button class="rpt-preset ${preset === k ? "is-active" : ""}" data-p="${k}">${lbl}</button>`).join("")}
+        </div>
+        <div class="rpt-dates"><input type="date" id="rpt-from" value="${from}"/><span>→</span><input type="date" id="rpt-to" value="${to === "2999-12-31" ? "" : to}"/></div>
+        <div class="rpt-scope">
+          <button class="rpt-preset ${!all ? "is-active" : ""}" data-scope="won">Won jobs</button>
+          <button class="rpt-preset ${all ? "is-active" : ""}" data-scope="all">All projects</button>
+        </div>
+      </div>
+
+      <div class="rpt-cards">
+        <div class="rpt-kpi"><div class="lbl">Gross income</div><div class="val">${M(rev)}</div><div class="sub">${data ? data.count : 0} job${(data && data.count === 1) ? "" : "s"}</div></div>
+        <div class="rpt-kpi"><div class="lbl">Total expenses</div><div class="val">${M(t.expenses)}</div><div class="sub">${pct(t.expenses, rev)} of revenue</div></div>
+        <div class="rpt-kpi accent"><div class="lbl">Net profit</div><div class="val">${M(t.profit)}</div><div class="sub">${pct(t.profit, rev)} margin</div></div>
+        <div class="rpt-kpi"><div class="lbl">Avg / job</div><div class="val">${M(data && data.count ? Math.round(t.profit / data.count) : 0)}</div><div class="sub">profit per job</div></div>
+      </div>
+
+      <div class="lead-grid" style="grid-template-columns:minmax(280px,360px) 1fr;gap:20px;align-items:start">
+        <div class="card">
+          <div class="card-head"><h3>Profit &amp; loss</h3></div>
+          <table class="rpt-pnl">
+            <tr><td><strong>Gross income</strong></td><td class="amt"><strong>${M(rev)}</strong></td><td class="pct">100%</td></tr>
+            ${expRow("Materials", t.materials)}
+            ${expRow("Shipping", t.shipping)}
+            ${expRow("Taxes", t.tax)}
+            ${expRow("Labor", t.labor)}
+            ${expRow("Misc", t.misc)}
+            <tr class="sum"><td>Total expenses</td><td class="amt">(${M(t.expenses)})</td><td class="pct">${pct(t.expenses, rev)}</td></tr>
+            <tr class="profit"><td>Net profit</td><td class="amt">${M(t.profit)}</td><td class="pct">${pct(t.profit, rev)}</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>By job <span class="muted" style="font-weight:500">· ${data ? data.count : 0}</span></h3></div>
+          <div class="tbl"><table>
+            <thead><tr><th>Job</th><th>Status</th><th class="num">Price</th><th class="num">Materials</th><th class="num">Ship</th><th class="num">Tax</th><th class="num">Labor</th><th class="num">Misc</th><th class="num">Profit</th></tr></thead>
+            <tbody>${jobsRows}</tbody>
+          </table></div>
+        </div>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:14px">Revenue counts each job by its created date. Expenses use saved per-job overrides where set, otherwise the cost formula on the job's contract/proposal total. Edit any job's numbers under <strong>Job → Expenses &amp; profit</strong>.</p>`;
+
+    page.querySelectorAll(".rpt-preset[data-p]").forEach((b) => b.addEventListener("click", () => {
+      preset = b.dataset.p; [from, to] = presetRange(preset); load();
+    }));
+    page.querySelectorAll(".rpt-preset[data-scope]").forEach((b) => b.addEventListener("click", () => {
+      all = b.dataset.scope === "all"; load();
+    }));
+    const fEl = document.getElementById("rpt-from"), tEl = document.getElementById("rpt-to");
+    const onDate = () => { from = fEl.value || "2000-01-01"; to = tEl.value || "2999-12-31"; preset = ""; load(); };
+    fEl.addEventListener("change", onDate); tEl.addEventListener("change", onDate);
+  }
+
+  async function load() {
+    try {
+      data = await SSCrm.fetchJSON(`/api/reports?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&all=${all ? 1 : 0}`);
+    } catch (e) {
+      page.innerHTML = `<div class="tbl"><div class="empty">Couldn't load reports: ${SSCrm.esc(e.message)}</div></div>`;
+      return;
+    }
+    render();
+  }
+
+  load();
+})();
+</script></body></html>

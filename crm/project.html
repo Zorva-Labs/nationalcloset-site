@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc16" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc17" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc16"></script>
+<script src="/crm/crm-app.js?v=ncc17"></script>
 <script src="/crm/windows-editor.js?v=ncc11"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
@@ -274,6 +274,7 @@ function switchTab(tab) {
 
   if (tab === "overview") {
     body.innerHTML = renderOverview(state);
+    loadFinancials();
   }
   else if (tab === "windows") {
     body.innerHTML = renderWindowsTab(windows);
@@ -577,6 +578,12 @@ function renderOverview(s) {
             <div class="form-actions"><button class="btn primary" onclick="saveProject()">Save</button></div>
           </div>
         </div>
+
+        <!-- Expenses & profit — auto-derived from the client price, editable per line -->
+        <div class="card" style="margin-top:14px">
+          <div class="card-head"><h3>Expenses &amp; profit</h3></div>
+          <div id="fin-host" class="muted" style="font-size:13px">Loading…</div>
+        </div>
       </div>
 
       <div class="lead-grid__side">
@@ -612,6 +619,130 @@ async function composeFromOverview() {
     project,
   });
   if (res?.ok) render();
+}
+
+// ───────── Expenses & profit (cost model mirrors functions/_lib/financials.js) ─────────
+let finState = null;
+const finDollars = (cents) => (Math.max(0, cents || 0) / 100).toFixed(2);
+const finToCents = (v) => Math.max(0, Math.round((parseFloat(v) || 0) * 100));
+
+function finCalc(priceCents) {
+  const d = priceCents / 100;
+  const disc = d >= 4500 ? 0.30 : d >= 2500 ? 0.25 : 0.20;
+  const materials = Math.round((priceCents * (1 - disc)) / 1.35);
+  const shipping = Math.round(materials * 0.05);
+  const tax = Math.round((materials + shipping) * 0.0975);
+  const labor = Math.round(materials * 0.15);
+  return { disc, materials, shipping, tax, labor };
+}
+
+async function loadFinancials() {
+  const host = document.getElementById("fin-host");
+  if (!host || !state.project) return;
+  try {
+    const r = await SSCrm.fetchJSON(`/api/projects/${state.project.id}/financials`);
+    finState = r.financials;
+    finRender();
+  } catch (err) {
+    host.innerHTML = `<span class="muted">Couldn't load: ${SSCrm.esc(err.message)}</span>`;
+  }
+}
+
+function finRow(key, label) {
+  const auto = finState[key + "_auto"];
+  return `<tr>
+    <td style="padding:6px 0">${label}</td>
+    <td style="text-align:right;white-space:nowrap">
+      <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-${key}-auto" ${auto ? "checked" : ""} onchange="finToggle('${key}')"/> auto</label>
+      <span style="color:var(--ink-soft)">$</span>
+      <input id="fin-${key}" value="${finDollars(finState[key + "_cents"])}" ${auto ? "readonly" : ""} oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right;${auto ? "background:var(--bg-soft);color:var(--ink-soft)" : ""}"/>
+    </td></tr>`;
+}
+
+function finRender() {
+  const f = finState;
+  const host = document.getElementById("fin-host");
+  if (!host) return;
+  host.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <tr>
+        <td style="padding:6px 0"><strong>Client price</strong> <span class="muted" style="font-size:11px">· ${Math.round(f.discount * 100)}% tier</span></td>
+        <td style="text-align:right;white-space:nowrap">
+          <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-price-auto" ${f.price_auto ? "checked" : ""} onchange="finToggle('price')"/> auto</label>
+          <span style="color:var(--ink-soft)">$</span>
+          <input id="fin-price" value="${finDollars(f.price_cents)}" ${f.price_auto ? "readonly" : ""} oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right;font-weight:600;${f.price_auto ? "background:var(--bg-soft);color:var(--ink-soft)" : ""}"/>
+        </td>
+      </tr>
+      <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
+      ${finRow("materials", "Materials")}
+      ${finRow("shipping", "Shipping <span class='muted' style='font-size:11px'>· 5%</span>")}
+      ${finRow("tax", "Taxes <span class='muted' style='font-size:11px'>· 9.75%</span>")}
+      ${finRow("labor", "Labor <span class='muted' style='font-size:11px'>· 15%</span>")}
+      <tr><td style="padding:6px 0">Misc</td><td style="text-align:right;white-space:nowrap"><span style="color:var(--ink-soft)">$</span><input id="fin-misc" value="${finDollars(f.misc_cents)}" oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right"/></td></tr>
+      <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
+      <tr><td style="padding:4px 0">Total expenses</td><td style="text-align:right" id="fin-expenses">${SSCrm.fmtMoney(f.expenses_cents)}</td></tr>
+      <tr style="font-weight:700"><td style="padding:4px 0">Profit</td><td style="text-align:right" id="fin-profit">${SSCrm.fmtMoney(f.profit_cents)}</td></tr>
+      <tr><td style="padding:0 0 8px;color:var(--ink-soft);font-size:11px">Margin</td><td style="text-align:right;color:var(--ink-soft);font-size:11px" id="fin-margin">${f.price_cents ? Math.round((f.profit_cents / f.price_cents) * 100) : 0}%</td></tr>
+    </table>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn primary sm" onclick="saveFinancials()">Save</button>
+      <button class="btn ghost sm" onclick="resetFinancials()">Reset to formula</button>
+    </div>
+    <p class="muted" style="font-size:11px;margin:8px 0 0">Materials = price × (1 − discount) ÷ 1.35. Uncheck “auto” to override any line. Feeds Reports → P&amp;L.</p>`;
+}
+
+function finReadPrice() {
+  return document.getElementById("fin-price-auto").checked
+    ? (finState.default_price_cents || 0)
+    : finToCents(document.getElementById("fin-price").value);
+}
+
+function finToggle(key) {
+  const auto = document.getElementById(`fin-${key}-auto`).checked;
+  const input = document.getElementById(`fin-${key}`);
+  input.readOnly = auto;
+  input.style.background = auto ? "var(--bg-soft)" : "";
+  input.style.color = auto ? "var(--ink-soft)" : "";
+  finRecalc();
+}
+
+function finRecalc() {
+  const price = finReadPrice();
+  if (document.getElementById("fin-price-auto").checked) document.getElementById("fin-price").value = finDollars(price);
+  const calc = finCalc(price);
+  ["materials", "shipping", "tax", "labor"].forEach((k) => {
+    if (document.getElementById(`fin-${k}-auto`).checked) document.getElementById(`fin-${k}`).value = finDollars(calc[k]);
+  });
+  const sum = ["materials", "shipping", "tax", "labor", "misc"].reduce((a, k) => a + finToCents(document.getElementById(`fin-${k}`).value), 0);
+  document.getElementById("fin-expenses").textContent = SSCrm.fmtMoney(sum);
+  document.getElementById("fin-profit").textContent = SSCrm.fmtMoney(price - sum);
+  document.getElementById("fin-margin").textContent = (price ? Math.round(((price - sum) / price) * 100) : 0) + "%";
+}
+
+async function saveFinancials() {
+  const priceAuto = document.getElementById("fin-price-auto").checked;
+  const body = { price_auto: priceAuto, misc_cents: finToCents(document.getElementById("fin-misc").value) };
+  if (!priceAuto) body.price_cents = finToCents(document.getElementById("fin-price").value);
+  ["materials", "shipping", "tax", "labor"].forEach((k) => {
+    const auto = document.getElementById(`fin-${k}-auto`).checked;
+    body[`${k}_auto`] = auto;
+    if (!auto) body[`${k}_cents`] = finToCents(document.getElementById(`fin-${k}`).value);
+  });
+  try {
+    const r = await SSCrm.fetchJSON(`/api/projects/${state.project.id}/financials`, { method: "PUT", body: JSON.stringify(body) });
+    finState = r.financials;
+    finRender();
+    SSCrm.toast("Saved", "success");
+  } catch (err) { SSCrm.toast(err.message || "Save failed", "error"); }
+}
+
+async function resetFinancials() {
+  try {
+    const r = await SSCrm.fetchJSON(`/api/projects/${state.project.id}/financials`, { method: "PUT", body: JSON.stringify({ price_auto: true, misc_cents: 0 }) });
+    finState = r.financials;
+    finRender();
+    SSCrm.toast("Reset to formula", "success");
+  } catch (err) { SSCrm.toast(err.message || "Reset failed", "error"); }
 }
 
 // Two-step purge: show a count summary of every dependent that'll be wiped

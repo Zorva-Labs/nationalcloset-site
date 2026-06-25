@@ -10,14 +10,15 @@ export async function onRequestGet(context) {
   const url = new URL(context.request.url);
   const status = url.searchParams.get("status");
   const projectId = url.searchParams.get("project_id");
-  // headline tier = the selected option if one is picked, else the highest-total
-  // option. Its net (total) is the proposed total; its gross (subtotal) is the
-  // cost basis for the estimated profit.
+  // Headline tier = the selected option if one is picked, else the highest-total
+  // option. (D1 rejects a correlated pr.selected_tier inside a subquery ORDER BY,
+  // so the selected tier is pulled via WHERE and the top tier via ORDER BY; we
+  // pick between them in JS.) net = proposed total, gross (subtotal) = cost basis.
   let sql = `SELECT pr.*, p.name AS project_name, c.name AS contact_name, c.email AS contact_email,
-               (SELECT t.total_cents FROM proposal_tiers t WHERE t.proposal_id=pr.id
-                  ORDER BY (CASE WHEN t.tier = pr.selected_tier THEN 0 ELSE 1 END), t.total_cents DESC LIMIT 1) AS headline_net,
-               (SELECT t.subtotal_cents FROM proposal_tiers t WHERE t.proposal_id=pr.id
-                  ORDER BY (CASE WHEN t.tier = pr.selected_tier THEN 0 ELSE 1 END), t.total_cents DESC LIMIT 1) AS headline_gross
+               (SELECT t.total_cents    FROM proposal_tiers t WHERE t.proposal_id=pr.id AND t.tier=pr.selected_tier LIMIT 1) AS sel_net,
+               (SELECT t.subtotal_cents FROM proposal_tiers t WHERE t.proposal_id=pr.id AND t.tier=pr.selected_tier LIMIT 1) AS sel_gross,
+               (SELECT t.total_cents    FROM proposal_tiers t WHERE t.proposal_id=pr.id ORDER BY t.total_cents DESC LIMIT 1) AS top_net,
+               (SELECT t.subtotal_cents FROM proposal_tiers t WHERE t.proposal_id=pr.id ORDER BY t.total_cents DESC LIMIT 1) AS top_gross
              FROM proposals pr
              JOIN projects p ON p.id = pr.project_id
              JOIN contacts c ON c.id = p.contact_id WHERE 1=1`;
@@ -29,8 +30,10 @@ export async function onRequestGet(context) {
 
   // Proposed total + estimated profit (formula-based; proposals are pre-job).
   for (const r of rows) {
-    const tot = r.headline_net != null ? r.headline_net : (r.selected_total_cents || 0);
-    const sub = r.headline_gross != null ? r.headline_gross : tot;
+    const net = (r.sel_net != null) ? r.sel_net : r.top_net;
+    const grossRaw = (r.sel_net != null) ? r.sel_gross : r.top_gross;
+    const tot = net != null ? net : (r.selected_total_cents || 0);
+    const sub = grossRaw != null ? grossRaw : tot;
     const gross = sub > tot ? sub : tot;
     const discount = sub > tot ? sub - tot : 0;
     r.proposed_total_cents = tot;

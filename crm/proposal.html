@@ -165,6 +165,44 @@ function renderTier(t) {
     <div style="border-top:1px solid var(--line-soft);margin-top:10px;padding-top:10px">
       <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total <span style="font-weight:400;color:var(--ink-soft);font-size:12px">· incl. shipping, tax &amp; install</span></span><span class="tier-total money">${SSCrm.fmtMoney(t.total_cents || 0)}</span></div>
     </div>
+    ${(() => { const sub = t.subtotal_cents || 0, tot = t.total_cents || 0; return tierCostBox(sub > tot ? sub : tot, tot || sub); })()}
+  </div>`;
+}
+
+// Internal cost & profit breakdown — CRM-only (never rendered on the customer
+// proposal). Mirrors the cost model: list = price ÷ 1.35, tier discount off the
+// list, materials = list × (1 − discount); shipping 5% / tax 9.75% / labor 15%.
+function tierCostCalc(grossCents, netCents) {
+  const list = (grossCents || 0) / 1.35;
+  const b = list / 100;
+  const disc = b >= 4500 ? 0.30 : b >= 2500 ? 0.25 : 0.20;
+  const materials = Math.round(list * (1 - disc));
+  const shipping = Math.round(materials * 0.05);
+  const tax = Math.round((materials + shipping) * 0.0975);
+  const labor = Math.round(materials * 0.15);
+  const cost = materials + shipping + tax + labor;
+  const profit = (netCents || 0) - cost;
+  const margin = netCents ? Math.round((profit / netCents) * 100) : 0;
+  return { list: Math.round(list), disc, materials, shipping, tax, labor, cost, profit, margin };
+}
+function tierCostRows(grossCents, netCents) {
+  const c = tierCostCalc(grossCents, netCents);
+  const m = SSCrm.fmtMoney;
+  const discount = (grossCents || 0) - (netCents || 0);
+  const row = (l, v, strong) => `<div style="${strong ? "font-weight:700;color:var(--ink)" : ""}">${l}</div><div style="text-align:right;${strong ? "font-weight:700;color:var(--ink)" : ""}">${v}</div>`;
+  return row(`List <span style="opacity:.7">(price ÷ 1.35)</span>`, m(c.list))
+    + row(`Materials <span style="opacity:.7">· ${Math.round(c.disc * 100)}% off</span>`, m(c.materials))
+    + row("Shipping (5%)", m(c.shipping))
+    + row("Taxes (9.75%)", m(c.tax))
+    + row("Labor (15%)", m(c.labor))
+    + row("Total cost", m(c.cost), true)
+    + (discount > 0 ? row("Discount (off profit)", "−" + m(discount)) : "")
+    + row("Profit", `<span style="color:#15803D;font-weight:700">${m(c.profit)} · ${c.margin}%</span>`, true);
+}
+function tierCostBox(grossCents, netCents) {
+  return `<div class="tier-cost" style="margin-top:10px;padding:10px 12px;background:#FFF7ED;border:1px dashed #FDBA74;border-radius:8px;font-size:12px">
+    <div style="font-weight:700;color:#9A3412;text-transform:uppercase;letter-spacing:.04em;font-size:10px;margin-bottom:6px">🔒 Internal cost &amp; profit · not shown to the client</div>
+    <div class="tier-cost-rows" style="display:grid;grid-template-columns:1fr auto;gap:3px 16px;color:var(--ink-soft)">${tierCostRows(grossCents, netCents)}</div>
   </div>`;
 }
 function tierLineRow(l) {
@@ -226,16 +264,19 @@ function fmtUnitNeg(input) {
 }
 const QUOTE_TAX_RATE = 0; // all-inclusive pricing — no separate tax line (matches recomputeTierTotals)
 function recalcTierEl(card) {
-  let sub = 0;
+  // net = all lines (incl. negative discounts) = what the client pays.
+  // gross = positive lines only = pre-discount cost basis.
+  let net = 0, gross = 0;
   card.querySelectorAll(".tier-lines tr").forEach((tr) => {
     const qty = Number(tr.querySelector("[data-f=quantity]").value || 0);
     const unit = SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value);
-    sub += qty * unit;
+    const lt = qty * unit;
+    net += lt;
+    if (lt > 0) gross += lt;
   });
-  const tax = sub > 0 ? Math.round(sub * QUOTE_TAX_RATE) : 0;
-  const subEl = card.querySelector(".tier-subtotal"); if (subEl) subEl.textContent = SSCrm.fmtMoney(sub);
-  const taxEl = card.querySelector(".tier-tax"); if (taxEl) taxEl.textContent = SSCrm.fmtMoney(tax);
-  card.querySelector(".tier-total").textContent = SSCrm.fmtMoney(sub + tax);
+  card.querySelector(".tier-total").textContent = SSCrm.fmtMoney(net);
+  const box = card.querySelector(".tier-cost-rows");
+  if (box) box.innerHTML = tierCostRows(gross, net);
 }
 
 // Copy Option 1's (the "good" tier) line items into this option, then append a

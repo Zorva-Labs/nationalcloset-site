@@ -12,13 +12,14 @@
   const page = document.getElementById("page");
   if (!proposals.length) { page.innerHTML = `<div class="tbl"><div class="empty">No proposals yet.</div></div>`; return; }
   page.innerHTML = `<div class="tbl"><table>
-    <thead><tr><th>#</th><th>Project / Customer</th><th>Status</th><th>Tier picked</th><th class="num">Total</th><th>Created</th></tr></thead>
+    <thead><tr><th>#</th><th>Project / Customer</th><th>Status</th><th>Tier picked</th><th class="num">Total</th><th class="num">Profit</th><th>Created</th></tr></thead>
     <tbody>${proposals.map((p) => `<tr class="clickable" onclick="location.href='/crm/proposal.html?id=${p.id}'">
       <td><strong>${SSCrm.esc(p.number)}</strong></td>
       <td>${SSCrm.esc(p.project_name)}<div class="muted" style="font-size:12px">${SSCrm.esc(p.contact_name)}</div></td>
       <td>${SSCrm.pill(p.status)}</td>
       <td>${p.selected_tier ? `<span class="pill" data-s="accepted">${SSCrm.esc(p.selected_tier)}</span>` : `<span class="muted">—</span>`}</td>
-      <td class="money">${SSCrm.fmtMoney(p.selected_total_cents || 0)}</td>
+      <td class="money">${p.proposed_total_cents ? SSCrm.fmtMoney(p.proposed_total_cents) : `<span class="muted">—</span>`}</td>
+      <td class="money">${p.profit_cents != null ? `<span style="color:#15803D;font-weight:600">${SSCrm.fmtMoney(p.profit_cents)}</span>` : `<span class="muted">—</span>`}</td>
       <td class="muted">${SSCrm.fmtDate(p.created_at)}</td>
     </tr>`).join("")}</tbody></table></div>`;
 })();

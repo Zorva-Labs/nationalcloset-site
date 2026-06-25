@@ -3,13 +3,21 @@ import { genToken, nextSequence, formatDocNumber } from "../../_lib/tokens.js";
 import { recordActivity } from "../../_lib/db.js";
 import { syncLeadQuotedFromProposal } from "../../_lib/lifecycle.js";
 import { proposalTiersForKind, defaultContractTypeForKind, introForKind } from "../../_lib/proposal-tiers.js";
+import { resolveFinancials } from "../../_lib/financials.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const url = new URL(context.request.url);
   const status = url.searchParams.get("status");
   const projectId = url.searchParams.get("project_id");
-  let sql = `SELECT pr.*, p.name AS project_name, c.name AS contact_name, c.email AS contact_email
+  // headline tier = the selected option if one is picked, else the highest-total
+  // option. Its net (total) is the proposed total; its gross (subtotal) is the
+  // cost basis for the estimated profit.
+  let sql = `SELECT pr.*, p.name AS project_name, c.name AS contact_name, c.email AS contact_email,
+               (SELECT t.total_cents FROM proposal_tiers t WHERE t.proposal_id=pr.id
+                  ORDER BY (CASE WHEN t.tier = pr.selected_tier THEN 0 ELSE 1 END), t.total_cents DESC LIMIT 1) AS headline_net,
+               (SELECT t.subtotal_cents FROM proposal_tiers t WHERE t.proposal_id=pr.id
+                  ORDER BY (CASE WHEN t.tier = pr.selected_tier THEN 0 ELSE 1 END), t.total_cents DESC LIMIT 1) AS headline_gross
              FROM proposals pr
              JOIN projects p ON p.id = pr.project_id
              JOIN contacts c ON c.id = p.contact_id WHERE 1=1`;
@@ -18,6 +26,16 @@ export async function onRequestGet(context) {
   if (projectId) { binds.push(parseInt(projectId, 10)); sql += ` AND pr.project_id=?${binds.length}`; }
   sql += ` ORDER BY pr.created_at DESC LIMIT 200`;
   const rows = (await context.env.DB.prepare(sql).bind(...binds).all()).results || [];
+
+  // Proposed total + estimated profit (formula-based; proposals are pre-job).
+  for (const r of rows) {
+    const tot = r.headline_net != null ? r.headline_net : (r.selected_total_cents || 0);
+    const sub = r.headline_gross != null ? r.headline_gross : tot;
+    const gross = sub > tot ? sub : tot;
+    const discount = sub > tot ? sub - tot : 0;
+    r.proposed_total_cents = tot;
+    r.profit_cents = tot ? resolveFinancials(gross, discount, null).profit_cents : null;
+  }
   return json({ proposals: rows });
 }
 

@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc17" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc18" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc17"></script>
+<script src="/crm/crm-app.js?v=ncc18"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -147,7 +147,7 @@ function renderTier(t) {
       <th class="num" style="width:110px">Total</th><th style="width:32px"></th>
     </tr></thead>
     <tbody class="tier-lines">${(t.lines || []).map(tierLineRow).join("") || tierLineRow({})}</tbody></table>
-    <div class="add" style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="addFromCatalog(this)">+ Add from catalog</button><button onclick="addTierLine(this)">+ Custom line</button>${t.tier !== "good" ? `<button onclick="copyFromOption1(this)" title="Copy Option 1's line items here and add a Wall Finishing line">⧉ Copy Option 1 + Wall Finishing</button>` : ""}</div>
+    <div class="add" style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="addTierLine(this)">+ Add line</button>${t.tier !== "good" ? `<button onclick="copyFromOption1(this)" title="Copy Option 1's line items here and add a Wall Finishing line">⧉ Copy Option 1 + Wall Finishing</button>` : ""}</div>
     <div style="border-top:1px solid var(--line-soft);margin-top:10px;padding-top:10px">
       <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total <span style="font-weight:400;color:var(--ink-soft);font-size:12px">· incl. shipping, tax &amp; install</span></span><span class="tier-total money">${SSCrm.fmtMoney(t.total_cents || 0)}</span></div>
     </div>
@@ -172,14 +172,6 @@ function addTierLine(btn) {
   card.querySelector(".tier-lines").insertAdjacentHTML("beforeend", tierLineRow({}));
 }
 
-// Open the shared catalog picker, then insert the chosen item as a new line
-async function addFromCatalog(btn) {
-  const card = btn.closest(".card");
-  const picked = await SSCrm.pickProduct();
-  if (!picked) return;
-  card.querySelector(".tier-lines").insertAdjacentHTML("beforeend", tierLineRow(picked));
-  recalcTierEl(card);
-}
 function recalcTier(input) {
   const tr = input.closest("tr");
   const qty = Number(tr.querySelector("[data-f=quantity]").value || 0);

@@ -6,26 +6,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc17" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc18" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc17"></script>
+<script src="/crm/crm-app.js?v=ncc18"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/estimates.html";
-let state, products = [];
+let state;
 
 (async () => {
   const user = await SSCrm.mount({ title: "Estimate", actions: `<a class="btn ghost" href="/crm/estimates.html">← Estimates</a>` });
   if (!user) return;
-  [state, productsBundle] = await Promise.all([
-    SSCrm.fetchJSON("/api/estimates/" + id),
-    SSCrm.fetchJSON("/api/products"),
-  ]);
-  products = productsBundle.products;
+  state = await SSCrm.fetchJSON("/api/estimates/" + id);
   render();
 })();
-let productsBundle;
 
 function render() {
   const { estimate: e, lines } = state;
@@ -54,7 +49,7 @@ function render() {
       </tr></thead><tbody id="lines-body">
         ${lines.length ? lines.map((l, i) => lineRow(l, i)).join("") : lineRow({}, 0)}
       </tbody></table>
-      <div class="add"><button onclick="addLine()">+ Empty line</button> <button onclick="pickProduct()">+ Pick from catalog</button></div>
+      <div class="add"><button onclick="addLine()">+ Add line</button></div>
 
       <div class="totals">
         <div class="r"><span>Subtotal</span><span id="t-sub">${SSCrm.fmtMoney(e.subtotal_cents)}</span></div>
@@ -104,68 +99,6 @@ function recalcTotals() {
   const tax = SSCrm.parseMoney(document.getElementById("t-tax").value);
   document.getElementById("t-sub").textContent = SSCrm.fmtMoney(sub);
   document.getElementById("t-grand").textContent = SSCrm.fmtMoney(sub - disc + tax);
-}
-
-function pickProduct() {
-  // Build a modal product picker
-  const bg = document.createElement("div");
-  bg.className = "modal-bg";
-  bg.innerHTML = `
-    <div class="modal" style="max-width:640px">
-      <div class="modal-head">Pick a product</div>
-      <div class="modal-body" style="max-height:60vh;overflow-y:auto">
-        <input type="search" id="prod-search" placeholder="Filter…" style="width:100%;padding:8px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font-size:13px;margin-bottom:14px"/>
-        <div id="prod-list"></div>
-      </div>
-      <div class="modal-foot"><button class="btn ghost" data-no>Cancel</button></div>
-    </div>
-  `;
-  document.body.appendChild(bg);
-
-  // Group by category
-  const byCat = {};
-  for (const p of products) (byCat[p.category] ||= []).push(p);
-  function renderList(filter = "") {
-    const f = filter.toLowerCase();
-    document.getElementById("prod-list").innerHTML = Object.keys(byCat).sort().map((cat) => {
-      const items = byCat[cat].filter((p) => !f || (p.name + p.category + (p.sku || "")).toLowerCase().includes(f));
-      if (!items.length) return "";
-      return `
-        <div style="margin-bottom:14px">
-          <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;padding:6px 0;font-weight:600">${SSCrm.esc(cat)}</div>
-          ${items.map((p) => `
-            <button class="btn ghost" style="width:100%;justify-content:space-between;padding:10px 12px;text-align:left" data-pick="${p.id}">
-              <span><strong>${SSCrm.esc(p.name)}</strong><span class="muted" style="margin-left:8px;font-size:11px">${p.sku ? SSCrm.esc(p.sku) + " · " : ""}${p.unit}</span></span>
-              <span class="money">${SSCrm.fmtMoney(p.base_price_cents)}</span>
-            </button>
-          `).join("")}
-        </div>
-      `;
-    }).join("");
-    document.querySelectorAll("[data-pick]").forEach((btn) => {
-      btn.onclick = () => {
-        const p = products.find((x) => x.id === parseInt(btn.dataset.pick, 10));
-        bg.remove();
-        addProductRow(p);
-      };
-    });
-  }
-  renderList();
-  document.getElementById("prod-search").oninput = (e) => renderList(e.target.value);
-  bg.querySelector("[data-no]").onclick = () => bg.remove();
-  bg.addEventListener("click", (e) => { if (e.target === bg) bg.remove(); });
-}
-
-function addProductRow(p) {
-  const t = document.getElementById("lines-body");
-  t.insertAdjacentHTML("beforeend", lineRow({
-    description: p.name,
-    product_id: p.id,
-    base_price_cents: p.base_price_cents,
-    unit_price_cents: p.base_price_cents,
-    quantity: 1,
-  }, t.children.length));
-  recalcTotals();
 }
 
 async function save() {

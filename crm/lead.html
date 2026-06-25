@@ -8,12 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc17" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc18" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc17"></script>
-<script src="/crm/windows-editor.js?v=ncc11"></script>
+<script src="/crm/crm-app.js?v=ncc18"></script>
 <script>
 // Lead pipeline ends at "Proposal" or "Lost". Once the contract is signed
 // the lead is auto-bumped to "booked" by the contract-sign handler — at
@@ -35,7 +34,6 @@ if (!id) location.href = "/crm/leads.html";
 
 let state = null;       // { lead, notes }
 let workspace = null;   // { project, windows, proposals }
-let catalog = [];       // [{id, name, category, ...}]
 
 (async () => {
   const user = await SSCrm.mount({
@@ -45,12 +43,7 @@ let catalog = [];       // [{id, name, category, ...}]
   });
   if (!user) return;
   state = await SSCrm.fetchJSON("/api/leads/" + id);
-  // Catalog + draft-project loaded in parallel
-  const [cat] = await Promise.all([
-    SSCrm.fetchJSON("/api/products"),
-    loadWorkspace(),
-  ]);
-  catalog = cat.products || [];
+  await loadWorkspace();
   render();
 })();
 
@@ -203,7 +196,7 @@ function render() {
     </div>
 
     <!-- Windows: always full-width so the floor plan + table get the entire content area -->
-    ${renderWindowsCard()}
+    ${renderProposalCard()}
 
     <!-- Messages: email thread with this lead — outbound now, inbound after Phase B IMAP sync ships -->
     <div class="card" style="margin-top:14px">
@@ -222,11 +215,6 @@ function render() {
       </form>
     </div>
   `;
-  // After the DOM is in place, mount the shared windows editor (if there's a workspace)
-  const host = document.getElementById("rooms-host");
-  if (host && workspace?.project) {
-    WindowsEditor.init(host, workspace.windows || [], { catalog });
-  }
   // Mount the email timeline + Compose button — only when the lead has an
   // email address (otherwise we have nowhere to send). The default template
   // kind is picked from the lead's current pipeline status so the right
@@ -275,11 +263,10 @@ async function loadLeadInvoices() {
 }
 
 // ============================================================
-// Windows + product/color editor on the lead — uses the shared WindowsEditor
-// module so the lead page and the project page work identically. Clockwise
-// from back-left, with a top-down floor-plan SVG per room.
+// Proposal card on the lead — create or open the lead's custom-closet
+// proposal (line items + pricing live on the proposal page).
 // ============================================================
-function renderWindowsCard() {
+function renderProposalCard() {
   const hasWorkspace = workspace && workspace.project;
   const proposal = workspace?.proposals?.[0] || null;
 
@@ -292,7 +279,7 @@ function renderWindowsCard() {
       <div class="card-head" style="align-items:flex-start">
         <div>
           <h2>Proposal</h2>
-          <div class="muted" style="font-size:12px;margin-top:2px">Create a custom-closet proposal for this lead, then add closet systems and add-ons from the catalog.</div>
+          <div class="muted" style="font-size:12px;margin-top:2px">Create a custom-closet proposal for this lead with your line items and pricing.</div>
         </div>
       </div>
 
@@ -306,23 +293,6 @@ function renderWindowsCard() {
       `}
     </div>
   `;
-}
-
-// Save handler — called from the lead's "Save" button. Uses WindowsEditor.collect()
-async function saveLeadWindows() {
-  if (!workspace?.project) { SSCrm.toast("Save lead email first", "error"); return; }
-  const rows = WindowsEditor.collect();
-  try {
-    const resp = await SSCrm.fetchJSON(`/api/projects/${workspace.project.id}/windows`, { method: "PUT", body: JSON.stringify({ windows: rows }) });
-    const tail = resp.reseeded ? ` · ${resp.reseeded} proposal${resp.reseeded === 1 ? "" : "s"} populated from windows` : "";
-    SSCrm.toast(`Saved ${rows.length} window${rows.length === 1 ? "" : "s"}${tail}`, "success");
-    // Re-fetch both the lead (for the now-synced quoted_amount) and the workspace (for proposal totals)
-    await Promise.all([
-      (async () => { state = await SSCrm.fetchJSON("/api/leads/" + id); })(),
-      loadWorkspace(),
-    ]);
-    render();
-  } catch (e) { SSCrm.toast(e.message, "error"); }
 }
 
 function renderNotes(arr) {

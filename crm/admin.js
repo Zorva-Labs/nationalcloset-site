@@ -102,7 +102,6 @@ const SECTIONS = [
   { href: "/crm/estimates.html", label: "Estimates" },
   { href: "/crm/proposals.html", label: "Proposals" },
   { href: "/crm/contracts.html", label: "Contracts" },
-  { href: "/crm/products.html", label: "Products" },
   { href: "/crm/availability.html", label: "Availability" },
 ];
 

@@ -8,12 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc17" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc18" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc17"></script>
-<script src="/crm/windows-editor.js?v=ncc11"></script>
+<script src="/crm/crm-app.js?v=ncc18"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -276,14 +275,6 @@ function switchTab(tab) {
     body.innerHTML = renderOverview(state);
     loadFinancials();
   }
-  else if (tab === "windows") {
-    body.innerHTML = renderWindowsTab(windows);
-    // Wire the shared editor into the host div that renderWindowsTab created
-    ensureCatalog().then((cat) => {
-      const host = document.getElementById("rooms-host");
-      WindowsEditor.init(host, windows, { catalog: cat });
-    });
-  }
   else if (tab === "messages") {
     body.innerHTML = `<div id="email-timeline"></div>`;
     const emailHost = document.getElementById("email-timeline");
@@ -432,23 +423,11 @@ function copyPayLink(url) { navigator.clipboard.writeText(url).then(() => SSCrm.
 // separate Lead screen so the job page is the single place to see the whole
 // customer history at a glance.
 function renderOverview(s) {
-  const { project, windows, contracts, appointments, lead, lead_notes, email_count } = s;
+  const { project, contracts, appointments, lead, lead_notes, email_count } = s;
   const e = SSCrm.esc;
   const fmtMoney = SSCrm.fmtMoney;
   const fmtDate = SSCrm.fmtDate;
   const fmtDateTime = SSCrm.fmtDateTime;
-
-  // Windows summary
-  const roomCounts = {};
-  for (const w of windows) {
-    const key = w.room || "(unassigned)";
-    roomCounts[key] = (roomCounts[key] || 0) + 1;
-  }
-  const roomSummary = windows.length
-    ? Object.entries(roomCounts).map(([r, n]) =>
-        `<span style="display:inline-block;background:var(--bg-soft);padding:4px 10px;border-radius:999px;font-size:12px;margin:2px 4px 2px 0;color:var(--ink)">${e(r)} <strong>${n}</strong></span>`
-      ).join("")
-    : `<p class="muted" style="font-size:13px;margin:6px 0 0;font-style:italic">No windows tracked yet — measure them on the consultation visit and add them here.</p>`;
 
   // Pick the most relevant contract to highlight
   const signedContract = contracts.find((c) => c.status === "fully_executed") ||
@@ -837,265 +816,6 @@ function renderDocTab(docs, kind, prefix, addFn) {
   `;
 }
 
-// ============================================================
-// Windows tab — uses the shared /crm/windows-editor.js (WindowsEditor module).
-// Convention: clockwise from back-left. Each window letter (A, B, C…)
-// matches a position on the top-down floor-plan SVG.
-// ============================================================
-let productCatalog = null;
-async function ensureCatalog() {
-  if (productCatalog) return productCatalog;
-  const { products } = await SSCrm.fetchJSON("/api/products");
-  productCatalog = products.filter((p) => p.active);
-  return productCatalog;
-}
-
-function renderWindowsTab(ws) {
-  const roomCount = new Set(ws.map((w) => w.room || "(unassigned)")).size;
-  return `
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:8px" class="ws-toolbar">
-      <div>
-        <h3 style="font-size:14px;color:var(--ink-soft);margin:0">${ws.length} window${ws.length === 1 ? "" : "s"} across ${roomCount} room${roomCount === 1 ? "" : "s"}</h3>
-        <p class="muted" style="font-size:12px;margin:4px 0 0">Clockwise from the back-left corner — pick a wall and the window appears in the plan.</p>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn ghost sm" onclick="printWorksheet()">🖨 Print for installer</button>
-        <button class="btn secondary sm" onclick="WindowsEditor.addWindow()">+ Window</button>
-        <button class="btn primary sm" onclick="WindowsEditor.addRoom()">+ Room</button>
-        <button class="btn primary sm" onclick="saveWindows()">Save</button>
-      </div>
-    </div>
-    <div id="rooms-host" style="display:flex;flex-direction:column;gap:14px"></div>
-  `;
-}
-
-async function saveWindows() {
-  const out = WindowsEditor.collect();
-  try {
-    await SSCrm.fetchJSON(`/api/projects/${id}/windows`, { method: "PUT", body: JSON.stringify({ windows: out }) });
-    SSCrm.toast(`Saved ${out.length} window${out.length === 1 ? "" : "s"}`, "success");
-    state = await SSCrm.fetchJSON("/api/projects/" + id);
-    // Rerender the tab so freshly-saved rows pick up DB ids + redraw clockwise
-    switchTab("windows");
-  } catch (e) { SSCrm.toast(e.message, "error"); }
-}
-
-// ============================================================
-// Print-friendly installer worksheet — opens a new window with a clean
-// single-page-per-room layout. Each room shows the floor-plan SVG +
-// every window's measurements, product, color, mount, and notes.
-// Includes empty "installer notes" + "verified" checkboxes per window
-// so the installer can mark up the paper on-site.
-// ============================================================
-async function printWorksheet() {
-  const { project, appointments } = state;
-  // Pull from the editor first if it's mounted (Windows tab) — that way
-  // any notes / dimensions / products the admin typed but hasn't clicked
-  // Save on yet still make it onto the printout. Auto-save them too so the
-  // DB matches what was printed.
-  let windows = state.windows || [];
-  if (window.WindowsEditor?.host && document.getElementById("rooms-host")) {
-    const live = WindowsEditor.collect();
-    if (live.length) {
-      windows = live;
-      try {
-        await SSCrm.fetchJSON(`/api/projects/${id}/windows`, { method: "PUT", body: JSON.stringify({ windows: live }) });
-        // Re-fetch so subsequent renders see fresh DB ids + the just-saved data
-        state = await SSCrm.fetchJSON("/api/projects/" + id);
-        windows = state.windows;
-      } catch (e) {
-        // If save fails we still print the in-memory edits; nothing is lost
-        console.warn("[print] auto-save before print failed, printing live data anyway:", e?.message);
-      }
-    }
-  }
-  if (!windows.length) { SSCrm.toast("No windows to print yet", "error"); return; }
-
-  const installAppt = (appointments || []).find((a) => a.type === "install" && (a.status === "pending" || a.status === "confirmed"));
-  const installDate = installAppt ? SSCrm.fmtDateTime(installAppt.start_at) : null;
-
-  // Group by room, preserve clockwise order
-  const byRoom = {};
-  const roomOrder = [];
-  for (const w of windows) {
-    const key = w.room || "(unassigned)";
-    if (!byRoom[key]) { byRoom[key] = []; roomOrder.push(key); }
-    byRoom[key].push(w);
-  }
-  for (const key of roomOrder) byRoom[key] = WindowsEditor.sortClockwise(byRoom[key]);
-
-  const fmtInch = (n) => n == null || n === "" ? "—" : (Math.round(n * 8) / 8).toString().replace(/\.0$/, "") + "″";
-  const esc = SSCrm.esc;
-
-  // Each room: top-down floor plan SVG (reuse the WindowsEditor renderer) +
-  // a windows table. Page-break-inside avoided so a room stays whole.
-  const roomBlocks = roomOrder.map((room) => {
-    const ws = byRoom[room];
-    const floorplan = WindowsEditor.floorplanSvg(ws);
-    const rows = ws.map((w, i) => {
-      const letter = String.fromCharCode(65 + (i % 26));
-      const dims = (w.width_in != null || w.height_in != null)
-        ? `${fmtInch(w.width_in)} × ${fmtInch(w.height_in)}`
-        : "—";
-      return `
-        <tr>
-          <td class="cell-letter">${letter}</td>
-          <td>${esc(w.label || "")}</td>
-          <td>${esc((w.wall || "").replace(/^\w/, (c) => c.toUpperCase()))}</td>
-          <td class="num">${dims}</td>
-          <td>${esc(w.mount || "")}</td>
-          <td>${esc(w.product_name || "—")}${w.product_sku ? `<div class="sku">${esc(w.product_sku)}</div>` : ""}</td>
-          <td>${esc(w.color || "")}</td>
-          <td>${esc(w.notes || "")}</td>
-          <td class="check"><span class="checkbox"></span></td>
-        </tr>`;
-    }).join("");
-
-    // Pull every window's notes into a callout under the table — easier for
-    // the installer to read at a glance than scanning the Notes column.
-    const windowNotes = ws.filter((w) => w.notes && w.notes.trim()).map((w, i) => {
-      const letter = String.fromCharCode(65 + (ws.indexOf(w) % 26));
-      return `<li><span class="note-letter">${letter}</span><span>${esc(w.notes)}</span></li>`;
-    }).join("");
-
-    return `
-      <section class="room-block">
-        <h2>${esc(room)} <span class="count">${ws.length} window${ws.length === 1 ? "" : "s"}</span></h2>
-        <div class="room-layout">
-          <div class="plan">${floorplan}</div>
-          <table class="windows">
-            <thead>
-              <tr>
-                <th class="cell-letter">#</th>
-                <th>Label</th>
-                <th>Wall</th>
-                <th class="num">W × H</th>
-                <th>Mount</th>
-                <th>Product</th>
-                <th>Color</th>
-                <th>Notes</th>
-                <th class="check">✓</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-        ${windowNotes ? `
-          <div class="window-notes">
-            <strong>Notes from the consult</strong>
-            <ul>${windowNotes}</ul>
-          </div>
-        ` : ""}
-        <div class="installer-notes">
-          <strong>Installer notes (on-site):</strong>
-          <div class="lines"></div>
-        </div>
-      </section>`;
-  }).join("");
-
-  // Project-level description (admin's free-form notes about the whole job)
-  // — shows above the room blocks so installer reads it first.
-  const projectNotesBlock = project.description && project.description.trim()
-    ? `<div class="project-notes">
-         <strong>Job notes</strong>
-         <p>${esc(project.description)}</p>
-       </div>` : "";
-
-  const html = `<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8" />
-<title>Install worksheet · ${esc(project.name)}</title>
-<style>
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif; color: #14110D; margin: 0; padding: 28px 32px; }
-  header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 14px; margin-bottom: 22px; border-bottom: 2px solid #14110D; }
-  .brand { font-family: "Cormorant Garamond", "Times New Roman", serif; font-size: 22px; font-weight: 500; }
-  .brand small { display: block; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #9D7A3E; margin-top: 2px; font-family: ui-monospace, "SF Mono", monospace; }
-  .meta { font-size: 11px; color: #56493C; text-align: right; line-height: 1.5; }
-  .meta strong { color: #14110D; font-size: 13px; }
-  h1 { font-family: "Cormorant Garamond", serif; font-weight: 400; font-size: 28px; margin: 0 0 4px; }
-  .subtitle { font-size: 12px; color: #56493C; margin: 0 0 22px; }
-
-  /* Each room is a discrete block — try to keep on one page */
-  .room-block { page-break-inside: avoid; margin-bottom: 28px; padding-bottom: 22px; border-bottom: 1px dashed #D9CFBB; }
-  .room-block:last-child { border-bottom: 0; }
-  .room-block h2 { font-family: "Cormorant Garamond", serif; font-weight: 500; font-size: 22px; margin: 0 0 12px; padding-bottom: 6px; border-bottom: 1px solid #D9CFBB; }
-  .room-block h2 .count { font-size: 11px; color: #9D7A3E; font-family: ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.08em; vertical-align: middle; margin-left: 8px; }
-
-  .room-layout { display: grid; grid-template-columns: 200px 1fr; gap: 18px; align-items: start; }
-  .plan svg { width: 100%; height: auto; max-width: 200px; }
-
-  table.windows { width: 100%; border-collapse: collapse; font-size: 11px; }
-  table.windows th { background: #F7F2EA; padding: 7px 6px; text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: #56493C; border-bottom: 1px solid #D9CFBB; font-weight: 600; }
-  table.windows td { padding: 8px 6px; border-bottom: 1px solid #EFE8DB; vertical-align: top; }
-  table.windows td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
-  table.windows td.cell-letter, table.windows th.cell-letter { width: 26px; text-align: center; font-weight: 700; background: #FEF3C7; color: #9D7A3E; font-family: ui-monospace, monospace; }
-  table.windows .sku { font-size: 9px; color: #8B7F6F; font-family: ui-monospace, monospace; margin-top: 2px; }
-  table.windows th.check, table.windows td.check { width: 30px; text-align: center; }
-  .checkbox { display: inline-block; width: 14px; height: 14px; border: 1.5px solid #14110D; border-radius: 2px; }
-
-  /* Consolidated per-room notes — already-typed notes from the consult */
-  .window-notes { margin-top: 12px; background: #FFFBEB; border-left: 3px solid #C9A158; padding: 10px 14px; border-radius: 0 3px 3px 0; }
-  .window-notes strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #9D7A3E; margin-bottom: 6px; }
-  .window-notes ul { list-style: none; padding: 0; margin: 0; }
-  .window-notes li { display: flex; gap: 8px; padding: 3px 0; font-size: 11px; line-height: 1.45; color: #14110D; }
-  .window-notes .note-letter { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 18px; height: 18px; background: #FEF3C7; color: #9D7A3E; border-radius: 2px; font-family: ui-monospace, monospace; font-size: 10px; font-weight: 700; }
-
-  /* Project-level notes — admin's overall instructions for the install */
-  .project-notes { background: #EFE8DB; border-left: 3px solid #14110D; padding: 12px 16px; margin: 0 0 22px; border-radius: 0 3px 3px 0; }
-  .project-notes strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #56493C; margin-bottom: 4px; }
-  .project-notes p { margin: 0; font-size: 12px; line-height: 1.5; color: #14110D; white-space: pre-wrap; }
-
-  /* Blank ruled lines for the installer to add notes on-site */
-  .installer-notes { margin-top: 12px; }
-  .installer-notes strong { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #56493C; margin-bottom: 4px; }
-  .installer-notes .lines { height: 36px; background: repeating-linear-gradient(transparent, transparent 17px, #D9CFBB 17px, #D9CFBB 18px); border: 1px solid #D9CFBB; border-radius: 2px; }
-
-  footer { margin-top: 30px; padding-top: 12px; border-top: 1px solid #D9CFBB; font-size: 10px; color: #8B7F6F; display: flex; justify-content: space-between; }
-
-  @media print {
-    @page { margin: 0.4in; size: letter; }
-    body { padding: 0; }
-    .room-block { page-break-inside: avoid; }
-  }
-  @media screen {
-    body { max-width: 8.5in; margin: 0 auto; box-shadow: 0 0 0 1px #ddd, 0 12px 40px -16px rgba(0,0,0,.2); margin-top: 24px; margin-bottom: 24px; background: #fff; }
-    .print-btn { position: fixed; top: 16px; right: 16px; padding: 10px 18px; background: #14110D; color: #F7F2EA; border: 0; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
-  }
-</style>
-</head>
-<body>
-  <button class="print-btn" onclick="window.print()">🖨 Print</button>
-  <header>
-    <div>
-      <div class="brand">National Closet Company<small>Install Worksheet</small></div>
-    </div>
-    <div class="meta">
-      <strong>${esc(project.name)}</strong>
-      <div>${esc(project.contact_name)}${project.contact_phone ? " · " + esc(project.contact_phone) : ""}</div>
-      ${project.site_address ? `<div>${esc(project.site_address)}</div>` : ""}
-      ${installDate ? `<div style="margin-top:6px"><strong>Install: ${esc(installDate)}</strong></div>` : `<div style="margin-top:6px;color:#9D7A3E">Install not scheduled</div>`}
-    </div>
-  </header>
-
-  <h1>${windows.length} window${windows.length === 1 ? "" : "s"} · ${roomOrder.length} room${roomOrder.length === 1 ? "" : "s"}</h1>
-  <p class="subtitle">Clockwise letters A, B, C… start at the back-left corner of each room as you face it from the entry. Match the letters on the floor plan to the table rows. Tick the ✓ column as each window is installed.</p>
-
-  ${projectNotesBlock}
-  ${roomBlocks}
-
-  <footer>
-    <span>Generated ${new Date().toLocaleString()}</span>
-    <span>National Closet Company · Gallatin, TN · 629-298-8241</span>
-  </footer>
-</body>
-</html>`;
-
-  const win = window.open("", "_blank");
-  if (!win) { SSCrm.toast("Pop-ups blocked — allow them to open the print view", "error"); return; }
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-}
 
 async function saveProject() {
   try {
@@ -1134,14 +854,6 @@ async function loadActivity() {
 async function newEstimate() {
   try { const { id: nid } = await SSCrm.fetchJSON("/api/estimates", { method: "POST", body: JSON.stringify({ project_id: id }) }); location.href = "/crm/estimate.html?id=" + nid; }
   catch (e) { SSCrm.toast(e.message, "error"); }
-}
-// Start a proposal AND signal to the proposal builder that the project's
-// windows should be pre-loaded as lines (handled via ?seed=windows).
-async function newProposalFromWindows() {
-  try {
-    const { id: nid } = await SSCrm.fetchJSON("/api/proposals", { method: "POST", body: JSON.stringify({ project_id: id }) });
-    location.href = `/crm/proposal.html?id=${nid}&seed=windows`;
-  } catch (e) { SSCrm.toast(e.message, "error"); }
 }
 async function newProposal() {
   const kind = await pickProposalKind();

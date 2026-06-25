@@ -16,7 +16,6 @@ const NAV = [
   { href: "/crm/proposals.html", label: "Proposals", icon: iconDoc() },
   { href: "/crm/contracts.html", label: "Contracts", icon: iconDoc() },
   { href: "/crm/invoices.html", label: "Invoices", icon: iconInvoice() },
-  { href: "/crm/products.html", label: "Products", icon: iconBox() },
   { href: "/crm/templates.html", label: "Templates", icon: iconMail() },
   { href: "/crm/activity.html", label: "Activity", icon: iconActivity() },
   { href: "/crm/reports.html", label: "Reports", icon: iconReports() },
@@ -55,7 +54,7 @@ const NAV_GROUPS = [
   { label: "Sales", items: ["/crm/estimates.html", "/crm/proposals.html", "/crm/contracts.html", "/crm/invoices.html"] },
   { label: "Operations", items: ["/crm/calendar.html", "/crm/availability.html"] },
   { label: "Insights", items: ["/crm/reports.html"] },
-  { label: "Setup", items: ["/crm/products.html", "/crm/templates.html", "/crm/activity.html"] },
+  { label: "Setup", items: ["/crm/templates.html", "/crm/activity.html"] },
 ];
 
 // JS actions — no nav, opens an inline modal that creates the entity and routes to its page on success
@@ -749,235 +748,6 @@ async function quickAddContract() {
   } catch (e) { toast(e.message, "error"); }
 }
 
-// ============================================================
-// Product catalog picker — used by proposal / estimate / contract builders
-// to pull in products, labor, and services with auto-calculated pricing
-// from inch dimensions (where applicable).
-// ============================================================
-
-// Friendly category labels + display order
-const CATEGORY_GROUPS = [
-  { key: "plantation", label: "Plantation & Wood Shutters" },
-  { key: "cellular",   label: "Cellular & Honeycomb" },
-  { key: "sheer",      label: "Sheer Vanes (Silhouette/Pirouette/Luminette)" },
-  { key: "woven-wood", label: "Woven Wood & Bamboo" },
-  { key: "zebra",      label: "Zebra & Banded" },
-  { key: "solar",      label: "Solar Shades" },
-  { key: "roller",     label: "Roller Shades" },
-  { key: "roman",      label: "Roman Shades" },
-  { key: "real-wood",  label: "Real Wood Blinds" },
-  { key: "faux-wood",  label: "Faux Wood Blinds" },
-  { key: "drapery",    label: "Custom Drapery" },
-  { key: "motor",      label: "Motorization & Smart Home" },
-  { key: "outdoor",    label: "Outdoor Shades & Awnings" },
-  { key: "install",    label: "Install Labor" },
-  { key: "repair",     label: "Repair / Service Calls" },
-];
-
-// Open the picker modal and return a line-ready object, or null if cancelled
-async function pickProduct() {
-  const { products } = await fetchJSON("/api/products");
-  return new Promise((resolve) => {
-    const bg = document.createElement("div");
-    bg.className = "modal-bg";
-    bg.innerHTML = `
-      <div class="modal" style="max-width:680px;width:100%">
-        <div class="modal-head">Add from catalog</div>
-        <div class="modal-body" style="padding:0">
-          <div style="padding:14px 22px;border-bottom:1px solid var(--line-soft);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <input type="search" id="pp-q" placeholder="Search by product name or SKU…" autofocus
-                   style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font-size:13px"/>
-            <select id="pp-cat" style="padding:8px 10px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font-size:13px">
-              <option value="">All categories</option>
-              <optgroup label="Products">
-                ${CATEGORY_GROUPS.filter((c) => !["install","repair"].includes(c.key)).map((c) => `<option value="${c.key}">${esc(c.label)}</option>`).join("")}
-              </optgroup>
-              <optgroup label="Labor &amp; Services">
-                ${CATEGORY_GROUPS.filter((c) => ["install","repair"].includes(c.key)).map((c) => `<option value="${c.key}">${esc(c.label)}</option>`).join("")}
-              </optgroup>
-            </select>
-          </div>
-          <div id="pp-list" style="max-height:420px;overflow-y:auto"></div>
-        </div>
-        <div class="modal-foot">
-          <button class="btn ghost" data-cancel>Cancel</button>
-          <a class="btn ghost" href="/crm/products.html" target="_blank">Edit catalog →</a>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(bg);
-    const close = (v) => { bg.remove(); resolve(v); };
-    bg.querySelector("[data-cancel]").onclick = () => close(null);
-    bg.addEventListener("click", (e) => { if (e.target === bg) close(null); });
-    document.addEventListener("keydown", function escClose(e) {
-      if (e.key === "Escape") { close(null); document.removeEventListener("keydown", escClose); }
-    });
-
-    const list = bg.querySelector("#pp-list");
-    const q = bg.querySelector("#pp-q");
-    const cat = bg.querySelector("#pp-cat");
-
-    function render() {
-      const term = q.value.toLowerCase().trim();
-      const catFilter = cat.value;
-      const filtered = products.filter((p) => {
-        if (!p.active) return false;
-        if (catFilter && p.category !== catFilter) return false;
-        if (!term) return true;
-        return (p.name + " " + (p.sku || "") + " " + p.category).toLowerCase().includes(term);
-      });
-      // Group by category
-      const groups = {};
-      for (const p of filtered) (groups[p.category] ||= []).push(p);
-      const orderedKeys = CATEGORY_GROUPS.filter((g) => groups[g.key]).map((g) => g.key);
-
-      if (!orderedKeys.length) {
-        list.innerHTML = `<p style="text-align:center;color:var(--ink-muted);padding:40px;font-size:13px">No products match. <a href="/crm/products.html" target="_blank">Add one →</a></p>`;
-        return;
-      }
-      list.innerHTML = orderedKeys.map((k) => {
-        const label = CATEGORY_GROUPS.find((g) => g.key === k)?.label || k;
-        return `
-          <div style="border-bottom:1px solid var(--line-soft)">
-            <div style="padding:10px 22px 6px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-muted);font-weight:600">${esc(label)}</div>
-            ${groups[k].map((p) => productRow(p)).join("")}
-          </div>
-        `;
-      }).join("");
-      list.querySelectorAll("[data-pp-id]").forEach((b) => b.onclick = () => pickOne(parseInt(b.dataset.ppId, 10)));
-    }
-
-    function productRow(p) {
-      const priceHint = p.base_price_cents > 0 ? fmtMoney(p.base_price_cents) + " / " + (p.unit || "ea") : "—";
-      return `
-        <button data-pp-id="${p.id}" type="button" style="display:flex;width:100%;align-items:center;gap:12px;padding:10px 22px;background:transparent;border:0;border-bottom:1px solid var(--bg-soft);text-align:left;cursor:pointer;font-size:13px">
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:600;color:var(--ink)">${esc(p.name)}</div>
-            <div style="font-size:11px;color:var(--ink-soft);margin-top:2px">${p.sku ? esc(p.sku) + " · " : ""}${esc(p.unit || "window")}</div>
-          </div>
-          <div style="text-align:right;font-variant-numeric:tabular-nums;flex-shrink:0;font-size:12px;color:var(--ink-soft)">${esc(priceHint)}</div>
-        </button>
-      `;
-    }
-
-    function pickOne(productId) {
-      const p = products.find((x) => x.id === productId);
-      if (!p) return;
-      // Step 2: capture qty + dimensions (for ordering, NOT pricing) + room
-      // Window-like products get dimension fields; flat services don't.
-      const isPhysical = !["install", "repair"].includes(p.category);
-      bg.querySelector(".modal-body").innerHTML = `
-        <div style="padding:22px">
-          <div style="margin-bottom:14px">
-            <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-muted);font-weight:600">${esc(p.category)}</div>
-            <div style="font-size:16px;font-weight:600;color:var(--ink);margin-top:2px">${esc(p.name)}</div>
-            <div style="font-size:12px;color:var(--ink-soft);margin-top:2px">
-              Unit price: <strong>${fmtMoney(p.base_price_cents)}</strong> per ${esc(p.unit || "ea")}
-            </div>
-          </div>
-          <div class="form">
-            <div class="row">
-              <label><span>Qty</span><input id="pp-qty" type="number" min="1" step="1" value="1" required/></label>
-              <label><span>Room (optional)</span><input id="pp-room" placeholder="Living, Primary BR…"/></label>
-            </div>
-            ${isPhysical ? `
-              <div class="row">
-                <label><span>Color / Finish</span><input id="pp-color" placeholder="White, walnut, espresso…"/></label>
-                <label><span>Options</span><input id="pp-options" placeholder="Cordless, motorized, blackout…"/></label>
-              </div>
-              <div class="row">
-                <label><span>Width (in) — for ordering</span><input id="pp-w" type="number" min="0" step="0.125" placeholder="e.g. 36"/></label>
-                <label><span>Height (in) — for ordering</span><input id="pp-h" type="number" min="0" step="0.125" placeholder="e.g. 60"/></label>
-              </div>
-              <p style="font-size:11px;color:var(--ink-muted);margin:-4px 0 0">All of these are editable on the line later — set defaults here.</p>
-            ` : ""}
-            <div id="pp-preview" style="background:var(--bg-soft);padding:12px 16px;border-radius:var(--r-sm);font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums">
-              <div>Unit price: <strong>${fmtMoney(p.base_price_cents)}</strong></div>
-              <div>Line total: <strong id="pp-total" style="color:var(--money)">${fmtMoney(p.base_price_cents)}</strong></div>
-            </div>
-          </div>
-        </div>
-      `;
-      bg.querySelector(".modal-foot").innerHTML = `
-        <button class="btn ghost" id="pp-back">← Back</button>
-        <button class="btn primary" id="pp-add">Add to line items</button>
-      `;
-      const qty = bg.querySelector("#pp-qty");
-      const room = bg.querySelector("#pp-room");
-      const w = bg.querySelector("#pp-w");
-      const h = bg.querySelector("#pp-h");
-      const unit = p.base_price_cents || 0;
-
-      function recalc() {
-        const qtyVal = Math.max(1, Math.round(Number(qty.value || 1)));
-        const total = qtyVal * unit;
-        bg.querySelector("#pp-total").textContent = fmtMoney(total);
-        bg.dataset.unit = unit;
-        bg.dataset.total = total;
-      }
-      qty.addEventListener("input", recalc);
-      recalc();
-      // Default focus to qty (then tab through to dimensions)
-      qty.focus(); qty.select();
-
-      bg.querySelector("#pp-back").onclick = () => {
-        bg.querySelector(".modal-body").innerHTML = `
-          <div style="padding:14px 22px;border-bottom:1px solid var(--line-soft);display:flex;gap:10px;align-items:center;flex-wrap:wrap"></div>
-          <div id="pp-list" style="max-height:420px;overflow-y:auto"></div>
-        `;
-        bg.querySelector(".modal-foot").innerHTML = `
-          <button class="btn ghost" data-cancel>Cancel</button>
-          <a class="btn ghost" href="/crm/products.html" target="_blank">Edit catalog →</a>
-        `;
-        bg.querySelector("[data-cancel]").onclick = () => close(null);
-        // Re-mount the search controls
-        bg.querySelector(".modal-body > div:first-child").innerHTML = `
-          <input type="search" id="pp-q" placeholder="Search by product name or SKU…" autofocus
-                 style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font-size:13px"/>
-          <select id="pp-cat" style="padding:8px 10px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font-size:13px">
-            <option value="">All categories</option>
-            ${CATEGORY_GROUPS.map((c) => `<option value="${c.key}">${esc(c.label)}</option>`).join("")}
-          </select>
-        `;
-        // Re-bind to the new elements
-        const nq = bg.querySelector("#pp-q");
-        const nc = bg.querySelector("#pp-cat");
-        nq.value = q.value;
-        nc.value = cat.value;
-        bg.querySelector("#pp-list").parentElement.appendChild(bg.querySelector("#pp-list"));
-        // Re-bind list refs and re-render
-        nq.addEventListener("input", () => { q.value = nq.value; q.dispatchEvent(new Event("input")); });
-        nc.addEventListener("change", () => { cat.value = nc.value; cat.dispatchEvent(new Event("change")); });
-        render();
-      };
-
-      bg.querySelector("#pp-add").onclick = () => {
-        const qtyVal = Math.max(1, Math.round(Number(qty.value || 1)));
-        const total = qtyVal * unit;
-        const wv = w ? Number(w.value || 0) : 0;
-        const hv = h ? Number(h.value || 0) : 0;
-        const colorInput = bg.querySelector("#pp-color");
-        const optionsInput = bg.querySelector("#pp-options");
-        close({
-          product_id: p.id,
-          description: p.name,
-          room: room.value.trim() || null,
-          quantity: qtyVal,
-          width_in: wv > 0 ? wv : null,
-          height_in: hv > 0 ? hv : null,
-          color: colorInput?.value.trim() || null,
-          options: optionsInput?.value.trim() || null,
-          unit_price_cents: unit,
-          line_total_cents: total,
-        });
-      };
-    }
-
-    q.addEventListener("input", render);
-    cat.addEventListener("change", render);
-    render();
-  });
-}
 
 // ============================================================
 // Email integration — Compose modal + Messages timeline
@@ -1211,7 +981,7 @@ function stripHtmlClient(s) { return s ? String(s).replace(/<[^>]+>/g, "").repla
 
 window.SSCrm = {
   fetchJSON, mount, fmtMoney, fmtMoneyShort, parseMoney, fmtDate, fmtDay, fmtDateTime, fmtTime, esc, pill, logout, toast, confirmDialog,
-  pickContact, pickJob, openModal, pickProduct,
+  pickContact, pickJob, openModal,
   quickAddContact, quickAddJob, quickAddAppointment, quickAddEstimate, quickAddProposal, quickAddContract,
   composeEmail, renderEmailTimeline,
   PROJECT_STATUSES,

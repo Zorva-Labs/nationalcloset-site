@@ -1,40 +1,63 @@
 // GET  /api/projects/[id]/financials  — cost breakdown + profit for one job
-// PUT  /api/projects/[id]/financials  — save price/expense overrides
+// PUT  /api/projects/[id]/financials  — save price/discount/expense overrides
 //
-// Expenses auto-derive from the client price (see _lib/financials.js). Each
-// line can be manually overridden; the price defaults to the job's contract /
-// accepted-proposal total but can also be overridden.
+// The cost basis is the GROSS (pre-discount) price; expenses auto-derive from
+// it (see _lib/financials.js). A discount comes out of profit only — the client
+// pays NET = gross − discount, profit = net − expenses. Gross + discount default
+// from the accepted proposal's selected tier; any line can be overridden.
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { getProjectBilling } from "../../../_lib/invoices.js";
 import { resolveFinancials, computeBreakdown } from "../../../_lib/financials.js";
 import { recordActivity } from "../../../_lib/db.js";
 
-async function defaultPrice(env, projectId) {
+// Gross (pre-discount) cost basis + dollar discount for a job. Prefer the
+// accepted proposal's selected tier (subtotal = gross, total = net); fall back
+// to the contract/proposal total with no discount.
+async function defaultBasis(env, projectId) {
+  const tier = await env.DB.prepare(
+    `SELECT t.subtotal_cents AS gross, t.total_cents AS net
+       FROM proposals p JOIN proposal_tiers t ON t.proposal_id = p.id AND t.tier = p.selected_tier
+      WHERE p.project_id = ?1 AND p.status = 'accepted'
+      ORDER BY datetime(p.created_at) DESC LIMIT 1`
+  ).bind(projectId).first().catch(() => null);
+  if (tier && (tier.gross || tier.net)) {
+    const sub = tier.gross || 0, tot = tier.net || 0;
+    // A discount makes net (total) LESS than gross (subtotal). If total >= subtotal
+    // there's no discount — total is the real client price (older tiers stored a
+    // with-tax total > pre-tax subtotal; treat total as the basis).
+    if (sub > tot) return { grossCents: sub, discountCents: sub - tot };
+    return { grossCents: tot || sub, discountCents: 0 };
+  }
   const b = await getProjectBilling(env.DB, projectId).catch(() => null);
-  return b?.totalCents || 0;
+  return { grossCents: b?.totalCents || 0, discountCents: 0 };
 }
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const id = parseInt(context.params.id, 10);
   const row = await context.env.DB.prepare(`SELECT * FROM job_financials WHERE project_id=?1`).bind(id).first().catch(() => null);
-  const dp = await defaultPrice(context.env, id);
-  return json({ financials: { ...resolveFinancials(dp, row), default_price_cents: dp } });
+  const b = await defaultBasis(context.env, id);
+  return json({ financials: { ...resolveFinancials(b.grossCents, b.discountCents, row), default_price_cents: b.grossCents, default_discount_cents: b.discountCents } });
 }
 
 export async function onRequestPut(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const id = parseInt(context.params.id, 10);
   const body = await context.request.json().catch(() => ({}));
-  const dp = await defaultPrice(context.env, id);
+  const b = await defaultBasis(context.env, id);
 
-  // Price: manual override if a value is sent AND price_auto is not true.
+  const cents = (v) => Math.max(0, Math.round(Number(v) || 0));
+
+  // Gross price: manual override if a value is sent AND price_auto is not true.
   const priceOverride = body.price_cents != null && body.price_auto !== true;
-  const price = priceOverride ? Math.max(0, Math.round(Number(body.price_cents) || 0)) : dp;
+  const price = priceOverride ? cents(body.price_cents) : b.grossCents;
   const f = computeBreakdown(price);
 
+  // Discount: manual override if discount_auto is explicitly false.
+  const discountOverride = body.discount_auto === false;
+  const discount = discountOverride ? cents(body.discount_cents) : b.discountCents;
+
   // Each expense line: auto (use formula) unless the client flags it manual.
-  const cents = (v) => Math.max(0, Math.round(Number(v) || 0));
   const lineFor = (key, autoKey) => (body[autoKey] === false)
     ? { v: cents(body[key + "_cents"]), a: 0 }
     : { v: f[key], a: 1 };
@@ -47,22 +70,23 @@ export async function onRequestPut(context) {
   await context.env.DB.prepare(
     `INSERT INTO job_financials
        (project_id, price_cents, discount_pct, materials_cents, shipping_cents, tax_cents, labor_cents, misc_cents,
-        price_auto, materials_auto, shipping_auto, tax_auto, labor_auto, notes, updated_at)
-     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14, datetime('now'))
+        discount_cents, price_auto, discount_auto, materials_auto, shipping_auto, tax_auto, labor_auto, notes, updated_at)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16, datetime('now'))
      ON CONFLICT(project_id) DO UPDATE SET
        price_cents=?2, discount_pct=?3, materials_cents=?4, shipping_cents=?5, tax_cents=?6, labor_cents=?7,
-       misc_cents=?8, price_auto=?9, materials_auto=?10, shipping_auto=?11, tax_auto=?12, labor_auto=?13,
-       notes=?14, updated_at=datetime('now')`
+       misc_cents=?8, discount_cents=?9, price_auto=?10, discount_auto=?11, materials_auto=?12, shipping_auto=?13,
+       tax_auto=?14, labor_auto=?15, notes=?16, updated_at=datetime('now')`
   ).bind(
-    id, price, f.discount, m.v, s.v, t.v, l.v, misc,
-    priceOverride ? 0 : 1, m.a, s.a, t.a, l.a, (body.notes || null),
+    id, price, f.discount, m.v, s.v, t.v, l.v, misc, discount,
+    priceOverride ? 0 : 1, discountOverride ? 0 : 1, m.a, s.a, t.a, l.a, (body.notes || null),
   ).run();
 
   const row = await context.env.DB.prepare(`SELECT * FROM job_financials WHERE project_id=?1`).bind(id).first();
+  const fin = resolveFinancials(b.grossCents, b.discountCents, row);
   await recordActivity(context.env.DB, {
     entityType: "project", entityId: id, action: "financials-updated",
     actorKind: "admin", actorId: auth.id, actorName: auth.email,
-    details: { price_cents: price, profit_cents: price - (m.v + s.v + t.v + l.v + misc) },
+    details: { price_cents: price, discount_cents: discount, profit_cents: fin.profit_cents },
   }).catch(() => {});
-  return json({ financials: { ...resolveFinancials(dp, row), default_price_cents: dp } });
+  return json({ financials: { ...fin, default_price_cents: b.grossCents, default_discount_cents: b.discountCents } });
 }

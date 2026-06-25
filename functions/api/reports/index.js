@@ -22,12 +22,15 @@ export async function onRequestGet(context) {
   const rows = (await context.env.DB.prepare(
     `SELECT p.id, p.name, p.status, p.created_at, c.name AS contact_name,
             jf.price_cents, jf.discount_pct, jf.materials_cents, jf.shipping_cents, jf.tax_cents,
-            jf.labor_cents, jf.misc_cents, jf.price_auto, jf.materials_auto, jf.shipping_auto, jf.tax_auto, jf.labor_auto,
+            jf.labor_cents, jf.misc_cents, jf.discount_cents, jf.price_auto, jf.discount_auto,
+            jf.materials_auto, jf.shipping_auto, jf.tax_auto, jf.labor_auto,
             (SELECT k.total_cents FROM contracts k WHERE k.project_id=p.id
                ORDER BY CASE k.status WHEN 'fully_executed' THEN 0 WHEN 'signed_by_customer' THEN 1 WHEN 'sent' THEN 2 ELSE 3 END,
                         datetime(k.created_at) DESC LIMIT 1) AS contract_total,
-            (SELECT pr.selected_total_cents FROM proposals pr WHERE pr.project_id=p.id AND pr.status='accepted'
-               ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS accepted_total
+            (SELECT t.subtotal_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
+               WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_gross,
+            (SELECT t.total_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
+               WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_net
        FROM projects p
        LEFT JOIN contacts c ON c.id = p.contact_id
        LEFT JOIN job_financials jf ON jf.project_id = p.id
@@ -36,20 +39,32 @@ export async function onRequestGet(context) {
   ).bind(...binds).all()).results || [];
 
   const jobs = [];
-  const totals = { revenue: 0, materials: 0, shipping: 0, tax: 0, labor: 0, misc: 0, expenses: 0, profit: 0 };
+  const totals = { gross: 0, discounts: 0, revenue: 0, materials: 0, shipping: 0, tax: 0, labor: 0, misc: 0, expenses: 0, profit: 0 };
 
   for (const r of rows) {
-    const defaultPrice = r.contract_total || r.accepted_total || 0;
+    // Cost basis is the pre-discount gross; revenue is the net the client pays.
+    // A discount makes net < gross (tier total < subtotal). Older tiers stored a
+    // with-tax total > pre-tax subtotal — that's not a discount, so use total.
+    let gross, net, discount;
+    if (r.tier_gross != null || r.tier_net != null) {
+      const sub = r.tier_gross || 0, tot = r.tier_net || 0;
+      if (sub > tot) { gross = sub; net = tot; discount = sub - tot; }
+      else { gross = tot || sub; net = gross; discount = 0; }
+    } else {
+      gross = r.contract_total || 0; net = gross; discount = 0;
+    }
     // A job_financials row exists iff its columns came back non-null.
     const hasRow = r.price_cents != null;
-    const fin = resolveFinancials(defaultPrice, hasRow ? r : null);
+    const fin = resolveFinancials(gross, discount, hasRow ? r : null);
     jobs.push({
       id: r.id, name: r.name, contact_name: r.contact_name, status: r.status, created_at: r.created_at,
-      price_cents: fin.price_cents, materials_cents: fin.materials_cents, shipping_cents: fin.shipping_cents,
+      price_cents: fin.net_cents, gross_cents: fin.price_cents, discount_cents: fin.discount_cents,
+      materials_cents: fin.materials_cents, shipping_cents: fin.shipping_cents,
       tax_cents: fin.tax_cents, labor_cents: fin.labor_cents, misc_cents: fin.misc_cents,
       expenses_cents: fin.expenses_cents, profit_cents: fin.profit_cents,
     });
-    totals.revenue += fin.price_cents; totals.materials += fin.materials_cents; totals.shipping += fin.shipping_cents;
+    totals.gross += fin.price_cents; totals.discounts += fin.discount_cents; totals.revenue += fin.net_cents;
+    totals.materials += fin.materials_cents; totals.shipping += fin.shipping_cents;
     totals.tax += fin.tax_cents; totals.labor += fin.labor_cents; totals.misc += fin.misc_cents;
     totals.expenses += fin.expenses_cents; totals.profit += fin.profit_cents;
   }

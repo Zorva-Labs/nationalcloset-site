@@ -116,7 +116,7 @@ function render(p, tiers, attachments) {
         <h3 class="opt__title">${esc(t.title || "")}</h3>
         <div class="opt__total">${money(t.total_cents)} ${t.total_cents ? `<span class="sub">total</span>` : ""}</div>
         ${t.description ? `<div class="opt__desc">${esc(t.description)}</div>` : ""}
-        ${(t.lines && t.lines.length) ? `<ul class="opt__lines">${t.lines.map((l) => `<li><span>${esc(l.description)}${l.room ? ` <em style="color:var(--muted);font-size:.85em;font-style:normal">— ${esc(l.room)}</em>` : ""}</span><span class="ln-money">${money(l.line_total_cents)}</span></li>`).join("")}</ul>
+        ${(t.lines && t.lines.length) ? `<ul class="opt__lines">${t.lines.map((l) => { const disc = (l.line_total_cents || 0) < 0; return `<li${disc ? ` style="color:var(--clay-deep);font-weight:600"` : ""}><span>${esc(l.description)}${l.room ? ` <em style="color:var(--muted);font-size:.85em;font-style:normal">— ${esc(l.room)}</em>` : ""}</span><span class="ln-money">${disc ? "−" + money(Math.abs(l.line_total_cents)) : money(l.line_total_cents)}</span></li>`; }).join("")}</ul>
         <div class="opt__sum">
           <div class="opt__sum-row opt__sum-total"><span>Total</span><span>${money(t.total_cents)}</span></div>
           <div class="opt__sum-row" style="border:0;color:var(--muted);font-size:.82rem;font-weight:500"><span>Includes shipping, tax &amp; installation</span><span></span></div>

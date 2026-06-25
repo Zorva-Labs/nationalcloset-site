@@ -33,12 +33,14 @@ export function computeBreakdown(priceCents) {
 }
 
 // Merge a stored job_financials row (manual overrides) over the formula
-// defaults. `defaultPriceCents` is the job's contract/proposal total used when
-// the price isn't manually overridden. Pass row=null when there's no saved row.
-export function resolveFinancials(defaultPriceCents, row) {
+// defaults. `defaultGrossCents` is the pre-discount (gross) price — the cost
+// basis. `defaultDiscountCents` is the discount that comes out of profit only.
+// Client pays NET = gross − discount; profit = net − expenses. Pass row=null
+// when there's no saved row.
+export function resolveFinancials(defaultGrossCents, defaultDiscountCents, row) {
   const priceOverridden = row && row.price_auto === 0 && row.price_cents != null;
-  const price = priceOverridden ? row.price_cents : (defaultPriceCents || 0);
-  const f = computeBreakdown(price);
+  const gross = priceOverridden ? row.price_cents : (defaultGrossCents || 0);
+  const f = computeBreakdown(gross); // expenses are always derived from the gross
 
   const line = (key, auto) => (row && row[auto] === 0 && row[key] != null) ? row[key] : f[key.replace("_cents", "")];
   const materials = line("materials_cents", "materials_auto");
@@ -47,14 +49,21 @@ export function resolveFinancials(defaultPriceCents, row) {
   const labor     = line("labor_cents", "labor_auto");
   const misc      = (row && row.misc_cents != null) ? row.misc_cents : 0;
 
+  const discountOverridden = row && row.discount_auto === 0 && row.discount_cents != null;
+  const discount  = Math.max(0, discountOverridden ? row.discount_cents : (defaultDiscountCents || 0));
+
   const expenses = materials + shipping + tax + labor + misc;
+  const net = gross - discount;
   return {
-    price_cents: price,
-    discount: f.discount,
+    price_cents: gross,        // gross / cost basis
+    discount: f.discount,      // tier rate (20/25/30%) — distinct from the dollar discount
+    discount_cents: discount,  // dollar discount, out of profit
+    net_cents: net,            // what the client pays
     materials_cents: materials, shipping_cents: shipping, tax_cents: tax, labor_cents: labor, misc_cents: misc,
     expenses_cents: expenses,
-    profit_cents: price - expenses,
+    profit_cents: net - expenses,
     price_auto: row ? (row.price_auto !== 0) : true,
+    discount_auto: row ? (row.discount_auto !== 0) : true,
     materials_auto: row ? (row.materials_auto !== 0) : true,
     shipping_auto: row ? (row.shipping_auto !== 0) : true,
     tax_auto: row ? (row.tax_auto !== 0) : true,

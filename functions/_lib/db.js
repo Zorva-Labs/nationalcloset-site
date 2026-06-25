@@ -71,15 +71,20 @@ export async function recomputeEstimateTotals(db, estimateId) {
 export const QUOTE_TAX_RATE = 0.0975;
 
 export async function recomputeTierTotals(db, tierId) {
+  // Discounts are negative line items. subtotal_cents is GROSS (positive lines
+  // only, pre-discount) — the cost basis for the P&L stays on the number before
+  // the discount. total_cents is NET (all lines incl. negative discounts) = what
+  // the client actually pays. All-inclusive pricing → no separate tax line.
   const sum = await db
-    .prepare(`SELECT COALESCE(SUM(line_total_cents), 0) AS subtotal FROM proposal_tier_lines WHERE tier_id = ?1`)
+    .prepare(`SELECT
+        COALESCE(SUM(CASE WHEN line_total_cents > 0 THEN line_total_cents ELSE 0 END), 0) AS gross,
+        COALESCE(SUM(line_total_cents), 0) AS net
+      FROM proposal_tier_lines WHERE tier_id = ?1`)
     .bind(tierId)
     .first();
-  const subtotal = sum.subtotal || 0;
-  // All-inclusive pricing: line-item prices already include shipping, tax and
-  // installation, so there is no separate tax line. Total equals the subtotal.
+  const subtotal = sum.gross || 0;
   const tax = 0;
-  const total = subtotal;
+  const total = sum.net || 0;
   await db
     .prepare(`UPDATE proposal_tiers SET subtotal_cents=?1, tax_cents=?2, total_cents=?3 WHERE id=?4`)
     .bind(subtotal, tax, total, tierId)

@@ -143,7 +143,9 @@
         <div class="card">
           <div class="card-head"><h3>Profit &amp; loss</h3></div>
           <table class="rpt-pnl">
-            <tr><td><strong>Gross income</strong></td><td class="amt"><strong>${M(rev)}</strong></td><td class="pct">100%</td></tr>
+            ${t.discounts ? `<tr><td>Gross sales</td><td class="amt">${M(t.gross)}</td><td class="pct"></td></tr>
+            <tr class="exp"><td>Discounts</td><td class="amt">(${M(t.discounts)})</td><td class="pct">${pct(t.discounts, t.gross)}</td></tr>` : ""}
+            <tr><td><strong>${t.discounts ? "Net revenue" : "Gross income"}</strong></td><td class="amt"><strong>${M(rev)}</strong></td><td class="pct">100%</td></tr>
             ${expRow("Materials", t.materials)}${expRow("Shipping", t.shipping)}${expRow("Taxes", t.tax)}${expRow("Labor", t.labor)}${expRow("Misc", t.misc)}
             <tr class="sum"><td>Total expenses</td><td class="amt">(${M(t.expenses)})</td><td class="pct">${pct(t.expenses, rev)}</td></tr>
             <tr class="profit"><td>Net profit</td><td class="amt">${M(t.profit)}</td><td class="pct">${pct(t.profit, rev)}</td></tr>
@@ -261,7 +263,9 @@
       </div>
       <h2>Profit &amp; Loss</h2>
       <table class="pnl">
-        <tr><td><strong>Gross income</strong></td><td class="amt"><strong>${M(rev)}</strong></td><td class="p">100%</td></tr>
+        ${t.discounts ? `<tr><td>Gross sales</td><td class="amt">${M(t.gross)}</td><td class="p"></td></tr>
+        <tr><td class="lab">Discounts</td><td class="amt">(${M(t.discounts)})</td><td class="p">${pct(t.discounts, t.gross)}</td></tr>` : ""}
+        <tr><td><strong>${t.discounts ? "Net revenue" : "Gross income"}</strong></td><td class="amt"><strong>${M(rev)}</strong></td><td class="p">100%</td></tr>
         ${expRow("Materials", t.materials)}${expRow("Shipping", t.shipping)}${expRow("Taxes", t.tax)}${expRow("Labor", t.labor)}${expRow("Misc", t.misc)}
         <tr class="tot"><td>Total expenses</td><td class="amt">(${M(t.expenses)})</td><td class="p">${pct(t.expenses, rev)}</td></tr>
         <tr class="tot"><td>Net profit</td><td class="amt" style="color:#15803D">${M(t.profit)}</td><td class="p">${pct(t.profit, rev)}</td></tr>

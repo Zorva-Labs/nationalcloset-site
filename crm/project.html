@@ -663,16 +663,19 @@ function finRender() {
   const f = finState;
   const host = document.getElementById("fin-host");
   if (!host) return;
+  const netCents = f.net_cents != null ? f.net_cents : (f.price_cents - (f.discount_cents || 0));
   host.innerHTML = `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <tr>
-        <td style="padding:6px 0"><strong>Client price</strong> <span class="muted" style="font-size:11px">· <span id="fin-tier">${Math.round(f.discount * 100)}</span>% tier</span></td>
+        <td style="padding:6px 0"><strong>Quoted price</strong> <span class="muted" style="font-size:11px">· <span id="fin-tier">${Math.round(f.discount * 100)}</span>% tier · pre-discount</span></td>
         <td style="text-align:right;white-space:nowrap">
           <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-price-auto" ${f.price_auto ? "checked" : ""} onchange="finToggle('price')"/> auto</label>
           <span style="color:var(--ink-soft)">$</span>
           <input id="fin-price" value="${finDollars(f.price_cents)}" ${f.price_auto ? "readonly" : ""} oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right;font-weight:600;${f.price_auto ? "background:var(--bg-soft);color:var(--ink-soft)" : ""}"/>
         </td>
       </tr>
+      ${finRow("discount", "Discount <span class='muted' style='font-size:11px'>· from proposal</span>")}
+      <tr><td style="padding:4px 0;color:var(--ink-soft)">Net to client</td><td style="text-align:right;color:var(--ink-soft);font-weight:600" id="fin-net">${SSCrm.fmtMoney(netCents)}</td></tr>
       <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
       ${finRow("materials", "Materials")}
       ${finRow("shipping", "Shipping <span class='muted' style='font-size:11px'>· 5%</span>")}
@@ -682,13 +685,13 @@ function finRender() {
       <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
       <tr><td style="padding:4px 0">Total expenses</td><td style="text-align:right" id="fin-expenses">${SSCrm.fmtMoney(f.expenses_cents)}</td></tr>
       <tr style="font-weight:700"><td style="padding:4px 0">Profit</td><td style="text-align:right" id="fin-profit">${SSCrm.fmtMoney(f.profit_cents)}</td></tr>
-      <tr><td style="padding:0 0 8px;color:var(--ink-soft);font-size:11px">Margin</td><td style="text-align:right;color:var(--ink-soft);font-size:11px" id="fin-margin">${f.price_cents ? Math.round((f.profit_cents / f.price_cents) * 100) : 0}%</td></tr>
+      <tr><td style="padding:0 0 8px;color:var(--ink-soft);font-size:11px">Margin</td><td style="text-align:right;color:var(--ink-soft);font-size:11px" id="fin-margin">${netCents ? Math.round((f.profit_cents / netCents) * 100) : 0}%</td></tr>
     </table>
     <div style="display:flex;gap:8px;margin-top:6px">
       <button class="btn primary sm" onclick="saveFinancials()">Save</button>
       <button class="btn ghost sm" onclick="resetFinancials()">Reset to formula</button>
     </div>
-    <p class="muted" style="font-size:11px;margin:8px 0 0">Materials = (price − 35% markup) × (1 − tier discount). Uncheck “auto” to override any line. Feeds Reports → P&amp;L.</p>`;
+    <p class="muted" style="font-size:11px;margin:8px 0 0">Expenses are based on the pre-discount price. The discount comes out of profit only (profit = net − expenses). Uncheck “auto” to override any line. Feeds Reports → P&amp;L.</p>`;
 }
 
 function finReadPrice() {
@@ -712,19 +715,27 @@ function finRecalc() {
   const calc = finCalc(price);
   const tierEl = document.getElementById("fin-tier");
   if (tierEl) tierEl.textContent = Math.round(calc.disc * 100);
+  // Discount (auto = the proposal's discount) comes out of profit, not the cost basis.
+  if (document.getElementById("fin-discount-auto").checked) document.getElementById("fin-discount").value = finDollars(finState.default_discount_cents || 0);
+  const discount = finToCents(document.getElementById("fin-discount").value);
   ["materials", "shipping", "tax", "labor"].forEach((k) => {
     if (document.getElementById(`fin-${k}-auto`).checked) document.getElementById(`fin-${k}`).value = finDollars(calc[k]);
   });
   const sum = ["materials", "shipping", "tax", "labor", "misc"].reduce((a, k) => a + finToCents(document.getElementById(`fin-${k}`).value), 0);
+  const net = price - discount;
+  document.getElementById("fin-net").textContent = SSCrm.fmtMoney(net);
   document.getElementById("fin-expenses").textContent = SSCrm.fmtMoney(sum);
-  document.getElementById("fin-profit").textContent = SSCrm.fmtMoney(price - sum);
-  document.getElementById("fin-margin").textContent = (price ? Math.round(((price - sum) / price) * 100) : 0) + "%";
+  document.getElementById("fin-profit").textContent = SSCrm.fmtMoney(net - sum);
+  document.getElementById("fin-margin").textContent = (net ? Math.round(((net - sum) / net) * 100) : 0) + "%";
 }
 
 async function saveFinancials() {
   const priceAuto = document.getElementById("fin-price-auto").checked;
   const body = { price_auto: priceAuto, misc_cents: finToCents(document.getElementById("fin-misc").value) };
   if (!priceAuto) body.price_cents = finToCents(document.getElementById("fin-price").value);
+  const discAuto = document.getElementById("fin-discount-auto").checked;
+  body.discount_auto = discAuto;
+  if (!discAuto) body.discount_cents = finToCents(document.getElementById("fin-discount").value);
   ["materials", "shipping", "tax", "labor"].forEach((k) => {
     const auto = document.getElementById(`fin-${k}-auto`).checked;
     body[`${k}_auto`] = auto;
@@ -740,7 +751,7 @@ async function saveFinancials() {
 
 async function resetFinancials() {
   try {
-    const r = await SSCrm.fetchJSON(`/api/projects/${state.project.id}/financials`, { method: "PUT", body: JSON.stringify({ price_auto: true, misc_cents: 0 }) });
+    const r = await SSCrm.fetchJSON(`/api/projects/${state.project.id}/financials`, { method: "PUT", body: JSON.stringify({ price_auto: true, discount_auto: true, misc_cents: 0 }) });
     finState = r.financials;
     finRender();
     SSCrm.toast("Reset to formula", "success");

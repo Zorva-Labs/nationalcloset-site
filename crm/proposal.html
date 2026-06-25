@@ -37,9 +37,8 @@ async function retype(kind) {
 
 function render() {
   const { proposal: p, tiers, comments } = state;
-  // Derive the proposal "kind" from its options' contract types.
-  const cts = (tiers || []).map((t) => t.contract_type);
-  const currentKind = cts.includes("install_only") ? "install_only" : cts.includes("repair") ? "repair" : "custom";
+  // Derive the proposal "kind" from its option count: 1 option = single, 2 = custom.
+  const currentKind = (tiers || []).length <= 1 ? "single" : "custom";
   document.getElementById("page-title").textContent = `${p.number} · ${p.project_name}`;
   const canSend = ["draft"].includes(p.status);
   const isAccepted = p.status === "accepted";
@@ -76,9 +75,8 @@ function render() {
       <div class="form">
         <label><span>Proposal type — sets the options below and the contract each one attaches</span>
           <select id="proposal-kind" onchange="retype(this.value)" ${p.status !== "draft" ? "disabled" : ""}>
-            <option value="custom"       ${currentKind === "custom" ? "selected" : ""}>Custom closet — 2 options: walls as-is + wall repair &amp; paint</option>
-            <option value="install_only" ${currentKind === "install_only" ? "selected" : ""}>BYO install — customer-supplied closets (1 option)</option>
-            <option value="repair"       ${currentKind === "repair" ? "selected" : ""}>Repair / service (1 option)</option>
+            <option value="custom" ${currentKind === "custom" ? "selected" : ""}>2 options — walls as-is + wall repair &amp; paint (default)</option>
+            <option value="single" ${currentKind === "single" ? "selected" : ""}>1 option — no wall repair or shelving removal needed</option>
           </select>
         </label>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:-2px">

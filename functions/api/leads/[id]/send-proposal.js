@@ -5,7 +5,7 @@ import { requireAuth, json } from "../../../_lib/auth.js";
 import { upsertContact, recordActivity } from "../../../_lib/db.js";
 import { genToken, nextSequence, formatDocNumber } from "../../../_lib/tokens.js";
 import { seedTiersFromWindows, syncLeadQuotedFromProposal, bumpLeadStatusForward } from "../../../_lib/lifecycle.js";
-import { proposalTiersForKind, defaultContractTypeForKind } from "../../../_lib/proposal-tiers.js";
+import { proposalTiersForKind, defaultContractTypeForKind, introForKind } from "../../../_lib/proposal-tiers.js";
 
 export async function onRequestPost(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -71,10 +71,9 @@ export async function onRequestPost(context) {
   }
   if (!tpl) tpl = await DB.prepare(`SELECT * FROM document_templates WHERE kind='proposal' AND (is_default=1 OR subkind='custom') ORDER BY is_default DESC, id LIMIT 1`).first();
 
-  const intro = tpl?.intro || "Thank you for the opportunity to design your custom closets. Below are two options: Option 1 installs your new system with the walls left as-is, and Option 2 adds patching and fresh paint of the area where your old shelving or cabinets were, before we install. Pick the one that fits.";
-
   // Map the proposal kind to its option(s) + per-option contract type.
   const kind = body.proposal_kind || tpl?.subkind || "custom";
+  const intro = tpl?.intro || introForKind(kind);
   const tiers = proposalTiersForKind(kind, tpl);
   const defaultContractType = defaultContractTypeForKind(kind);
 

@@ -43,7 +43,7 @@ const JOB_STATUS_LABELS = { contracted: "Booked", scheduled_install: "Scheduled"
     return;
   }
   page.innerHTML = `<div class="tbl"><table>
-    <thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>City</th><th class="money">Total</th><th class="money">Balance</th><th>Status</th><th>Install date</th><th>Updated</th></tr></thead>
+    <thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>City</th><th class="money">Total</th><th class="money">Net profit</th><th class="money">Balance</th><th>Status</th><th>Install date</th><th>Updated</th></tr></thead>
     <tbody>${projects.map((p) => {
       const total = p.job_total_cents;
       const balance = total != null ? Math.max(0, total - (p.paid_cents || 0)) : null;
@@ -58,6 +58,7 @@ const JOB_STATUS_LABELS = { contracted: "Booked", scheduled_install: "Scheduled"
       <td>${p.contact_phone ? `<a href="tel:${SSCrm.esc(p.contact_phone)}" onclick="event.stopPropagation()">${SSCrm.esc(p.contact_phone)}</a>` : `<span class="muted">—</span>`}</td>
       <td>${p.contact_city ? SSCrm.esc(p.contact_city) : `<span class="muted">—</span>`}</td>
       <td class="money">${total != null ? SSCrm.fmtMoney(total) : `<span class="muted">—</span>`}</td>
+      <td class="money">${p.net_profit_cents != null ? `<span style="color:#15803D;font-weight:600">${SSCrm.fmtMoney(p.net_profit_cents)}</span>` : `<span class="muted">—</span>`}</td>
       <td class="money">${balanceCell}</td>
       <td>${SSCrm.pill(p.status)}</td>
       <td>${p.install_date ? SSCrm.fmtDay(p.install_date) : `<span class="muted">—</span>`}</td>

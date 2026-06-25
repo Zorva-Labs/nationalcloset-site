@@ -114,6 +114,21 @@
           success.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       }
+      // Only reached if the lead truly fails to save — surface it so the
+      // customer is never told "received" when the request was actually lost.
+      function fail() {
+        if (btn) { btn.disabled = false; btn.innerHTML = original; }
+        var err = card.querySelector(".form-error");
+        if (!err) {
+          err = document.createElement("p");
+          err.className = "form-error";
+          err.setAttribute("role", "alert");
+          err.style.cssText = "margin-top:14px;padding:12px 16px;border-radius:8px;background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;font-size:14px;line-height:1.5;text-align:left";
+          form.appendChild(err);
+        }
+        err.textContent = "Sorry — we couldn't send your request just now. Please call or text us at 629-298-8241 and we'll take care of you right away.";
+        err.style.display = "";
+      }
 
       var fd = new FormData(form);
       var payload = {
@@ -130,16 +145,20 @@
         source: "website" + (location.pathname === "/" ? "" : location.pathname)
       };
       if (payload.company) { done(); return; } // bot — accept silently
-      fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      })
-        .then(function (r) {
-          if (!r.ok) { try { r.text().then(function (t) { console.warn("lead save failed", r.status, t); }); } catch (_) {} }
-        })
-        .catch(function (err) { console.warn("lead save error", err); })
-        .then(done); // show success regardless so the user is never blocked
+      function postLead() {
+        return fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(function (r) { if (!r.ok) throw new Error("http_" + r.status); return r; });
+      }
+      // Show success ONLY when the lead is actually saved. Retry once on a
+      // transient failure (e.g. a deploy blip), then surface an error rather
+      // than telling the customer "received" on a lead that never saved.
+      postLead()
+        .catch(function () { return new Promise(function (res) { setTimeout(res, 1000); }).then(postLead); })
+        .then(function () { done(); })
+        .catch(function (err) { console.warn("lead save failed after retry", err); fail(); });
     });
   });
 

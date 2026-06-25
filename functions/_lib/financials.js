@@ -42,11 +42,14 @@ export function resolveFinancials(defaultGrossCents, defaultDiscountCents, row) 
   const gross = priceOverridden ? row.price_cents : (defaultGrossCents || 0);
   const f = computeBreakdown(gross); // expenses are always derived from the gross
 
-  const line = (key, auto) => (row && row[auto] === 0 && row[key] != null) ? row[key] : f[key.replace("_cents", "")];
-  const materials = line("materials_cents", "materials_auto");
-  const shipping  = line("shipping_cents", "shipping_auto");
-  const tax       = line("tax_cents", "tax_auto");
-  const labor     = line("labor_cents", "labor_auto");
+  // Materials: override if set, else the formula value. Shipping/tax/labor, when
+  // on auto, derive from the EFFECTIVE materials (so an overridden materials cost
+  // flows through to them) — not the formula materials.
+  const over = (key, auto) => row && row[auto] === 0 && row[key] != null;
+  const materials = over("materials_cents", "materials_auto") ? row.materials_cents : f.materials;
+  const shipping  = over("shipping_cents", "shipping_auto") ? row.shipping_cents : Math.round(materials * SHIPPING_RATE);
+  const tax       = over("tax_cents", "tax_auto") ? row.tax_cents : Math.round((materials + shipping) * TAX_RATE);
+  const labor     = over("labor_cents", "labor_auto") ? row.labor_cents : Math.round(materials * LABOR_RATE);
   const misc      = (row && row.misc_cents != null) ? row.misc_cents : 0;
 
   const discountOverridden = row && row.discount_auto === 0 && row.discount_cents != null;

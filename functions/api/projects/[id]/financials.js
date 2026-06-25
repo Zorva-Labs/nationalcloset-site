@@ -7,7 +7,7 @@
 // from the accepted proposal's selected tier; any line can be overridden.
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { getProjectBilling } from "../../../_lib/invoices.js";
-import { resolveFinancials, computeBreakdown } from "../../../_lib/financials.js";
+import { resolveFinancials, computeBreakdown, SHIPPING_RATE, TAX_RATE, LABOR_RATE } from "../../../_lib/financials.js";
 import { recordActivity } from "../../../_lib/db.js";
 
 // Gross (pre-discount) cost basis + dollar discount for a job. Prefer the
@@ -58,13 +58,13 @@ export async function onRequestPut(context) {
   const discount = discountOverride ? cents(body.discount_cents) : b.discountCents;
 
   // Each expense line: auto (use formula) unless the client flags it manual.
-  const lineFor = (key, autoKey) => (body[autoKey] === false)
-    ? { v: cents(body[key + "_cents"]), a: 0 }
-    : { v: f[key], a: 1 };
-  const m = lineFor("materials", "materials_auto");
-  const s = lineFor("shipping", "shipping_auto");
-  const t = lineFor("tax", "tax_auto");
-  const l = lineFor("labor", "labor_auto");
+  // Materials: formula unless overridden. Shipping/tax/labor, when on auto,
+  // derive from the EFFECTIVE materials (m.v) so an overridden materials cost
+  // flows through to them — mirrors resolveFinancials.
+  const m = (body.materials_auto === false) ? { v: cents(body.materials_cents), a: 0 } : { v: f.materials, a: 1 };
+  const s = (body.shipping_auto === false) ? { v: cents(body.shipping_cents), a: 0 } : { v: Math.round(m.v * SHIPPING_RATE), a: 1 };
+  const t = (body.tax_auto === false) ? { v: cents(body.tax_cents), a: 0 } : { v: Math.round((m.v + s.v) * TAX_RATE), a: 1 };
+  const l = (body.labor_auto === false) ? { v: cents(body.labor_cents), a: 0 } : { v: Math.round(m.v * LABOR_RATE), a: 1 };
   const misc = cents(body.misc_cents);
 
   await context.env.DB.prepare(

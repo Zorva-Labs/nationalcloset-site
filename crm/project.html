@@ -748,10 +748,18 @@ function finRecalc() {
   // Discount (auto = the proposal's discount) comes out of profit, not the cost basis.
   if (document.getElementById("fin-discount-auto").checked) document.getElementById("fin-discount").value = finDollars(finState.default_discount_cents || 0);
   const discount = finToCents(document.getElementById("fin-discount").value);
-  ["materials", "shipping", "tax", "labor"].forEach((k) => {
-    if (document.getElementById(`fin-${k}-auto`).checked) document.getElementById(`fin-${k}`).value = finDollars(calc[k]);
-  });
-  const sum = ["materials", "shipping", "tax", "labor", "misc"].reduce((a, k) => a + finToCents(document.getElementById(`fin-${k}`).value), 0);
+  // Materials: auto = formula. Shipping/tax/labor, when on auto, derive from the
+  // EFFECTIVE materials (override or formula) so an overridden materials cost
+  // flows through to them.
+  if (document.getElementById("fin-materials-auto").checked) document.getElementById("fin-materials").value = finDollars(calc.materials);
+  const matCents = finToCents(document.getElementById("fin-materials").value);
+  const shipCents = document.getElementById("fin-shipping-auto").checked ? Math.round(matCents * 0.05) : finToCents(document.getElementById("fin-shipping").value);
+  if (document.getElementById("fin-shipping-auto").checked) document.getElementById("fin-shipping").value = finDollars(shipCents);
+  const taxCents = document.getElementById("fin-tax-auto").checked ? Math.round((matCents + shipCents) * 0.0975) : finToCents(document.getElementById("fin-tax").value);
+  if (document.getElementById("fin-tax-auto").checked) document.getElementById("fin-tax").value = finDollars(taxCents);
+  const laborCents = document.getElementById("fin-labor-auto").checked ? Math.round(matCents * 0.15) : finToCents(document.getElementById("fin-labor").value);
+  if (document.getElementById("fin-labor-auto").checked) document.getElementById("fin-labor").value = finDollars(laborCents);
+  const sum = matCents + shipCents + taxCents + laborCents + finToCents(document.getElementById("fin-misc").value);
   const net = price - discount;
   document.getElementById("fin-net").textContent = SSCrm.fmtMoney(net);
   document.getElementById("fin-expenses").textContent = SSCrm.fmtMoney(sum);

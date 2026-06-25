@@ -1,6 +1,6 @@
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { sendStageEmail, STAGE_EMAIL_KIND } from "../../../_lib/stage-emails.js";
-import { createInvoice } from "../../../_lib/invoices.js";
+import { createInvoice, getProjectBilling } from "../../../_lib/invoices.js";
 import { deleteProjectCascade } from "../../../_lib/cascade.js";
 
 export async function onRequestGet(context) {
@@ -72,7 +72,22 @@ export async function onRequestGet(context) {
   // Job notes promised to the client — prefer the accepted proposal, else the latest with notes.
   const notedProposal = proposals.find((p) => p.status === "accepted" && p.job_notes) || proposals.find((p) => p.job_notes) || null;
   const jobNotes = notedProposal ? notedProposal.job_notes : null;
-  return json({ project, windows, estimates, proposals, contracts, appointments, lead, lead_notes: leadNotes, email_count: emailCount, drawings, job_notes: jobNotes });
+
+  // Billing summary so the UI can say "paid in full" instead of leaning on the
+  // deposit flag once the whole job has been collected.
+  const billInfo = await getProjectBilling(context.env.DB, id).catch(() => null);
+  const paidRow = await context.env.DB.prepare(
+    `SELECT COALESCE(SUM(amount_paid_cents), 0) AS paid FROM invoices WHERE project_id=?1`
+  ).bind(id).first().catch(() => null);
+  const billTotal = billInfo?.totalCents || 0;
+  const billPaid = paidRow?.paid || 0;
+  const billing = {
+    total_cents: billTotal, paid_cents: billPaid,
+    balance_cents: Math.max(0, billTotal - billPaid),
+    paid_in_full: billTotal > 0 && billPaid >= billTotal,
+  };
+
+  return json({ project, windows, estimates, proposals, contracts, appointments, lead, lead_notes: leadNotes, email_count: emailCount, drawings, job_notes: jobNotes, billing });
 }
 
 export async function onRequestPatch(context) {

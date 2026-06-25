@@ -75,7 +75,7 @@ async function render() {
         </div>
         <div class="banner__body">
           <strong>Job booked.</strong>
-          <span>Contract ${SSCrm.esc(fullyExecuted.number)} fully executed · ${SSCrm.fmtMoney(fullyExecuted.total_cents)}${fullyExecuted.deposit_paid ? " · Deposit received" : ""}</span>
+          <span>Contract ${SSCrm.esc(fullyExecuted.number)} fully executed · ${SSCrm.fmtMoney(fullyExecuted.total_cents)}${(state.billing && state.billing.paid_in_full) ? " · Paid in full" : (fullyExecuted.deposit_paid ? " · Deposit received" : "")}</span>
         </div>
       </div>` : ""}
     ${isSigned && !JOB_BOOKED ? `
@@ -343,6 +343,7 @@ function renderInvoices(host, invoices) {
       ${stat("Job total", jobTotal != null ? m(jobTotal) : "—")}
       ${stat("Paid", m(paidCents), "#10B981")}
       ${stat("Balance due", m(balanceDue), balanceDue > 0 ? "#B45309" : "#10B981")}
+      ${(jobTotal && balanceDue === 0 && paidCents >= jobTotal) ? `<div style="background:#ECFDF5;color:#15803D;font-weight:700;font-size:13px;padding:6px 12px;border-radius:999px">✓ Paid in full</div>` : ""}
       <div style="flex:1;min-width:200px;text-align:right;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">
         <button class="btn secondary sm" onclick="createInvoiceUI('deposit')">+ Deposit</button>
         <button class="btn secondary sm" onclick="createInvoiceUI('balance')">+ Balance</button>
@@ -522,7 +523,9 @@ function renderOverview(s) {
               <div class="muted">Number</div><div><strong style="color:var(--ink)">${e(signedContract.number)}</strong></div>
               <div class="muted">Type</div><div>${e(signedContract.contract_type || "custom_order").replace(/_/g, " ")}</div>
               <div class="muted">Total</div><div class="money" style="font-size:15px">${fmtMoney(signedContract.total_cents)}</div>
-              ${signedContract.deposit_cents ? `<div class="muted">Deposit</div><div>${fmtMoney(signedContract.deposit_cents)} ${signedContract.deposit_paid ? "<span class=\"muted\">· received</span>" : "<span class=\"muted\">· pending</span>"}</div>` : ""}
+              ${(state.billing && state.billing.paid_in_full)
+                ? `<div class="muted">Payment</div><div style="color:#15803D;font-weight:600">Paid in full</div>`
+                : (signedContract.deposit_cents ? `<div class="muted">Deposit</div><div>${fmtMoney(signedContract.deposit_cents)} ${signedContract.deposit_paid ? "<span class=\"muted\">· received</span>" : "<span class=\"muted\">· pending</span>"}</div>` : "")}
               ${signedContract.signed_by_customer_at ? `<div class="muted">Customer signed</div><div>${fmtDateTime(signedContract.signed_by_customer_at)}</div>` : ""}
               ${signedContract.counter_signed_at ? `<div class="muted">Counter-signed</div><div>${fmtDateTime(signedContract.counter_signed_at)}</div>` : ""}
             </div>

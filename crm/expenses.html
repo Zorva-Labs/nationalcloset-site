@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Expenses / Bills · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc20"/>
+<style>
+  .exp-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .exp-filters{display:inline-flex;gap:4px;background:var(--bg-soft);border:1px solid var(--line);border-radius:999px;padding:4px}
+  .exp-filter{border:0;background:transparent;font:inherit;font-size:13px;font-weight:600;color:var(--ink-soft);padding:7px 16px;border-radius:999px;cursor:pointer}
+  .exp-filter:hover{color:var(--ink)}
+  .exp-filter.is-active{background:var(--bg);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .exp-filter .n{color:var(--ink-soft);margin-left:5px}
+  .exp-out{margin-left:auto;font-size:13px;color:var(--ink-soft)}
+  .exp-out strong{font-size:18px;color:#B91C1C}
+</style></head>
+<body>
+<script src="/crm/crm-app.js?v=ncc20"></script>
+<script>
+const CATEGORIES = ["Materials", "Subcontractor", "Labor", "Tools & Equipment", "Vehicle / Fuel", "Rent / Overhead", "Marketing", "Software / Fees", "Other"];
+const ST = { unpaid: "Unpaid", paid: "Paid", void: "Void" };
+
+(async () => {
+  const user = await SSCrm.mount({ title: "Expenses / Bills", subtitle: "Track what the business owes & pays — powers Accounts Payable + cash flow", wide: true,
+    actions: `<button class="btn primary" onclick="addBill()">+ Add bill</button>` });
+  if (!user) return;
+  window._page = document.getElementById("page");
+  load();
+})();
+
+let data = { expenses: [], counts: {}, outstanding_cents: 0 };
+let filter = "all";
+
+async function load() {
+  try { data = await SSCrm.fetchJSON("/api/expenses"); }
+  catch (e) { _page.innerHTML = `<div class="tbl"><div class="empty">Couldn't load: ${SSCrm.esc(e.message)}</div></div>`; return; }
+  render();
+}
+
+function render() {
+  const all = data.expenses || [];
+  const rows = filter === "all" ? all : all.filter((x) => x.status === filter);
+  const n = (s) => all.filter((x) => x.status === s).length;
+  const table = !rows.length
+    ? `<div class="tbl"><div class="empty">No ${filter === "all" ? "" : ST[filter].toLowerCase() + " "}bills yet. Click “+ Add bill” to log one.</div></div>`
+    : `<div class="tbl"><table>
+        <thead><tr><th>Vendor / Description</th><th>Category</th><th>Job</th><th>Bill date</th><th>Due</th><th class="num">Amount</th><th class="num">Paid</th><th class="num">Balance</th><th>Status</th><th></th></tr></thead>
+        <tbody>${rows.map((x) => {
+          const bal = (x.amount_cents || 0) - (x.amount_paid_cents || 0);
+          const open = x.status !== "paid" && x.status !== "void" && bal > 0;
+          return `<tr>
+            <td><strong>${SSCrm.esc(x.vendor || "—")}</strong>${x.description ? `<div class="muted" style="font-size:12px">${SSCrm.esc(x.description)}</div>` : ""}</td>
+            <td>${x.category ? SSCrm.esc(x.category) : `<span class="muted">—</span>`}</td>
+            <td>${x.project_id ? `<a href="/crm/project.html?id=${x.project_id}" onclick="event.stopPropagation()">${SSCrm.esc(x.project_name || "Job #" + x.project_id)}</a>` : `<span class="muted">—</span>`}</td>
+            <td class="muted">${x.bill_date ? SSCrm.fmtDay(x.bill_date) : SSCrm.fmtDate(x.created_at)}</td>
+            <td class="muted">${x.due_date ? SSCrm.fmtDay(x.due_date) : "—"}</td>
+            <td class="money">${SSCrm.fmtMoney(x.amount_cents)}</td>
+            <td class="money">${x.amount_paid_cents ? SSCrm.fmtMoney(x.amount_paid_cents) : "—"}</td>
+            <td class="money" style="${bal > 0 ? "color:#B91C1C;font-weight:600" : "color:#15803D"}">${SSCrm.fmtMoney(bal)}</td>
+            <td>${SSCrm.pill(x.status)}</td>
+            <td style="text-align:right;white-space:nowrap">
+              ${open ? `<button class="btn primary sm" onclick="payBill(${x.id})">💵 Pay</button> ` : ""}
+              <button class="btn ghost sm" onclick="editBill(${x.id})">Edit</button>
+              <button class="btn ghost sm" onclick="delBill(${x.id})" title="Delete">×</button>
+            </td>
+          </tr>`;
+        }).join("")}</tbody></table></div>`;
+
+  _page.innerHTML = `
+    <div class="exp-bar">
+      <div class="exp-filters">
+        <button class="exp-filter ${filter === "all" ? "is-active" : ""}" data-f="all">All <span class="n">${all.length}</span></button>
+        <button class="exp-filter ${filter === "unpaid" ? "is-active" : ""}" data-f="unpaid">Unpaid <span class="n">${n("unpaid")}</span></button>
+        <button class="exp-filter ${filter === "paid" ? "is-active" : ""}" data-f="paid">Paid <span class="n">${n("paid")}</span></button>
+      </div>
+      <div class="exp-out">Outstanding (A/P): <strong>${SSCrm.fmtMoney(data.outstanding_cents || 0)}</strong></div>
+    </div>
+    ${table}`;
+  _page.querySelectorAll(".exp-filter").forEach((b) => b.addEventListener("click", () => { filter = b.dataset.f; render(); }));
+}
+
+function billModal(x) {
+  const isEdit = !!x;
+  x = x || {};
+  const today = new Date().toISOString().slice(0, 10);
+  let linkedProject = x.project_id ? { id: x.project_id, name: x.project_name } : null;
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `
+    <div class="modal" style="max-width:520px">
+      <div class="modal-head">${isEdit ? "Edit bill" : "Add a bill / expense"}</div>
+      <div class="modal-body"><div class="form">
+        <label><span>Vendor / payee</span><input id="b-vendor" value="${SSCrm.esc(x.vendor || "")}" placeholder="e.g. ClosetMaid, Home Depot, sub-contractor" autofocus/></label>
+        <label><span>Description</span><input id="b-desc" value="${SSCrm.esc(x.description || "")}" placeholder="What's it for?"/></label>
+        <div class="row">
+          <label><span>Category</span><select id="b-cat">${["", ...CATEGORIES].map((c) => `<option ${x.category === c ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+          <label><span>Amount</span><input id="b-amt" value="${x.amount_cents != null ? SSCrm.fmtMoney(x.amount_cents) : ""}" placeholder="$0.00" inputmode="decimal"/></label>
+        </div>
+        <div class="row">
+          <label><span>Bill date</span><input id="b-bdate" type="date" value="${x.bill_date || today}"/></label>
+          <label><span>Due date</span><input id="b-ddate" type="date" value="${x.due_date || ""}"/></label>
+        </div>
+        <label><span>Link to a job <span class="muted" style="font-weight:400">(optional)</span></span>
+          <div style="display:flex;gap:8px;align-items:center"><span id="b-projlbl" class="muted" style="font-size:13px;flex:1">${linkedProject ? SSCrm.esc(linkedProject.name || "Job #" + linkedProject.id) : "Not linked"}</span><button type="button" class="btn ghost sm" id="b-pick">Choose job</button>${linkedProject ? `<button type="button" class="btn ghost sm" id="b-clear">Clear</button>` : ""}</div>
+        </label>
+        <label><span>Notes</span><textarea id="b-notes" rows="2">${SSCrm.esc(x.notes || "")}</textarea></label>
+      </div></div>
+      <div class="modal-foot"><button class="btn ghost" data-cancel>Cancel</button><button class="btn primary" data-save>${isEdit ? "Save" : "Add bill"}</button></div>
+    </div>`;
+  document.body.appendChild(bg);
+  const close = () => bg.remove();
+  bg.querySelector("[data-cancel]").onclick = close;
+  bg.addEventListener("click", (e) => { if (e.target === bg) close(); });
+  const refreshProjLbl = () => {
+    bg.querySelector("#b-projlbl").textContent = linkedProject ? (linkedProject.name || "Job #" + linkedProject.id) : "Not linked";
+  };
+  bg.querySelector("#b-pick").onclick = async () => { const j = await SSCrm.pickJob(); if (j) { linkedProject = j; refreshProjLbl(); } };
+  const clearBtn = bg.querySelector("#b-clear"); if (clearBtn) clearBtn.onclick = () => { linkedProject = null; refreshProjLbl(); };
+  bg.querySelector("[data-save]").onclick = async () => {
+    const body = {
+      vendor: bg.querySelector("#b-vendor").value.trim() || null,
+      description: bg.querySelector("#b-desc").value.trim() || null,
+      category: bg.querySelector("#b-cat").value || null,
+      amount_cents: SSCrm.parseMoney(bg.querySelector("#b-amt").value),
+      bill_date: bg.querySelector("#b-bdate").value || null,
+      due_date: bg.querySelector("#b-ddate").value || null,
+      project_id: linkedProject ? linkedProject.id : null,
+      notes: bg.querySelector("#b-notes").value.trim() || null,
+    };
+    if (!(body.vendor || body.description)) { SSCrm.toast("Add a vendor or description", "error"); return; }
+    if (!body.amount_cents || body.amount_cents <= 0) { SSCrm.toast("Enter an amount", "error"); return; }
+    try {
+      if (isEdit) await SSCrm.fetchJSON(`/api/expenses/${x.id}`, { method: "PATCH", body: JSON.stringify(body) });
+      else await SSCrm.fetchJSON("/api/expenses", { method: "POST", body: JSON.stringify(body) });
+      close(); SSCrm.toast("Saved", "success"); load();
+    } catch (e) { SSCrm.toast(e.message, "error"); }
+  };
+}
+
+function addBill() { billModal(null); }
+function editBill(id) { const x = data.expenses.find((e) => e.id === id); if (x) billModal(x); }
+async function payBill(id) {
+  const x = data.expenses.find((e) => e.id === id);
+  if (!x) return;
+  const r = await SSCrm.recordPayment(x, { endpoint: `/api/expenses/${id}`, title: "Pay bill · " + (x.vendor || x.description || ""), receipt: false, dateLabel: "Date paid" });
+  if (r) load();
+}
+async function delBill(id) {
+  if (!(await SSCrm.confirmDialog("Delete this bill? This can't be undone."))) return;
+  try { await SSCrm.fetchJSON(`/api/expenses/${id}`, { method: "DELETE" }); SSCrm.toast("Deleted", "success"); load(); }
+  catch (e) { SSCrm.toast(e.message, "error"); }
+}
+</script></body></html>

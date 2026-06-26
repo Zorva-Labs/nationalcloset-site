@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Reports · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc19"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc20"/>
 <style>
   .rpt-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
   .rpt-presets{display:inline-flex;gap:4px;background:var(--bg-soft);border:1px solid var(--line);border-radius:999px;padding:4px}
@@ -36,7 +36,7 @@
   .fnl-row .pc{text-align:right;color:var(--ink-soft);font-size:12px}
 </style></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc19"></script>
+<script src="/crm/crm-app.js?v=ncc20"></script>
 <script>
 (async () => {
   const user = await SSCrm.mount({ title: "Reports", subtitle: "Profit & loss and lead performance", wide: true });
@@ -62,6 +62,8 @@
   let data = null;         // P&L payload
   let ldata = null;        // Leads payload
   let rdata = null;        // Receivables (A/R) payload
+  let pdata = null;        // Payables (A/P) payload
+  let cdata = null;        // Cash flow payload
 
   const STATUS_LABEL = { contracted: "Booked", scheduled_install: "Scheduled", installing: "Installing", completed: "Completed" };
   const pct = (part, whole) => whole ? Math.round((part / whole) * 100) + "%" : "—";
@@ -83,19 +85,21 @@
 
   // ───────── shared filter bar ─────────
   function barHTML() {
-    const dated = view !== "receivables";
+    const snapshot = view === "receivables" || view === "payables";
     return `<div class="rpt-bar">
       <div class="rpt-presets">
         <button class="rpt-preset ${view === "pnl" ? "is-active" : ""}" data-view="pnl">Profit &amp; loss</button>
         <button class="rpt-preset ${view === "leads" ? "is-active" : ""}" data-view="leads">Leads</button>
         <button class="rpt-preset ${view === "receivables" ? "is-active" : ""}" data-view="receivables">Receivables</button>
+        <button class="rpt-preset ${view === "payables" ? "is-active" : ""}" data-view="payables">Payables</button>
+        <button class="rpt-preset ${view === "cashflow" ? "is-active" : ""}" data-view="cashflow">Cash flow</button>
       </div>
-      ${dated ? `<div class="rpt-presets">
+      ${!snapshot ? `<div class="rpt-presets">
         ${[["month", "This month"], ["ytd", "Year to date"], ["30", "Last 30"], ["12mo", "Last 12 mo"], ["all", "All time"]]
           .map(([k, lbl]) => `<button class="rpt-preset ${preset === k ? "is-active" : ""}" data-p="${k}">${lbl}</button>`).join("")}
       </div>
       <div class="rpt-dates"><input type="date" id="rpt-from" value="${from}"/><span>→</span><input type="date" id="rpt-to" value="${to === "2999-12-31" ? "" : to}"/></div>`
-      : `<div class="rpt-dates" style="color:var(--ink-soft)">A/R snapshot · as of ${fmtDay(new Date().toISOString().slice(0, 10))}</div>`}
+      : `<div class="rpt-dates" style="color:var(--ink-soft)">${view === "payables" ? "A/P" : "A/R"} snapshot · as of ${fmtDay(new Date().toISOString().slice(0, 10))}</div>`}
       <div class="rpt-right">
         ${view === "pnl" ? `<div class="rpt-scope">
           <button class="rpt-preset ${!all ? "is-active" : ""}" data-scope="won">Won jobs</button>
@@ -119,7 +123,7 @@
     document.getElementById("rpt-csv").addEventListener("click", downloadCSV);
   }
 
-  function render() { (view === "leads" ? renderLeads : view === "receivables" ? renderReceivables : renderPnl)(); wireBar(); }
+  function render() { ({ leads: renderLeads, receivables: renderReceivables, payables: renderPayables, cashflow: renderCashflow }[view] || renderPnl)(); wireBar(); }
 
   // ───────── P&L view ─────────
   function renderPnl() {
@@ -243,6 +247,63 @@
       <p class="muted" style="font-size:12px;margin-top:14px">Snapshot as of today. Aging runs from each invoice's due date (or its invoice date if none). Void and fully-paid invoices are excluded.</p>`;
   }
 
+  // ───────── Payables (A/P + aging) view ─────────
+  function renderPayables() {
+    const d = pdata || { total_cents: 0, overdue_cents: 0, count: 0, oldest_days: 0, buckets: { current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90: 0 }, categories: [], bills: [] };
+    const b = d.buckets;
+    const agingCells = AR_BUCKETS.map(([k, lbl]) => {
+      const color = (k === "d90" && b[k] > 0) ? "color:#B91C1C" : (k === "current" ? "color:#15803D" : "");
+      return `<div class="rpt-kpi" style="padding:12px 14px"><div class="lbl" style="font-size:11px">${lbl}</div><div class="val" style="font-size:20px;${color}">${M(b[k])}</div><div class="sub">${pct(b[k], d.total_cents)}</div></div>`;
+    }).join("");
+    const rows = d.bills.length ? d.bills.map((x) => `<tr>
+        <td><strong>${e(x.vendor || "—")}</strong>${x.description ? `<div class="muted" style="font-size:12px">${e(x.description)}</div>` : ""}</td>
+        <td>${x.category ? e(x.category) : `<span class="muted">—</span>`}</td>
+        <td class="num">${M(x.amount_cents)}</td><td class="num">${x.paid_cents ? M(x.paid_cents) : "—"}</td>
+        <td class="num" style="font-weight:700">${M(x.balance_cents)}</td>
+        <td class="num">${x.due_date ? SSCrm.fmtDay(x.due_date) : "—"}</td>
+        <td class="num" style="${x.days_past > 0 ? "color:#B91C1C;font-weight:600" : "color:#15803D"}">${x.days_past > 0 ? x.days_past + "d" : "Current"}</td></tr>`).join("")
+      : `<tr><td colspan="7" class="empty" style="padding:24px">No unpaid bills. <a href="/crm/expenses.html">Add bills →</a></td></tr>`;
+    page.innerHTML = barHTML() + `
+      <div class="rpt-cards">
+        <div class="rpt-kpi"><div class="lbl">Total A/P</div><div class="val" style="${d.total_cents > 0 ? "color:#B91C1C" : ""}">${M(d.total_cents)}</div><div class="sub">${d.count} unpaid bill${d.count === 1 ? "" : "s"}</div></div>
+        <div class="rpt-kpi"><div class="lbl">Overdue</div><div class="val" style="${d.overdue_cents > 0 ? "color:#B91C1C" : ""}">${M(d.overdue_cents)}</div><div class="sub">${pct(d.overdue_cents, d.total_cents)} of A/P</div></div>
+        <div class="rpt-kpi"><div class="lbl">Not yet due</div><div class="val" style="color:#15803D">${M(b.current)}</div><div class="sub">${pct(b.current, d.total_cents)}</div></div>
+        <div class="rpt-kpi"><div class="lbl">Oldest past due</div><div class="val">${d.oldest_days > 0 ? d.oldest_days + " d" : "—"}</div><div class="sub">days</div></div>
+      </div>
+      <div class="card" style="margin-bottom:18px"><div class="card-head"><h3>A/P Aging</h3></div><div class="rpt-cards" style="margin-bottom:0">${agingCells}</div></div>
+      <div class="lead-grid" style="grid-template-columns:1fr minmax(220px,300px);gap:20px;align-items:start">
+        <div class="card"><div class="card-head"><h3>Unpaid bills <span class="muted" style="font-weight:500">· ${d.count}</span></h3></div>
+          <div class="tbl"><table><thead><tr><th>Vendor</th><th>Category</th><th class="num">Amount</th><th class="num">Paid</th><th class="num">Balance</th><th class="num">Due</th><th class="num">Past due</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+        <div class="card"><div class="card-head"><h3>By category</h3></div>
+          ${d.categories.length ? `<div class="tbl"><table><thead><tr><th>Category</th><th class="num">Owed</th></tr></thead><tbody>${d.categories.map((c) => `<tr><td>${e(c.category)}</td><td class="num">${M(c.amount)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted" style="font-size:13px;margin:0">—</p>`}</div>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:14px">Snapshot as of today, from your logged bills. Add &amp; pay bills under <a href="/crm/expenses.html">Expenses / Bills</a>.</p>`;
+  }
+
+  // ───────── Cash Flow view ─────────
+  function renderCashflow() {
+    const d = cdata || { cash_in: 0, cash_out: 0, net: 0, by_month: [], out_by_category: [], est_costs: 0 };
+    const monthLabel = (m) => { const [y, mo] = m.split("-"); return new Date(y, mo - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" }); };
+    const monthRows = d.by_month.length ? d.by_month.map((x) => `<tr><td>${monthLabel(x.month)}</td><td class="num" style="color:#15803D">${M(x.cash_in)}</td><td class="num" style="color:#B91C1C">${x.cash_out ? "(" + M(x.cash_out) + ")" : "—"}</td><td class="num" style="font-weight:700;${x.net < 0 ? "color:#B91C1C" : ""}">${M(x.net)}</td></tr>`).join("")
+      : `<tr><td colspan="4" class="empty" style="padding:24px">No cash activity in this range.</td></tr>`;
+    const catRows = d.out_by_category.length ? d.out_by_category.map((c) => `<tr><td>${e(c.category)}</td><td class="num">${M(c.amount)}</td></tr>`).join("") : `<tr><td colspan="2" class="muted" style="padding:12px">No bill payments logged yet.</td></tr>`;
+    page.innerHTML = barHTML() + `
+      <div class="rpt-cards">
+        <div class="rpt-kpi"><div class="lbl">Cash in</div><div class="val" style="color:#15803D">${M(d.cash_in)}</div><div class="sub">customer payments</div></div>
+        <div class="rpt-kpi"><div class="lbl">Cash out</div><div class="val" style="${d.cash_out > 0 ? "color:#B91C1C" : ""}">${M(d.cash_out)}</div><div class="sub">bills paid</div></div>
+        <div class="rpt-kpi accent"><div class="lbl">Net cash flow</div><div class="val" style="${d.net < 0 ? "color:#B91C1C" : ""}">${M(d.net)}</div><div class="sub">in − out</div></div>
+        <div class="rpt-kpi"><div class="lbl">Est. job costs</div><div class="val">${M(d.est_costs)}</div><div class="sub">modeled · from P&amp;L formula</div></div>
+      </div>
+      <div class="lead-grid" style="grid-template-columns:1fr minmax(220px,300px);gap:20px;align-items:start">
+        <div class="card"><div class="card-head"><h3>Cash flow by month</h3></div>
+          <div class="tbl"><table><thead><tr><th>Month</th><th class="num">In</th><th class="num">Out</th><th class="num">Net</th></tr></thead><tbody>${monthRows}
+            <tr style="font-weight:700;border-top:2px solid var(--ink)"><td>Total</td><td class="num" style="color:#15803D">${M(d.cash_in)}</td><td class="num" style="color:#B91C1C">${d.cash_out ? "(" + M(d.cash_out) + ")" : "—"}</td><td class="num">${M(d.net)}</td></tr></tbody></table></div></div>
+        <div class="card"><div class="card-head"><h3>Spending by category</h3></div>
+          <div class="tbl"><table><thead><tr><th>Category</th><th class="num">Paid</th></tr></thead><tbody>${catRows}</tbody></table></div></div>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:14px">Cash in = customer payments (by date). Cash out = bills you've paid. <strong>Est. job costs</strong> is the P&amp;L formula's modeled cost for won jobs created in range — a projection until you log actual bills under <a href="/crm/expenses.html">Expenses</a>.</p>`;
+  }
+
   // ───────── Branded downloads ─────────
   function letterhead() {
     return `<div class="head">
@@ -359,7 +420,65 @@
   function downloadPDF() {
     if (view === "leads") { if (ldata) openPrint(brandedLeadsHTML()); }
     else if (view === "receivables") { if (rdata) openPrint(brandedReceivablesHTML()); }
+    else if (view === "payables") { if (pdata) openPrint(brandedPayablesHTML()); }
+    else if (view === "cashflow") { if (cdata) openPrint(brandedCashflowHTML()); }
     else if (data) openPrint(brandedPnlHTML());
+  }
+
+  function brandedPayablesHTML() {
+    const d = pdata, b = d.buckets;
+    const agingRow = AR_BUCKETS.map(([k, lbl]) => `<tr><td>${lbl}</td><td class="amt">${M(b[k])}</td><td class="p">${pct(b[k], d.total_cents)}</td></tr>`).join("");
+    const rows = d.bills.length ? d.bills.map((x) => `<tr>
+        <td>${e(x.vendor || "—")}<div class="sub">${e(x.description || "")}${x.category ? " · " + e(x.category) : ""}</div></td>
+        <td class="amt">${M(x.amount_cents)}</td><td class="amt">${x.paid_cents ? M(x.paid_cents) : "—"}</td>
+        <td class="amt strong" style="color:#1a1a1a">${M(x.balance_cents)}</td>
+        <td class="amt">${x.due_date ? SSCrm.fmtDay(x.due_date) : "—"}</td>
+        <td class="amt">${x.days_past > 0 ? x.days_past + "d" : "Current"}</td></tr>`).join("")
+      : `<tr><td colspan="6" style="text-align:center;color:#777;padding:20px">No unpaid bills.</td></tr>`;
+    const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>A/P Aging — ${e(BIZ.name)}</title><style>${PRINT_CSS}</style></head><body>
+      ${letterhead()}
+      <h1>Accounts Payable &amp; Aging</h1>
+      <div class="range">As of ${today} · ${d.count} unpaid bill${d.count === 1 ? "" : "s"}</div>
+      <div class="kpis">
+        <div class="kpi"><div class="l">Total A/P</div><div class="v">${M(d.total_cents)}</div></div>
+        <div class="kpi"><div class="l">Overdue</div><div class="v">${M(d.overdue_cents)}</div></div>
+        <div class="kpi green"><div class="l">Not yet due</div><div class="v">${M(b.current)}</div></div>
+        <div class="kpi"><div class="l">Oldest</div><div class="v">${d.oldest_days > 0 ? d.oldest_days + " d" : "—"}</div></div>
+      </div>
+      <h2>Aging summary</h2>
+      <table class="pnl"><thead><tr><th style="text-align:left">Bucket</th><th class="amt">Balance</th><th class="p">%</th></tr></thead><tbody>${agingRow}
+        <tr class="tot"><td>Total</td><td class="amt">${M(d.total_cents)}</td><td class="p">100%</td></tr></tbody></table>
+      <h2>Unpaid bills</h2>
+      <table class="data"><thead><tr><th>Vendor</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Due</th><th>Past due</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="foot"><span>Generated ${today} · ${e(BIZ.name)}</span><span>Internal management report</span></div>
+      ${PRINT_JS}</body></html>`;
+  }
+
+  function brandedCashflowHTML() {
+    const d = cdata;
+    const monthLabel = (m) => { const [y, mo] = m.split("-"); return new Date(y, mo - 1, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" }); };
+    const monthRows = d.by_month.length ? d.by_month.map((x) => `<tr><td>${monthLabel(x.month)}</td><td class="amt">${M(x.cash_in)}</td><td class="amt">${x.cash_out ? "(" + M(x.cash_out) + ")" : "—"}</td><td class="amt strong" style="color:#1a1a1a">${M(x.net)}</td></tr>`).join("")
+      : `<tr><td colspan="4" style="text-align:center;color:#777;padding:20px">No cash activity.</td></tr>`;
+    const catRows = d.out_by_category.length ? d.out_by_category.map((c) => `<tr><td>${e(c.category)}</td><td class="amt">${M(c.amount)}</td></tr>`).join("") : `<tr><td colspan="2" style="color:#777;padding:12px">No bill payments logged.</td></tr>`;
+    const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Cash Flow — ${e(BIZ.name)}</title><style>${PRINT_CSS}</style></head><body>
+      ${letterhead()}
+      <h1>Cash Flow</h1>
+      <div class="range">${e(rangeLabel())}</div>
+      <div class="kpis">
+        <div class="kpi green"><div class="l">Cash in</div><div class="v">${M(d.cash_in)}</div></div>
+        <div class="kpi"><div class="l">Cash out</div><div class="v">${M(d.cash_out)}</div></div>
+        <div class="kpi"><div class="l">Net</div><div class="v">${M(d.net)}</div></div>
+        <div class="kpi"><div class="l">Est. costs (modeled)</div><div class="v">${M(d.est_costs)}</div></div>
+      </div>
+      <h2>By month</h2>
+      <table class="pnl"><thead><tr><th style="text-align:left">Month</th><th class="amt">Cash in</th><th class="amt">Cash out</th><th class="amt">Net</th></tr></thead><tbody>${monthRows}
+        <tr class="tot"><td>Total</td><td class="amt">${M(d.cash_in)}</td><td class="amt">(${M(d.cash_out)})</td><td class="amt">${M(d.net)}</td></tr></tbody></table>
+      <h2>Spending by category</h2>
+      <table class="data"><thead><tr><th>Category</th><th>Paid</th></tr></thead><tbody>${catRows}</tbody></table>
+      <div class="foot"><span>Generated ${today} · ${e(BIZ.name)}</span><span>Cash basis · est. costs are modeled, not actual</span></div>
+      ${PRINT_JS}</body></html>`;
   }
 
   function brandedReceivablesHTML() {
@@ -421,6 +540,22 @@
       rows.push(["Total A/R", c(d.total_cents)], [], ["Invoice", "Customer", "Job", "Type", "Amount", "Paid", "Balance", "Due", "Days past due"]);
       d.invoices.forEach((iv) => rows.push([iv.number, iv.contact_name || "", iv.project_name || "", iv.type, c(iv.amount_cents), c(iv.paid_cents), c(iv.balance_cents), iv.due_date || "", iv.days_past > 0 ? iv.days_past : 0]));
       csvDownload(rows, `NCC-AR-Aging-${d.as_of}.csv`);
+    } else if (view === "payables") {
+      if (!pdata) return;
+      const d = pdata, c = (x) => ((x || 0) / 100).toFixed(2);
+      const rows = [["NCC Accounts Payable — Aging", "As of " + d.as_of], [], ["Bucket", "Balance"]];
+      AR_BUCKETS.forEach(([k, lbl]) => rows.push([lbl, c(d.buckets[k])]));
+      rows.push(["Total A/P", c(d.total_cents)], [], ["Vendor", "Description", "Category", "Job", "Amount", "Paid", "Balance", "Due", "Days past due"]);
+      d.bills.forEach((x) => rows.push([x.vendor || "", x.description || "", x.category || "", x.project_name || "", c(x.amount_cents), c(x.paid_cents), c(x.balance_cents), x.due_date || "", x.days_past > 0 ? x.days_past : 0]));
+      csvDownload(rows, `NCC-AP-Aging-${d.as_of}.csv`);
+    } else if (view === "cashflow") {
+      if (!cdata) return;
+      const d = cdata, c = (x) => ((x || 0) / 100).toFixed(2);
+      const rows = [["NCC Cash Flow", rangeLabel()], [], ["Cash in", c(d.cash_in)], ["Cash out", c(d.cash_out)], ["Net", c(d.net)], ["Est. job costs (modeled)", c(d.est_costs)], [], ["Month", "Cash in", "Cash out", "Net"]];
+      d.by_month.forEach((x) => rows.push([x.month, c(x.cash_in), c(x.cash_out), c(x.net)]));
+      rows.push([], ["Spending by category", "Paid"]);
+      d.out_by_category.forEach((x) => rows.push([x.category, c(x.amount)]));
+      csvDownload(rows, `NCC-CashFlow-${tag}.csv`);
     } else {
       if (!data) return;
       const t = data.totals, c = (x) => (x / 100).toFixed(2);
@@ -437,6 +572,8 @@
     try {
       if (view === "leads") ldata = await SSCrm.fetchJSON(`/api/reports/leads?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
       else if (view === "receivables") rdata = await SSCrm.fetchJSON(`/api/reports/receivables`);
+      else if (view === "payables") pdata = await SSCrm.fetchJSON(`/api/reports/payables`);
+      else if (view === "cashflow") cdata = await SSCrm.fetchJSON(`/api/reports/cashflow?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
       else data = await SSCrm.fetchJSON(`/api/reports?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&all=${all ? 1 : 0}`);
     } catch (err) {
       page.innerHTML = barHTML() + `<div class="tbl"><div class="empty">Couldn't load: ${e(err.message)}</div></div>`;

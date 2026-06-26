@@ -16,6 +16,7 @@ const NAV = [
   { href: "/crm/proposals.html", label: "Proposals", icon: iconDoc() },
   { href: "/crm/contracts.html", label: "Contracts", icon: iconDoc() },
   { href: "/crm/invoices.html", label: "Invoices", icon: iconInvoice() },
+  { href: "/crm/expenses.html", label: "Expenses / Bills", icon: iconExpense() },
   { href: "/crm/templates.html", label: "Templates", icon: iconMail() },
   { href: "/crm/activity.html", label: "Activity", icon: iconActivity() },
   { href: "/crm/reports.html", label: "Reports", icon: iconReports() },
@@ -51,7 +52,7 @@ const JOB_STATUSES_NAV = [
 const NAV_GROUPS = [
   { label: null, items: ["/crm/", "/crm/pipeline.html", "/crm/inbox.html"] },
   { label: "People", items: ["/crm/leads.html", "/crm/contacts.html", "/crm/projects.html"] },
-  { label: "Sales", items: ["/crm/estimates.html", "/crm/proposals.html", "/crm/contracts.html", "/crm/invoices.html"] },
+  { label: "Sales", items: ["/crm/estimates.html", "/crm/proposals.html", "/crm/contracts.html", "/crm/invoices.html", "/crm/expenses.html"] },
   { label: "Operations", items: ["/crm/calendar.html", "/crm/availability.html"] },
   { label: "Insights", items: ["/crm/reports.html"] },
   { label: "Setup", items: ["/crm/templates.html", "/crm/activity.html"] },
@@ -455,6 +456,7 @@ function iconActivity() { return `<svg width="14" height="14" viewBox="0 0 24 24
 function iconReports() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`; }
 function iconSearch() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`; }
 function iconInvoice() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>`; }
+function iconExpense() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`; }
 
 // Export
 // ============================================================
@@ -982,24 +984,33 @@ function stripHtmlClient(s) { return s ? String(s).replace(/<[^>]+>/g, "").repla
 // Record an in-person / manual payment against an invoice (Cash, Check, etc.).
 // Opens a modal, posts mark_paid (full or partial), resolves to the API result
 // (or null if cancelled). Shared by the lead and job pages.
-function recordPayment(invoice) {
-  const remaining = Math.max(0, (invoice.amount_cents || 0) - (invoice.amount_paid_cents || 0));
+// doc = { id, number?, amount_cents, amount_paid_cents }. opts:
+//   endpoint  — POST target (default /api/invoices/<id>); pass /api/expenses/<id> for bills
+//   title     — modal heading
+//   receipt   — show the "email a receipt" checkbox (default true; false for bills)
+//   dateLabel — label for the date field
+function recordPayment(doc, opts = {}) {
+  const endpoint = opts.endpoint || `/api/invoices/${doc.id}`;
+  const showReceipt = opts.receipt !== false;
+  const title = opts.title || ("Record payment · " + (doc.number || "Invoice"));
+  const dateLabel = opts.dateLabel || "Date received";
+  const remaining = Math.max(0, (doc.amount_cents || 0) - (doc.amount_paid_cents || 0));
   const today = new Date().toISOString().slice(0, 10);
   return new Promise((resolve) => {
     const bg = document.createElement("div");
     bg.className = "modal-bg";
     bg.innerHTML = `
       <div class="modal" style="max-width:460px">
-        <div class="modal-head">Record payment · ${esc(invoice.number || "Invoice")}</div>
+        <div class="modal-head">${esc(title)}</div>
         <div class="modal-body">
           <div class="form">
             <label><span>Amount</span><input id="rp-amt" type="text" value="${fmtMoney(remaining)}" inputmode="decimal"/></label>
             <div class="row">
-              <label><span>Method</span><select id="rp-method"><option>Check</option><option>Cash</option><option>Card (in person)</option><option>Bank transfer</option><option>Other</option></select></label>
+              <label><span>Method</span><select id="rp-method"><option>Check</option><option>Cash</option><option>Card</option><option>Bank transfer</option><option>Other</option></select></label>
               <label><span>Reference <span class="muted" style="font-weight:400">(check #, etc.)</span></span><input id="rp-ref" placeholder="optional"/></label>
             </div>
-            <label><span>Date received</span><input id="rp-date" type="date" value="${today}"/></label>
-            <label style="flex-direction:row;align-items:center;gap:8px;margin-top:2px"><input id="rp-receipt" type="checkbox" checked style="width:16px;height:16px"/> <span>Email the customer a receipt</span></label>
+            <label><span>${esc(dateLabel)}</span><input id="rp-date" type="date" value="${today}"/></label>
+            ${showReceipt ? `<label style="flex-direction:row;align-items:center;gap:8px;margin-top:2px"><input id="rp-receipt" type="checkbox" checked style="width:16px;height:16px"/> <span>Email the customer a receipt</span></label>` : ""}
           </div>
         </div>
         <div class="modal-foot">
@@ -1017,12 +1028,12 @@ function recordPayment(invoice) {
       if (!amt || amt <= 0) { toast("Enter a valid amount", "error"); return; }
       btn.disabled = true; btn.textContent = "Saving…";
       try {
-        const r = await fetchJSON(`/api/invoices/${invoice.id}`, { method: "POST", body: JSON.stringify({
+        const r = await fetchJSON(endpoint, { method: "POST", body: JSON.stringify({
           action: "mark_paid", amount_cents: amt,
           method: bg.querySelector("#rp-method").value,
           reference: bg.querySelector("#rp-ref").value.trim(),
           paid_at: bg.querySelector("#rp-date").value,
-          send_receipt: bg.querySelector("#rp-receipt").checked,
+          send_receipt: showReceipt ? bg.querySelector("#rp-receipt").checked : false,
         })});
         toast(r.paid ? "Paid in full" : "Payment recorded", "success");
         close(r);

@@ -61,6 +61,7 @@
   let all = false;         // P&L scope toggle
   let data = null;         // P&L payload
   let ldata = null;        // Leads payload
+  let rdata = null;        // Receivables (A/R) payload
 
   const STATUS_LABEL = { contracted: "Booked", scheduled_install: "Scheduled", installing: "Installing", completed: "Completed" };
   const pct = (part, whole) => whole ? Math.round((part / whole) * 100) + "%" : "—";
@@ -82,16 +83,19 @@
 
   // ───────── shared filter bar ─────────
   function barHTML() {
+    const dated = view !== "receivables";
     return `<div class="rpt-bar">
       <div class="rpt-presets">
         <button class="rpt-preset ${view === "pnl" ? "is-active" : ""}" data-view="pnl">Profit &amp; loss</button>
         <button class="rpt-preset ${view === "leads" ? "is-active" : ""}" data-view="leads">Leads</button>
+        <button class="rpt-preset ${view === "receivables" ? "is-active" : ""}" data-view="receivables">Receivables</button>
       </div>
-      <div class="rpt-presets">
+      ${dated ? `<div class="rpt-presets">
         ${[["month", "This month"], ["ytd", "Year to date"], ["30", "Last 30"], ["12mo", "Last 12 mo"], ["all", "All time"]]
           .map(([k, lbl]) => `<button class="rpt-preset ${preset === k ? "is-active" : ""}" data-p="${k}">${lbl}</button>`).join("")}
       </div>
-      <div class="rpt-dates"><input type="date" id="rpt-from" value="${from}"/><span>→</span><input type="date" id="rpt-to" value="${to === "2999-12-31" ? "" : to}"/></div>
+      <div class="rpt-dates"><input type="date" id="rpt-from" value="${from}"/><span>→</span><input type="date" id="rpt-to" value="${to === "2999-12-31" ? "" : to}"/></div>`
+      : `<div class="rpt-dates" style="color:var(--ink-soft)">A/R snapshot · as of ${fmtDay(new Date().toISOString().slice(0, 10))}</div>`}
       <div class="rpt-right">
         ${view === "pnl" ? `<div class="rpt-scope">
           <button class="rpt-preset ${!all ? "is-active" : ""}" data-scope="won">Won jobs</button>
@@ -115,7 +119,7 @@
     document.getElementById("rpt-csv").addEventListener("click", downloadCSV);
   }
 
-  function render() { view === "leads" ? renderLeads() : renderPnl(); wireBar(); }
+  function render() { (view === "leads" ? renderLeads : view === "receivables" ? renderReceivables : renderPnl)(); wireBar(); }
 
   // ───────── P&L view ─────────
   function renderPnl() {
@@ -195,6 +199,48 @@
           </table></div>
         </div>
       </div>`;
+  }
+
+  // ───────── Receivables (A/R + aging) view ─────────
+  const AR_BUCKETS = [["current", "Current"], ["d1_30", "1–30 days"], ["d31_60", "31–60 days"], ["d61_90", "61–90 days"], ["d90", "90+ days"]];
+  const INV_TYPE = { deposit: "Deposit", balance: "Balance", full: "Full", custom: "Custom" };
+  function renderReceivables() {
+    const d = rdata || { total_cents: 0, overdue_cents: 0, count: 0, oldest_days: 0, buckets: { current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90: 0 }, invoices: [] };
+    const b = d.buckets;
+    const agingCells = AR_BUCKETS.map(([k, lbl]) => {
+      const color = (k === "d90" && b[k] > 0) ? "color:#B91C1C" : (k === "current" ? "color:#15803D" : "");
+      return `<div class="rpt-kpi" style="padding:12px 14px"><div class="lbl" style="font-size:11px">${lbl}</div><div class="val" style="font-size:20px;${color}">${M(b[k])}</div><div class="sub">${pct(b[k], d.total_cents)}</div></div>`;
+    }).join("");
+    const rows = d.invoices.length ? d.invoices.map((iv) => `<tr>
+        <td><a href="/crm/invoice.html?id=${iv.id}">${e(iv.number)}</a><div class="muted" style="font-size:12px">${e(iv.contact_name || "")}${iv.project_name ? " · " + e(iv.project_name) : ""}</div></td>
+        <td>${e(INV_TYPE[iv.type] || iv.type)}</td>
+        <td class="num">${M(iv.amount_cents)}</td>
+        <td class="num">${iv.paid_cents ? M(iv.paid_cents) : "—"}</td>
+        <td class="num" style="font-weight:700">${M(iv.balance_cents)}</td>
+        <td class="num">${iv.due_date ? SSCrm.fmtDay(iv.due_date) : "—"}</td>
+        <td class="num" style="${iv.days_past > 0 ? "color:#B91C1C;font-weight:600" : "color:#15803D"}">${iv.days_past > 0 ? iv.days_past + "d" : "Current"}</td>
+      </tr>`).join("")
+      : `<tr><td colspan="7" class="empty" style="padding:24px">No outstanding invoices — everything's collected. 🎉</td></tr>`;
+
+    page.innerHTML = barHTML() + `
+      <div class="rpt-cards">
+        <div class="rpt-kpi accent"><div class="lbl">Total A/R</div><div class="val">${M(d.total_cents)}</div><div class="sub">${d.count} open invoice${d.count === 1 ? "" : "s"}</div></div>
+        <div class="rpt-kpi"><div class="lbl">Overdue</div><div class="val" style="${d.overdue_cents > 0 ? "color:#B91C1C" : ""}">${M(d.overdue_cents)}</div><div class="sub">${pct(d.overdue_cents, d.total_cents)} of A/R</div></div>
+        <div class="rpt-kpi"><div class="lbl">Current (not due)</div><div class="val" style="color:#15803D">${M(b.current)}</div><div class="sub">${pct(b.current, d.total_cents)}</div></div>
+        <div class="rpt-kpi"><div class="lbl">Oldest past due</div><div class="val">${d.oldest_days > 0 ? d.oldest_days + " d" : "—"}</div><div class="sub">days</div></div>
+      </div>
+      <div class="card" style="margin-bottom:18px">
+        <div class="card-head"><h3>A/R Aging</h3></div>
+        <div class="rpt-cards" style="margin-bottom:0">${agingCells}</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Open invoices <span class="muted" style="font-weight:500">· ${d.count}</span></h3></div>
+        <div class="tbl"><table>
+          <thead><tr><th>Invoice</th><th>Type</th><th class="num">Amount</th><th class="num">Paid</th><th class="num">Balance</th><th class="num">Due</th><th class="num">Past due</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:14px">Snapshot as of today. Aging runs from each invoice's due date (or its invoice date if none). Void and fully-paid invoices are excluded.</p>`;
   }
 
   // ───────── Branded downloads ─────────
@@ -312,7 +358,39 @@
   }
   function downloadPDF() {
     if (view === "leads") { if (ldata) openPrint(brandedLeadsHTML()); }
+    else if (view === "receivables") { if (rdata) openPrint(brandedReceivablesHTML()); }
     else if (data) openPrint(brandedPnlHTML());
+  }
+
+  function brandedReceivablesHTML() {
+    const d = rdata, b = d.buckets;
+    const agingRow = AR_BUCKETS.map(([k, lbl]) => `<tr><td>${lbl}</td><td class="amt">${M(b[k])}</td><td class="p">${pct(b[k], d.total_cents)}</td></tr>`).join("");
+    const rows = d.invoices.length ? d.invoices.map((iv) => `<tr>
+        <td>${e(iv.number)}<div class="sub">${e(iv.contact_name || "")}${iv.project_name ? " · " + e(iv.project_name) : ""}</div></td>
+        <td>${e(INV_TYPE[iv.type] || iv.type)}</td>
+        <td class="amt">${M(iv.amount_cents)}</td><td class="amt">${iv.paid_cents ? M(iv.paid_cents) : "—"}</td>
+        <td class="amt strong" style="color:#1a1a1a">${M(iv.balance_cents)}</td>
+        <td class="amt">${iv.due_date ? SSCrm.fmtDay(iv.due_date) : "—"}</td>
+        <td class="amt">${iv.days_past > 0 ? iv.days_past + "d" : "Current"}</td></tr>`).join("")
+      : `<tr><td colspan="7" style="text-align:center;color:#777;padding:20px">No outstanding invoices.</td></tr>`;
+    const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>A/R Aging — ${e(BIZ.name)}</title><style>${PRINT_CSS}</style></head><body>
+      ${letterhead()}
+      <h1>Accounts Receivable &amp; Aging</h1>
+      <div class="range">As of ${today} · ${d.count} open invoice${d.count === 1 ? "" : "s"}</div>
+      <div class="kpis">
+        <div class="kpi"><div class="l">Total A/R</div><div class="v">${M(d.total_cents)}</div></div>
+        <div class="kpi"><div class="l">Overdue</div><div class="v">${M(d.overdue_cents)}</div></div>
+        <div class="kpi green"><div class="l">Current</div><div class="v">${M(b.current)}</div></div>
+        <div class="kpi"><div class="l">Oldest</div><div class="v">${d.oldest_days > 0 ? d.oldest_days + " d" : "—"}</div></div>
+      </div>
+      <h2>Aging summary</h2>
+      <table class="pnl"><thead><tr><th style="text-align:left">Bucket</th><th class="amt">Balance</th><th class="p">%</th></tr></thead><tbody>${agingRow}
+        <tr class="tot"><td>Total</td><td class="amt">${M(d.total_cents)}</td><td class="p">100%</td></tr></tbody></table>
+      <h2>Open invoices</h2>
+      <table class="data"><thead><tr><th>Invoice</th><th>Type</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Due</th><th>Past due</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="foot"><span>Generated ${today} · ${e(BIZ.name)}</span><span>Internal management report</span></div>
+      ${PRINT_JS}</body></html>`;
   }
 
   function csvDownload(rows, name) {
@@ -335,6 +413,14 @@
       rows.push([], ["Source", "Leads", "% of total"]);
       d.sources.forEach((s) => rows.push([s.source, s.n, pct(s.n, d.total)]));
       csvDownload(rows, `NCC-Leads-${tag}.csv`);
+    } else if (view === "receivables") {
+      if (!rdata) return;
+      const d = rdata, c = (x) => ((x || 0) / 100).toFixed(2);
+      const rows = [["NCC Accounts Receivable — Aging", "As of " + d.as_of], [], ["Bucket", "Balance"]];
+      AR_BUCKETS.forEach(([k, lbl]) => rows.push([lbl, c(d.buckets[k])]));
+      rows.push(["Total A/R", c(d.total_cents)], [], ["Invoice", "Customer", "Job", "Type", "Amount", "Paid", "Balance", "Due", "Days past due"]);
+      d.invoices.forEach((iv) => rows.push([iv.number, iv.contact_name || "", iv.project_name || "", iv.type, c(iv.amount_cents), c(iv.paid_cents), c(iv.balance_cents), iv.due_date || "", iv.days_past > 0 ? iv.days_past : 0]));
+      csvDownload(rows, `NCC-AR-Aging-${d.as_of}.csv`);
     } else {
       if (!data) return;
       const t = data.totals, c = (x) => (x / 100).toFixed(2);
@@ -350,6 +436,7 @@
     wireBar();
     try {
       if (view === "leads") ldata = await SSCrm.fetchJSON(`/api/reports/leads?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+      else if (view === "receivables") rdata = await SSCrm.fetchJSON(`/api/reports/receivables`);
       else data = await SSCrm.fetchJSON(`/api/reports?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&all=${all ? 1 : 0}`);
     } catch (err) {
       page.innerHTML = barHTML() + `<div class="tbl"><div class="empty">Couldn't load: ${e(err.message)}</div></div>`;

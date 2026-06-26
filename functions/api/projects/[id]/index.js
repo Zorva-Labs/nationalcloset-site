@@ -25,7 +25,7 @@ export async function onRequestGet(context) {
       ORDER BY w.position, w.id`
   ).bind(id).all()).results || [];
   const estimates = (await context.env.DB.prepare(`SELECT id, number, status, total_cents, valid_until, created_at FROM estimates WHERE project_id=?1 ORDER BY created_at DESC`).bind(id).all()).results || [];
-  const proposals = (await context.env.DB.prepare(`SELECT id, number, status, selected_tier, selected_total_cents, job_notes, drawings_initials, drawings_confirmed_at, accepted_by_name, created_at FROM proposals WHERE project_id=?1 ORDER BY created_at DESC`).bind(id).all()).results || [];
+  const proposals = (await context.env.DB.prepare(`SELECT id, number, status, view_token, selected_tier, selected_total_cents, job_notes, drawings_initials, drawings_confirmed_at, accepted_by_name, created_at FROM proposals WHERE project_id=?1 ORDER BY created_at DESC`).bind(id).all()).results || [];
   // Job-drawing PDFs follow the client into the job folder (linked by project_id).
   const drawings = (await context.env.DB.prepare(`SELECT id, proposal_id, filename, size_bytes, created_at FROM proposal_attachments WHERE project_id=?1 ORDER BY created_at`).bind(id).all()).results || [];
   const contracts = (await context.env.DB.prepare(`SELECT id, number, status, total_cents, deposit_cents, deposit_paid, contract_type, view_token, signed_by_customer_at, counter_signed_at, sent_at, created_at FROM contracts WHERE project_id=?1 ORDER BY created_at DESC`).bind(id).all()).results || [];

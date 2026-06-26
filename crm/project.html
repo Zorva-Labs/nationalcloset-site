@@ -369,10 +369,11 @@ function renderInvoices(host, invoices) {
       <td style="text-align:right;white-space:nowrap"><button class="btn primary sm" onclick="jobRecordPayment(${iv.id})">💵 Record payment</button> <button class="btn ghost sm" onclick="copyPayLink('https://nationalclosetco.com/invoice/?t=${e(iv.view_token)}')">Copy link</button> ${openBtn(iv)}</td>
     </tr>`).join("");
 
+  const custLink = (iv) => iv.view_token ? `<a class="btn ghost sm" href="https://nationalclosetco.com/invoice/?t=${e(iv.view_token)}" target="_blank" rel="noopener" title="Open the customer-facing invoice">↗ Link</a> ` : "";
   const paidRows = paid.map((iv) => `<tr>
       <td>${numLink(iv)}<div class="muted" style="font-size:12px">${e(INV_TYPE[iv.type] || iv.type)} · paid ${e(SSCrm.fmtDate(iv.paid_at))}${iv.paid_method ? ` · ${e(iv.paid_method)}` : ""}</div></td>
       <td class="money">${m(iv.amount_cents)}</td>
-      <td style="text-align:right">${openBtn(iv)}</td>
+      <td style="text-align:right;white-space:nowrap">${custLink(iv)}${openBtn(iv)}</td>
     </tr>`).join("");
 
   const voidRows = voided.map((iv) => `<tr style="opacity:.55">
@@ -887,7 +888,7 @@ function renderDocTab(docs, kind, prefix, addFn) {
           <td>${SSCrm.pill(d.status)}</td>
           <td class="money">${SSCrm.fmtMoney(d.total_cents || d.selected_total_cents || 0)}</td>
           <td class="muted" style="font-size:12px">${SSCrm.fmtDate(d.updated_at || d.created_at)}</td>
-          <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+          <td style="text-align:right;white-space:nowrap">${d.view_token ? `<a class="btn ghost sm" href="https://nationalclosetco.com/${kind}/?t=${SSCrm.esc(d.view_token)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open the customer-facing ${kind}">↗ Link</a> ` : ""}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><polyline points="9 18 15 12 9 6"/></svg></td>
         </tr>`).join("")}
       </tbody></table></div>` : `<p class="muted" style="padding:30px;text-align:center">No ${kind}s yet.</p>`}
   `;

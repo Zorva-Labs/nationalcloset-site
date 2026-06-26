@@ -209,7 +209,7 @@ function renderProposalTab() {
         <td>${SSCrm.pill(p.status)}</td>
         <td>${p.selected_tier ? SSCrm.esc(p.selected_tier) : `<span class="muted">—</span>`}</td>
         <td class="num">${p.selected_total_cents ? SSCrm.fmtMoney(p.selected_total_cents) : `<span class="muted">—</span>`}</td>
-        <td><a class="btn secondary sm" href="/crm/proposal.html?id=${p.id}">Open →</a></td>
+        <td style="white-space:nowrap">${p.view_token ? `<a class="btn ghost sm" href="https://nationalclosetco.com/proposal/?t=${SSCrm.esc(p.view_token)}" target="_blank" rel="noopener" title="Customer-facing proposal">↗ Link</a> ` : ""}<a class="btn secondary sm" href="/crm/proposal.html?id=${p.id}">Open →</a></td>
       </tr>`).join("")}</tbody></table></div>`
     : `<p class="muted" style="font-size:13px;margin:10px 0 0">No proposal yet — click “+ New proposal”.</p>`}
   </div>`;
@@ -227,7 +227,7 @@ function renderContractTab() {
         <td>${SSCrm.pill(k.status)}</td>
         <td class="num">${SSCrm.fmtMoney(k.total_cents)}</td>
         <td class="num">${k.deposit_cents ? SSCrm.fmtMoney(k.deposit_cents) + (k.deposit_paid ? " ✓" : "") : `<span class="muted">—</span>`}</td>
-        <td><a class="btn secondary sm" href="/crm/contract.html?id=${k.id}">Open →</a></td>
+        <td style="white-space:nowrap">${k.view_token ? `<a class="btn ghost sm" href="https://nationalclosetco.com/contract/?t=${SSCrm.esc(k.view_token)}" target="_blank" rel="noopener" title="Customer-facing contract">↗ Link</a> ` : ""}<a class="btn secondary sm" href="/crm/contract.html?id=${k.id}">Open →</a></td>
       </tr>`).join("")}</tbody></table></div>`
     : `<p class="muted" style="font-size:13px;margin:10px 0 0">No contract yet — one is created when the customer accepts a proposal (or convert one from the proposal page).</p>`}
   </div>`;
@@ -252,7 +252,7 @@ function renderInvoicesTab() {
           <td>${SSCrm.pill(iv.status)}</td>
           <td class="num">${SSCrm.fmtMoney(iv.amount_cents)}</td>
           <td class="num">${paid ? SSCrm.fmtMoney(paid) : `<span class="muted">—</span>`}</td>
-          <td>${open ? `<button class="btn primary sm" onclick="leadRecordPayment(${iv.id})">💵 Record payment</button>` : `<a class="btn ghost sm" href="/crm/invoice.html?id=${iv.id}">View</a>`}</td>
+          <td style="white-space:nowrap">${iv.view_token ? `<a class="btn ghost sm" href="https://nationalclosetco.com/invoice/?t=${SSCrm.esc(iv.view_token)}" target="_blank" rel="noopener" title="Customer-facing invoice">↗ Link</a> ` : ""}${open ? `<button class="btn primary sm" onclick="leadRecordPayment(${iv.id})">💵 Record payment</button>` : `<a class="btn ghost sm" href="/crm/invoice.html?id=${iv.id}">View</a>`}</td>
         </tr>`;
       }).join("")}</tbody></table></div>`
     : `<p class="muted" style="font-size:13px;margin:10px 0 0">No invoices yet.</p>`}

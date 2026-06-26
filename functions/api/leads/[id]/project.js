@@ -48,6 +48,8 @@ export async function onRequestGet(context) {
 
   const windows = (await DB.prepare(`SELECT * FROM windows WHERE project_id = ?1 ORDER BY position, id`).bind(project.id).all()).results || [];
   const proposals = (await DB.prepare(`SELECT id, number, status, view_token, selected_tier, selected_total_cents, created_at FROM proposals WHERE project_id = ?1 ORDER BY created_at DESC`).bind(project.id).all()).results || [];
+  const contracts = (await DB.prepare(`SELECT id, number, status, total_cents, deposit_cents, deposit_paid, view_token, contract_type, sent_at, signed_by_customer_at, created_at FROM contracts WHERE project_id = ?1 ORDER BY created_at DESC`).bind(project.id).all()).results || [];
+  const invoices = (await DB.prepare(`SELECT id, number, type, status, amount_cents, amount_paid_cents, view_token, created_at FROM invoices WHERE project_id = ?1 ORDER BY created_at DESC`).bind(project.id).all()).results || [];
 
-  return json({ project, windows, proposals });
+  return json({ project, windows, proposals, contracts, invoices });
 }

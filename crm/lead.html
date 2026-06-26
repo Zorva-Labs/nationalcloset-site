@@ -8,18 +8,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc18" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc19" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc18"></script>
+<script src="/crm/crm-app.js?v=ncc19"></script>
 <script>
 // Lead pipeline ends at "Proposal" or "Lost". Once the contract is signed
 // the lead is auto-bumped to "booked" by the contract-sign handler — at
-// that point it becomes a Job and disappears from the leads UI. We keep the
-// `booked` and `installed` keys recognized server-side (so the auto-bump
-// still works) but they're not exposed as visible choices here. View those
-// records under Jobs.
+// that point it becomes a Job and disappears from the leads UI.
 const LEAD_STATUSES = [
   { key: "new",       label: "New" },
   { key: "contacted", label: "Contacted" },
@@ -33,7 +30,7 @@ const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/leads.html";
 
 let state = null;       // { lead, notes }
-let workspace = null;   // { project, windows, proposals }
+let workspace = null;   // { project, windows, proposals, contracts, invoices }
 
 (async () => {
   const user = await SSCrm.mount({
@@ -52,20 +49,16 @@ async function loadWorkspace() {
   catch (e) { workspace = null; }
 }
 
+// ───────── Shell: header + pipeline + tab bar ─────────
 function render() {
   const l = state.lead;
-  const notes = state.notes || [];
   document.getElementById("page-title").textContent = l.name;
+  const ws = workspace || {};
+  const props = ws.proposals || [];
+  const contracts = ws.contracts || [];
+  const invoices = ws.invoices || [];
+  const notes = state.notes || [];
 
-  const addrParts = [l.address_street, [l.address_city, l.address_state].filter(Boolean).join(", "), l.address_zip].filter(Boolean);
-  const addrLine = addrParts.length ? addrParts.join(" · ") : (l.location || "");
-  const mapUrl = addrParts.length ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(addrParts.join(", ")) : null;
-
-  // Pipeline stepper — Lead funnel ends here. "booked" and "installed" are
-  // Job statuses and shouldn't appear in the lead-side stepper; if a record
-  // somehow has one (auto-bump just fired but the page hasn't been reloaded
-  // to the Jobs view), the stepper still renders sensibly because indexOf
-  // returns -1 → no stage is highlighted.
   const flow = ["new", "contacted", "replied", "consult", "proposal"];
   const isTerminal = l.status === "lost" || l.status === "booked" || l.status === "installed";
   const currentIdx = flow.indexOf(l.status);
@@ -73,22 +66,20 @@ function render() {
     <div class="pipeline-bar">
       ${flow.map((key, i) => {
         const meta = LEAD_STATUSES.find((s) => s.key === key);
-        const state = isTerminal ? "future" : (i < currentIdx ? "done" : i === currentIdx ? "current" : "future");
-        return `<button class="pipeline-step ${state}" type="button" onclick="updateStatus('${key}')" title="Set status to ${meta.label}">
-          <span class="pipeline-step__dot">${i + 1}</span>
-          <span class="pipeline-step__label">${meta.label}</span>
-        </button>`;
+        const st = isTerminal ? "future" : (i < currentIdx ? "done" : i === currentIdx ? "current" : "future");
+        return `<button class="pipeline-step ${st}" type="button" onclick="updateStatus('${key}')" title="Set status to ${meta.label}">
+          <span class="pipeline-step__dot">${i + 1}</span><span class="pipeline-step__label">${meta.label}</span></button>`;
       }).join("")}
       <div class="pipeline-bar__terminal">
         <select id="status-select" onchange="updateStatus(this.value)" title="Change status">
           ${LEAD_STATUSES.map((s) => `<option value="${s.key}" ${s.key === l.status ? "selected" : ""}>${s.label}</option>`).join("")}
         </select>
       </div>
-    </div>
-  `;
+    </div>`;
+
+  const tab = (key, label, count) => `<button class="job__tab" data-tab="${key}">${SSCrm.esc(label)}${count != null ? `<span class="job__tab-count">${count}</span>` : ""}</button>`;
 
   document.getElementById("page").innerHTML = `
-    <!-- Header: status + meta on left, action buttons on right -->
     <div class="lead-header">
       <div class="lead-header__id">
         ${SSCrm.pill(l.status)}
@@ -100,199 +91,240 @@ function render() {
         <button class="btn danger" onclick="del()">Delete</button>
       </div>
     </div>
-
-    <!-- Pipeline stepper, full width, right under the header -->
     ${stepper}
+    <nav class="job__tabs" id="tabs">
+      ${tab("overview", "Overview")}
+      ${tab("proposal", "Proposal", props.length)}
+      ${tab("contract", "Contract", contracts.length)}
+      ${tab("invoices", "Invoices", invoices.length)}
+      ${tab("messages", "Messages")}
+      ${tab("notes", "Notes", notes.length)}
+    </nav>
+    <div class="job__body" id="tab-body"></div>`;
 
-    <!-- Two-column responsive grid: details on the left, quick actions on the right. -->
-    <div class="lead-grid">
-      <div class="card lead-grid__main">
-        <div class="card-head">
-          <h2>Contact details</h2>
-          <span class="muted" style="font-size:12px">Click any field to edit</span>
-        </div>
-        <div class="form">
-          <label><span>Name</span><input id="f-name" value="${SSCrm.esc(l.name)}" required/></label>
-          <div class="row">
-            <label><span>Phone</span><input id="f-phone" type="tel" value="${SSCrm.esc(l.phone || "")}"/></label>
-            <label><span>Email</span><input id="f-email" type="email" value="${SSCrm.esc(l.email || "")}"/></label>
-          </div>
-          <label><span>Street address</span><input id="f-street" value="${SSCrm.esc(l.address_street || "")}"/></label>
-          <div class="row-3">
-            <label><span>City</span><input id="f-city" value="${SSCrm.esc(l.address_city || "")}"/></label>
-            <label><span>State</span><input id="f-state" value="${SSCrm.esc(l.address_state || "")}" maxlength="2"/></label>
-            <label><span>ZIP</span><input id="f-zip" value="${SSCrm.esc(l.address_zip || "")}"/></label>
-          </div>
-          <label><span>Considering / interest</span><input id="f-interest" value="${SSCrm.esc(l.interest || "")}" placeholder="e.g. Plantation Shutters, Motorized Shades"/></label>
-          <label><span>Their message</span><textarea id="f-message" rows="3">${SSCrm.esc(l.message || "")}</textarea></label>
-          ${(() => {
-            // Quoted amount: if a proposal exists, this is auto-synced from the proposal's
-            // selected tier (or the "best" tier when none selected yet). Show it as locked
-            // so the admin can't drift it out of sync. With no proposal yet, it's a plain
-            // free-text field they can fill in manually.
-            const prop = workspace?.proposals?.[0] || null;
-            if (prop) {
-              const tier = prop.selected_tier || "best";
-              const amt = l.quoted_amount_cents != null ? SSCrm.fmtMoney(l.quoted_amount_cents) : "—";
-              return `<label>
-                <span>Quoted amount <span class="muted" style="font-weight:400">· auto-linked to proposal</span></span>
-                <input id="f-quoted" type="text" value="${amt}" readonly disabled
-                       style="background:var(--bg-soft);color:var(--ink);font-weight:600"
-                       title="Auto-synced from proposal ${SSCrm.esc(prop.number)} (${tier} tier). Edit the proposal to change."/>
-                <span class="muted" style="font-size:11px;margin-top:4px;display:block">
-                  From <a href="/crm/proposal.html?id=${prop.id}" style="color:var(--accent-ink)">${SSCrm.esc(prop.number)}</a> · <strong>${tier}</strong> tier · ${SSCrm.esc(prop.status)}
-                </span>
-              </label>`;
-            }
-            return `<label>
-              <span>Quoted amount ($, optional)</span>
-              <input id="f-quoted" type="text" value="${l.quoted_amount_cents ? SSCrm.fmtMoney(l.quoted_amount_cents) : ""}" placeholder="$0.00"/>
-              <span class="muted" style="font-size:11px;margin-top:4px;display:block">Will auto-link once a proposal is sent.</span>
-            </label>`;
-          })()}
-          <div class="form-actions">
-            <button class="btn primary" onclick="saveDetails()">Save changes</button>
-            ${mapUrl ? `<a class="btn ghost" href="${mapUrl}" target="_blank" rel="noopener">📍 Open address in Maps</a>` : ""}
-          </div>
-        </div>
+  const initialTab = new URLSearchParams(location.hash.slice(1)).get("tab") || "overview";
+  switchTab(initialTab);
+  document.querySelectorAll(".job__tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
+}
 
-        <hr class="sep"/>
-        <div style="display:grid;grid-template-columns:140px 1fr;gap:8px 14px;font-size:13px;color:var(--ink-soft)">
-          <div class="muted">Submitted</div><div>${SSCrm.fmtDateTime(l.created_at)}</div>
-          <div class="muted">Source page</div><div>${SSCrm.esc(l.source_page || "web")}</div>
-          ${l.utm_source ? `<div class="muted">UTM source</div><div>${SSCrm.esc(l.utm_source)}</div>` : ""}
-          ${l.utm_campaign ? `<div class="muted">UTM campaign</div><div>${SSCrm.esc(l.utm_campaign)}</div>` : ""}
-          ${l.utm_medium ? `<div class="muted">UTM medium</div><div>${SSCrm.esc(l.utm_medium)}</div>` : ""}
-          ${l.referrer ? `<div class="muted">Referrer</div><div style="font-size:12px;word-break:break-all">${SSCrm.esc(l.referrer.slice(0, 100))}</div>` : ""}
+function switchTab(tabName) {
+  document.querySelectorAll(".job__tab").forEach((t) => t.classList.toggle("is-active", t.dataset.tab === tabName));
+  location.hash = `tab=${tabName}`;
+  const body = document.getElementById("tab-body");
+  if (tabName === "proposal") body.innerHTML = renderProposalTab();
+  else if (tabName === "contract") body.innerHTML = renderContractTab();
+  else if (tabName === "invoices") body.innerHTML = renderInvoicesTab();
+  else if (tabName === "messages") { body.innerHTML = `<div class="card"><div class="card-head"><h2>Messages</h2><span class="muted" style="font-size:12px">${state.lead.email ? "" : "Add an email to enable"}</span></div><div id="email-timeline"></div></div>`; mountTimeline(); }
+  else if (tabName === "notes") body.innerHTML = renderNotesTab();
+  else body.innerHTML = renderOverviewTab();
+}
+
+// ───────── Overview tab: contact details + quick actions ─────────
+function renderOverviewTab() {
+  const l = state.lead;
+  const addrParts = [l.address_street, [l.address_city, l.address_state].filter(Boolean).join(", "), l.address_zip].filter(Boolean);
+  const mapUrl = addrParts.length ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(addrParts.join(", ")) : null;
+  const prop = (workspace?.proposals || [])[0] || null;
+  const quotedField = prop
+    ? `<label>
+        <span>Quoted amount <span class="muted" style="font-weight:400">· auto-linked to proposal</span></span>
+        <input id="f-quoted" type="text" value="${l.quoted_amount_cents != null ? SSCrm.fmtMoney(l.quoted_amount_cents) : "—"}" readonly disabled style="background:var(--bg-soft);color:var(--ink);font-weight:600"/>
+        <span class="muted" style="font-size:11px;margin-top:4px;display:block">From <a href="/crm/proposal.html?id=${prop.id}" style="color:var(--accent-ink)">${SSCrm.esc(prop.number)}</a> · <strong>${prop.selected_tier || "best"}</strong> tier · ${SSCrm.esc(prop.status)}</span>
+      </label>`
+    : `<label>
+        <span>Quoted amount ($, optional)</span>
+        <input id="f-quoted" type="text" value="${l.quoted_amount_cents ? SSCrm.fmtMoney(l.quoted_amount_cents) : ""}" placeholder="$0.00"/>
+        <span class="muted" style="font-size:11px;margin-top:4px;display:block">Will auto-link once a proposal is sent.</span>
+      </label>`;
+
+  return `<div class="lead-grid">
+    <div class="card lead-grid__main">
+      <div class="card-head"><h2>Contact details</h2><span class="muted" style="font-size:12px">Click any field to edit</span></div>
+      <div class="form">
+        <label><span>Name</span><input id="f-name" value="${SSCrm.esc(l.name)}" required/></label>
+        <div class="row">
+          <label><span>Phone</span><input id="f-phone" type="tel" value="${SSCrm.esc(l.phone || "")}"/></label>
+          <label><span>Email</span><input id="f-email" type="email" value="${SSCrm.esc(l.email || "")}"/></label>
+        </div>
+        <label><span>Street address</span><input id="f-street" value="${SSCrm.esc(l.address_street || "")}"/></label>
+        <div class="row-3">
+          <label><span>City</span><input id="f-city" value="${SSCrm.esc(l.address_city || "")}"/></label>
+          <label><span>State</span><input id="f-state" value="${SSCrm.esc(l.address_state || "")}" maxlength="2"/></label>
+          <label><span>ZIP</span><input id="f-zip" value="${SSCrm.esc(l.address_zip || "")}"/></label>
+        </div>
+        <label><span>Considering / interest</span><input id="f-interest" value="${SSCrm.esc(l.interest || "")}" placeholder="e.g. Walk-in closet, pantry"/></label>
+        <label><span>Their message</span><textarea id="f-message" rows="3">${SSCrm.esc(l.message || "")}</textarea></label>
+        ${quotedField}
+        <div class="form-actions">
+          <button class="btn primary" onclick="saveDetails()">Save changes</button>
+          ${mapUrl ? `<a class="btn ghost" href="${mapUrl}" target="_blank" rel="noopener">📍 Open address in Maps</a>` : ""}
         </div>
       </div>
-
-      <div class="lead-grid__side">
-        <div class="card">
-          <div class="card-head"><h2>Quick actions</h2></div>
-          <div style="display:grid;gap:8px">
-            <button class="btn primary" onclick="sendProposal()">📄 Send a proposal</button>
-            ${l.phone ? `<a class="btn secondary" href="tel:${SSCrm.esc(l.phone)}">📞 Call ${SSCrm.esc(l.phone)}</a>` : ""}
-            ${l.phone ? `<a class="btn secondary" href="sms:${SSCrm.esc(l.phone)}">💬 Text</a>` : ""}
-            ${l.email ? `<a class="btn secondary" href="mailto:${SSCrm.esc(l.email)}">✉️ Email</a>` : ""}
-            <button class="btn secondary" onclick="bookFromLead()">📅 Book consultation</button>
-            ${!l.contact_id ? `<button class="btn ghost" onclick="convertToContact()">Convert to contact (no proposal yet)</button>` : ""}
-          </div>
-          ${l.quoted_amount_cents ? `<p class="muted" style="font-size:13px;margin:12px 0 0">Quoted: <strong class="money">${SSCrm.fmtMoney(l.quoted_amount_cents)}</strong></p>` : ""}
-        </div>
-
-        <div class="card" style="margin-top:14px">
-          <div class="card-head"><h2>Invoices</h2></div>
-          <div id="lead-invoices" class="muted" style="font-size:13px">Loading…</div>
-        </div>
-
-        ${l.contact_id ? `
-          <div class="card" style="margin-top:14px">
-            <div class="card-head"><h2>Linked contact</h2></div>
-            <a class="btn secondary" href="/crm/contact.html?id=${l.contact_id}" style="width:100%;justify-content:center">Open contact →</a>
-          </div>
-        ` : ""}
-      </div>
-    </div>
-
-    <!-- Windows: always full-width so the floor plan + table get the entire content area -->
-    ${renderProposalCard()}
-
-    <!-- Messages: email thread with this lead — outbound now, inbound after Phase B IMAP sync ships -->
-    <div class="card" style="margin-top:14px">
-      <div class="card-head"><h2>Messages</h2><span class="muted" style="font-size:12px">${l.email ? "" : "Add an email to enable"}</span></div>
-      <div id="email-timeline"></div>
-    </div>
-
-    <!-- Notes: full width below -->
-    <div class="card" style="margin-top:14px">
-      <div class="card-head"><h2>Notes</h2><span class="muted" style="font-size:12px">${notes.length}</span></div>
-      <div id="notes-list">${renderNotes(notes)}</div>
       <hr class="sep"/>
-      <form id="note-form" onsubmit="addNote(event)" style="display:grid;gap:8px">
-        <textarea name="body" placeholder="Add a note — call summary, follow-up needed, anything to remember…" rows="3" required style="width:100%;padding:10px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font:inherit;font-size:13px;resize:vertical"></textarea>
-        <div><button type="submit" class="btn primary sm">+ Add note</button></div>
-      </form>
+      <div style="display:grid;grid-template-columns:140px 1fr;gap:8px 14px;font-size:13px;color:var(--ink-soft)">
+        <div class="muted">Submitted</div><div>${SSCrm.fmtDateTime(l.created_at)}</div>
+        <div class="muted">Source page</div><div>${SSCrm.esc(l.source_page || "web")}</div>
+        ${l.utm_source ? `<div class="muted">UTM source</div><div>${SSCrm.esc(l.utm_source)}</div>` : ""}
+        ${l.utm_campaign ? `<div class="muted">UTM campaign</div><div>${SSCrm.esc(l.utm_campaign)}</div>` : ""}
+        ${l.referrer ? `<div class="muted">Referrer</div><div style="font-size:12px;word-break:break-all">${SSCrm.esc(l.referrer.slice(0, 100))}</div>` : ""}
+      </div>
     </div>
-  `;
-  // Mount the email timeline + Compose button — only when the lead has an
-  // email address (otherwise we have nowhere to send). The default template
-  // kind is picked from the lead's current pipeline status so the right
-  // followup loads automatically.
+    <div class="lead-grid__side">
+      <div class="card">
+        <div class="card-head"><h2>Quick actions</h2></div>
+        <div style="display:grid;gap:8px">
+          <button class="btn primary" onclick="sendProposal()">📄 Send a proposal</button>
+          ${l.phone ? `<a class="btn secondary" href="tel:${SSCrm.esc(l.phone)}">📞 Call ${SSCrm.esc(l.phone)}</a>` : ""}
+          ${l.phone ? `<a class="btn secondary" href="sms:${SSCrm.esc(l.phone)}">💬 Text</a>` : ""}
+          ${l.email ? `<a class="btn secondary" href="mailto:${SSCrm.esc(l.email)}">✉️ Email</a>` : ""}
+          <button class="btn secondary" onclick="bookFromLead()">📅 Book consultation</button>
+          ${!l.contact_id ? `<button class="btn ghost" onclick="convertToContact()">Convert to contact (no proposal yet)</button>` : ""}
+        </div>
+        ${l.quoted_amount_cents ? `<p class="muted" style="font-size:13px;margin:12px 0 0">Quoted: <strong class="money">${SSCrm.fmtMoney(l.quoted_amount_cents)}</strong></p>` : ""}
+      </div>
+      ${l.contact_id ? `
+        <div class="card" style="margin-top:14px">
+          <div class="card-head"><h2>Linked contact</h2></div>
+          <a class="btn secondary" href="/crm/contact.html?id=${l.contact_id}" style="width:100%;justify-content:center">Open contact →</a>
+        </div>` : ""}
+    </div>
+  </div>`;
+}
+
+// ───────── Proposal tab ─────────
+function renderProposalTab() {
+  const ws = workspace || {};
+  const props = ws.proposals || [];
+  if (!ws.project) {
+    return `<div class="card"><div class="card-head"><h2>Proposal</h2></div>
+      <p class="muted" style="font-size:13px;padding:8px 0">Save the lead's email on the Overview tab, then create a proposal.</p>
+      <button class="btn primary" onclick="sendProposal()">+ Create proposal</button></div>`;
+  }
+  return `<div class="card">
+    <div class="card-head"><h2>Proposals <span class="muted" style="font-weight:500">· ${props.length}</span></h2><button class="btn primary sm" onclick="sendProposal()">+ New proposal</button></div>
+    ${props.length ? `<div class="tbl"><table>
+      <thead><tr><th>#</th><th>Status</th><th>Tier</th><th class="num">Total</th><th></th></tr></thead>
+      <tbody>${props.map((p) => `<tr>
+        <td><strong>${SSCrm.esc(p.number)}</strong></td>
+        <td>${SSCrm.pill(p.status)}</td>
+        <td>${p.selected_tier ? SSCrm.esc(p.selected_tier) : `<span class="muted">—</span>`}</td>
+        <td class="num">${p.selected_total_cents ? SSCrm.fmtMoney(p.selected_total_cents) : `<span class="muted">—</span>`}</td>
+        <td><a class="btn secondary sm" href="/crm/proposal.html?id=${p.id}">Open →</a></td>
+      </tr>`).join("")}</tbody></table></div>`
+    : `<p class="muted" style="font-size:13px;margin:10px 0 0">No proposal yet — click “+ New proposal”.</p>`}
+  </div>`;
+}
+
+// ───────── Contract tab ─────────
+function renderContractTab() {
+  const contracts = (workspace || {}).contracts || [];
+  return `<div class="card">
+    <div class="card-head"><h2>Contracts <span class="muted" style="font-weight:500">· ${contracts.length}</span></h2></div>
+    ${contracts.length ? `<div class="tbl"><table>
+      <thead><tr><th>#</th><th>Status</th><th class="num">Total</th><th class="num">Deposit</th><th></th></tr></thead>
+      <tbody>${contracts.map((k) => `<tr>
+        <td><strong>${SSCrm.esc(k.number)}</strong></td>
+        <td>${SSCrm.pill(k.status)}</td>
+        <td class="num">${SSCrm.fmtMoney(k.total_cents)}</td>
+        <td class="num">${k.deposit_cents ? SSCrm.fmtMoney(k.deposit_cents) + (k.deposit_paid ? " ✓" : "") : `<span class="muted">—</span>`}</td>
+        <td><a class="btn secondary sm" href="/crm/contract.html?id=${k.id}">Open →</a></td>
+      </tr>`).join("")}</tbody></table></div>`
+    : `<p class="muted" style="font-size:13px;margin:10px 0 0">No contract yet — one is created when the customer accepts a proposal (or convert one from the proposal page).</p>`}
+  </div>`;
+}
+
+// ───────── Invoices tab (list + record payment) ─────────
+function renderInvoicesTab() {
+  const ws = workspace || {};
+  const invoices = ws.invoices || [];
+  const projectId = ws.project ? ws.project.id : null;
+  const LAB = { deposit: "Deposit", balance: "Balance", full: "Full", custom: "Custom" };
+  return `<div class="card">
+    <div class="card-head"><h2>Invoices <span class="muted" style="font-weight:500">· ${invoices.length}</span></h2></div>
+    ${invoices.length ? `<div class="tbl"><table>
+      <thead><tr><th>#</th><th>Type</th><th>Status</th><th class="num">Amount</th><th class="num">Paid</th><th></th></tr></thead>
+      <tbody>${invoices.map((iv) => {
+        const paid = iv.amount_paid_cents || 0;
+        const open = iv.status === "open";
+        return `<tr>
+          <td><a href="/crm/invoice.html?id=${iv.id}"><strong>${SSCrm.esc(iv.number)}</strong></a></td>
+          <td>${LAB[iv.type] || iv.type}</td>
+          <td>${SSCrm.pill(iv.status)}</td>
+          <td class="num">${SSCrm.fmtMoney(iv.amount_cents)}</td>
+          <td class="num">${paid ? SSCrm.fmtMoney(paid) : `<span class="muted">—</span>`}</td>
+          <td>${open ? `<button class="btn primary sm" onclick="leadRecordPayment(${iv.id})">💵 Record payment</button>` : `<a class="btn ghost sm" href="/crm/invoice.html?id=${iv.id}">View</a>`}</td>
+        </tr>`;
+      }).join("")}</tbody></table></div>`
+    : `<p class="muted" style="font-size:13px;margin:10px 0 0">No invoices yet.</p>`}
+    ${projectId
+      ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
+          <button class="btn primary sm" onclick="createLeadInvoice('full')">+ Full payment</button>
+          <button class="btn secondary sm" onclick="createLeadInvoice('deposit')">+ Deposit</button>
+          <button class="btn secondary sm" onclick="createLeadInvoice('balance')">+ Balance</button>
+          <button class="btn secondary sm" onclick="createLeadInvoice('custom')">+ Custom</button>
+        </div>`
+      : `<p class="muted" style="font-size:12px;margin:12px 0 0">Send a proposal to create the job before invoicing.</p>`}
+  </div>`;
+}
+
+async function leadRecordPayment(invId) {
+  const inv = ((workspace || {}).invoices || []).find((x) => x.id === invId);
+  if (!inv) return;
+  const r = await SSCrm.recordPayment(inv);
+  if (r) { await loadWorkspace(); switchTab("invoices"); }
+}
+
+async function createLeadInvoice(type) {
+  const pid = (workspace || {}).project ? workspace.project.id : null;
+  if (!pid) { SSCrm.toast("No project yet — send a proposal first.", "error"); return; }
+  const body = { project_id: pid, type };
+  if (type === "custom") {
+    const amt = prompt("Invoice amount (USD):", "");
+    if (amt == null) return;
+    const dollars = parseFloat(String(amt).replace(/[^0-9.]/g, ""));
+    if (!dollars || dollars <= 0) { SSCrm.toast("Enter a valid amount", "error"); return; }
+    body.amount_cents = Math.round(dollars * 100);
+    body.description = prompt("Description (optional):", "Custom invoice") || "Custom invoice";
+  }
+  try {
+    await SSCrm.fetchJSON("/api/invoices", { method: "POST", body: JSON.stringify(body) });
+    SSCrm.toast("Invoice created & emailed", "success");
+    await loadWorkspace();
+    switchTab("invoices");
+  } catch (e) { SSCrm.toast(e.message || "Could not create invoice", "error"); }
+}
+
+// ───────── Messages tab ─────────
+function mountTimeline() {
+  const l = state.lead;
   const emailHost = document.getElementById("email-timeline");
   if (emailHost && l.email) {
     const kindForStatus = {
-      new: "lead_new",
-      replied: "lead_new",
-      consult: "consult_confirm",
-      proposal: "proposal_followup",
-      booked: "contract_followup",
-      installed: "post_install_thanks",
+      new: "lead_new", replied: "lead_new", consult: "consult_confirm",
+      proposal: "proposal_followup", booked: "contract_followup", installed: "post_install_thanks",
     }[l.status] || null;
     const refreshTimeline = () => SSCrm.renderEmailTimeline(emailHost, {
       lead_id: l.id,
-      onCompose: async () => {
-        const res = await SSCrm.composeEmail({ lead: l, defaultKind: kindForStatus });
-        if (res?.ok) refreshTimeline();
-      },
+      onCompose: async () => { const res = await SSCrm.composeEmail({ lead: l, defaultKind: kindForStatus }); if (res?.ok) refreshTimeline(); },
     });
     refreshTimeline();
   } else if (emailHost) {
-    emailHost.innerHTML = `<p class="muted" style="font-size:13px;padding:8px 0">Add the lead's email above and save to start emailing from the CRM.</p>`;
+    emailHost.innerHTML = `<p class="muted" style="font-size:13px;padding:8px 0">Add the lead's email on the Overview tab to email from the CRM.</p>`;
   }
-  loadLeadInvoices();
 }
 
-async function loadLeadInvoices() {
-  const host = document.getElementById("lead-invoices");
-  if (!host) return;
-  try {
-    const { invoices } = await SSCrm.fetchJSON("/api/invoices?lead_id=" + id);
-    if (!invoices || !invoices.length) {
-      host.innerHTML = '<p class="muted" style="font-size:13px;margin:0">No invoices yet — create them on the job page once the project is set up.</p>';
-      return;
-    }
-    const LAB = { deposit: "Deposit", balance: "Balance", full: "Full", custom: "Custom" };
-    const ST = { open: "Open", paid: "Paid", void: "Void" };
-    host.classList.remove("muted");
-    host.innerHTML = invoices.map((iv) => `<a href="/crm/invoice.html?id=${iv.id}" style="display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-top:1px solid var(--line);color:inherit">
-        <span><strong>${SSCrm.esc(iv.number)}</strong> <span class="muted" style="font-size:12px">· ${LAB[iv.type] || iv.type} · ${ST[iv.status] || iv.status}</span></span>
-        <strong class="money">${SSCrm.fmtMoney(iv.amount_cents)}</strong></a>`).join("")
-      + '<p class="muted" style="font-size:12px;margin:10px 0 0">Tap an invoice to view, edit or print it.</p>';
-  } catch (e) { host.innerHTML = '<p class="muted" style="font-size:13px;margin:0">Couldn\'t load invoices.</p>'; }
-}
-
-// ============================================================
-// Proposal card on the lead — create or open the lead's custom-closet
-// proposal (line items + pricing live on the proposal page).
-// ============================================================
-function renderProposalCard() {
-  const hasWorkspace = workspace && workspace.project;
-  const proposal = workspace?.proposals?.[0] || null;
-
-  const proposalLink = proposal
-    ? `<a class="btn secondary sm" href="/crm/proposal.html?id=${proposal.id}">Open proposal <span class="muted">(${SSCrm.esc(proposal.number)} · ${SSCrm.esc(proposal.status)})</span> →</a>`
-    : `<button class="btn primary sm" onclick="sendProposal()">+ Create proposal</button>`;
-
-  return `
-    <div class="card" style="margin-top:14px">
-      <div class="card-head" style="align-items:flex-start">
-        <div>
-          <h2>Proposal</h2>
-          <div class="muted" style="font-size:12px;margin-top:2px">Create a custom-closet proposal for this lead with your line items and pricing.</div>
-        </div>
-      </div>
-
-      ${!hasWorkspace ? `
-        <p class="muted" style="font-size:13px;padding:12px 0">Save the lead's email first to enable proposals.</p>
-      ` : `
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
-          <span style="flex:1"></span>
-          ${proposalLink}
-        </div>
-      `}
-    </div>
-  `;
+// ───────── Notes tab ─────────
+function renderNotesTab() {
+  const notes = state.notes || [];
+  return `<div class="card">
+    <div class="card-head"><h2>Notes</h2><span class="muted" style="font-size:12px">${notes.length}</span></div>
+    <div id="notes-list">${renderNotes(notes)}</div>
+    <hr class="sep"/>
+    <form id="note-form" onsubmit="addNote(event)" style="display:grid;gap:8px">
+      <textarea name="body" placeholder="Add a note — call summary, follow-up needed, anything to remember…" rows="3" required style="width:100%;padding:10px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font:inherit;font-size:13px;resize:vertical"></textarea>
+      <div><button type="submit" class="btn primary sm">+ Add note</button></div>
+    </form>
+  </div>`;
 }
 
 function renderNotes(arr) {
@@ -310,11 +342,7 @@ function renderNotes(arr) {
 async function sendProposal() {
   const l = state.lead;
   if (!l.email) { SSCrm.toast("Add an email to this lead first", "error"); return; }
-
-  // Smart default project name based on the lead's stated interest
   const defaultName = l.interest ? `${l.interest} — ${l.name}` : `Whole house — ${l.name}`;
-
-  // Quick modal for the project name (+ optional notes)
   const projectName = await new Promise((resolve) => {
     const bg = document.createElement("div");
     bg.className = "modal-bg";
@@ -323,63 +351,37 @@ async function sendProposal() {
         <div class="modal-head">Send a proposal to ${SSCrm.esc(l.name)}</div>
         <div class="modal-body">
           <div class="form">
-            <label>
-              <span>Project name (used internally)</span>
-              <input id="sp-name" value="${SSCrm.esc(defaultName)}" required autofocus/>
-            </label>
-            <p class="muted" style="font-size:12px;margin:0">
-              We'll create a contact, a job, and a fresh proposal draft for ${SSCrm.esc(l.name)} in one click.
-              You'll then build the three tiers and click Send to email them the proposal link.
-            </p>
+            <label><span>Project name (used internally)</span><input id="sp-name" value="${SSCrm.esc(defaultName)}" required autofocus/></label>
+            <p class="muted" style="font-size:12px;margin:0">We'll create a contact, a job, and a fresh proposal draft for ${SSCrm.esc(l.name)} in one click. You'll then build the options and click Send to email them the proposal link.</p>
           </div>
         </div>
         <div class="modal-foot">
           <button class="btn ghost" data-cancel>Cancel</button>
           <button class="btn primary" data-go>Create proposal draft →</button>
         </div>
-      </div>
-    `;
+      </div>`;
     document.body.appendChild(bg);
     bg.querySelector("[data-cancel]").onclick = () => { bg.remove(); resolve(null); };
-    bg.querySelector("[data-go]").onclick = () => {
-      const v = bg.querySelector("#sp-name").value.trim();
-      bg.remove();
-      resolve(v || defaultName);
-    };
+    bg.querySelector("[data-go]").onclick = () => { const v = bg.querySelector("#sp-name").value.trim(); bg.remove(); resolve(v || defaultName); };
     bg.addEventListener("click", (e) => { if (e.target === bg) { bg.remove(); resolve(null); } });
     bg.querySelector("#sp-name").addEventListener("keydown", (e) => { if (e.key === "Enter") bg.querySelector("[data-go]").click(); });
   });
-
   if (!projectName) return;
-
   try {
-    const res = await SSCrm.fetchJSON(`/api/leads/${id}/send-proposal`, {
-      method: "POST",
-      body: JSON.stringify({ project_name: projectName }),
-    });
+    const res = await SSCrm.fetchJSON(`/api/leads/${id}/send-proposal`, { method: "POST", body: JSON.stringify({ project_name: projectName }) });
     SSCrm.toast("Proposal draft created — building it now…", "success");
     setTimeout(() => { location.href = `/crm/proposal.html?id=${res.proposal_id}`; }, 500);
-  } catch (e) {
-    SSCrm.toast(e.message, "error");
-  }
+  } catch (e) { SSCrm.toast(e.message, "error"); }
 }
 
 async function saveDetails() {
-  const v = (id) => document.getElementById(id).value.trim();
+  const v = (fid) => document.getElementById(fid).value.trim();
   const body = {
-    name:           v("f-name"),
-    phone:          v("f-phone") || null,
-    email:          v("f-email") || null,
-    address_street: v("f-street") || null,
-    address_city:   v("f-city") || null,
-    address_state:  v("f-state") || null,
-    address_zip:    v("f-zip") || null,
-    interest:       v("f-interest") || null,
-    message:        v("f-message") || null,
+    name: v("f-name"), phone: v("f-phone") || null, email: v("f-email") || null,
+    address_street: v("f-street") || null, address_city: v("f-city") || null,
+    address_state: v("f-state") || null, address_zip: v("f-zip") || null,
+    interest: v("f-interest") || null, message: v("f-message") || null,
   };
-  // Parse quoted amount only if a proposal hasn't taken over the field —
-  // otherwise the input is disabled and its display value is the formatted
-  // proposal total, which we must NOT round-trip back to the DB.
   const qInput = document.getElementById("f-quoted");
   if (qInput && !qInput.disabled) {
     const quotedRaw = qInput.value.trim();
@@ -390,6 +392,7 @@ async function saveDetails() {
     const { lead } = await SSCrm.fetchJSON("/api/leads/" + id, { method: "PATCH", body: JSON.stringify(body) });
     state.lead = lead;
     SSCrm.toast("Lead saved", "success");
+    await loadWorkspace();
     render();
   } catch (e) { SSCrm.toast(e.message, "error"); }
 }
@@ -415,11 +418,7 @@ async function addNote(e) {
     state.notes = notes;
     render();
     SSCrm.toast("Note added", "success");
-  } catch (err) {
-    SSCrm.toast(err.message, "error");
-  } finally {
-    btn.disabled = false;
-  }
+  } catch (err) { SSCrm.toast(err.message, "error"); } finally { btn.disabled = false; }
 }
 
 async function del() {
@@ -433,24 +432,12 @@ async function convertToContact() {
   const l = state.lead;
   if (!(await SSCrm.confirmDialog(`Create a contact + job for ${l.name}?\n\nThis lets you start an estimate, proposal, or contract.`))) return;
   try {
-    // 1) Upsert contact
     const { id: contactId } = await SSCrm.fetchJSON("/api/contacts", {
       method: "POST",
-      body: JSON.stringify({
-        name: l.name, email: l.email, phone: l.phone,
-        address: {
-          street: l.address_street, city: l.address_city,
-          state: l.address_state, zip: l.address_zip,
-        },
-      }),
+      body: JSON.stringify({ name: l.name, email: l.email, phone: l.phone, address: { street: l.address_street, city: l.address_city, state: l.address_state, zip: l.address_zip } }),
     });
-    // 2) Create a default job
     const jobName = l.interest ? `${l.interest} — ${l.name}` : `Whole house — ${l.name}`;
-    const { id: projectId } = await SSCrm.fetchJSON("/api/projects", {
-      method: "POST",
-      body: JSON.stringify({ contact_id: contactId, name: jobName, description: l.message || null }),
-    });
-    // 3) Link lead → contact (PATCH won't accept contact_id via current API; just track via status)
+    const { id: projectId } = await SSCrm.fetchJSON("/api/projects", { method: "POST", body: JSON.stringify({ contact_id: contactId, name: jobName, description: l.message || null }) });
     await SSCrm.fetchJSON("/api/leads/" + id, { method: "PATCH", body: JSON.stringify({ status: "replied" }) });
     SSCrm.toast("Contact + job created", "success");
     location.href = "/crm/project.html?id=" + projectId;
@@ -458,9 +445,7 @@ async function convertToContact() {
 }
 
 async function bookFromLead() {
-  // Pre-fill the quick-add appointment modal with this lead's contact info
   const l = state.lead;
-  // Use the existing helper but pre-populate
   const bg = document.createElement("div");
   bg.className = "modal-bg";
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
@@ -475,9 +460,7 @@ async function bookFromLead() {
           </div>
           <div class="row">
             <label><span>Duration (min)</span><input id="bk-dur" type="number" value="60" min="15" step="15"/></label>
-            <label><span>Type</span>
-              <select id="bk-type"><option value="consultation">Consultation</option><option value="measure">Measure</option></select>
-            </label>
+            <label><span>Type</span><select id="bk-type"><option value="consultation">Consultation</option><option value="measure">Measure</option></select></label>
           </div>
           <label><span>Notes (optional)</span><textarea id="bk-notes" rows="2"></textarea></label>
         </div>
@@ -486,8 +469,7 @@ async function bookFromLead() {
         <button class="btn ghost" data-cancel>Cancel</button>
         <button class="btn primary" data-save>Book it</button>
       </div>
-    </div>
-  `;
+    </div>`;
   document.body.appendChild(bg);
   bg.querySelector("[data-cancel]").onclick = () => bg.remove();
   bg.addEventListener("click", (e) => { if (e.target === bg) bg.remove(); });
@@ -500,23 +482,16 @@ async function bookFromLead() {
     const endTime = `${String(Math.floor(totalMin / 60)).padStart(2, "0")}:${String(totalMin % 60).padStart(2, "0")}`;
     const addrParts = [l.address_street, [l.address_city, l.address_state].filter(Boolean).join(", "), l.address_zip].filter(Boolean);
     try {
-      // Pass lead_id so the server-side handler can auto-advance the pipeline
-      // to "consult" (forward-only, via bumpLeadStatusForward in lifecycle.js).
       await SSCrm.fetchJSON("/api/appointments", { method: "POST", body: JSON.stringify({
-        lead_id: l.id,
-        name: l.name, email: l.email, phone: l.phone,
-        start_at: `${date}T${time}:00`,
-        end_at: `${date}T${endTime}:00`,
-        duration_min: dur,
+        lead_id: l.id, name: l.name, email: l.email, phone: l.phone,
+        start_at: `${date}T${time}:00`, end_at: `${date}T${endTime}:00`, duration_min: dur,
         type: bg.querySelector("#bk-type").value,
         site_address: addrParts.join(", ") || null,
         notes: bg.querySelector("#bk-notes").value.trim() || null,
-        status: "confirmed",
-        source: "admin",
+        status: "confirmed", source: "admin",
       })});
       bg.remove();
       SSCrm.toast("Consultation booked", "success");
-      // Refresh
       state = await SSCrm.fetchJSON("/api/leads/" + id);
       render();
     } catch (e) { SSCrm.toast(e.message, "error"); }

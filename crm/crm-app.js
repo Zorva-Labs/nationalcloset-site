@@ -979,9 +979,61 @@ function renderMessageRow(m) {
 function safeJSON(s) { try { return JSON.parse(s); } catch { return null; } }
 function stripHtmlClient(s) { return s ? String(s).replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() : ""; }
 
+// Record an in-person / manual payment against an invoice (Cash, Check, etc.).
+// Opens a modal, posts mark_paid (full or partial), resolves to the API result
+// (or null if cancelled). Shared by the lead and job pages.
+function recordPayment(invoice) {
+  const remaining = Math.max(0, (invoice.amount_cents || 0) - (invoice.amount_paid_cents || 0));
+  const today = new Date().toISOString().slice(0, 10);
+  return new Promise((resolve) => {
+    const bg = document.createElement("div");
+    bg.className = "modal-bg";
+    bg.innerHTML = `
+      <div class="modal" style="max-width:460px">
+        <div class="modal-head">Record payment · ${esc(invoice.number || "Invoice")}</div>
+        <div class="modal-body">
+          <div class="form">
+            <label><span>Amount</span><input id="rp-amt" type="text" value="${fmtMoney(remaining)}" inputmode="decimal"/></label>
+            <div class="row">
+              <label><span>Method</span><select id="rp-method"><option>Check</option><option>Cash</option><option>Card (in person)</option><option>Bank transfer</option><option>Other</option></select></label>
+              <label><span>Reference <span class="muted" style="font-weight:400">(check #, etc.)</span></span><input id="rp-ref" placeholder="optional"/></label>
+            </div>
+            <label><span>Date received</span><input id="rp-date" type="date" value="${today}"/></label>
+            <label style="flex-direction:row;align-items:center;gap:8px;margin-top:2px"><input id="rp-receipt" type="checkbox" checked style="width:16px;height:16px"/> <span>Email the customer a receipt</span></label>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn ghost" data-cancel>Cancel</button>
+          <button class="btn primary" data-save>Record payment</button>
+        </div>
+      </div>`;
+    document.body.appendChild(bg);
+    const close = (v) => { bg.remove(); resolve(v); };
+    bg.querySelector("[data-cancel]").onclick = () => close(null);
+    bg.addEventListener("click", (e) => { if (e.target === bg) close(null); });
+    bg.querySelector("[data-save]").onclick = async () => {
+      const btn = bg.querySelector("[data-save]");
+      const amt = parseMoney(bg.querySelector("#rp-amt").value);
+      if (!amt || amt <= 0) { toast("Enter a valid amount", "error"); return; }
+      btn.disabled = true; btn.textContent = "Saving…";
+      try {
+        const r = await fetchJSON(`/api/invoices/${invoice.id}`, { method: "POST", body: JSON.stringify({
+          action: "mark_paid", amount_cents: amt,
+          method: bg.querySelector("#rp-method").value,
+          reference: bg.querySelector("#rp-ref").value.trim(),
+          paid_at: bg.querySelector("#rp-date").value,
+          send_receipt: bg.querySelector("#rp-receipt").checked,
+        })});
+        toast(r.paid ? "Paid in full" : "Payment recorded", "success");
+        close(r);
+      } catch (e) { toast(e.message || "Could not record payment", "error"); btn.disabled = false; btn.textContent = "Record payment"; }
+    };
+  });
+}
+
 window.SSCrm = {
   fetchJSON, mount, fmtMoney, fmtMoneyShort, parseMoney, fmtDate, fmtDay, fmtDateTime, fmtTime, esc, pill, logout, toast, confirmDialog,
-  pickContact, pickJob, openModal,
+  pickContact, pickJob, openModal, recordPayment,
   quickAddContact, quickAddJob, quickAddAppointment, quickAddEstimate, quickAddProposal, quickAddContract,
   composeEmail, renderEmailTimeline,
   PROJECT_STATUSES,

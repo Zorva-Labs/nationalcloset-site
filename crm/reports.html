@@ -116,11 +116,15 @@
     page.querySelectorAll(".rpt-preset[data-view]").forEach((b) => b.addEventListener("click", () => { view = b.dataset.view; load(); }));
     page.querySelectorAll(".rpt-preset[data-p]").forEach((b) => b.addEventListener("click", () => { preset = b.dataset.p; [from, to] = presetRange(preset); load(); }));
     page.querySelectorAll(".rpt-preset[data-scope]").forEach((b) => b.addEventListener("click", () => { all = b.dataset.scope === "all"; load(); }));
+    // Date inputs only exist on the dated views (P&L / Leads / Cash flow); the
+    // A/R and A/P snapshots show an "as of" label instead, so guard for null.
     const fEl = document.getElementById("rpt-from"), tEl = document.getElementById("rpt-to");
-    const onDate = () => { from = fEl.value || "2000-01-01"; to = tEl.value || "2999-12-31"; preset = ""; load(); };
-    fEl.addEventListener("change", onDate); tEl.addEventListener("change", onDate);
-    document.getElementById("rpt-pdf").addEventListener("click", downloadPDF);
-    document.getElementById("rpt-csv").addEventListener("click", downloadCSV);
+    if (fEl && tEl) {
+      const onDate = () => { from = fEl.value || "2000-01-01"; to = tEl.value || "2999-12-31"; preset = ""; load(); };
+      fEl.addEventListener("change", onDate); tEl.addEventListener("change", onDate);
+    }
+    const pdf = document.getElementById("rpt-pdf"); if (pdf) pdf.addEventListener("click", downloadPDF);
+    const csv = document.getElementById("rpt-csv"); if (csv) csv.addEventListener("click", downloadCSV);
   }
 
   function render() { ({ leads: renderLeads, receivables: renderReceivables, payables: renderPayables, cashflow: renderCashflow }[view] || renderPnl)(); wireBar(); }

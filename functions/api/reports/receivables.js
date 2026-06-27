@@ -53,5 +53,36 @@ export async function onRequestGet(context) {
   }
   invoices.sort((a, b) => b.days_past - a.days_past || b.balance_cents - a.balance_cents);
 
-  return json({ as_of: asOf, total_cents: total, overdue_cents: overdue, count: invoices.length, oldest_days: oldest, buckets, invoices });
+  // Un-invoiced backlog: for each booked job, the part of the job value that
+  // hasn't been billed yet (job total − amount invoiced). It's money owed on the
+  // job even though no invoice exists for it (e.g. a final balance not yet sent).
+  const WON = ["contracted", "scheduled_install", "installing", "completed"];
+  const jobRows = (await context.env.DB.prepare(
+    `SELECT p.id, p.name, c.name AS contact_name,
+            (SELECT k.total_cents FROM contracts k WHERE k.project_id=p.id
+               ORDER BY CASE k.status WHEN 'fully_executed' THEN 0 WHEN 'signed_by_customer' THEN 1 WHEN 'sent' THEN 2 ELSE 3 END, datetime(k.created_at) DESC LIMIT 1) AS contract_total,
+            (SELECT pr.selected_total_cents FROM proposals pr WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS accepted_total,
+            (SELECT COALESCE(SUM(amount_cents),0) FROM invoices iv WHERE iv.project_id=p.id AND iv.status != 'void') AS invoiced,
+            (SELECT COALESCE(SUM(amount_paid_cents),0) FROM invoices iv WHERE iv.project_id=p.id) AS collected
+       FROM projects p LEFT JOIN contacts c ON c.id = p.contact_id
+      WHERE p.status IN (${WON.map(() => "?").join(",")})`
+  ).bind(...WON).all()).results || [];
+
+  const unbilled = [];
+  let unbilledTotal = 0;
+  for (const j of jobRows) {
+    const jobTotal = j.contract_total || j.accepted_total || 0;
+    const amt = Math.max(0, jobTotal - (j.invoiced || 0));
+    if (amt <= 0) continue;
+    unbilledTotal += amt;
+    unbilled.push({ project_id: j.id, name: j.name, contact_name: j.contact_name, job_total_cents: jobTotal, invoiced_cents: j.invoiced || 0, collected_cents: j.collected || 0, unbilled_cents: amt });
+  }
+  unbilled.sort((a, b) => b.unbilled_cents - a.unbilled_cents);
+
+  return json({
+    as_of: asOf,
+    total_cents: total, overdue_cents: overdue, count: invoices.length, oldest_days: oldest, buckets, invoices,
+    unbilled, unbilled_total_cents: unbilledTotal,
+    grand_total_cents: total + unbilledTotal,
+  });
 }

@@ -3,8 +3,10 @@
 //   A bill is outstanding when it isn't void and balance (amount − paid) > 0.
 //   Aged from the due date (or bill date if none) to the "as of" date.
 import { requireAuth, json } from "../../_lib/auth.js";
+import { resolveFinancials } from "../../_lib/financials.js";
 
 const DAY = 86400000;
+const WON = ["contracted", "scheduled_install", "installing", "completed"];
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -54,5 +56,34 @@ export async function onRequestGet(context) {
   bills.sort((a, b) => b.days_past - a.days_past || b.balance_cents - a.balance_cents);
   const categories = Object.entries(byCategory).map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount);
 
-  return json({ as_of: asOf, total_cents: total, overdue_cents: overdue, count: bills.length, oldest_days: oldest, buckets, categories, bills });
+  // Estimated job costs (modeled, from the P&L formula) for booked jobs — the
+  // costs you'll incur (materials, shipping, tax, labor) even before bills land.
+  const jobRows = (await context.env.DB.prepare(
+    `SELECT p.id, p.name,
+            jf.price_cents, jf.discount_cents, jf.materials_cents, jf.shipping_cents, jf.tax_cents, jf.labor_cents, jf.misc_cents,
+            jf.price_auto, jf.discount_auto, jf.materials_auto, jf.shipping_auto, jf.tax_auto, jf.labor_auto,
+            (SELECT k.total_cents FROM contracts k WHERE k.project_id=p.id
+               ORDER BY CASE k.status WHEN 'fully_executed' THEN 0 WHEN 'signed_by_customer' THEN 1 WHEN 'sent' THEN 2 ELSE 3 END, datetime(k.created_at) DESC LIMIT 1) AS contract_total,
+            (SELECT t.subtotal_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
+               WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_gross,
+            (SELECT t.total_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
+               WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_net
+       FROM projects p LEFT JOIN job_financials jf ON jf.project_id = p.id
+      WHERE p.status IN (${WON.map(() => "?").join(",")})`
+  ).bind(...WON).all()).results || [];
+  const est_jobs = [];
+  const est_totals = { materials: 0, shipping: 0, tax: 0, labor: 0, total: 0 };
+  for (const r of jobRows) {
+    let gross, discount;
+    if (r.tier_gross != null || r.tier_net != null) { const s = r.tier_gross || 0, t = r.tier_net || 0; if (s > t) { gross = s; discount = s - t; } else { gross = t || s; discount = 0; } }
+    else { gross = r.contract_total || 0; discount = 0; }
+    if (!gross) continue;
+    const fin = resolveFinancials(gross, discount, r.price_cents != null ? r : null);
+    est_jobs.push({ project_id: r.id, name: r.name, materials_cents: fin.materials_cents, shipping_cents: fin.shipping_cents, tax_cents: fin.tax_cents, labor_cents: fin.labor_cents, total_cents: fin.expenses_cents });
+    est_totals.materials += fin.materials_cents; est_totals.shipping += fin.shipping_cents;
+    est_totals.tax += fin.tax_cents; est_totals.labor += fin.labor_cents; est_totals.total += fin.expenses_cents;
+  }
+  est_jobs.sort((a, b) => b.total_cents - a.total_cents);
+
+  return json({ as_of: asOf, total_cents: total, overdue_cents: overdue, count: bills.length, oldest_days: oldest, buckets, categories, bills, est_jobs, est_totals });
 }

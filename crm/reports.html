@@ -213,8 +213,12 @@
   const AR_BUCKETS = [["current", "Current"], ["d1_30", "1–30 days"], ["d31_60", "31–60 days"], ["d61_90", "61–90 days"], ["d90", "90+ days"]];
   const INV_TYPE = { deposit: "Deposit", balance: "Balance", full: "Full", custom: "Custom" };
   function renderReceivables() {
-    const d = rdata || { total_cents: 0, overdue_cents: 0, count: 0, oldest_days: 0, buckets: { current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90: 0 }, invoices: [] };
+    const d = rdata || { total_cents: 0, overdue_cents: 0, count: 0, oldest_days: 0, buckets: { current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90: 0 }, invoices: [], unbilled: [], unbilled_total_cents: 0, grand_total_cents: 0 };
     const b = d.buckets;
+    const unbilledRows = (d.unbilled || []).length ? d.unbilled.map((u) => `<tr>
+        <td><a href="/crm/project.html?id=${u.project_id}">${e(u.name || "Job #" + u.project_id)}</a><div class="muted" style="font-size:12px">${e(u.contact_name || "")}</div></td>
+        <td class="num">${M(u.job_total_cents)}</td><td class="num">${M(u.collected_cents)}</td><td class="num" style="font-weight:700;color:#B45309">${M(u.unbilled_cents)}</td></tr>`).join("")
+      : `<tr><td colspan="4" class="muted" style="padding:14px">No unbilled job balances — everything booked is invoiced.</td></tr>`;
     const agingCells = AR_BUCKETS.map(([k, lbl]) => {
       const color = (k === "d90" && b[k] > 0) ? "color:#B91C1C" : (k === "current" ? "color:#15803D" : "");
       return `<div class="rpt-kpi" style="padding:12px 14px"><div class="lbl" style="font-size:11px">${lbl}</div><div class="val" style="font-size:20px;${color}">${M(b[k])}</div><div class="sub">${pct(b[k], d.total_cents)}</div></div>`;
@@ -232,10 +236,10 @@
 
     page.innerHTML = barHTML() + `
       <div class="rpt-cards">
-        <div class="rpt-kpi accent"><div class="lbl">Total A/R</div><div class="val">${M(d.total_cents)}</div><div class="sub">${d.count} open invoice${d.count === 1 ? "" : "s"}</div></div>
-        <div class="rpt-kpi"><div class="lbl">Overdue</div><div class="val" style="${d.overdue_cents > 0 ? "color:#B91C1C" : ""}">${M(d.overdue_cents)}</div><div class="sub">${pct(d.overdue_cents, d.total_cents)} of A/R</div></div>
-        <div class="rpt-kpi"><div class="lbl">Current (not due)</div><div class="val" style="color:#15803D">${M(b.current)}</div><div class="sub">${pct(b.current, d.total_cents)}</div></div>
-        <div class="rpt-kpi"><div class="lbl">Oldest past due</div><div class="val">${d.oldest_days > 0 ? d.oldest_days + " d" : "—"}</div><div class="sub">days</div></div>
+        <div class="rpt-kpi accent"><div class="lbl">Total owed</div><div class="val">${M(d.grand_total_cents)}</div><div class="sub">${M(d.total_cents)} billed + ${M(d.unbilled_total_cents)} unbilled</div></div>
+        <div class="rpt-kpi"><div class="lbl">Billed (A/R)</div><div class="val">${M(d.total_cents)}</div><div class="sub">${d.count} open invoice${d.count === 1 ? "" : "s"}</div></div>
+        <div class="rpt-kpi"><div class="lbl">Overdue</div><div class="val" style="${d.overdue_cents > 0 ? "color:#B91C1C" : ""}">${M(d.overdue_cents)}</div><div class="sub">${pct(d.overdue_cents, d.total_cents)} of billed</div></div>
+        <div class="rpt-kpi"><div class="lbl">Unbilled balance</div><div class="val" style="${d.unbilled_total_cents > 0 ? "color:#B45309" : ""}">${M(d.unbilled_total_cents)}</div><div class="sub">${(d.unbilled || []).length} job${(d.unbilled || []).length === 1 ? "" : "s"}</div></div>
       </div>
       <div class="card" style="margin-bottom:18px">
         <div class="card-head"><h3>A/R Aging</h3></div>
@@ -248,13 +252,26 @@
           <tbody>${rows}</tbody>
         </table></div>
       </div>
-      <p class="muted" style="font-size:12px;margin-top:14px">Snapshot as of today. Aging runs from each invoice's due date (or its invoice date if none). Void and fully-paid invoices are excluded.</p>`;
+      <div class="card" style="margin-top:18px">
+        <div class="card-head"><h3>Unbilled job balances <span class="muted" style="font-weight:500">· ${(d.unbilled || []).length}</span></h3></div>
+        <div class="tbl"><table>
+          <thead><tr><th>Job</th><th class="num">Job total</th><th class="num">Collected</th><th class="num">Unbilled</th></tr></thead>
+          <tbody>${unbilledRows}</tbody>
+        </table></div>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:14px">Snapshot as of today. <strong>Billed (A/R)</strong> = open invoices, aged from each due date. <strong>Unbilled</strong> = booked job value not yet invoiced (e.g. a final balance you haven't sent). Total owed = both.</p>`;
   }
 
   // ───────── Payables (A/P + aging) view ─────────
   function renderPayables() {
-    const d = pdata || { total_cents: 0, overdue_cents: 0, count: 0, oldest_days: 0, buckets: { current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90: 0 }, categories: [], bills: [] };
+    const d = pdata || { total_cents: 0, overdue_cents: 0, count: 0, oldest_days: 0, buckets: { current: 0, d1_30: 0, d31_60: 0, d61_90: 0, d90: 0 }, categories: [], bills: [], est_jobs: [], est_totals: { materials: 0, shipping: 0, tax: 0, labor: 0, total: 0 } };
     const b = d.buckets;
+    const et = d.est_totals || { materials: 0, shipping: 0, tax: 0, labor: 0, total: 0 };
+    const estRows = (d.est_jobs || []).length ? d.est_jobs.map((j) => `<tr>
+        <td><a href="/crm/project.html?id=${j.project_id}">${e(j.name || "Job #" + j.project_id)}</a></td>
+        <td class="num">${M(j.materials_cents)}</td><td class="num">${M(j.shipping_cents)}</td><td class="num">${M(j.tax_cents)}</td>
+        <td class="num">${M(j.labor_cents)}</td><td class="num" style="font-weight:700">${M(j.total_cents)}</td></tr>`).join("")
+      : `<tr><td colspan="6" class="muted" style="padding:14px">No booked jobs yet.</td></tr>`;
     const agingCells = AR_BUCKETS.map(([k, lbl]) => {
       const color = (k === "d90" && b[k] > 0) ? "color:#B91C1C" : (k === "current" ? "color:#15803D" : "");
       return `<div class="rpt-kpi" style="padding:12px 14px"><div class="lbl" style="font-size:11px">${lbl}</div><div class="val" style="font-size:20px;${color}">${M(b[k])}</div><div class="sub">${pct(b[k], d.total_cents)}</div></div>`;
@@ -281,7 +298,15 @@
         <div class="card"><div class="card-head"><h3>By category</h3></div>
           ${d.categories.length ? `<div class="tbl"><table><thead><tr><th>Category</th><th class="num">Owed</th></tr></thead><tbody>${d.categories.map((c) => `<tr><td>${e(c.category)}</td><td class="num">${M(c.amount)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted" style="font-size:13px;margin:0">—</p>`}</div>
       </div>
-      <p class="muted" style="font-size:12px;margin-top:14px">Snapshot as of today, from your logged bills. Add &amp; pay bills under <a href="/crm/expenses.html">Expenses / Bills</a>.</p>`;
+      <div class="card" style="margin-top:18px">
+        <div class="card-head"><h3>Estimated job costs <span class="muted" style="font-weight:500">· modeled, not yet billed</span></h3></div>
+        <div class="tbl"><table>
+          <thead><tr><th>Job</th><th class="num">Materials</th><th class="num">Shipping</th><th class="num">Taxes</th><th class="num">Labor</th><th class="num">Total cost</th></tr></thead>
+          <tbody>${estRows}
+            <tr style="font-weight:700;border-top:2px solid var(--ink)"><td>Total</td><td class="num">${M(et.materials)}</td><td class="num">${M(et.shipping)}</td><td class="num">${M(et.tax)}</td><td class="num">${M(et.labor)}</td><td class="num">${M(et.total)}</td></tr></tbody>
+        </table></div>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:14px"><strong>Logged bills</strong> (top) are your real Accounts Payable, aged from each due date. <strong>Estimated job costs</strong> are modeled from the P&amp;L formula (incl. labor) for booked jobs — a projection of what you'll spend until you log actual bills under <a href="/crm/expenses.html">Expenses / Bills</a>.</p>`;
   }
 
   // ───────── Cash Flow view ─────────

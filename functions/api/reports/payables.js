@@ -56,10 +56,11 @@ export async function onRequestGet(context) {
   bills.sort((a, b) => b.days_past - a.days_past || b.balance_cents - a.balance_cents);
   const categories = Object.entries(byCategory).map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount);
 
-  // Estimated job costs (modeled, from the P&L formula) for booked jobs — the
-  // costs you'll incur (materials, shipping, tax, labor) even before bills land.
+  // Estimated LABOR payable (modeled). Materials, taxes & shipping are paid up
+  // front (when the job is ordered), so they're NOT outstanding payables — only
+  // labor/installation is owed, and only until the job is completed.
   const jobRows = (await context.env.DB.prepare(
-    `SELECT p.id, p.name,
+    `SELECT p.id, p.name, p.status,
             jf.price_cents, jf.discount_cents, jf.materials_cents, jf.shipping_cents, jf.tax_cents, jf.labor_cents, jf.misc_cents,
             jf.price_auto, jf.discount_auto, jf.materials_auto, jf.shipping_auto, jf.tax_auto, jf.labor_auto,
             (SELECT k.total_cents FROM contracts k WHERE k.project_id=p.id
@@ -72,18 +73,24 @@ export async function onRequestGet(context) {
       WHERE p.status IN (${WON.map(() => "?").join(",")})`
   ).bind(...WON).all()).results || [];
   const est_jobs = [];
-  const est_totals = { materials: 0, shipping: 0, tax: 0, labor: 0, total: 0 };
+  let est_labor_total = 0, est_upfront_total = 0;
   for (const r of jobRows) {
     let gross, discount;
     if (r.tier_gross != null || r.tier_net != null) { const s = r.tier_gross || 0, t = r.tier_net || 0; if (s > t) { gross = s; discount = s - t; } else { gross = t || s; discount = 0; } }
     else { gross = r.contract_total || 0; discount = 0; }
     if (!gross) continue;
     const fin = resolveFinancials(gross, discount, r.price_cents != null ? r : null);
-    est_jobs.push({ project_id: r.id, name: r.name, materials_cents: fin.materials_cents, shipping_cents: fin.shipping_cents, tax_cents: fin.tax_cents, labor_cents: fin.labor_cents, total_cents: fin.expenses_cents });
-    est_totals.materials += fin.materials_cents; est_totals.shipping += fin.shipping_cents;
-    est_totals.tax += fin.tax_cents; est_totals.labor += fin.labor_cents; est_totals.total += fin.expenses_cents;
+    const upfront = fin.materials_cents + fin.shipping_cents + fin.tax_cents;          // paid up front
+    const laborOwed = r.status === "completed" ? 0 : fin.labor_cents;                  // owed until job done
+    est_jobs.push({ project_id: r.id, name: r.name, status: r.status, labor_cents: fin.labor_cents, labor_owed_cents: laborOwed, upfront_cents: upfront });
+    est_labor_total += laborOwed;
+    est_upfront_total += upfront;
   }
-  est_jobs.sort((a, b) => b.total_cents - a.total_cents);
+  est_jobs.sort((a, b) => b.labor_owed_cents - a.labor_owed_cents);
 
-  return json({ as_of: asOf, total_cents: total, overdue_cents: overdue, count: bills.length, oldest_days: oldest, buckets, categories, bills, est_jobs, est_totals });
+  return json({
+    as_of: asOf, total_cents: total, overdue_cents: overdue, count: bills.length, oldest_days: oldest, buckets, categories, bills,
+    est_jobs, est_labor_total, est_upfront_total,
+    grand_payable_cents: total + est_labor_total,
+  });
 }

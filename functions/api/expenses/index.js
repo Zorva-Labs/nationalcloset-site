@@ -31,10 +31,10 @@ export async function onRequestPost(context) {
   if (!(b.vendor || b.description)) return json({ error: "Add a vendor or description." }, 400);
   if (amount <= 0) return json({ error: "Amount must be greater than 0." }, 400);
   const r = await context.env.DB.prepare(
-    `INSERT INTO expenses (vendor, description, category, project_id, amount_cents, bill_date, due_date, notes, created_by)
-     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) RETURNING id`
+    `INSERT INTO expenses (vendor, vendor_id, description, category, project_id, amount_cents, bill_date, due_date, notes, created_by)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) RETURNING id`
   ).bind(
-    b.vendor || null, b.description || null, b.category || null, b.project_id ? parseInt(b.project_id, 10) : null,
+    b.vendor || null, b.vendor_id ? parseInt(b.vendor_id, 10) : null, b.description || null, b.category || null, b.project_id ? parseInt(b.project_id, 10) : null,
     amount, b.bill_date || null, b.due_date || null, b.notes || null, auth.email
   ).first();
   await recordActivity(context.env.DB, {

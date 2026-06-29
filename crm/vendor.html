@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Vendor · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc21"/>
+<style>
+  .vendor-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+  @media (max-width: 1000px) { .vendor-grid { grid-template-columns: 1fr; } }
+  .vendor-grid > div { min-width: 0; }
+  .vendor-grid .tbl td, .vendor-grid .form input { overflow-wrap: anywhere; word-break: break-word; }
+  .vendor-grid .form input { max-width: 100%; }
+</style></head>
+<body>
+<script src="/crm/crm-app.js?v=ncc21"></script>
+<script>
+const ROLES = ["Installer", "Manufacturer", "Sales Rep", "Supplier", "Subcontractor", "Designer", "Other"];
+const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
+if (!id) location.href = "/crm/vendors.html";
+let state = null;
+
+(async () => {
+  const user = await SSCrm.mount({ title: "Vendor", actions: `<a class="btn ghost" href="/crm/vendors.html">← Vendors</a>` });
+  if (!user) return;
+  state = await SSCrm.fetchJSON("/api/vendors/" + id);
+  render();
+})();
+
+function render() {
+  const v = state.vendor;
+  const bills = state.bills || [];
+  const s = state.stats || { billed_cents: 0, paid_cents: 0, outstanding_cents: 0, bill_count: 0 };
+  document.getElementById("page-title").textContent = v.name;
+
+  const contactLine = [
+    v.phone ? `<a href="tel:${SSCrm.esc(v.phone)}">${SSCrm.esc(v.phone)}</a>` : "",
+    v.email ? `<a href="mailto:${SSCrm.esc(v.email)}">${SSCrm.esc(v.email)}</a>` : "",
+    v.website ? `<a href="${SSCrm.esc(v.website)}" target="_blank" rel="noopener">Website ↗</a>` : "",
+  ].filter(Boolean).join(" · ");
+
+  document.getElementById("page").innerHTML = `
+    <div class="vendor-grid">
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center">
+            <div><div style="font-size:26px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">${s.bill_count}</div><div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Bill${s.bill_count === 1 ? "" : "s"}</div></div>
+            <div><div style="font-size:26px;font-weight:700;color:var(--money);font-variant-numeric:tabular-nums">${SSCrm.fmtMoney(s.paid_cents)}</div><div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Total paid</div></div>
+            <div><div style="font-size:26px;font-weight:700;color:${s.outstanding_cents > 0 ? "#B91C1C" : "var(--ink)"};font-variant-numeric:tabular-nums">${SSCrm.fmtMoney(s.outstanding_cents)}</div><div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Outstanding</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Bills <span class="muted" style="font-size:12px;font-weight:400">${bills.length}</span></h2><a class="btn primary sm" href="/crm/expenses.html">+ Add bill</a></div>
+          ${bills.length ? `<div class="tbl"><table>
+            <thead><tr><th>Description</th><th>Category</th><th>Job</th><th>Date</th><th class="num">Amount</th><th class="num">Balance</th><th>Status</th></tr></thead>
+            <tbody>${bills.map((b) => {
+              const bal = (b.amount_cents || 0) - (b.amount_paid_cents || 0);
+              return `<tr>
+                <td>${SSCrm.esc(b.description || "—")}</td>
+                <td class="muted">${SSCrm.esc(b.category || "—")}</td>
+                <td>${b.project_id ? `<a href="/crm/project.html?id=${b.project_id}">${SSCrm.esc(b.project_name || "Job #" + b.project_id)}</a>` : `<span class="muted">—</span>`}</td>
+                <td class="muted">${b.bill_date ? SSCrm.fmtDay(b.bill_date) : SSCrm.fmtDate(b.created_at)}</td>
+                <td class="money">${SSCrm.fmtMoney(b.amount_cents)}</td>
+                <td class="num" style="${bal > 0 ? "color:#B91C1C;font-weight:600" : "color:#15803D"}">${SSCrm.fmtMoney(bal)}</td>
+                <td>${SSCrm.pill(b.status)}</td>
+              </tr>`;
+            }).join("")}</tbody></table></div>` : `<p class="muted" style="text-align:center;padding:20px;font-size:13px">No bills linked yet. Log one under <a href="/crm/expenses.html">Expenses / Bills</a> and pick this vendor.</p>`}
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-head"><h2>Details</h2></div>
+          <div class="form">
+            <div class="row">
+              <label><span>Name / contact</span><input id="f-name" value="${SSCrm.esc(v.name)}"/></label>
+              <label><span>Role</span><select id="f-role">${["", ...ROLES].map((r) => `<option ${v.role === r ? "selected" : ""}>${r}</option>`).join("")}</select></label>
+            </div>
+            <label><span>Company</span><input id="f-company" value="${SSCrm.esc(v.company || "")}"/></label>
+            <label><span>Phone</span><input id="f-phone" type="tel" value="${SSCrm.esc(v.phone || "")}"/></label>
+            <label><span>Email</span><input id="f-email" type="email" value="${SSCrm.esc(v.email || "")}"/></label>
+            <label><span>Website</span><input id="f-website" value="${SSCrm.esc(v.website || "")}"/></label>
+            <label><span>Street</span><input id="f-street" value="${SSCrm.esc(v.address_street || "")}"/></label>
+            <div class="row-3">
+              <label><span>City</span><input id="f-city" value="${SSCrm.esc(v.address_city || "")}"/></label>
+              <label><span>State</span><input id="f-state" value="${SSCrm.esc(v.address_state || "")}" maxlength="2"/></label>
+              <label><span>ZIP</span><input id="f-zip" value="${SSCrm.esc(v.address_zip || "")}"/></label>
+            </div>
+            <label><span>Notes</span><textarea id="f-notes" rows="4">${SSCrm.esc(v.notes || "")}</textarea></label>
+            <div class="form-actions"><button class="btn primary" onclick="save()">Save</button></div>
+          </div>
+        </div>
+        ${contactLine ? `<div class="card" style="margin-top:14px"><div class="card-head"><h3>Quick contact</h3></div><p style="font-size:13px;margin:0;line-height:1.7">${contactLine}</p></div>` : ""}
+        <div class="card" style="margin-top:14px;border-color:#FEE2E2;background:#FEF2F2">
+          <div class="card-head"><h3 style="color:#991B1B">Danger zone</h3></div>
+          <p class="muted" style="font-size:12px;line-height:1.5;margin:0 0 10px;color:#991B1B">Remove this vendor. Bills logged to them are kept (just unlinked).</p>
+          <button class="btn danger" style="width:100%" onclick="delVendor()">🗑 Delete vendor</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function save() {
+  const val = (k) => document.getElementById("f-" + k).value.trim();
+  const body = {
+    name: val("name"), role: document.getElementById("f-role").value || null, company: val("company"),
+    phone: val("phone"), email: val("email"), website: val("website"),
+    address_street: val("street"), address_city: val("city"), address_state: val("state"), address_zip: val("zip"), notes: val("notes"),
+  };
+  if (!body.name) { SSCrm.toast("A name is required", "error"); return; }
+  try {
+    await SSCrm.fetchJSON("/api/vendors/" + id, { method: "PATCH", body: JSON.stringify(body) });
+    SSCrm.toast("Saved", "success");
+    state = await SSCrm.fetchJSON("/api/vendors/" + id);
+    render();
+  } catch (e) { SSCrm.toast(e.message, "error"); }
+}
+
+async function delVendor() {
+  if (!(await SSCrm.confirmDialog(`Delete "${state.vendor.name}"? Bills logged to them are kept (just unlinked).`))) return;
+  try { await SSCrm.fetchJSON("/api/vendors/" + id, { method: "DELETE" }); SSCrm.toast("Deleted", "success"); setTimeout(() => location.href = "/crm/vendors.html", 500); }
+  catch (e) { SSCrm.toast(e.message, "error"); }
+}
+</script></body></html>

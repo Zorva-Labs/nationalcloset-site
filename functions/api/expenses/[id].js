@@ -9,13 +9,13 @@ export async function onRequestPatch(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const id = parseInt(context.params.id, 10);
   const b = await context.request.json().catch(() => ({}));
-  const allowed = ["vendor", "description", "category", "project_id", "amount_cents", "bill_date", "due_date", "notes", "status"];
+  const allowed = ["vendor", "vendor_id", "description", "category", "project_id", "amount_cents", "bill_date", "due_date", "notes", "status"];
   const fields = [], binds = [];
   for (const k of allowed) {
     if (b[k] === undefined) continue;
     let v = b[k];
     if (k === "amount_cents") v = Math.max(0, Math.round(Number(v) || 0));
-    if (k === "project_id") v = v ? parseInt(v, 10) : null;
+    if (k === "project_id" || k === "vendor_id") v = v ? parseInt(v, 10) : null;
     fields.push(`${k}=?${binds.length + 1}`); binds.push(v);
   }
   if (!fields.length) return json({ error: "Nothing to update" }, 400);

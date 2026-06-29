@@ -9,7 +9,8 @@ const NAV = [
   { href: "/crm/pipeline.html", label: "Pipeline", icon: iconKanban() },
   { href: "/crm/inbox.html",  label: "Inbox", icon: iconMail() },
   { href: "/crm/leads.html",  label: "Leads", icon: iconLead(), expandable: "leads" },
-  { href: "/crm/contacts.html", label: "Contacts", icon: iconUsers() },
+  { href: "/crm/contacts.html", label: "Clients", icon: iconUsers() },
+  { href: "/crm/vendors.html", label: "Vendors", icon: iconTruck() },
   { href: "/crm/projects.html", label: "Jobs", icon: iconBriefcase(), expandable: "jobs" },
   { href: "/crm/calendar.html", label: "Calendar", icon: iconCal() },
   // Estimates removed — workflow is now Lead → Proposal → Contract → Booked.
@@ -51,7 +52,8 @@ const JOB_STATUSES_NAV = [
 // Sidebar groups — all links visible (we have room in the vertical rail)
 const NAV_GROUPS = [
   { label: null, items: ["/crm/", "/crm/pipeline.html", "/crm/inbox.html"] },
-  { label: "People", items: ["/crm/leads.html", "/crm/contacts.html", "/crm/projects.html"] },
+  { label: "Address book", items: ["/crm/contacts.html", "/crm/vendors.html"] },
+  { label: "Leads &amp; jobs", items: ["/crm/leads.html", "/crm/projects.html"] },
   { label: "Sales", items: ["/crm/estimates.html", "/crm/proposals.html", "/crm/contracts.html", "/crm/invoices.html", "/crm/expenses.html"] },
   { label: "Operations", items: ["/crm/calendar.html", "/crm/availability.html"] },
   { label: "Insights", items: ["/crm/reports.html"] },
@@ -457,6 +459,7 @@ function iconReports() { return `<svg width="14" height="14" viewBox="0 0 24 24"
 function iconSearch() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`; }
 function iconInvoice() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>`; }
 function iconExpense() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`; }
+function iconTruck() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`; }
 
 // Export
 // ============================================================

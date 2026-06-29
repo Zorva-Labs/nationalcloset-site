@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Expenses / Bills · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc20"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc21"/>
 <style>
   .exp-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
   .exp-filters{display:inline-flex;gap:4px;background:var(--bg-soft);border:1px solid var(--line);border-radius:999px;padding:4px}
@@ -13,16 +13,19 @@
   .exp-out strong{font-size:18px;color:#B91C1C}
 </style></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc20"></script>
+<script src="/crm/crm-app.js?v=ncc21"></script>
 <script>
 const CATEGORIES = ["Materials", "Subcontractor", "Labor", "Tools & Equipment", "Vehicle / Fuel", "Rent / Overhead", "Marketing", "Software / Fees", "Other"];
 const ST = { unpaid: "Unpaid", paid: "Paid", void: "Void" };
+
+let VENDORS = []; // address-book vendors, for the bill payee picker
 
 (async () => {
   const user = await SSCrm.mount({ title: "Expenses / Bills", subtitle: "Track what the business owes & pays — powers Accounts Payable + cash flow", wide: true,
     actions: `<button class="btn primary" onclick="addBill()">+ Add bill</button>` });
   if (!user) return;
   window._page = document.getElementById("page");
+  try { VENDORS = (await SSCrm.fetchJSON("/api/vendors")).vendors || []; } catch (e) { VENDORS = []; }
   load();
 })();
 
@@ -88,7 +91,11 @@ function billModal(x) {
     <div class="modal" style="max-width:520px">
       <div class="modal-head">${isEdit ? "Edit bill" : "Add a bill / expense"}</div>
       <div class="modal-body"><div class="form">
-        <label><span>Vendor / payee</span><input id="b-vendor" value="${SSCrm.esc(x.vendor || "")}" placeholder="e.g. ClosetMaid, Home Depot, sub-contractor" autofocus/></label>
+        <label><span>Vendor / payee</span>
+          <input id="b-vendor" list="b-vendorlist" value="${SSCrm.esc(x.vendor || "")}" placeholder="e.g. ClosetMaid, Home Depot, sub-contractor" autofocus/>
+          <datalist id="b-vendorlist">${VENDORS.map((v) => `<option value="${SSCrm.esc(v.name)}">${SSCrm.esc(v.role || "")}${v.company ? " · " + SSCrm.esc(v.company) : ""}</option>`).join("")}</datalist>
+          <span class="muted" style="font-size:11px">Matching a vendor links the bill to their record. <a href="/crm/vendors.html" target="_blank">Manage vendors ↗</a></span>
+        </label>
         <label><span>Description</span><input id="b-desc" value="${SSCrm.esc(x.description || "")}" placeholder="What's it for?"/></label>
         <div class="row">
           <label><span>Category</span><select id="b-cat">${["", ...CATEGORIES].map((c) => `<option ${x.category === c ? "selected" : ""}>${c}</option>`).join("")}</select></label>
@@ -115,8 +122,11 @@ function billModal(x) {
   bg.querySelector("#b-pick").onclick = async () => { const j = await SSCrm.pickJob(); if (j) { linkedProject = j; refreshProjLbl(); } };
   const clearBtn = bg.querySelector("#b-clear"); if (clearBtn) clearBtn.onclick = () => { linkedProject = null; refreshProjLbl(); };
   bg.querySelector("[data-save]").onclick = async () => {
+    const vendorName = bg.querySelector("#b-vendor").value.trim();
+    const matched = vendorName ? VENDORS.find((v) => v.name.toLowerCase() === vendorName.toLowerCase()) : null;
     const body = {
-      vendor: bg.querySelector("#b-vendor").value.trim() || null,
+      vendor: vendorName || null,
+      vendor_id: matched ? matched.id : null,
       description: bg.querySelector("#b-desc").value.trim() || null,
       category: bg.querySelector("#b-cat").value || null,
       amount_cents: SSCrm.parseMoney(bg.querySelector("#b-amt").value),

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Vendors · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc21"/>
+<style>
+  .vnd-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .vnd-filters{display:inline-flex;gap:4px;background:var(--bg-soft);border:1px solid var(--line);border-radius:999px;padding:4px;flex-wrap:wrap}
+  .vnd-filter{border:0;background:transparent;font:inherit;font-size:13px;font-weight:600;color:var(--ink-soft);padding:7px 14px;border-radius:999px;cursor:pointer}
+  .vnd-filter:hover{color:var(--ink)}
+  .vnd-filter.is-active{background:var(--bg);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .vnd-filter .n{color:var(--ink-soft);margin-left:5px}
+  .role-tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--bg-soft);border:1px solid var(--line);color:var(--ink-soft);white-space:nowrap}
+  .role-tag[data-r="Installer"]{background:#ECFDF5;border-color:#A7F3D0;color:#047857}
+  .role-tag[data-r="Manufacturer"]{background:#EFF6FF;border-color:#BFDBFE;color:#1D4ED8}
+  .role-tag[data-r="Sales Rep"]{background:#FFF7ED;border-color:#FED7AA;color:#C2410C}
+  .role-tag[data-r="Supplier"]{background:#F5F3FF;border-color:#DDD6FE;color:#6D28D9}
+  .role-tag[data-r="Subcontractor"]{background:#FEF2F2;border-color:#FECACA;color:#B91C1C}
+  .role-tag[data-r="Designer"]{background:#FDF2F8;border-color:#FBCFE8;color:#BE185D}
+</style></head>
+<body>
+<script src="/crm/crm-app.js?v=ncc21"></script>
+<script>
+const ROLES = ["Installer", "Manufacturer", "Sales Rep", "Supplier", "Subcontractor", "Designer", "Other"];
+let data = { vendors: [], counts: {} };
+let role = "";   // "" = all
+let q = "";
+
+(async () => {
+  const user = await SSCrm.mount({
+    title: "Vendors", subtitle: "Suppliers, installers, reps — who we buy from", wide: true,
+    actions: `<input type="search" id="q" placeholder="Search…" style="padding:8px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font-size:13px;min-width:200px"/>
+              <button class="btn primary" onclick="addVendor()">+ New vendor</button>`,
+  });
+  if (!user) return;
+  document.getElementById("q").oninput = debounce(() => { q = document.getElementById("q").value.trim(); load(); }, 250);
+  await load();
+})();
+
+async function load() {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (role) params.set("role", role);
+  try { data = await SSCrm.fetchJSON("/api/vendors" + (params.toString() ? "?" + params : "")); }
+  catch (e) { document.getElementById("page").innerHTML = `<div class="tbl"><div class="empty">Couldn't load: ${SSCrm.esc(e.message)}</div></div>`; return; }
+  render();
+}
+
+function render() {
+  const vendors = data.vendors || [];
+  const counts = data.counts || {};
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const chip = (key, label, n) => `<button class="vnd-filter ${role === key ? "is-active" : ""}" data-r="${SSCrm.esc(key)}">${SSCrm.esc(label)}${n != null ? ` <span class="n">${n}</span>` : ""}</button>`;
+  const filters = `<div class="vnd-filters">
+      ${chip("", "All", total)}
+      ${ROLES.filter((r) => counts[r]).map((r) => chip(r, r, counts[r])).join("")}
+    </div>`;
+
+  const table = !vendors.length
+    ? `<div class="tbl"><div class="empty">No vendors${role ? " in “" + SSCrm.esc(role) + "”" : ""} yet. Click “+ New vendor” to add one.</div></div>`
+    : `<div class="tbl"><table>
+        <thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Email</th><th>City</th><th class="num" style="width:120px">Paid</th><th class="num" style="width:120px">Owed</th><th style="width:34px"></th></tr></thead>
+        <tbody>${vendors.map((v) => {
+          const go = `location.href='/crm/vendor.html?id=${v.id}'`;
+          const owed = v.outstanding_cents || 0;
+          return `<tr data-id="${v.id}">
+            <td class="clickable" onclick="${go}"><strong>${SSCrm.esc(v.name)}</strong>${v.company ? `<div class="muted" style="font-size:12px">${SSCrm.esc(v.company)}</div>` : ""}</td>
+            <td class="clickable" onclick="${go}">${v.role ? `<span class="role-tag" data-r="${SSCrm.esc(v.role)}">${SSCrm.esc(v.role)}</span>` : `<span class="muted">—</span>`}</td>
+            <td class="muted clickable" onclick="${go}">${SSCrm.esc(v.phone || "")}</td>
+            <td class="muted clickable" onclick="${go}">${SSCrm.esc(v.email || "")}</td>
+            <td class="muted clickable" onclick="${go}">${SSCrm.esc(v.address_city || "")}${v.address_state ? ", " + SSCrm.esc(v.address_state) : ""}</td>
+            <td class="num ${v.paid_cents > 0 ? "money" : "muted"} clickable" onclick="${go}">${v.paid_cents > 0 ? SSCrm.fmtMoney(v.paid_cents) : "—"}</td>
+            <td class="num clickable" onclick="${go}" style="${owed > 0 ? "color:#B91C1C;font-weight:600" : "color:var(--ink-muted)"}">${owed > 0 ? SSCrm.fmtMoney(owed) : "—"}</td>
+            <td style="padding:0;text-align:center"><button class="row-del" title="Delete vendor" onclick="delVendor(${v.id}, '${SSCrm.esc(v.name).replace(/'/g, "\\'")}', this)" style="background:transparent;border:0;cursor:pointer;color:var(--ink-muted);font-size:16px;padding:8px 10px;line-height:1">×</button></td>
+          </tr>`;
+        }).join("")}</tbody></table></div>`;
+
+  document.getElementById("page").innerHTML = `<div class="vnd-bar">${filters}</div>${table}`;
+  document.querySelectorAll(".vnd-filter").forEach((b) => b.addEventListener("click", () => { role = b.dataset.r; load(); }));
+}
+
+function vendorModal(v) {
+  const isEdit = !!v; v = v || {};
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `
+    <div class="modal" style="max-width:540px">
+      <div class="modal-head">${isEdit ? "Edit vendor" : "New vendor"}</div>
+      <div class="modal-body"><div class="form">
+        <div class="row">
+          <label><span>Name / contact</span><input id="v-name" value="${SSCrm.esc(v.name || "")}" placeholder="Person or company" autofocus/></label>
+          <label><span>Role</span><select id="v-role">${["", ...ROLES].map((r) => `<option ${v.role === r ? "selected" : ""}>${r}</option>`).join("")}</select></label>
+        </div>
+        <label><span>Company <span class="muted" style="font-weight:400">(if name is a person)</span></span><input id="v-company" value="${SSCrm.esc(v.company || "")}"/></label>
+        <div class="row">
+          <label><span>Phone</span><input id="v-phone" type="tel" value="${SSCrm.esc(v.phone || "")}"/></label>
+          <label><span>Email</span><input id="v-email" type="email" value="${SSCrm.esc(v.email || "")}"/></label>
+        </div>
+        <label><span>Website</span><input id="v-website" value="${SSCrm.esc(v.website || "")}" placeholder="https://"/></label>
+        <label><span>Street</span><input id="v-street" value="${SSCrm.esc(v.address_street || "")}"/></label>
+        <div class="row-3">
+          <label><span>City</span><input id="v-city" value="${SSCrm.esc(v.address_city || "")}"/></label>
+          <label><span>State</span><input id="v-state" value="${SSCrm.esc(v.address_state || "")}" maxlength="2"/></label>
+          <label><span>ZIP</span><input id="v-zip" value="${SSCrm.esc(v.address_zip || "")}"/></label>
+        </div>
+        <label><span>Notes</span><textarea id="v-notes" rows="2">${SSCrm.esc(v.notes || "")}</textarea></label>
+      </div></div>
+      <div class="modal-foot"><button class="btn ghost" data-cancel>Cancel</button><button class="btn primary" data-save>${isEdit ? "Save" : "Add vendor"}</button></div>
+    </div>`;
+  document.body.appendChild(bg);
+  const close = () => bg.remove();
+  bg.querySelector("[data-cancel]").onclick = close;
+  bg.addEventListener("click", (e) => { if (e.target === bg) close(); });
+  bg.querySelector("[data-save]").onclick = async () => {
+    const val = (k) => bg.querySelector("#v-" + k).value.trim();
+    const body = {
+      name: val("name"), role: bg.querySelector("#v-role").value || null, company: val("company") || null,
+      phone: val("phone") || null, email: val("email") || null, website: val("website") || null,
+      address_street: val("street") || null, address_city: val("city") || null,
+      address_state: val("state") || null, address_zip: val("zip") || null, notes: val("notes") || null,
+    };
+    if (!body.name) { SSCrm.toast("A name is required", "error"); return; }
+    try {
+      if (isEdit) { await SSCrm.fetchJSON(`/api/vendors/${v.id}`, { method: "PATCH", body: JSON.stringify(body) }); close(); SSCrm.toast("Saved", "success"); load(); }
+      else { const { id } = await SSCrm.fetchJSON("/api/vendors", { method: "POST", body: JSON.stringify(body) }); location.href = "/crm/vendor.html?id=" + id; }
+    } catch (e) { SSCrm.toast(e.message, "error"); }
+  };
+}
+
+function addVendor() { vendorModal(null); }
+
+async function delVendor(id, name, btn) {
+  if (!confirm(`Delete vendor "${name}"?\n\nAny bills logged to them are kept (just unlinked).`)) return;
+  btn.disabled = true;
+  try { await SSCrm.fetchJSON(`/api/vendors/${id}`, { method: "DELETE" }); btn.closest("tr").remove(); SSCrm.toast(`Deleted ${name}`, "success"); }
+  catch (e) { btn.disabled = false; SSCrm.toast(e.message || "Delete failed", "error"); }
+}
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+</script></body></html>

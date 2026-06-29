@@ -43,10 +43,10 @@ export async function onRequestPost(context) {
   const b = await context.request.json().catch(() => ({}));
   if (!b.name || !b.name.trim()) return json({ error: "A name is required" }, 400);
   const r = await context.env.DB.prepare(
-    `INSERT INTO vendors (name, company, role, email, phone, website, address_street, address_city, address_state, address_zip, notes)
-     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)`
+    `INSERT INTO vendors (name, company, role, title, email, phone, website, address_street, address_city, address_state, address_zip, notes)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)`
   ).bind(
-    b.name.trim(), b.company || null, b.role || null, b.email || null, b.phone || null, b.website || null,
+    b.name.trim(), b.company || null, b.role || null, b.title || null, b.email || null, b.phone || null, b.website || null,
     b.address_street || null, b.address_city || null, b.address_state || null, b.address_zip || null, b.notes || null
   ).run();
   return json({ id: r.meta.last_row_id });

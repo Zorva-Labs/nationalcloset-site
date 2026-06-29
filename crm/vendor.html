@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Vendor · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc22"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc23"/>
 <style>
   .vendor-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
   @media (max-width: 1000px) { .vendor-grid { grid-template-columns: 1fr; } }
@@ -10,7 +10,7 @@
   .vendor-grid .form input { max-width: 100%; }
 </style></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc22"></script>
+<script src="/crm/crm-app.js?v=ncc23"></script>
 <script>
 const ROLES = ["Installer", "Manufacturer", "Sales Rep", "Supplier", "Subcontractor", "Designer", "Other"];
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
@@ -72,9 +72,12 @@ function render() {
           <div class="form">
             <div class="row">
               <label><span>Name / contact</span><input id="f-name" value="${SSCrm.esc(v.name)}"/></label>
-              <label><span>Role</span><select id="f-role">${["", ...ROLES].map((r) => `<option ${v.role === r ? "selected" : ""}>${r}</option>`).join("")}</select></label>
+              <label><span>Title</span><input id="f-title" value="${SSCrm.esc(v.title || "")}" placeholder="e.g. Sales Rep"/></label>
             </div>
-            <label><span>Company</span><input id="f-company" value="${SSCrm.esc(v.company || "")}"/></label>
+            <div class="row">
+              <label><span>Role <span class="muted" style="font-weight:400">· category</span></span><select id="f-role">${["", ...ROLES].map((r) => `<option ${v.role === r ? "selected" : ""}>${r}</option>`).join("")}</select></label>
+              <label><span>Company</span><input id="f-company" value="${SSCrm.esc(v.company || "")}"/></label>
+            </div>
             <label><span>Phone</span><input id="f-phone" type="tel" value="${SSCrm.esc(v.phone || "")}"/></label>
             <label><span>Email</span><input id="f-email" type="email" value="${SSCrm.esc(v.email || "")}"/></label>
             <label><span>Website</span><input id="f-website" value="${SSCrm.esc(v.website || "")}"/></label>
@@ -101,7 +104,7 @@ function render() {
 async function save() {
   const val = (k) => document.getElementById("f-" + k).value.trim();
   const body = {
-    name: val("name"), role: document.getElementById("f-role").value || null, company: val("company"),
+    name: val("name"), title: val("title"), role: document.getElementById("f-role").value || null, company: val("company"),
     phone: val("phone"), email: val("email"), website: val("website"),
     address_street: val("street"), address_city: val("city"), address_state: val("state"), address_zip: val("zip"), notes: val("notes"),
   };

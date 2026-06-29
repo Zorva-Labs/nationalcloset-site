@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Expenses / Bills · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc22"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc23"/>
 <style>
   .exp-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
   .exp-filters{display:inline-flex;gap:4px;background:var(--bg-soft);border:1px solid var(--line);border-radius:999px;padding:4px}
@@ -13,7 +13,7 @@
   .exp-out strong{font-size:18px;color:#B91C1C}
 </style></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc22"></script>
+<script src="/crm/crm-app.js?v=ncc23"></script>
 <script>
 const CATEGORIES = ["Materials", "Subcontractor", "Labor", "Tools & Equipment", "Vehicle / Fuel", "Rent / Overhead", "Marketing", "Software / Fees", "Other"];
 const ST = { unpaid: "Unpaid", paid: "Paid", void: "Void" };
@@ -93,7 +93,7 @@ function billModal(x) {
       <div class="modal-body"><div class="form">
         <label><span>Vendor / payee</span>
           <input id="b-vendor" list="b-vendorlist" value="${SSCrm.esc(x.vendor || "")}" placeholder="e.g. ClosetMaid, Home Depot, sub-contractor" autofocus/>
-          <datalist id="b-vendorlist">${VENDORS.map((v) => `<option value="${SSCrm.esc(v.name)}">${SSCrm.esc(v.role || "")}${v.company ? " · " + SSCrm.esc(v.company) : ""}</option>`).join("")}</datalist>
+          <datalist id="b-vendorlist">${VENDORS.map((v) => `<option value="${SSCrm.esc(v.name)}">${[v.title, v.role, v.company].filter(Boolean).map((s) => SSCrm.esc(s)).join(" · ")}</option>`).join("")}</datalist>
           <span class="muted" style="font-size:11px">Matching a vendor links the bill to their record. <a href="/crm/vendors.html" target="_blank">Manage vendors ↗</a></span>
         </label>
         <label><span>Description</span><input id="b-desc" value="${SSCrm.esc(x.description || "")}" placeholder="What's it for?"/></label>

@@ -76,7 +76,7 @@ export async function onRequestGet(context) {
 
   // Vendor picker — installers first for the installer slot, manufacturers for
   // the manufacturer slot; the client filters/sorts. Send the whole book.
-  const vendors = (await DB.prepare(`SELECT id, name, company, role FROM vendors ORDER BY name`).all()).results || [];
+  const vendors = (await DB.prepare(`SELECT id, name, company, role, title FROM vendors ORDER BY name`).all()).results || [];
 
   return json({ project_id: id, status: project.status, roles, vendors });
 }

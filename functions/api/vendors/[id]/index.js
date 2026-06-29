@@ -26,7 +26,7 @@ export async function onRequestGet(context) {
   return json({ vendor, bills, stats: { billed_cents: billed, paid_cents: paid, outstanding_cents: outstanding, bill_count: bills.filter((b) => b.status !== "void").length } });
 }
 
-const ALLOWED = ["name", "company", "role", "email", "phone", "website", "address_street", "address_city", "address_state", "address_zip", "notes"];
+const ALLOWED = ["name", "company", "role", "title", "email", "phone", "website", "address_street", "address_city", "address_state", "address_zip", "notes"];
 
 export async function onRequestPatch(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;

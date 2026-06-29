@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Vendors · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc22"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc23"/>
 <style>
   .vnd-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
   .vnd-filters{display:inline-flex;gap:4px;background:var(--bg-soft);border:1px solid var(--line);border-radius:999px;padding:4px;flex-wrap:wrap}
@@ -18,7 +18,7 @@
   .role-tag[data-r="Designer"]{background:#FDF2F8;border-color:#FBCFE8;color:#BE185D}
 </style></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc22"></script>
+<script src="/crm/crm-app.js?v=ncc23"></script>
 <script>
 const ROLES = ["Installer", "Manufacturer", "Sales Rep", "Supplier", "Subcontractor", "Designer", "Other"];
 let data = { vendors: [], counts: {} };
@@ -58,16 +58,16 @@ function render() {
   const table = !vendors.length
     ? `<div class="tbl"><div class="empty">No vendors${role ? " in “" + SSCrm.esc(role) + "”" : ""} yet. Click “+ New vendor” to add one.</div></div>`
     : `<div class="tbl"><table>
-        <thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Email</th><th>City</th><th class="num" style="width:120px">Paid</th><th class="num" style="width:120px">Owed</th><th style="width:34px"></th></tr></thead>
+        <thead><tr><th>Name</th><th>Title</th><th>Role</th><th>Phone</th><th>Email</th><th class="num" style="width:120px">Paid</th><th class="num" style="width:120px">Owed</th><th style="width:34px"></th></tr></thead>
         <tbody>${vendors.map((v) => {
           const go = `location.href='/crm/vendor.html?id=${v.id}'`;
           const owed = v.outstanding_cents || 0;
           return `<tr data-id="${v.id}">
             <td class="clickable" onclick="${go}"><strong>${SSCrm.esc(v.name)}</strong>${v.company ? `<div class="muted" style="font-size:12px">${SSCrm.esc(v.company)}</div>` : ""}</td>
+            <td class="clickable" onclick="${go}">${v.title ? SSCrm.esc(v.title) : `<span class="muted">—</span>`}</td>
             <td class="clickable" onclick="${go}">${v.role ? `<span class="role-tag" data-r="${SSCrm.esc(v.role)}">${SSCrm.esc(v.role)}</span>` : `<span class="muted">—</span>`}</td>
             <td class="muted clickable" onclick="${go}">${SSCrm.esc(v.phone || "")}</td>
             <td class="muted clickable" onclick="${go}">${SSCrm.esc(v.email || "")}</td>
-            <td class="muted clickable" onclick="${go}">${SSCrm.esc(v.address_city || "")}${v.address_state ? ", " + SSCrm.esc(v.address_state) : ""}</td>
             <td class="num ${v.paid_cents > 0 ? "money" : "muted"} clickable" onclick="${go}">${v.paid_cents > 0 ? SSCrm.fmtMoney(v.paid_cents) : "—"}</td>
             <td class="num clickable" onclick="${go}" style="${owed > 0 ? "color:#B91C1C;font-weight:600" : "color:var(--ink-muted)"}">${owed > 0 ? SSCrm.fmtMoney(owed) : "—"}</td>
             <td style="padding:0;text-align:center"><button class="row-del" title="Delete vendor" onclick="delVendor(${v.id}, '${SSCrm.esc(v.name).replace(/'/g, "\\'")}', this)" style="background:transparent;border:0;cursor:pointer;color:var(--ink-muted);font-size:16px;padding:8px 10px;line-height:1">×</button></td>
@@ -88,9 +88,12 @@ function vendorModal(v) {
       <div class="modal-body"><div class="form">
         <div class="row">
           <label><span>Name / contact</span><input id="v-name" value="${SSCrm.esc(v.name || "")}" placeholder="Person or company" autofocus/></label>
-          <label><span>Role</span><select id="v-role">${["", ...ROLES].map((r) => `<option ${v.role === r ? "selected" : ""}>${r}</option>`).join("")}</select></label>
+          <label><span>Title</span><input id="v-title" value="${SSCrm.esc(v.title || "")}" placeholder="e.g. Sales Rep, VP of Sales"/></label>
         </div>
-        <label><span>Company <span class="muted" style="font-weight:400">(if name is a person)</span></span><input id="v-company" value="${SSCrm.esc(v.company || "")}"/></label>
+        <div class="row">
+          <label><span>Role <span class="muted" style="font-weight:400">· category</span></span><select id="v-role">${["", ...ROLES].map((r) => `<option ${v.role === r ? "selected" : ""}>${r}</option>`).join("")}</select></label>
+          <label><span>Company <span class="muted" style="font-weight:400">(if name is a person)</span></span><input id="v-company" value="${SSCrm.esc(v.company || "")}"/></label>
+        </div>
         <div class="row">
           <label><span>Phone</span><input id="v-phone" type="tel" value="${SSCrm.esc(v.phone || "")}"/></label>
           <label><span>Email</span><input id="v-email" type="email" value="${SSCrm.esc(v.email || "")}"/></label>
@@ -113,7 +116,7 @@ function vendorModal(v) {
   bg.querySelector("[data-save]").onclick = async () => {
     const val = (k) => bg.querySelector("#v-" + k).value.trim();
     const body = {
-      name: val("name"), role: bg.querySelector("#v-role").value || null, company: val("company") || null,
+      name: val("name"), title: val("title") || null, role: bg.querySelector("#v-role").value || null, company: val("company") || null,
       phone: val("phone") || null, email: val("email") || null, website: val("website") || null,
       address_street: val("street") || null, address_city: val("city") || null,
       address_state: val("state") || null, address_zip: val("zip") || null, notes: val("notes") || null,

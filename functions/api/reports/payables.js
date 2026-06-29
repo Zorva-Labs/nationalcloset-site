@@ -57,8 +57,11 @@ export async function onRequestGet(context) {
   const categories = Object.entries(byCategory).map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount);
 
   // Estimated LABOR payable (modeled). Materials, taxes & shipping are paid up
-  // front (when the job is ordered), so they're NOT outstanding payables — only
-  // labor/installation is owed, and only until the job is completed.
+  // front (when the job is ordered), so they're NOT outstanding payables. The
+  // installer's labor becomes payable AFTER the job is completed — so a
+  // completed job that hasn't yet had a real installer bill logged is an
+  // estimated payable. In-progress jobs are an upcoming commitment, not yet due.
+  // Each job carries its assigned installer (labor) + manufacturer (materials).
   const jobRows = (await context.env.DB.prepare(
     `SELECT p.id, p.name, p.status,
             jf.price_cents, jf.discount_cents, jf.materials_cents, jf.shipping_cents, jf.tax_cents, jf.labor_cents, jf.misc_cents,
@@ -68,12 +71,15 @@ export async function onRequestGet(context) {
             (SELECT t.subtotal_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
                WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_gross,
             (SELECT t.total_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
-               WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_net
+               WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_net,
+            (SELECT v.name FROM project_vendors pv JOIN vendors v ON v.id=pv.vendor_id WHERE pv.project_id=p.id AND pv.role='installer') AS installer_name,
+            (SELECT pv.vendor_id FROM project_vendors pv WHERE pv.project_id=p.id AND pv.role='installer') AS installer_id,
+            (SELECT v.name FROM project_vendors pv JOIN vendors v ON v.id=pv.vendor_id WHERE pv.project_id=p.id AND pv.role='manufacturer') AS manufacturer_name
        FROM projects p LEFT JOIN job_financials jf ON jf.project_id = p.id
       WHERE p.status IN (${WON.map(() => "?").join(",")})`
   ).bind(...WON).all()).results || [];
   const est_jobs = [];
-  let est_labor_total = 0, est_upfront_total = 0;
+  let est_labor_total = 0, est_labor_upcoming = 0, est_upfront_total = 0;
   for (const r of jobRows) {
     let gross, discount;
     if (r.tier_gross != null || r.tier_net != null) { const s = r.tier_gross || 0, t = r.tier_net || 0; if (s > t) { gross = s; discount = s - t; } else { gross = t || s; discount = 0; } }
@@ -81,16 +87,36 @@ export async function onRequestGet(context) {
     if (!gross) continue;
     const fin = resolveFinancials(gross, discount, r.price_cents != null ? r : null);
     const upfront = fin.materials_cents + fin.shipping_cents + fin.tax_cents;          // paid up front
-    const laborOwed = r.status === "completed" ? 0 : fin.labor_cents;                  // owed until job done
-    est_jobs.push({ project_id: r.id, name: r.name, status: r.status, labor_cents: fin.labor_cents, labor_owed_cents: laborOwed, upfront_cents: upfront });
+    const completed = r.status === "completed";
+
+    // Has the installer's labor already been logged as a real bill? If so, the
+    // logged bill (in the A/P list above) carries it — don't double-count via
+    // the estimate. We match an installer bill by the assigned installer vendor.
+    let installerBilled = false;
+    if (r.installer_id) {
+      const b = await context.env.DB.prepare(
+        `SELECT COUNT(*) AS n FROM expenses WHERE project_id=?1 AND vendor_id=?2 AND status!='void'`
+      ).bind(r.id, r.installer_id).first().catch(() => null);
+      installerBilled = (b?.n || 0) > 0;
+    }
+
+    const laborOwed = (completed && !installerBilled) ? fin.labor_cents : 0;            // payable after completion, until billed
+    const laborUpcoming = (!completed) ? fin.labor_cents : 0;                           // future commitment, not yet due
+    est_jobs.push({
+      project_id: r.id, name: r.name, status: r.status,
+      installer_name: r.installer_name || null, manufacturer_name: r.manufacturer_name || null,
+      labor_cents: fin.labor_cents, labor_owed_cents: laborOwed, labor_upcoming_cents: laborUpcoming,
+      installer_billed: installerBilled, upfront_cents: upfront,
+    });
     est_labor_total += laborOwed;
+    est_labor_upcoming += laborUpcoming;
     est_upfront_total += upfront;
   }
-  est_jobs.sort((a, b) => b.labor_owed_cents - a.labor_owed_cents);
+  est_jobs.sort((a, b) => b.labor_owed_cents - a.labor_owed_cents || b.labor_upcoming_cents - a.labor_upcoming_cents);
 
   return json({
     as_of: asOf, total_cents: total, overdue_cents: overdue, count: bills.length, oldest_days: oldest, buckets, categories, bills,
-    est_jobs, est_labor_total, est_upfront_total,
+    est_jobs, est_labor_total, est_labor_upcoming, est_upfront_total,
     grand_payable_cents: total + est_labor_total,
   });
 }

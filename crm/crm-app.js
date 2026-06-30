@@ -53,7 +53,7 @@ const JOB_STATUSES_NAV = [
 const NAV_GROUPS = [
   { label: null, items: ["/crm/", "/crm/pipeline.html", "/crm/inbox.html"] },
   { label: "Address book", items: ["/crm/contacts.html", "/crm/vendors.html"] },
-  { label: "Leads &amp; jobs", items: ["/crm/leads.html", "/crm/projects.html"] },
+  { label: "Leads & jobs", items: ["/crm/leads.html", "/crm/projects.html"] },
   { label: "Sales", items: ["/crm/estimates.html", "/crm/proposals.html", "/crm/contracts.html", "/crm/invoices.html", "/crm/expenses.html"] },
   { label: "Operations", items: ["/crm/calendar.html", "/crm/availability.html"] },
   { label: "Insights", items: ["/crm/reports.html"] },

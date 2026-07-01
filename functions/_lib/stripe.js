@@ -54,15 +54,17 @@ export async function stripeRequest(env, method, path, params) {
 }
 
 // Create (or return existing) PaymentIntent for an invoice amount.
-export async function createPaymentIntent(env, { amountCents, currency = "usd", description, receiptEmail, metadata, idempotencyKey }) {
+// paymentMethodTypes is an explicit allow-list (not automatic_payment_methods)
+// so only the methods we opt into are ever offered — card, ACH bank debit, and
+// Klarna (pay-over-time). Wallets / Link / Affirm stay off.
+export async function createPaymentIntent(env, { amountCents, currency = "usd", description, receiptEmail, metadata, idempotencyKey, paymentMethodTypes }) {
+  const methods = paymentMethodTypes && paymentMethodTypes.length ? paymentMethodTypes : ["card", "us_bank_account", "klarna"];
   const params = {
     amount: Math.round(amountCents),
     currency,
     description,
     receipt_email: receiptEmail || undefined,
-    // Only card + ACH bank debit. Explicit list (not automatic_payment_methods)
-    // so wallets / Link / Klarna / Affirm are never offered.
-    payment_method_types: ["card", "us_bank_account"],
+    payment_method_types: methods,
     payment_method_options: { us_bank_account: { verification_method: "automatic" } },
     metadata: metadata || {},
   };

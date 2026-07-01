@@ -15,15 +15,34 @@ function surchargeRate(env) {
 }
 const surchargeCents = (baseCents, rate) => Math.round(baseCents * rate);
 
-// A PI is "restricted" (good) only if it offers exactly card + ACH. Older
-// intents created with automatic_payment_methods still offer Klarna/Affirm/Link,
-// so we recreate those.
-const ALLOWED_PM = ["card", "us_bank_account"];
-function piIsRestricted(pi) {
+// The methods we offer online: card, ACH bank debit, and Klarna. A stored PI is
+// reusable only if it was created with our explicit allow-list (not the old
+// automatic_payment_methods, which also surfaced Link/Affirm/wallets) and its
+// method set matches one we currently offer — either the full set (Klarna
+// active) or the card+ACH fallback (Klarna not yet activated on the account).
+const PM_WITH_KLARNA = ["card", "us_bank_account", "klarna"];
+const PM_FALLBACK = ["card", "us_bank_account"];
+function sameSet(a, b) { return a.length === b.length && a.every((x) => b.includes(x)); }
+function piAcceptable(pi) {
   if (!pi) return false;
   if (pi.automatic_payment_methods && pi.automatic_payment_methods.enabled) return false;
   const types = pi.payment_method_types || [];
-  return types.length > 0 && types.every((t) => ALLOWED_PM.includes(t));
+  return sameSet(types, PM_WITH_KLARNA) || sameSet(types, PM_FALLBACK);
+}
+
+// Create the invoice PaymentIntent, preferring Klarna. If Klarna isn't activated
+// on the Stripe account (or isn't eligible for this amount/currency), Stripe
+// rejects the klarna method — so we transparently retry with card + ACH only.
+// Separate idempotency suffixes keep the two attempts independent.
+async function createInvoicePI(env, opts) {
+  try {
+    return await createPaymentIntent(env, { ...opts, paymentMethodTypes: PM_WITH_KLARNA, idempotencyKey: opts.idempotencyKey + "_k" });
+  } catch (e) {
+    const msg = ((e.stripe && e.stripe.message) || e.message || "").toLowerCase();
+    const klarnaIssue = msg.includes("klarna") || (e.stripe && /payment_method_types/.test(e.stripe.param || ""));
+    if (!klarnaIssue) throw e;
+    return await createPaymentIntent(env, { ...opts, paymentMethodTypes: PM_FALLBACK, idempotencyKey: opts.idempotencyKey + "_f" });
+  }
 }
 
 function publicView(inv, project) {
@@ -74,22 +93,28 @@ export async function onRequestGet(context) {
         await markInvoicePaid(context.env, inv, { method, paymentIntentId: pi.id });
         return json({ paid: true, invoice: publicView({ ...inv, status: "paid" }, project) });
       }
-      // Recreate stale intents: canceled, or ones that still offer methods other
-      // than card + ACH (e.g. Klarna from the old automatic_payment_methods setup).
-      if (pi && (pi.status === "canceled" || !piIsRestricted(pi))) pi = null;
+      // Redirect-based methods (Klarna) and ACH come back as "processing" — the
+      // customer is done; the webhook finalizes it. Show a processing state so
+      // they don't try to pay again.
+      if (pi && pi.status === "processing") {
+        return json({ processing: true, invoice: publicView(inv, project) });
+      }
+      // Recreate stale intents: canceled, or ones whose method set no longer
+      // matches what we offer (e.g. legacy automatic_payment_methods intents).
+      if (pi && (pi.status === "canceled" || !piAcceptable(pi))) pi = null;
       // Otherwise reset to the current balance (also clears any leftover surcharge).
       else if (pi && pi.amount !== due) {
         pi = await updatePaymentIntentAmount(context.env, pi.id, due).catch(() => pi);
       }
     }
     if (!pi) {
-      pi = await createPaymentIntent(context.env, {
+      pi = await createInvoicePI(context.env, {
         amountCents: due,
         currency: inv.currency || "usd",
         description: `${inv.number} — ${inv.description}`,
         receiptEmail: project?.contact_email || undefined,
         metadata: { invoice_id: String(inv.id), invoice_number: inv.number, project_id: String(inv.project_id) },
-        idempotencyKey: `inv_${inv.id}_cardach`,   // namespaced so old Klarna-enabled intents aren't replayed
+        idempotencyKey: `inv_${inv.id}_v2`,   // v2 = card + ACH + Klarna era
       });
       await db.prepare(`UPDATE invoices SET stripe_payment_intent_id=?1, updated_at=datetime('now') WHERE id=?2`).bind(pi.id, inv.id).run();
     }

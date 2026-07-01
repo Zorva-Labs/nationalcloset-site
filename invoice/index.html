@@ -87,6 +87,13 @@
         <p>Thank you! Invoice <strong>${esc(inv.number)}</strong> for <strong>${money(inv.amount_cents)}</strong> is paid.</p>
       </div></div>`;
     }
+    function processingState(inv) {
+      root.innerHTML = `<div class="card"><div class="state">
+        <div class="ic">${checkmark()}</div>
+        <h2>Payment received</h2>
+        <p>Thanks! Your payment for invoice <strong>${esc(inv.number)}</strong> is processing and will confirm shortly. You'll get a receipt by email once it clears.</p>
+      </div></div>`;
+    }
     function voidState(inv) {
       root.innerHTML = `<div class="card"><div class="state void">
         <div class="ic">—</div>
@@ -108,6 +115,7 @@
       } catch (e) { return errorState("Could not load this invoice."); }
 
       if (data.paid) return paidState(data.invoice);
+      if (data.processing) return processingState(data.invoice);
       if (data.voided) return voidState(data.invoice);
 
       const inv = data.invoice;
@@ -130,7 +138,7 @@
             <div class="amount">${money(base)} <small>due</small></div>
             ${alreadyPaid > 0 ? `<p class="sub" style="margin-top:-2px">${money(alreadyPaid)} of ${money(inv.amount_cents)} already paid — balance shown above.</p>` : ""}
             <p class="desc">${esc(inv.description || "")}</p>
-            ${surcharge > 0 ? `<p class="fee-note">Pay by <strong>bank (ACH)</strong> with no fee. Paying by <strong>card</strong> adds a ${ratePct}% processing fee (${money(surcharge)}).</p>` : ""}
+            ${surcharge > 0 ? `<p class="fee-note">Pay by <strong>bank (ACH)</strong> or <strong>Klarna</strong> with no added fee. Paying by <strong>card</strong> adds a ${ratePct}% processing fee (${money(surcharge)}).</p>` : ""}
             <div class="divider"></div>
           </div>
           <div class="pay">

@@ -157,8 +157,8 @@
       };
       elements = stripe.elements({ clientSecret: data.client_secret, appearance });
       // Offer every payment method enabled in the Stripe Dashboard, including
-      // Apple Pay / Google Pay / Link wallets. No surcharge — the amount is the
-      // balance due regardless of method.
+      // Apple Pay / Google Pay / Link wallets. The amount charged is the balance
+      // due for every method.
       const paymentElement = elements.create("payment");
       paymentElement.mount("#payment-element");
       // "Pay by check" toggle — hides the online payment flow and shows the

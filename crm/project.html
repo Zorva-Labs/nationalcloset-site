@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc24" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc25" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc24"></script>
+<script src="/crm/crm-app.js?v=ncc25"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -560,9 +560,18 @@ function renderOverview(s) {
               <div class="muted">Number</div><div><strong style="color:var(--ink)">${e(signedContract.number)}</strong></div>
               <div class="muted">Type</div><div>${e(signedContract.contract_type || "custom_order").replace(/_/g, " ")}</div>
               <div class="muted">Total</div><div class="money" style="font-size:15px">${fmtMoney(signedContract.total_cents)}</div>
-              ${(state.billing && state.billing.paid_in_full)
-                ? `<div class="muted">Payment</div><div style="color:#15803D;font-weight:600">Paid in full</div>`
-                : (signedContract.deposit_cents ? `<div class="muted">Deposit</div><div>${fmtMoney(signedContract.deposit_cents)} ${signedContract.deposit_paid ? "<span class=\"muted\">· received</span>" : "<span class=\"muted\">· pending</span>"}</div>` : "")}
+              ${signedContract.deposit_cents ? `<div class="muted">Deposit</div><div>${fmtMoney(signedContract.deposit_cents)} ${signedContract.deposit_paid ? "<span class=\"muted\">· received</span>" : "<span class=\"muted\">· pending</span>"}</div>` : ""}
+              ${(() => {
+                const total = signedContract.total_cents || 0;
+                const paid = (state.billing && state.billing.paid_cents) || 0;
+                const bal = Math.max(0, total - paid);
+                const pif = (state.billing && state.billing.paid_in_full) || bal === 0;
+                let out = paid > 0 ? `<div class="muted">Paid to date</div><div class="money" style="color:#15803D">${fmtMoney(paid)}</div>` : "";
+                out += `<div class="muted">Balance due</div>` + (pif
+                  ? `<div style="color:#15803D;font-weight:700">Paid in full ✓</div>`
+                  : `<div class="money" style="font-size:15px;color:#B45309;font-weight:700">${fmtMoney(bal)}</div>`);
+                return out;
+              })()}
               ${signedContract.signed_by_customer_at ? `<div class="muted">Customer signed</div><div>${fmtDateTime(signedContract.signed_by_customer_at)}</div>` : ""}
               ${signedContract.counter_signed_at ? `<div class="muted">Counter-signed</div><div>${fmtDateTime(signedContract.counter_signed_at)}</div>` : ""}
             </div>

@@ -39,6 +39,9 @@
   .rows tr:first-child td{border-top:0}
   .rows .muted td{color:var(--ink-mute);font-weight:500}
   .rows .muted td:last-child{font-weight:600}
+  .rows .sep td{border-top:2px solid var(--line)}
+  .rows .disc-row td{color:var(--clay-deep)}
+  .rows .disc-row td:last-child{color:var(--clay-deep)}
   .rows .grand td{border-top:2px solid var(--ink);font-weight:800;font-size:1.02rem}
   .pct{color:var(--ink-mute);font-weight:600;font-size:.82rem}
 
@@ -79,8 +82,15 @@
       <span>$</span>
       <input id="gross" type="text" inputmode="decimal" placeholder="10,682.90" autocomplete="off" autofocus />
     </div>
+    <p class="hint">The all-in price you're quoting (already includes the 35% markup). This is the cost basis.</p>
+
+    <label class="field" for="disc" style="margin-top:18px">Discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, comes out of profit</span></label>
+    <div class="input-money">
+      <span>$</span>
+      <input id="disc" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off" />
+    </div>
     <div id="tier" class="tier" hidden></div>
-    <p class="hint">This is the all-in price you're quoting the client (already includes the 35% markup).</p>
+    <p class="hint">Costs (and your minimum deposit) stay based on the gross — the discount only reduces what the client pays and your profit.</p>
   </div>
 
   <div id="out" hidden>
@@ -115,6 +125,9 @@
         <tr class="muted"><td>= Hard costs <span class="pct">(deposit target)</span></td><td id="r-hard">$0</td></tr>
         <tr><td>Labor <span class="pct">(15%, paid after install)</span></td><td id="r-labor">$0</td></tr>
         <tr class="muted"><td>Total cost</td><td id="r-cost">$0</td></tr>
+        <tr class="sep"><td>Gross quote</td><td id="r-gross">$0</td></tr>
+        <tr class="disc-row" id="r-discrow" hidden><td>Discount</td><td id="r-discamt">$0</td></tr>
+        <tr class="muted" id="r-netrow" hidden><td>Net — client pays</td><td id="r-net">$0</td></tr>
         <tr class="grand"><td>Profit <span class="pct" id="r-margin"></span></td><td id="r-profit">$0</td></tr>
       </table>
     </div>
@@ -127,7 +140,7 @@
 (function () {
   var MARKUP = 1.35, SHIP = 0.05, TAX = 0.0975, LABOR = 0.15;
   var el = function (id) { return document.getElementById(id); };
-  var gross = el("gross");
+  var gross = el("gross"), disc = el("disc");
 
   function money(cents) {
     return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -157,21 +170,29 @@
     var dollars = parseFloat(raw);
     var out = el("out"), tier = el("tier");
     if (!raw || isNaN(dollars) || dollars <= 0) { out.hidden = true; tier.hidden = true; return; }
-    var price = Math.round(dollars * 100);
-    var f = calc(price);
-    var half = Math.round(price * 0.5);
+    var price = Math.round(dollars * 100);                 // gross = cost basis
+
+    // Discount comes out of profit only. Client pays NET = gross − discount.
+    var dRaw = disc.value.replace(/[^0-9.]/g, "");
+    var dVal = parseFloat(dRaw);
+    var discount = (!dRaw || isNaN(dVal) || dVal < 0) ? 0 : Math.min(Math.round(dVal * 100), price);
+    var net = price - discount;                            // what the client actually pays
+
+    var f = calc(price);                                   // costs always from the gross
+    var profit = net - f.cost;
+    var half = Math.round(net * 0.5);                      // deposit is a share of what they pay
 
     tier.hidden = false;
     tier.textContent = Math.round(f.disc * 100) + "% material discount tier";
 
     el("d-min").textContent = money(f.hard);
-    el("d-minpct").textContent = pct(f.hard, price) + " of the job";
+    el("d-minpct").textContent = pct(f.hard, net) + " of the " + (discount > 0 ? "net " : "") + "job";
     el("d-mat").textContent = money(f.materials);
     el("d-ship").textContent = money(f.shipping);
     el("d-tax").textContent = money(f.tax);
 
     el("d-half").textContent = money(half);
-    el("d-bal").textContent = money(price - f.hard);
+    el("d-bal").textContent = money(net - f.hard);
 
     var note = el("note");
     if (half >= f.hard) {
@@ -180,7 +201,7 @@
       el("d-halfnote").textContent = "covers hard costs ✓";
     } else {
       note.className = "note warn";
-      note.innerHTML = '<span class="ic">!</span><div>A 50% deposit is <b>' + money(f.hard - half) + ' short</b> of covering materials, shipping &amp; taxes. Quote at least the minimum above (' + pct(f.hard, price) + ').</div>';
+      note.innerHTML = '<span class="ic">!</span><div>A 50% deposit is <b>' + money(f.hard - half) + ' short</b> of covering materials, shipping &amp; taxes. Quote at least the minimum above (' + pct(f.hard, net) + ').</div>';
       el("d-halfnote").textContent = money(f.hard - half) + " short";
     }
 
@@ -192,13 +213,22 @@
     el("r-hard").textContent = money(f.hard);
     el("r-labor").textContent = money(f.labor);
     el("r-cost").textContent = money(f.cost);
-    el("r-profit").textContent = money(f.profit);
-    el("r-margin").textContent = "· " + pct(f.profit, price) + " margin";
+
+    el("r-gross").textContent = money(price);
+    var showDisc = discount > 0;
+    el("r-discrow").hidden = !showDisc;
+    el("r-netrow").hidden = !showDisc;
+    el("r-discamt").textContent = "−" + money(discount);
+    el("r-net").textContent = money(net);
+
+    el("r-profit").textContent = money(profit);
+    el("r-margin").textContent = "· " + pct(profit, net) + " margin" + (showDisc ? " on net" : "");
 
     out.hidden = false;
   }
 
   gross.addEventListener("input", render);
+  disc.addEventListener("input", render);
   render();
 })();
 </script>

@@ -53,19 +53,17 @@ export async function stripeRequest(env, method, path, params) {
   return json;
 }
 
-// Create (or return existing) PaymentIntent for an invoice amount.
-// paymentMethodTypes is an explicit allow-list (not automatic_payment_methods)
-// so only the methods we opt into are ever offered — card, ACH bank debit, and
-// Klarna (pay-over-time). Wallets / Link / Affirm stay off.
-export async function createPaymentIntent(env, { amountCents, currency = "usd", description, receiptEmail, metadata, idempotencyKey, paymentMethodTypes }) {
-  const methods = paymentMethodTypes && paymentMethodTypes.length ? paymentMethodTypes : ["card", "us_bank_account", "klarna"];
+// Create (or return existing) PaymentIntent for an invoice amount. Uses
+// automatic_payment_methods so EVERY payment method enabled in the Stripe
+// Dashboard is offered (cards, Apple/Google Pay, Link, ACH, Klarna, etc.). No
+// surcharge — the amount is exactly the balance due for every method.
+export async function createPaymentIntent(env, { amountCents, currency = "usd", description, receiptEmail, metadata, idempotencyKey }) {
   const params = {
     amount: Math.round(amountCents),
     currency,
     description,
     receipt_email: receiptEmail || undefined,
-    payment_method_types: methods,
-    payment_method_options: { us_bank_account: { verification_method: "automatic" } },
+    automatic_payment_methods: { enabled: true },
     metadata: metadata || {},
   };
   // Idempotency so a double-tap on the pay page doesn't make two intents.
@@ -86,8 +84,8 @@ export async function createPaymentIntent(env, { amountCents, currency = "usd", 
   return json;
 }
 
-// Update an unconfirmed PaymentIntent's amount (used to apply the card
-// surcharge at pay time, or reset to the base amount for ACH).
+// Update an unconfirmed PaymentIntent's amount (used to reset it to the current
+// balance due if a partial in-person payment reduced it).
 export function updatePaymentIntentAmount(env, id, amountCents) {
   return stripeRequest(env, "POST", `/payment_intents/${id}`, { amount: Math.round(amountCents) });
 }

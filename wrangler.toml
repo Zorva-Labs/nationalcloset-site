@@ -14,9 +14,6 @@ IMAP_PORT = "993"
 MAIL_FROM = "National Closet Company <hello@nationalclosetco.com>"
 MAIL_DEFAULT_REPLY = "hello@nationalclosetco.com"
 STAFF_EMAIL = "hello@nationalclosetco.com"
-# Card processing-fee surcharge passed to the customer when they pay by card
-# (bank / ACH has no fee). 0.03 = 3%. Change here to adjust.
-CARD_SURCHARGE_RATE = "0.03"
 # Stripe publishable key is public (safe in client/source). Secret key +
 # webhook signing secret are encrypted Pages secrets (STRIPE_SECRET_KEY,
 # STRIPE_WEBHOOK_SECRET) — NOT here.

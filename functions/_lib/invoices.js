@@ -143,7 +143,7 @@ export async function sendInvoiceEmail(env, invoice, project) {
         <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Amount due</td><td style="padding:4px 0;font-weight:700;font-size:18px">${money(invoice.amount_cents)}</td></tr>
       </table>
       <p>${invoice.description}.</p>
-      <p>You can pay securely by card using the button below.</p>
+      <p>You can pay securely online using the button below — pay by card, bank, digital wallet or Klarna.</p>
     `,
     ctaLabel: `Pay ${money(invoice.amount_cents)}`,
     ctaUrl: payUrl,

@@ -1,48 +1,16 @@
-// GET  /api/public/invoice/[token]  — invoice summary + Stripe key + PaymentIntent client_secret
-// POST /api/public/invoice/[token]  { action: "set_method", method: "card" | "bank" }
-//   Card payments carry a processing-fee surcharge; bank (ACH) does not. This
-//   sets the PaymentIntent amount to base (bank) or base + surcharge (card)
-//   right before the customer confirms.
+// GET /api/public/invoice/[token] — invoice summary + Stripe key + PaymentIntent
+// client_secret. Every payment method enabled in the Stripe Dashboard is offered
+// (automatic_payment_methods) and there is no surcharge — the amount charged is
+// exactly the balance due for every method.
 import { json } from "../../../_lib/auth.js";
 import { createPaymentIntent, retrievePaymentIntent, updatePaymentIntentAmount } from "../../../_lib/stripe.js";
 import { markInvoicePaid } from "../../../_lib/invoices.js";
 
-// Card surcharge rate (e.g. 0.03 = 3%). Configurable via wrangler [vars]
-// CARD_SURCHARGE_RATE; defaults to 3% and is clamped to a sane range.
-function surchargeRate(env) {
-  const r = parseFloat(env.CARD_SURCHARGE_RATE);
-  return Number.isFinite(r) && r >= 0 && r <= 0.06 ? r : 0.03;
-}
-const surchargeCents = (baseCents, rate) => Math.round(baseCents * rate);
-
-// The methods we offer online: card, ACH bank debit, and Klarna. A stored PI is
-// reusable only if it was created with our explicit allow-list (not the old
-// automatic_payment_methods, which also surfaced Link/Affirm/wallets) and its
-// method set matches one we currently offer — either the full set (Klarna
-// active) or the card+ACH fallback (Klarna not yet activated on the account).
-const PM_WITH_KLARNA = ["card", "us_bank_account", "klarna"];
-const PM_FALLBACK = ["card", "us_bank_account"];
-function sameSet(a, b) { return a.length === b.length && a.every((x) => b.includes(x)); }
+// A stored PI is reusable only if it was created with automatic_payment_methods.
+// Legacy intents built from an explicit payment_method_types list are recreated
+// so the customer gets the full set of enabled methods with no surcharge.
 function piAcceptable(pi) {
-  if (!pi) return false;
-  if (pi.automatic_payment_methods && pi.automatic_payment_methods.enabled) return false;
-  const types = pi.payment_method_types || [];
-  return sameSet(types, PM_WITH_KLARNA) || sameSet(types, PM_FALLBACK);
-}
-
-// Create the invoice PaymentIntent, preferring Klarna. If Klarna isn't activated
-// on the Stripe account (or isn't eligible for this amount/currency), Stripe
-// rejects the klarna method — so we transparently retry with card + ACH only.
-// Separate idempotency suffixes keep the two attempts independent.
-async function createInvoicePI(env, opts) {
-  try {
-    return await createPaymentIntent(env, { ...opts, paymentMethodTypes: PM_WITH_KLARNA, idempotencyKey: opts.idempotencyKey + "_k" });
-  } catch (e) {
-    const msg = ((e.stripe && e.stripe.message) || e.message || "").toLowerCase();
-    const klarnaIssue = msg.includes("klarna") || (e.stripe && /payment_method_types/.test(e.stripe.param || ""));
-    if (!klarnaIssue) throw e;
-    return await createPaymentIntent(env, { ...opts, paymentMethodTypes: PM_FALLBACK, idempotencyKey: opts.idempotencyKey + "_f" });
-  }
+  return !!(pi && pi.automatic_payment_methods && pi.automatic_payment_methods.enabled);
 }
 
 function publicView(inv, project) {
@@ -82,7 +50,6 @@ export async function onRequestGet(context) {
     return json({ paid: true, invoice: publicView({ ...inv, status: "paid" }, project) });
   }
 
-  const rate = surchargeRate(context.env);
   try {
     let pi = null;
     if (inv.stripe_payment_intent_id) {
@@ -99,22 +66,22 @@ export async function onRequestGet(context) {
       if (pi && pi.status === "processing") {
         return json({ processing: true, invoice: publicView(inv, project) });
       }
-      // Recreate stale intents: canceled, or ones whose method set no longer
-      // matches what we offer (e.g. legacy automatic_payment_methods intents).
+      // Recreate stale intents: canceled, or legacy explicit-method-list intents.
       if (pi && (pi.status === "canceled" || !piAcceptable(pi))) pi = null;
-      // Otherwise reset to the current balance (also clears any leftover surcharge).
+      // Otherwise reset to the current balance (in case a partial in-person
+      // payment reduced it since the intent was created).
       else if (pi && pi.amount !== due) {
         pi = await updatePaymentIntentAmount(context.env, pi.id, due).catch(() => pi);
       }
     }
     if (!pi) {
-      pi = await createInvoicePI(context.env, {
+      pi = await createPaymentIntent(context.env, {
         amountCents: due,
         currency: inv.currency || "usd",
         description: `${inv.number} — ${inv.description}`,
         receiptEmail: project?.contact_email || undefined,
         metadata: { invoice_id: String(inv.id), invoice_number: inv.number, project_id: String(inv.project_id) },
-        idempotencyKey: `inv_${inv.id}_v2`,   // v2 = card + ACH + Klarna era
+        idempotencyKey: `inv_${inv.id}_v3`,   // v3 = automatic_payment_methods, no surcharge
       });
       await db.prepare(`UPDATE invoices SET stripe_payment_intent_id=?1, updated_at=datetime('now') WHERE id=?2`).bind(pi.id, inv.id).run();
     }
@@ -123,34 +90,7 @@ export async function onRequestGet(context) {
       due_cents: due,
       publishable_key: context.env.STRIPE_PUBLISHABLE_KEY,
       client_secret: pi.client_secret,
-      surcharge_rate: rate,
-      card_surcharge_cents: surchargeCents(due, rate),
     });
-  } catch (e) {
-    return json({ error: e.message || "Stripe error" }, 502);
-  }
-}
-
-// Set the PaymentIntent amount to match the chosen method, right before confirm.
-export async function onRequestPost(context) {
-  const token = context.params.token;
-  const db = context.env.DB;
-  const body = await context.request.json().catch(() => ({}));
-  if (body.action !== "set_method") return json({ error: "Unknown action" }, 400);
-
-  const inv = await db.prepare(`SELECT * FROM invoices WHERE view_token=?1`).bind(token).first();
-  if (!inv) return json({ error: "Invoice not found" }, 404);
-  if (inv.status === "paid") return json({ paid: true });
-  if (inv.status === "void") return json({ error: "Invoice canceled" }, 400);
-  if (!inv.stripe_payment_intent_id) return json({ error: "No payment in progress" }, 400);
-
-  const rate = surchargeRate(context.env);
-  const base = Math.max(0, (inv.amount_cents || 0) - (inv.amount_paid_cents || 0));  // remaining balance
-  const isCard = body.method === "card";
-  const amount = isCard ? base + surchargeCents(base, rate) : base;
-  try {
-    const pi = await updatePaymentIntentAmount(context.env, inv.stripe_payment_intent_id, amount);
-    return json({ ok: true, amount_cents: pi.amount, surcharged: isCard });
   } catch (e) {
     return json({ error: e.message || "Stripe error" }, 502);
   }

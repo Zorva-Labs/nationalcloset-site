@@ -9,6 +9,8 @@ Disallow: /api/
 Disallow: /crm/
 Disallow: /invoice/
 Disallow: /proposal/
+Disallow: /calc
+Disallow: /calc.html
 
 # AI / Answer engines — explicitly welcomed on public content (AEO/GEO),
 # but kept out of the same private app & customer-document routes.
@@ -25,5 +27,7 @@ Disallow: /api/
 Disallow: /crm/
 Disallow: /invoice/
 Disallow: /proposal/
+Disallow: /calc
+Disallow: /calc.html
 
 Sitemap: https://nationalclosetco.com/sitemap.xml

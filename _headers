@@ -6,6 +6,12 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=()
 
+# Internal deposit calculator — never index, even if someone links to it.
+/calc
+  X-Robots-Tag: noindex, nofollow, noarchive
+/calc.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 

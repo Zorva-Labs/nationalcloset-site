@@ -38,7 +38,7 @@ export async function onRequestPatch(context) {
   const body = await context.request.json().catch(() => ({}));
   const fields = [];
   const binds = [];
-  const allowed = ["status", "start_at", "end_at", "duration_min", "notes", "rooms", "site_address", "name", "phone", "type"];
+  const allowed = ["status", "start_at", "end_at", "duration_min", "notes", "rooms", "site_address", "name", "phone", "email", "type"];
   for (const k of allowed) {
     if (body[k] !== undefined) { fields.push(`${k} = ?${binds.length + 1}`); binds.push(body[k]); }
   }

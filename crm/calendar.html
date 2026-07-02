@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Calendar · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc25"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc26"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc25"></script>
+<script src="/crm/crm-app.js?v=ncc26"></script>
 <script>
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DOW_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -165,53 +165,130 @@ async function openDay(iso) {
 }
 
 // Click on a specific event → show details + actions
+const APPT_TYPES = ["consultation", "measure", "installation", "follow_up", "service_call", "other"];
+const APPT_STATUSES = ["confirmed", "completed", "cancelled"];
+
+// Recompute an end datetime string from a date + time + duration (minutes),
+// keeping the naive "YYYY-MM-DDTHH:MM:SS" format the DB stores.
+function apptEnd(dateStr, timeStr, mins) {
+  const [Y, M, D] = dateStr.split("-").map(Number);
+  const [h, m] = timeStr.split(":").map(Number);
+  const dt = new Date(Y, M - 1, D, h, m + (parseInt(mins, 10) || 0), 0);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}T${p(dt.getHours())}:${p(dt.getMinutes())}:00`;
+}
+
 async function openAppt(id) {
   const data = await SSCrm.fetchJSON("/api/appointments/" + id);
   const a = data.appointment;
   const bg = document.createElement("div");
   bg.className = "modal-bg";
-  bg.innerHTML = `
-    <div class="modal" style="max-width:520px">
-      <div class="modal-head">${SSCrm.esc(a.name)}</div>
-      <div class="modal-body">
-        <div style="display:grid;gap:10px;font-size:13px">
-          <div><strong>When</strong> · ${SSCrm.fmtDateTime(a.start_at)} (${a.duration_min}m)</div>
-          <div><strong>Type</strong> · ${SSCrm.esc(a.type)}</div>
-          <div><strong>Status</strong> · ${SSCrm.pill(a.status)}</div>
-          ${a.phone ? `<div><strong>Phone</strong> · <a href="tel:${SSCrm.esc(a.phone)}">${SSCrm.esc(a.phone)}</a></div>` : ""}
-          ${a.email ? `<div><strong>Email</strong> · <a href="mailto:${SSCrm.esc(a.email)}">${SSCrm.esc(a.email)}</a></div>` : ""}
-          ${a.site_address ? `<div><strong>Where</strong> · ${SSCrm.esc(a.site_address)}</div>` : ""}
-          ${a.rooms ? `<div><strong>Rooms</strong> · ${SSCrm.esc(a.rooms)}</div>` : ""}
-          ${a.notes ? `<div><strong>Notes</strong> · ${SSCrm.esc(a.notes)}</div>` : ""}
-        </div>
-      </div>
-      <div class="modal-foot">
-        <button class="btn ghost" data-close>Close</button>
-        ${(a.email && ["consultation", "measure"].includes((a.type || "").toLowerCase())) ? `<button class="btn secondary" data-confirm>✉ Send confirmation</button>` : ""}
-        ${a.status !== "completed" ? `<button class="btn secondary" data-status="completed">Mark completed</button>` : ""}
-        ${a.status !== "cancelled" ? `<button class="btn danger" data-status="cancelled">Cancel</button>` : ""}
-      </div>
-    </div>
-  `;
   document.body.appendChild(bg);
-  bg.querySelector("[data-close]").onclick = () => bg.remove();
   bg.addEventListener("click", (e) => { if (e.target === bg) bg.remove(); });
-  bg.querySelectorAll("[data-status]").forEach((b) => b.onclick = async () => {
-    try { await SSCrm.fetchJSON("/api/appointments/" + id, { method: "PATCH", body: JSON.stringify({ status: b.dataset.status }) }); SSCrm.toast("Updated", "success"); bg.remove(); render(); }
-    catch (e) { SSCrm.toast(e.message, "error"); }
-  });
-  const confirmBtn = bg.querySelector("[data-confirm]");
-  if (confirmBtn) confirmBtn.onclick = async () => {
-    confirmBtn.disabled = true; confirmBtn.textContent = "Sending…";
-    try {
-      await SSCrm.fetchJSON("/api/appointments/" + id, { method: "POST", body: JSON.stringify({ action: "send_confirmation" }) });
-      SSCrm.toast("Confirmation emailed to " + a.email, "success");
-      bg.remove();
-    } catch (e) {
-      SSCrm.toast(e.message || "Could not send confirmation", "error");
-      confirmBtn.disabled = false; confirmBtn.textContent = "✉ Send confirmation";
-    }
-  };
+
+  function renderView() {
+    bg.innerHTML = `
+      <div class="modal" style="max-width:520px">
+        <div class="modal-head">${SSCrm.esc(a.name)}</div>
+        <div class="modal-body">
+          <div style="display:grid;gap:10px;font-size:13px">
+            <div><strong>When</strong> · ${SSCrm.fmtDateTime(a.start_at)} (${a.duration_min}m)</div>
+            <div><strong>Type</strong> · ${SSCrm.esc((a.type || "").replace(/_/g, " "))}</div>
+            <div><strong>Status</strong> · ${SSCrm.pill(a.status)}</div>
+            ${a.phone ? `<div><strong>Phone</strong> · <a href="tel:${SSCrm.esc(a.phone)}">${SSCrm.esc(a.phone)}</a></div>` : ""}
+            ${a.email ? `<div><strong>Email</strong> · <a href="mailto:${SSCrm.esc(a.email)}">${SSCrm.esc(a.email)}</a></div>` : ""}
+            ${a.site_address ? `<div><strong>Where</strong> · ${SSCrm.esc(a.site_address)}</div>` : ""}
+            ${a.rooms ? `<div><strong>Rooms</strong> · ${SSCrm.esc(a.rooms)}</div>` : ""}
+            ${a.notes ? `<div><strong>Notes</strong> · ${SSCrm.esc(a.notes)}</div>` : ""}
+          </div>
+        </div>
+        <div class="modal-foot" style="flex-wrap:wrap;gap:8px">
+          <button class="btn ghost" data-close>Close</button>
+          <button class="btn primary" data-edit>✎ Edit</button>
+          ${(a.email && ["consultation", "measure"].includes((a.type || "").toLowerCase())) ? `<button class="btn secondary" data-confirm>✉ Send confirmation</button>` : ""}
+          ${a.status !== "completed" ? `<button class="btn secondary" data-status="completed">Mark completed</button>` : ""}
+          ${a.status !== "cancelled" ? `<button class="btn danger" data-status="cancelled">Cancel</button>` : ""}
+        </div>
+      </div>`;
+    bg.querySelector("[data-close]").onclick = () => bg.remove();
+    bg.querySelector("[data-edit]").onclick = renderEdit;
+    bg.querySelectorAll("[data-status]").forEach((b) => b.onclick = async () => {
+      try { await SSCrm.fetchJSON("/api/appointments/" + id, { method: "PATCH", body: JSON.stringify({ status: b.dataset.status }) }); SSCrm.toast("Updated", "success"); bg.remove(); render(); }
+      catch (e) { SSCrm.toast(e.message, "error"); }
+    });
+    const confirmBtn = bg.querySelector("[data-confirm]");
+    if (confirmBtn) confirmBtn.onclick = async () => {
+      confirmBtn.disabled = true; confirmBtn.textContent = "Sending…";
+      try {
+        await SSCrm.fetchJSON("/api/appointments/" + id, { method: "POST", body: JSON.stringify({ action: "send_confirmation" }) });
+        SSCrm.toast("Confirmation emailed to " + a.email, "success");
+        bg.remove();
+      } catch (e) {
+        SSCrm.toast(e.message || "Could not send confirmation", "error");
+        confirmBtn.disabled = false; confirmBtn.textContent = "✉ Send confirmation";
+      }
+    };
+  }
+
+  function renderEdit() {
+    const start = (a.start_at || "").slice(0, 16);       // YYYY-MM-DDTHH:MM
+    const date = start.slice(0, 10);
+    const time = start.slice(11, 16) || "09:00";
+    const types = [...new Set([...(a.type ? [a.type] : []), ...APPT_TYPES])];
+    const opt = (v, cur) => `<option value="${SSCrm.esc(v)}" ${v === cur ? "selected" : ""}>${SSCrm.esc(v.replace(/_/g, " "))}</option>`;
+    bg.innerHTML = `
+      <div class="modal" style="max-width:520px">
+        <div class="modal-head">Edit appointment</div>
+        <div class="modal-body"><div class="form">
+          <label><span>Name</span><input id="e-name" value="${SSCrm.esc(a.name || "")}"/></label>
+          <div class="row">
+            <label><span>Phone</span><input id="e-phone" type="tel" value="${SSCrm.esc(a.phone || "")}"/></label>
+            <label><span>Email</span><input id="e-email" type="email" value="${SSCrm.esc(a.email || "")}"/></label>
+          </div>
+          <div class="row">
+            <label><span>Type</span><select id="e-type">${types.map((t) => opt(t, a.type)).join("")}</select></label>
+            <label><span>Status</span><select id="e-status">${APPT_STATUSES.map((s) => opt(s, a.status)).join("")}</select></label>
+          </div>
+          <div class="row">
+            <label><span>Date</span><input id="e-date" type="date" value="${date}"/></label>
+            <label><span>Start time</span><input id="e-time" type="time" value="${time}"/></label>
+            <label><span>Duration (min)</span><input id="e-dur" type="number" min="15" step="15" value="${a.duration_min || 60}"/></label>
+          </div>
+          <label><span>Site address</span><input id="e-addr" value="${SSCrm.esc(a.site_address || "")}"/></label>
+          <label><span>Rooms</span><input id="e-rooms" value="${SSCrm.esc(a.rooms || "")}"/></label>
+          <label><span>Notes</span><textarea id="e-notes" rows="3">${SSCrm.esc(a.notes || "")}</textarea></label>
+        </div></div>
+        <div class="modal-foot">
+          <button class="btn ghost" data-cancel>Cancel</button>
+          <button class="btn primary" data-save>Save changes</button>
+        </div>
+      </div>`;
+    bg.querySelector("[data-cancel]").onclick = renderView;
+    bg.querySelector("[data-save]").onclick = async () => {
+      const g = (i) => bg.querySelector("#e-" + i).value;
+      const dateV = g("date"), timeV = g("time"), dur = parseInt(g("dur"), 10) || 60;
+      if (!dateV || !timeV) { SSCrm.toast("Pick a date and time", "error"); return; }
+      const startAt = `${dateV}T${timeV}:00`;
+      const body = {
+        name: g("name").trim(), phone: g("phone").trim() || null, email: g("email").trim() || null,
+        type: g("type"), status: g("status"),
+        start_at: startAt, end_at: apptEnd(dateV, timeV, dur), duration_min: dur,
+        site_address: g("addr").trim() || null, rooms: g("rooms").trim() || null, notes: g("notes").trim() || null,
+      };
+      if (!body.name) { SSCrm.toast("Name is required", "error"); return; }
+      const saveBtn = bg.querySelector("[data-save]"); saveBtn.disabled = true; saveBtn.textContent = "Saving…";
+      try {
+        await SSCrm.fetchJSON("/api/appointments/" + id, { method: "PATCH", body: JSON.stringify(body) });
+        SSCrm.toast("Appointment updated", "success");
+        bg.remove(); render();
+      } catch (e) {
+        SSCrm.toast(e.message || "Could not save", "error");
+        saveBtn.disabled = false; saveBtn.textContent = "Save changes";
+      }
+    };
+  }
+
+  renderView();
 }
 
 function prettyDate(iso) {

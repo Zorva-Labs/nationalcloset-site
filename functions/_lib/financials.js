@@ -32,6 +32,15 @@ export function computeBreakdown(priceCents) {
   return { discount, materials, shipping, tax, labor };
 }
 
+// The deposit collected up front. It covers the "hard costs" the business pays
+// at the start of a job — materials + shipping + taxes — so the deposit never
+// runs the job in the red. Labor + profit are collected in the balance at
+// completion. This replaces the old flat 50% deposit.
+export function depositForTotal(priceCents) {
+  const b = computeBreakdown(priceCents);
+  return b.materials + b.shipping + b.tax;
+}
+
 // Merge a stored job_financials row (manual overrides) over the formula
 // defaults. `defaultGrossCents` is the pre-discount (gross) price — the cost
 // basis. `defaultDiscountCents` is the discount that comes out of profit only.

@@ -1,6 +1,7 @@
 import { requireAuth, json } from "../../_lib/auth.js";
 import { genToken, nextSequence, formatDocNumber } from "../../_lib/tokens.js";
 import { recordActivity } from "../../_lib/db.js";
+import { depositForTotal } from "../../_lib/financials.js";
 
 const TERMS_BY_TYPE = {
   custom_order: `
@@ -8,7 +9,7 @@ const TERMS_BY_TYPE = {
 <p>All custom closets and storage systems listed in this agreement are made-to-order. Manufacturer lead times typically run two to six weeks from order placement. We will keep you informed of any changes to the schedule.</p>
 
 <h3>Deposit &amp; Payment</h3>
-<p>A deposit of fifty percent (50%) of the total contract price is due at signing to release the order to our manufacturing partners. The balance is due at the completion of installation. We accept check, cash, ACH, Venmo, and Cash App. Card payments incur a 3% convenience fee.</p>
+<p>A deposit is due at signing to release the order to our manufacturing partners. The deposit covers materials, shipping and applicable taxes; the remaining balance is due at the completion of installation. You can also pay in full at any time. We accept card, bank transfer (ACH), digital wallets and Klarna online, plus check or cash in person, with no added processing fee.</p>
 
 <h3>Measurement &amp; Fit</h3>
 <p>National Closet Company will measure all windows on-site and is responsible for the fit of any product we manufacture from those measurements. All windows are measured to the sixteenth of an inch and recorded in this agreement.</p>
@@ -117,7 +118,7 @@ export async function onRequestPost(context) {
   } else if (contractType === "install_only" || contractType === "repair" || contractType === "service_call") {
     depositCents = 0;  // no deposit for service work — paid on completion
   } else {
-    depositCents = Math.round(totalCents / 2);  // 50% for custom orders
+    depositCents = depositForTotal(totalCents);  // hard costs: materials + shipping + tax
   }
 
   // Load the default template for this contract type from the editable document_templates table.

@@ -120,12 +120,14 @@ function render(p, tiers, attachments) {
         <div class="opt__sum">
           <div class="opt__sum-row opt__sum-total"><span>Total</span><span>${money(t.total_cents)}</span></div>
           <div class="opt__sum-row" style="border:0;color:var(--muted);font-size:.82rem;font-weight:500"><span>Includes shipping, tax &amp; installation</span><span></span></div>
+          <div class="opt__sum-row" style="margin-top:6px"><span>Deposit to start</span><span>${money(depositFor(t.total_cents))}</span></div>
+          <div class="opt__sum-row" style="border:0;color:var(--muted);font-size:.82rem;font-weight:500"><span>Balance at completion</span><span>${money(Math.max(0, (t.total_cents || 0) - depositFor(t.total_cents)))}</span></div>
         </div>` : `<div class="opt__empty">Itemized details to follow.</div>`}
         ${!isAccepted ? `<button class="btn opt-btn" type="button" onclick="event.stopPropagation();pickTier('${esc(t.tier)}')">${p.selected_tier === t.tier ? "✓ Selected" : (many ? "Choose this option" : "Select")}</button>` : ""}
       </div>`).join("")}
     </div>
 
-    <p class="pay-note">Your price is all-inclusive — it <strong>includes shipping, tax &amp; installation</strong>, with no hidden fees. <strong>Payment:</strong> a 3% processing fee applies to <strong>card</strong> payments — pay by <strong>bank transfer (ACH)</strong> at checkout to avoid the fee.</p>
+    <p class="pay-note">Your price is all-inclusive — it <strong>includes shipping, tax &amp; installation</strong>, with no hidden fees. <strong>To begin,</strong> a deposit covers materials, shipping &amp; taxes; the balance is due when installation is complete — or you can pay in full anytime. Pay securely by card, bank transfer (ACH), digital wallet or <strong>Klarna</strong> (buy now, pay later), with no added processing fee.</p>
 
     ${p.job_notes ? `
       <div style="margin-top:24px;background:var(--fog);border-radius:12px;padding:20px clamp(18px,3vw,26px)">
@@ -211,6 +213,17 @@ async function accept() {
 }
 
 function money(c) { if (c == null) return "—"; return "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+// Deposit = hard costs (materials + shipping + tax), mirrors _lib/financials.js.
+function depositFor(total) {
+  total = Math.max(0, total || 0);
+  const list = total / 1.35;
+  const b = list / 100;
+  const disc = b >= 4500 ? 0.30 : b >= 2500 ? 0.25 : 0.20;
+  const mat = Math.round(list * (1 - disc));
+  const sh = Math.round(mat * 0.05);
+  const tx = Math.round((mat + sh) * 0.0975);
+  return mat + sh + tx;
+}
 function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 </script>
 </body>

@@ -734,7 +734,7 @@ async function quickAddContract() {
       <div class="modal" style="max-width:520px">
         <div class="modal-head">What kind of contract?</div>
         <div class="modal-body" style="display:grid;gap:8px">
-          <button class="btn secondary" data-t="custom_order" style="justify-content:flex-start;padding:12px;text-align:left;flex-direction:column;align-items:flex-start;gap:2px"><strong style="font-size:13px">Custom Order</strong><span style="font-size:12px;color:var(--ink-soft);font-weight:400">We supply &amp; install. 50% deposit.</span></button>
+          <button class="btn secondary" data-t="custom_order" style="justify-content:flex-start;padding:12px;text-align:left;flex-direction:column;align-items:flex-start;gap:2px"><strong style="font-size:13px">Custom Order</strong><span style="font-size:12px;color:var(--ink-soft);font-weight:400">We supply &amp; install. Deposit covers materials, shipping &amp; tax.</span></button>
           <button class="btn secondary" data-t="install_only" style="justify-content:flex-start;padding:12px;text-align:left;flex-direction:column;align-items:flex-start;gap:2px"><strong style="font-size:13px">Install Only · BYO Blinds</strong><span style="font-size:12px;color:var(--ink-soft);font-weight:400">Lowes/Home Depot/Costco/Blinds.com. No deposit.</span></button>
           <button class="btn secondary" data-t="repair" style="justify-content:flex-start;padding:12px;text-align:left;flex-direction:column;align-items:flex-start;gap:2px"><strong style="font-size:13px">Repair / Service Call</strong><span style="font-size:12px;color:var(--ink-soft);font-weight:400">Service-call fee + parts.</span></button>
         </div>

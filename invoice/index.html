@@ -48,6 +48,12 @@
     @keyframes s{to{transform:rotate(360deg)}}
     .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:22px}
     .foot a{color:var(--muted)}
+    .plan{display:flex;flex-direction:column;gap:10px;margin:0 0 18px}
+    .plan-opt{display:flex;align-items:flex-start;gap:11px;padding:14px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;transition:border-color .15s,background .15s}
+    .plan-opt:has(input:checked){border-color:var(--clay);background:var(--clay-wash)}
+    .plan-opt input{width:18px;height:18px;margin-top:2px;accent-color:var(--clay);cursor:pointer;flex-shrink:0}
+    .plan-opt span{display:flex;flex-direction:column;font-size:15px;font-weight:700;color:var(--ink);line-height:1.35}
+    .plan-opt small{font-size:12.5px;font-weight:500;color:var(--muted);margin-top:2px}
     .check-toggle{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;padding:13px 14px;margin:0 0 18px;border:1px solid var(--line);border-radius:12px;user-select:none}
     .check-toggle input{width:18px;height:18px;accent-color:var(--clay);cursor:pointer;flex-shrink:0}
     .check-panel{border:1.5px solid var(--clay);border-radius:12px;padding:20px 22px;background:#fff}
@@ -117,7 +123,9 @@
       const inv = data.invoice;
       // Only the unpaid balance is charged online; in-person payments may cover part of it.
       const base = data.due_cents != null ? data.due_cents : inv.amount_cents;
+      let payAmount = base;            // updated when the deposit/full plan changes
       const alreadyPaid = inv.amount_paid_cents || 0;
+      const plan = data.plan || null;  // { deposit_cents, full_cents, current_plan } | null
 
       const typeLabel = { deposit: "Deposit", balance: "Final balance", full: "Payment", custom: "Invoice" }[inv.type] || "Invoice";
       root.innerHTML = `
@@ -126,16 +134,22 @@
             <div class="eyebrow">${esc(typeLabel)} · Invoice ${esc(inv.number)}</div>
             <h1>${esc(inv.project_name || "Custom closet project")}</h1>
             <p class="sub">${esc(inv.contact_name ? "For " + inv.contact_name : "")}</p>
-            <div class="amount">${money(base)} <small>due</small></div>
+            <div class="amount"><span id="amt-due">${money(base)}</span> <small>due</small></div>
             ${alreadyPaid > 0 ? `<p class="sub" style="margin-top:-2px">${money(alreadyPaid)} of ${money(inv.amount_cents)} already paid — balance shown above.</p>` : ""}
             <p class="desc">${esc(inv.description || "")}</p>
             <div class="divider"></div>
           </div>
           <div class="pay">
+            ${plan ? `<div class="plan">
+              <label class="plan-opt"><input type="radio" name="plan" value="deposit" ${plan.current_plan !== "full" ? "checked" : ""}/>
+                <span><b>Pay deposit</b> · ${money(plan.deposit_cents)}<small>Covers materials, shipping &amp; taxes. Balance due at completion.</small></span></label>
+              <label class="plan-opt"><input type="radio" name="plan" value="full" ${plan.current_plan === "full" ? "checked" : ""}/>
+                <span><b>Pay in full</b> · ${money(plan.full_cents)}<small>Settle the whole project now — nothing due later.</small></span></label>
+            </div>` : ""}
             <label class="check-toggle"><input type="checkbox" id="check-toggle"/> I'll pay by check instead</label>
             <div class="check-panel" id="check-panel" hidden>
               <h3>Pay by check</h3>
-              <div class="payee">Make your check payable to<br/><strong>James Blair</strong> &middot; ${money(base)}</div>
+              <div class="payee">Make your check payable to<br/><strong>James Blair</strong> &middot; <span id="chk-amt">${money(base)}</span></div>
               <p>Hand your check to your Project Manager, and we'll mark this invoice paid as soon as it's received. Questions? Call or text <a href="tel:+16292988241">629-298-8241</a>.</p>
             </div>
             <form id="pay-form">
@@ -172,11 +186,42 @@
         if (secure) secure.hidden = byCheck;
       });
 
+      // Deposit / pay-in-full chooser. Switching updates the invoice + the live
+      // PaymentIntent server-side, then reflects the new amount on the page.
+      function setAmountUI(cents) {
+        payAmount = cents;
+        const a = document.getElementById("amt-due"); if (a) a.textContent = money(cents);
+        const c = document.getElementById("chk-amt"); if (c) c.textContent = money(cents);
+        const b = document.getElementById("pay-btn"); if (b && !b.disabled) b.textContent = `Pay ${money(cents)}`;
+      }
+      async function choosePlan(which) {
+        try {
+          const r = await fetch(`/api/public/invoice/${encodeURIComponent(token)}`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "set_plan", plan: which }),
+          });
+          const d = await r.json();
+          if (!r.ok || d.error) throw new Error(d.error || "Couldn't update the amount.");
+          setAmountUI(d.amount_cents);
+          return true;
+        } catch (err) { document.getElementById("msg").textContent = err.message; return false; }
+      }
+      if (plan) {
+        document.querySelectorAll('input[name="plan"]').forEach((r) =>
+          r.addEventListener("change", () => { if (r.checked) choosePlan(r.value); }));
+      }
+      function selectedPlan() { const r = document.querySelector('input[name="plan"]:checked'); return r ? r.value : null; }
+
       document.getElementById("pay-form").addEventListener("submit", async (e) => {
         e.preventDefault();
         const btn = document.getElementById("pay-btn");
         const msg = document.getElementById("msg");
         btn.disabled = true; btn.textContent = "Processing…"; msg.textContent = "";
+        // Make sure the server + PaymentIntent match the chosen plan before confirming.
+        if (plan && selectedPlan()) {
+          const ok = await choosePlan(selectedPlan());
+          if (!ok) { btn.disabled = false; btn.textContent = `Pay ${money(payAmount)}`; return; }
+        }
         const { error, paymentIntent } = await stripe.confirmPayment({
           elements,
           confirmParams: { return_url: location.href },
@@ -184,14 +229,14 @@
         });
         if (error) {
           msg.textContent = error.message || "Payment failed. Please try again.";
-          btn.disabled = false; btn.textContent = `Pay ${money(base)}`;
+          btn.disabled = false; btn.textContent = `Pay ${money(payAmount)}`;
           return;
         }
         if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing")) {
-          paidState({ number: inv.number, amount_cents: base });
+          paidState({ number: inv.number, amount_cents: payAmount });
         } else {
           msg.textContent = "Payment status: " + (paymentIntent ? paymentIntent.status : "unknown");
-          btn.disabled = false; btn.textContent = `Pay ${money(base)}`;
+          btn.disabled = false; btn.textContent = `Pay ${money(payAmount)}`;
         }
       });
     }

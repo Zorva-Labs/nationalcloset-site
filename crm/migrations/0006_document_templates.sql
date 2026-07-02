@@ -42,7 +42,7 @@ INSERT OR IGNORE INTO document_templates (id, kind, subkind, name, is_default, i
    '<h3>Materials &amp; Manufacture</h3>
 <p>All custom window treatments listed in this agreement are made-to-order. Manufacturer lead times typically run two to six weeks from order placement. We will keep you informed of any changes to the schedule.</p>
 <h3>Deposit &amp; Payment</h3>
-<p>A deposit of fifty percent (50%) of the total contract price is due at signing to release the order to our manufacturing partners. The balance is due at the completion of installation. We accept check, cash, ACH, Venmo, and Cash App. Card payments incur a 3% convenience fee.</p>
+<p>A deposit is due at signing to release the order to our manufacturing partners. The deposit covers materials, shipping and applicable taxes; the remaining balance is due at the completion of installation. You can also pay in full at any time. We accept card, bank transfer (ACH), digital wallets and Klarna online, plus check or cash in person, with no added processing fee.</p>
 <h3>Measurement &amp; Fit</h3>
 <p>National Closet Company will measure all windows on-site and is responsible for the fit of any product we manufacture from those measurements. All windows are measured to the sixteenth of an inch and recorded in this agreement.</p>
 <h3>Cancellation</h3>

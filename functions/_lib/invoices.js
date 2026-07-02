@@ -8,9 +8,9 @@ import { logOutboundEmail } from "./email-log.js";
 import { recordActivity } from "./db.js";
 import { markProjectBooked } from "./lifecycle.js";
 import { sendStageEmail } from "./stage-emails.js";
+import { depositForTotal } from "./financials.js";
 
 const SITE_URL = "https://nationalclosetco.com";
-export const DEPOSIT_RATE = 0.5; // default deposit = 50% when none specified
 
 function money(cents) {
   return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -27,7 +27,9 @@ export async function getProjectBilling(db, projectId) {
   if (k) {
     return {
       totalCents: k.total_cents || 0,
-      depositCents: k.deposit_cents && k.deposit_cents > 0 ? k.deposit_cents : Math.round((k.total_cents || 0) * DEPOSIT_RATE),
+      // Explicit contract deposit wins; otherwise the hard-cost deposit
+      // (materials + shipping + taxes) — no longer a flat 50%.
+      depositCents: k.deposit_cents && k.deposit_cents > 0 ? k.deposit_cents : depositForTotal(k.total_cents || 0),
       contractId: k.id,
       proposalId: null,
     };
@@ -38,7 +40,7 @@ export async function getProjectBilling(db, projectId) {
   ).bind(projectId).first().catch(() => null);
   if (p) {
     const total = p.selected_total_cents || 0;
-    return { totalCents: total, depositCents: Math.round(total * DEPOSIT_RATE), contractId: null, proposalId: p.id };
+    return { totalCents: total, depositCents: depositForTotal(total), contractId: null, proposalId: p.id };
   }
   return { totalCents: 0, depositCents: 0, contractId: null, proposalId: null };
 }
@@ -77,9 +79,13 @@ export async function createInvoice(env, opts) {
   if (amountCents == null) {
     if (type === "deposit") amountCents = billing.depositCents;
     else if (type === "balance") {
-      const dep = await existingInvoice(db, projectId, "deposit");
-      const depAmt = dep ? dep.amount_cents : 0;
-      amountCents = Math.max(0, billing.totalCents - depAmt);
+      // Balance = job total minus everything already invoiced (any non-void
+      // invoice), so a deposit that was upgraded to a full payment leaves a
+      // $0 balance instead of double-billing.
+      const inv = await db.prepare(
+        `SELECT COALESCE(SUM(amount_cents),0) AS n FROM invoices WHERE project_id=?1 AND status != 'void'`
+      ).bind(projectId).first().catch(() => null);
+      amountCents = Math.max(0, billing.totalCents - (inv?.n || 0));
     } else if (type === "full") amountCents = billing.totalCents;
     else amountCents = 0;
   }
@@ -238,18 +244,19 @@ export async function markInvoicePaid(env, invoice, { method = "card", paymentIn
     ).bind(invoice.id, completing, method, when).run().catch(() => {});
   }
 
-  // If this was the deposit, reflect it on the contract.
-  if (invoice.type === "deposit" && invoice.contract_id) {
+  // Deposit OR a pay-in-full both satisfy the deposit — reflect it on the contract.
+  const booksJob = invoice.type === "deposit" || invoice.type === "full";
+  if (booksJob && invoice.contract_id) {
     await db.prepare(
       `UPDATE contracts SET deposit_paid=1, deposit_paid_at=COALESCE(?1, datetime('now')), deposit_paid_method=?2, updated_at=datetime('now') WHERE id=?3`
     ).bind(when, method, invoice.contract_id).run().catch(() => {});
   }
 
-  // Booking happens HERE — when the deposit is paid, not at signing. Promote
-  // the project into the booked pipeline and send the "Booked" stage email,
-  // but only if it isn't already in a job stage (idempotent across the webhook
-  // + the on-page payment sync + a manual mark-paid).
-  if (invoice.type === "deposit") {
+  // Booking happens HERE — when the deposit (or a full payment) is paid, not at
+  // signing. Promote the project into the booked pipeline and send the "Booked"
+  // stage email, but only if it isn't already in a job stage (idempotent across
+  // the webhook + the on-page payment sync + a manual mark-paid).
+  if (booksJob) {
     const proj = await db.prepare(`SELECT status FROM projects WHERE id=?1`).bind(invoice.project_id).first().catch(() => null);
     const JOB = ["contracted", "scheduled_install", "installing", "completed"];
     if (proj && !JOB.includes(proj.status)) {

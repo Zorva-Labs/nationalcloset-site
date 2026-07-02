@@ -118,7 +118,18 @@ export async function onRequestPost(context) {
   } else if (contractType === "install_only" || contractType === "repair" || contractType === "service_call") {
     depositCents = 0;  // no deposit for service work — paid on completion
   } else {
-    depositCents = depositForTotal(totalCents);  // hard costs: materials + shipping + tax
+    // Deposit from the pre-discount GROSS (a discount must not lower it). When
+    // this contract comes from a proposal, use that tier's subtotal as the basis.
+    let grossBasis = totalCents;
+    if (body.proposal_id) {
+      const tier = await context.env.DB.prepare(
+        `SELECT t.subtotal_cents AS gross, t.total_cents AS net
+           FROM proposals p JOIN proposal_tiers t ON t.proposal_id=p.id AND t.tier=p.selected_tier
+          WHERE p.id=?1`
+      ).bind(body.proposal_id).first().catch(() => null);
+      if (tier && tier.gross > tier.net) grossBasis = tier.gross;
+    }
+    depositCents = depositForTotal(grossBasis);  // hard costs: materials + shipping + tax
   }
 
   // Load the default template for this contract type from the editable document_templates table.

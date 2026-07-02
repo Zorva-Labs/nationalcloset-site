@@ -120,8 +120,8 @@ function render(p, tiers, attachments) {
         <div class="opt__sum">
           <div class="opt__sum-row opt__sum-total"><span>Total</span><span>${money(t.total_cents)}</span></div>
           <div class="opt__sum-row" style="border:0;color:var(--muted);font-size:.82rem;font-weight:500"><span>Includes shipping, tax &amp; installation</span><span></span></div>
-          <div class="opt__sum-row" style="margin-top:6px"><span>Deposit to start</span><span>${money(depositFor(t.total_cents))}</span></div>
-          <div class="opt__sum-row" style="border:0;color:var(--muted);font-size:.82rem;font-weight:500"><span>Balance at completion</span><span>${money(Math.max(0, (t.total_cents || 0) - depositFor(t.total_cents)))}</span></div>
+          <div class="opt__sum-row" style="margin-top:6px"><span>Deposit to start</span><span>${money(depositFor((t.subtotal_cents || 0) > (t.total_cents || 0) ? t.subtotal_cents : t.total_cents))}</span></div>
+          <div class="opt__sum-row" style="border:0;color:var(--muted);font-size:.82rem;font-weight:500"><span>Balance at completion</span><span>${money(Math.max(0, (t.total_cents || 0) - depositFor((t.subtotal_cents || 0) > (t.total_cents || 0) ? t.subtotal_cents : t.total_cents)))}</span></div>
         </div>` : `<div class="opt__empty">Itemized details to follow.</div>`}
         ${!isAccepted ? `<button class="btn opt-btn" type="button" onclick="event.stopPropagation();pickTier('${esc(t.tier)}')">${p.selected_tier === t.tier ? "✓ Selected" : (many ? "Choose this option" : "Select")}</button>` : ""}
       </div>`).join("")}

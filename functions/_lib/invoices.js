@@ -16,6 +16,22 @@ function money(cents) {
   return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Pre-discount GROSS cost basis for a project — the number the deposit is
+// figured from. The accepted proposal's selected tier stores the gross in
+// subtotal_cents and the discounted client price in total_cents; the discount
+// lives in the gap and must NOT lower the deposit. Falls back to the net total
+// when there's no accepted tier (e.g. a manual contract with no discount).
+async function projectGrossBasis(db, projectId, fallbackNet) {
+  const tier = await db.prepare(
+    `SELECT t.subtotal_cents AS gross, t.total_cents AS net
+       FROM proposals p JOIN proposal_tiers t ON t.proposal_id=p.id AND t.tier=p.selected_tier
+      WHERE p.project_id=?1 AND p.status='accepted'
+      ORDER BY datetime(p.created_at) DESC LIMIT 1`
+  ).bind(projectId).first().catch(() => null);
+  if (tier && (tier.gross || tier.net)) return tier.gross > tier.net ? tier.gross : (tier.net || tier.gross);
+  return fallbackNet || 0;
+}
+
 // The dollar value of a project's work, from its most authoritative contract
 // (executed > signed > sent > latest), falling back to an accepted proposal.
 export async function getProjectBilling(db, projectId) {
@@ -25,11 +41,13 @@ export async function getProjectBilling(db, projectId) {
                datetime(created_at) DESC LIMIT 1`
   ).bind(projectId).first().catch(() => null);
   if (k) {
+    const gross = await projectGrossBasis(db, projectId, k.total_cents || 0);
     return {
       totalCents: k.total_cents || 0,
-      // Explicit contract deposit wins; otherwise the hard-cost deposit
-      // (materials + shipping + taxes) — no longer a flat 50%.
-      depositCents: k.deposit_cents && k.deposit_cents > 0 ? k.deposit_cents : depositForTotal(k.total_cents || 0),
+      // Explicit contract deposit wins (manual override); otherwise the
+      // hard-cost deposit (materials + shipping + taxes) figured from the
+      // pre-discount gross, so a discount never reduces the deposit.
+      depositCents: k.deposit_cents && k.deposit_cents > 0 ? k.deposit_cents : depositForTotal(gross),
       contractId: k.id,
       proposalId: null,
     };
@@ -40,7 +58,8 @@ export async function getProjectBilling(db, projectId) {
   ).bind(projectId).first().catch(() => null);
   if (p) {
     const total = p.selected_total_cents || 0;
-    return { totalCents: total, depositCents: depositForTotal(total), contractId: null, proposalId: p.id };
+    const gross = await projectGrossBasis(db, projectId, total);
+    return { totalCents: total, depositCents: depositForTotal(gross), contractId: null, proposalId: p.id };
   }
   return { totalCents: 0, depositCents: 0, contractId: null, proposalId: null };
 }

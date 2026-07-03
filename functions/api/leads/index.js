@@ -25,14 +25,14 @@ export async function onRequestGet(context) {
     where.push(`status = ?${binds.length + 1}`);
     binds.push(status);
   } else {
-    // Default view hides terminal "now a job" statuses — once a contract is
-    // signed the lead becomes a Job and lives on /crm/project.html. The lead
-    // row stays in D1 for history/attribution but is filtered out of the
-    // active Leads list and Pipeline kanban by default. Caller can opt-in
-    // to see them via ?status=booked or ?include_archived=1.
+    // Default view hides terminal statuses — 'booked'/'installed' (the lead is
+    // now a Job on /crm/project.html) and 'lost' (dead). The rows stay in D1
+    // for history/attribution but are filtered out of the active Leads list and
+    // Pipeline kanban by default. Caller can still see them via ?status=lost /
+    // ?status=booked or ?include_archived=1.
     const includeArchived = url.searchParams.get("include_archived") === "1";
     if (!includeArchived) {
-      where.push(`status NOT IN ('booked', 'installed')`);
+      where.push(`status NOT IN ('booked', 'installed', 'lost')`);
     }
   }
   if (search) {

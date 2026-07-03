@@ -5,7 +5,7 @@ import { recordActivity, recomputeTierTotals } from "./db.js";
 import { depositForTotal } from "./financials.js";
 
 const FALLBACK_TERMS = {
-  custom_order: `<h3>Materials &amp; Manufacture</h3><p>Made-to-order, 2-6 week lead.</p><h3>Deposit</h3><p>Deposit (covering materials, shipping &amp; tax) due at signing; balance at completion. Pay in full anytime.</p><h3>Warranty</h3><p>Original manufacturer warranty + 90-day workmanship.</p>`,
+  custom_order: `<h3>Materials &amp; Manufacture</h3><p>Made-to-order, 2-6 week lead.</p><h3>Deposit</h3><p>Deposit (covering materials, shipping &amp; tax) due at signing; balance at completion. Pay in full anytime. Card payments add a 3% processing fee; ACH, Klarna &amp; wallets have no added fee.</p><h3>Warranty</h3><p>Original manufacturer warranty + 90-day workmanship.</p>`,
   install_only: `<h3>Scope</h3><p>Install only — customer-supplied product. No deposit. Pay on completion. 90-day workmanship warranty on the install only.</p>`,
   repair: `<h3>Scope</h3><p>Repair service. Pay on completion. 90-day warranty on the repair.</p>`,
 };

@@ -1,10 +1,19 @@
 // GET /api/public/invoice/[token] — invoice summary + Stripe key + PaymentIntent
 // client_secret. Every payment method enabled in the Stripe Dashboard is offered
-// (automatic_payment_methods) and there is no surcharge — the amount charged is
-// exactly the balance due for every method.
+// (automatic_payment_methods). Card payments (credit + debit) carry a processing
+// surcharge; bank/Klarna/wallets do not. The invoice amount is always the base
+// due — the surcharge is added to the PaymentIntent only, at pay time.
 import { json } from "../../../_lib/auth.js";
 import { createPaymentIntent, retrievePaymentIntent, updatePaymentIntentAmount } from "../../../_lib/stripe.js";
 import { markInvoicePaid, getProjectBilling } from "../../../_lib/invoices.js";
+
+// Card surcharge rate (0.03 = 3%). Configurable via wrangler [vars]
+// CARD_SURCHARGE_RATE; defaults to 3% and clamped to a sane range.
+function surchargeRate(env) {
+  const r = parseFloat(env.CARD_SURCHARGE_RATE);
+  return Number.isFinite(r) && r >= 0 && r <= 0.06 ? r : 0.03;
+}
+const surchargeCents = (baseCents, rate) => Math.round(baseCents * rate);
 
 // A stored PI is reusable only if it was created with automatic_payment_methods.
 // Legacy intents built from an explicit payment_method_types list are recreated
@@ -117,42 +126,62 @@ export async function onRequestGet(context) {
       });
       await db.prepare(`UPDATE invoices SET stripe_payment_intent_id=?1, updated_at=datetime('now') WHERE id=?2`).bind(pi.id, inv.id).run();
     }
+    const rate = surchargeRate(context.env);
     return json({
       invoice: publicView(inv, project),
       due_cents: due,
       publishable_key: context.env.STRIPE_PUBLISHABLE_KEY,
       client_secret: pi.client_secret,
       plan: await planInfo(db, inv),
+      surcharge_rate: rate,
+      card_surcharge_cents: surchargeCents(due, rate),
     });
   } catch (e) {
     return json({ error: e.message || "Stripe error" }, 502);
   }
 }
 
-// POST { action: "set_plan", plan: "deposit" | "full" } — switch the invoice
-// between paying the deposit and paying the whole job, before the customer
-// confirms. Updates the invoice amount/type and the live PaymentIntent amount.
+// POST { action: "set_plan", plan?: "deposit" | "full", method?: "card" | ... }
+// Sync the invoice + live PaymentIntent right before the customer confirms:
+//  • plan   — for a deposit/full invoice, switch which amount is owed (updates
+//             the invoice amount/type). Ignored for non-splittable invoices.
+//  • method — the payment method the customer picked in the Payment Element.
+//             When it's a card, a processing surcharge is ADDED to the
+//             PaymentIntent only (the invoice amount stays the base due).
 export async function onRequestPost(context) {
   const token = context.params.token;
   const db = context.env.DB;
   const body = await context.request.json().catch(() => ({}));
   if (body.action !== "set_plan") return json({ error: "Unknown action" }, 400);
-  const plan = body.plan === "full" ? "full" : "deposit";
+  const isCard = body.method === "card";
 
   const inv = await db.prepare(`SELECT * FROM invoices WHERE view_token=?1`).bind(token).first();
   if (!inv) return json({ error: "Invoice not found" }, 404);
   if (inv.status === "paid") return json({ paid: true });
   if (inv.status === "void") return json({ error: "Invoice canceled" }, 400);
-  if (!["deposit", "full"].includes(inv.type)) return json({ error: "This invoice can't be split" }, 400);
-  if ((inv.amount_paid_cents || 0) > 0) return json({ error: "A payment has already been recorded" }, 400);
 
-  const t = await planTarget(db, inv, plan);
-  if (!t.amount || t.amount <= 0) return json({ error: "Nothing to charge" }, 400);
-  await db.prepare(
-    `UPDATE invoices SET amount_cents=?1, type=?2, description=?3, updated_at=datetime('now') WHERE id=?4`
-  ).bind(t.amount, t.type, t.description, inv.id).run();
-  if (inv.stripe_payment_intent_id) {
-    await updatePaymentIntentAmount(context.env, inv.stripe_payment_intent_id, t.amount).catch(() => {});
+  // Base amount owed. For an unpaid deposit/full invoice the customer may switch
+  // between deposit and the whole job; other invoices just use their balance.
+  let base;
+  const splittable = ["deposit", "full"].includes(inv.type) && (inv.amount_paid_cents || 0) === 0;
+  if (splittable && body.plan) {
+    const t = await planTarget(db, inv, body.plan === "full" ? "full" : "deposit");
+    base = t.amount;
+    if (base > 0) {
+      await db.prepare(
+        `UPDATE invoices SET amount_cents=?1, type=?2, description=?3, updated_at=datetime('now') WHERE id=?4`
+      ).bind(base, t.type, t.description, inv.id).run();
+    }
+  } else {
+    base = Math.max(0, (inv.amount_cents || 0) - (inv.amount_paid_cents || 0));
   }
-  return json({ ok: true, amount_cents: t.amount, plan: t.type });
+  if (!base || base <= 0) return json({ error: "Nothing to charge" }, 400);
+
+  const rate = surchargeRate(context.env);
+  const surcharge = isCard ? surchargeCents(base, rate) : 0;
+  const charge = base + surcharge;
+  if (inv.stripe_payment_intent_id) {
+    await updatePaymentIntentAmount(context.env, inv.stripe_payment_intent_id, charge).catch(() => {});
+  }
+  return json({ ok: true, base_cents: base, surcharge_cents: surcharge, charge_cents: charge, surcharged: isCard });
 }

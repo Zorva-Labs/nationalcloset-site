@@ -48,6 +48,10 @@
     @keyframes s{to{transform:rotate(360deg)}}
     .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:22px}
     .foot a{color:var(--muted)}
+    .fee-note{font-size:12.5px;color:var(--muted);margin:10px 0 0;line-height:1.5}
+    .fee-line{margin:0 0 16px;padding:12px 14px;background:var(--fog);border-radius:10px;font-size:13.5px}
+    .fee-row{display:flex;justify-content:space-between;padding:2px 0;color:var(--ink-soft)}
+    .fee-row--total{margin-top:4px;padding-top:6px;border-top:1px solid var(--line);font-weight:800;color:var(--ink)}
     .plan{display:flex;flex-direction:column;gap:10px;margin:0 0 18px}
     .plan-opt{display:flex;align-items:flex-start;gap:11px;padding:14px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;transition:border-color .15s,background .15s}
     .plan-opt:has(input:checked){border-color:var(--clay);background:var(--clay-wash)}
@@ -123,9 +127,18 @@
       const inv = data.invoice;
       // Only the unpaid balance is charged online; in-person payments may cover part of it.
       const base = data.due_cents != null ? data.due_cents : inv.amount_cents;
-      let payAmount = base;            // updated when the deposit/full plan changes
       const alreadyPaid = inv.amount_paid_cents || 0;
       const plan = data.plan || null;  // { deposit_cents, full_cents, current_plan } | null
+      // Card surcharge: paying by card (credit/debit) adds a % processing fee;
+      // bank / Klarna / wallets don't. Default the shown method to "card" so the
+      // displayed total is never lower than what a card payment will charge.
+      const rate = data.surcharge_rate || 0;
+      const ratePct = +((rate * 100).toFixed(2));
+      let baseAmount = base;           // base owed (updates with the deposit/full plan)
+      let selectedMethod = "card";
+      const curSurcharge = () => (selectedMethod === "card" ? Math.round(baseAmount * rate) : 0);
+      const curCharge = () => baseAmount + curSurcharge();
+      let payAmount = base;            // legacy alias used by paidState fallback
 
       const typeLabel = { deposit: "Deposit", balance: "Final balance", full: "Payment", custom: "Invoice" }[inv.type] || "Invoice";
       root.innerHTML = `
@@ -137,6 +150,7 @@
             <div class="amount"><span id="amt-due">${money(base)}</span> <small>due</small></div>
             ${alreadyPaid > 0 ? `<p class="sub" style="margin-top:-2px">${money(alreadyPaid)} of ${money(inv.amount_cents)} already paid — balance shown above.</p>` : ""}
             <p class="desc">${esc(inv.description || "")}</p>
+            ${rate > 0 ? `<p class="fee-note">Pay by <strong>bank (ACH)</strong>, <strong>Klarna</strong> or a digital wallet with no added fee. Paying by <strong>credit or debit card</strong> adds a ${ratePct}% processing fee.</p>` : ""}
             <div class="divider"></div>
           </div>
           <div class="pay">
@@ -154,7 +168,12 @@
             </div>
             <form id="pay-form">
               <div id="payment-element"></div>
-              <button class="btn" id="pay-btn" type="submit">Pay ${money(base)}</button>
+              ${rate > 0 ? `<div id="fee-line" class="fee-line" hidden>
+                <div class="fee-row"><span>Subtotal</span><span id="fee-sub">${money(base)}</span></div>
+                <div class="fee-row"><span>Card processing fee (${ratePct}%)</span><span id="fee-amt">+${money(Math.round(base * rate))}</span></div>
+                <div class="fee-row fee-row--total"><span>Total</span><span id="fee-tot">${money(base + Math.round(base * rate))}</span></div>
+              </div>` : ""}
+              <button class="btn" id="pay-btn" type="submit">Pay ${money(rate > 0 ? base + Math.round(base * rate) : base)}</button>
               <div class="msg" id="msg"></div>
             </form>
             <div class="secure" id="secure-row">
@@ -186,42 +205,58 @@
         if (secure) secure.hidden = byCheck;
       });
 
-      // Deposit / pay-in-full chooser. Switching updates the invoice + the live
-      // PaymentIntent server-side, then reflects the new amount on the page.
-      function setAmountUI(cents) {
-        payAmount = cents;
-        const a = document.getElementById("amt-due"); if (a) a.textContent = money(cents);
-        const c = document.getElementById("chk-amt"); if (c) c.textContent = money(cents);
-        const b = document.getElementById("pay-btn"); if (b && !b.disabled) b.textContent = `Pay ${money(cents)}`;
+      // Refresh every amount on the page for the current base + selected method.
+      function refreshTotals() {
+        payAmount = curCharge();
+        const sc = curSurcharge();
+        const a = document.getElementById("amt-due"); if (a) a.textContent = money(baseAmount);
+        const c = document.getElementById("chk-amt"); if (c) c.textContent = money(baseAmount);
+        const b = document.getElementById("pay-btn"); if (b && !b.disabled) b.textContent = `Pay ${money(curCharge())}`;
+        const fl = document.getElementById("fee-line");
+        if (fl) {
+          fl.hidden = !(selectedMethod === "card" && rate > 0);
+          const s = document.getElementById("fee-sub"); if (s) s.textContent = money(baseAmount);
+          const fa = document.getElementById("fee-amt"); if (fa) fa.textContent = "+" + money(sc);
+          const ft = document.getElementById("fee-tot"); if (ft) ft.textContent = money(curCharge());
+        }
       }
-      async function choosePlan(which) {
+      // Track which method the customer has selected so we can surcharge cards.
+      paymentElement.on("change", (ev) => {
+        const t = ev && ev.value && ev.value.type;
+        if (t) { selectedMethod = (t === "card") ? "card" : "other"; refreshTotals(); }
+      });
+
+      // Deposit / pay-in-full chooser + method sync. Updates the invoice + the
+      // live PaymentIntent server-side, then reflects the amount on the page.
+      async function syncCharge() {
         try {
           const r = await fetch(`/api/public/invoice/${encodeURIComponent(token)}`, {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "set_plan", plan: which }),
+            body: JSON.stringify({ action: "set_plan", plan: selectedPlan() || undefined, method: selectedMethod }),
           });
           const d = await r.json();
           if (!r.ok || d.error) throw new Error(d.error || "Couldn't update the amount.");
-          setAmountUI(d.amount_cents);
+          baseAmount = d.base_cents;
+          refreshTotals();
           return true;
         } catch (err) { document.getElementById("msg").textContent = err.message; return false; }
       }
       if (plan) {
         document.querySelectorAll('input[name="plan"]').forEach((r) =>
-          r.addEventListener("change", () => { if (r.checked) choosePlan(r.value); }));
+          r.addEventListener("change", () => { if (r.checked) syncCharge(); }));
       }
       function selectedPlan() { const r = document.querySelector('input[name="plan"]:checked'); return r ? r.value : null; }
+      refreshTotals();
 
       document.getElementById("pay-form").addEventListener("submit", async (e) => {
         e.preventDefault();
         const btn = document.getElementById("pay-btn");
         const msg = document.getElementById("msg");
         btn.disabled = true; btn.textContent = "Processing…"; msg.textContent = "";
-        // Make sure the server + PaymentIntent match the chosen plan before confirming.
-        if (plan && selectedPlan()) {
-          const ok = await choosePlan(selectedPlan());
-          if (!ok) { btn.disabled = false; btn.textContent = `Pay ${money(payAmount)}`; return; }
-        }
+        // Sync the server + PaymentIntent to the chosen plan AND method (card
+        // surcharge) before confirming.
+        const ok = await syncCharge();
+        if (!ok) { btn.disabled = false; btn.textContent = `Pay ${money(curCharge())}`; return; }
         const { error, paymentIntent } = await stripe.confirmPayment({
           elements,
           confirmParams: { return_url: location.href },
@@ -229,11 +264,11 @@
         });
         if (error) {
           msg.textContent = error.message || "Payment failed. Please try again.";
-          btn.disabled = false; btn.textContent = `Pay ${money(payAmount)}`;
+          btn.disabled = false; btn.textContent = `Pay ${money(curCharge())}`;
           return;
         }
         if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing")) {
-          paidState({ number: inv.number, amount_cents: payAmount });
+          paidState({ number: inv.number, amount_cents: curCharge() });
         } else {
           msg.textContent = "Payment status: " + (paymentIntent ? paymentIntent.status : "unknown");
           btn.disabled = false; btn.textContent = `Pay ${money(payAmount)}`;

@@ -30,7 +30,8 @@ export async function onRequestGet(context) {
             (SELECT t.subtotal_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
                WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_gross,
             (SELECT t.total_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
-               WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_net
+               WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_net,
+            (SELECT COALESCE(SUM(iv.fee_cents),0) FROM invoices iv WHERE iv.project_id=p.id AND iv.status='paid') AS fee_cents
        FROM projects p
        LEFT JOIN contacts c ON c.id = p.contact_id
        LEFT JOIN job_financials jf ON jf.project_id = p.id
@@ -39,7 +40,7 @@ export async function onRequestGet(context) {
   ).bind(...binds).all()).results || [];
 
   const jobs = [];
-  const totals = { gross: 0, discounts: 0, revenue: 0, materials: 0, shipping: 0, tax: 0, labor: 0, misc: 0, expenses: 0, profit: 0 };
+  const totals = { gross: 0, discounts: 0, revenue: 0, materials: 0, shipping: 0, tax: 0, labor: 0, misc: 0, fee: 0, expenses: 0, profit: 0 };
 
   for (const r of rows) {
     // Cost basis is the pre-discount gross; revenue is the net the client pays.
@@ -56,17 +57,21 @@ export async function onRequestGet(context) {
     // A job_financials row exists iff its columns came back non-null.
     const hasRow = r.price_cents != null;
     const fin = resolveFinancials(gross, discount, hasRow ? r : null);
+    // Fold actual Stripe processing fees (card/Klarna) into expenses & profit.
+    const fee = r.fee_cents || 0;
+    const expenses = fin.expenses_cents + fee;
+    const profit = fin.profit_cents - fee;
     jobs.push({
       id: r.id, name: r.name, contact_name: r.contact_name, status: r.status, created_at: r.created_at,
       price_cents: fin.net_cents, gross_cents: fin.price_cents, discount_cents: fin.discount_cents,
       materials_cents: fin.materials_cents, shipping_cents: fin.shipping_cents,
-      tax_cents: fin.tax_cents, labor_cents: fin.labor_cents, misc_cents: fin.misc_cents,
-      expenses_cents: fin.expenses_cents, profit_cents: fin.profit_cents,
+      tax_cents: fin.tax_cents, labor_cents: fin.labor_cents, misc_cents: fin.misc_cents, fee_cents: fee,
+      expenses_cents: expenses, profit_cents: profit,
     });
     totals.gross += fin.price_cents; totals.discounts += fin.discount_cents; totals.revenue += fin.net_cents;
     totals.materials += fin.materials_cents; totals.shipping += fin.shipping_cents;
-    totals.tax += fin.tax_cents; totals.labor += fin.labor_cents; totals.misc += fin.misc_cents;
-    totals.expenses += fin.expenses_cents; totals.profit += fin.profit_cents;
+    totals.tax += fin.tax_cents; totals.labor += fin.labor_cents; totals.misc += fin.misc_cents; totals.fee += fee;
+    totals.expenses += expenses; totals.profit += profit;
   }
 
   return json({ from, to, all: includeAll, count: jobs.length, totals, jobs });

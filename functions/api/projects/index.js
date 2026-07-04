@@ -36,6 +36,8 @@ export async function onRequestGet(context) {
                       LIMIT 1) AS job_total_cents,
                     (SELECT COALESCE(SUM(iv.amount_cents), 0) FROM invoices iv
                       WHERE iv.project_id = p.id AND iv.status = 'paid') AS paid_cents,
+                    (SELECT COALESCE(SUM(iv.fee_cents), 0) FROM invoices iv
+                      WHERE iv.project_id = p.id AND iv.status = 'paid') AS fee_cents,
                     jf.price_cents AS jf_price_cents, jf.discount_cents AS jf_discount_cents,
                     jf.materials_cents AS jf_materials_cents, jf.shipping_cents AS jf_shipping_cents,
                     jf.tax_cents AS jf_tax_cents, jf.labor_cents AS jf_labor_cents, jf.misc_cents AS jf_misc_cents,
@@ -70,7 +72,7 @@ export async function onRequestGet(context) {
       price_auto: r.jf_price_auto, discount_auto: r.jf_discount_auto, materials_auto: r.jf_materials_auto,
       shipping_auto: r.jf_shipping_auto, tax_auto: r.jf_tax_auto, labor_auto: r.jf_labor_auto,
     } : null;
-    r.net_profit_cents = gross ? resolveFinancials(gross, discount, jfRow).profit_cents : null;
+    r.net_profit_cents = gross ? resolveFinancials(gross, discount, jfRow).profit_cents - (r.fee_cents || 0) : null;
   }
 
   // Always include the counts map so the list page can show filter badges.

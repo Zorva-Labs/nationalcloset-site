@@ -94,6 +94,27 @@ export function retrievePaymentIntent(env, id) {
   return stripeRequest(env, "GET", `/payment_intents/${id}`);
 }
 
+// The actual Stripe processing fee (in cents) for a PaymentIntent's payment,
+// read from the charge's balance transaction. Returns null if unavailable
+// (e.g. no charge yet). pi may be a full PaymentIntent object or an id.
+export async function getChargeFee(env, pi) {
+  try {
+    let intent = pi;
+    if (typeof pi === "string") intent = await retrievePaymentIntent(env, pi);
+    let chargeId = intent?.latest_charge;
+    if (chargeId && typeof chargeId === "object") chargeId = chargeId.id;
+    if (!chargeId) chargeId = intent?.charges?.data?.[0]?.id;
+    if (!chargeId) return null;
+    const charge = await stripeRequest(env, "GET", `/charges/${chargeId}`);
+    const btId = charge?.balance_transaction;
+    if (!btId) return null;
+    const bt = await stripeRequest(env, "GET", `/balance_transactions/${btId}`);
+    return typeof bt?.fee === "number" ? bt.fee : null;
+  } catch {
+    return null;
+  }
+}
+
 // Verify a Stripe webhook signature (Stripe-Signature: t=...,v1=...).
 // Returns true if any v1 scheme matches HMAC-SHA256(secret, `${t}.${payload}`).
 export async function verifyStripeSignature(payload, sigHeader, secret, toleranceSec = 300) {

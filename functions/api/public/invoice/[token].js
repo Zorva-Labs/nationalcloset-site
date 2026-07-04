@@ -3,7 +3,7 @@
 // (automatic_payment_methods) and there is no surcharge — the amount charged is
 // exactly the balance due for every method.
 import { json } from "../../../_lib/auth.js";
-import { createPaymentIntent, retrievePaymentIntent, updatePaymentIntentAmount } from "../../../_lib/stripe.js";
+import { createPaymentIntent, retrievePaymentIntent, updatePaymentIntentAmount, getChargeFee } from "../../../_lib/stripe.js";
 import { markInvoicePaid, markInvoiceProcessing, getProjectBilling } from "../../../_lib/invoices.js";
 
 // A stored PI is reusable only if it was created with automatic_payment_methods.
@@ -89,7 +89,8 @@ export async function onRequestGet(context) {
       // If a prior intent already succeeded, sync + report paid.
       if (pi && pi.status === "succeeded") {
         const method = pi.charges?.data?.[0]?.payment_method_details?.type || "card";
-        await markInvoicePaid(context.env, inv, { method, paymentIntentId: pi.id });
+        const feeCents = await getChargeFee(context.env, pi);
+        await markInvoicePaid(context.env, inv, { method, paymentIntentId: pi.id, feeCents });
         return json({ paid: true, invoice: publicView({ ...inv, status: "paid" }, project) });
       }
       // Redirect-based methods (Klarna) and ACH come back as "processing" — the

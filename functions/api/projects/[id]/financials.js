@@ -32,12 +32,28 @@ async function defaultBasis(env, projectId) {
   return { grossCents: b?.totalCents || 0, discountCents: 0 };
 }
 
+// Actual Stripe processing fees already collected on this project's paid
+// invoices (card + Klarna carry a real fee; ACH is small; check/cash $0).
+async function projectFeeCents(env, projectId) {
+  const r = await env.DB.prepare(
+    `SELECT COALESCE(SUM(fee_cents),0) AS fee FROM invoices WHERE project_id=?1 AND status='paid'`
+  ).bind(projectId).first().catch(() => null);
+  return r?.fee || 0;
+}
+// Fold the processing fee into the financials as a cost line that reduces profit.
+function withFee(fin, feeCents) {
+  const fee = feeCents || 0;
+  return { ...fin, processing_fee_cents: fee, expenses_cents: (fin.expenses_cents || 0) + fee, profit_cents: (fin.profit_cents || 0) - fee };
+}
+
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const id = parseInt(context.params.id, 10);
   const row = await context.env.DB.prepare(`SELECT * FROM job_financials WHERE project_id=?1`).bind(id).first().catch(() => null);
   const b = await defaultBasis(context.env, id);
-  return json({ financials: { ...resolveFinancials(b.grossCents, b.discountCents, row), default_price_cents: b.grossCents, default_discount_cents: b.discountCents } });
+  const fee = await projectFeeCents(context.env, id);
+  const fin = withFee(resolveFinancials(b.grossCents, b.discountCents, row), fee);
+  return json({ financials: { ...fin, default_price_cents: b.grossCents, default_discount_cents: b.discountCents } });
 }
 
 export async function onRequestPut(context) {
@@ -81,7 +97,7 @@ export async function onRequestPut(context) {
   ).run();
 
   const row = await context.env.DB.prepare(`SELECT * FROM job_financials WHERE project_id=?1`).bind(id).first();
-  const fin = resolveFinancials(b.grossCents, b.discountCents, row);
+  const fin = withFee(resolveFinancials(b.grossCents, b.discountCents, row), await projectFeeCents(context.env, id));
   await recordActivity(context.env.DB, {
     entityType: "project", entityId: id, action: "financials-updated",
     actorKind: "admin", actorId: auth.id, actorName: auth.email,

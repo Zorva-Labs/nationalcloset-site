@@ -1,6 +1,6 @@
 // POST /api/stripe/webhook — Stripe event receiver. The source of truth for
 // marking an invoice paid. Verifies the signature against STRIPE_WEBHOOK_SECRET.
-import { verifyStripeSignature } from "../../_lib/stripe.js";
+import { verifyStripeSignature, getChargeFee } from "../../_lib/stripe.js";
 import { markInvoicePaid, markInvoiceProcessing, markInvoiceFailed } from "../../_lib/invoices.js";
 
 // Best-effort chosen-method from a PaymentIntent (falls back to ACH, the usual
@@ -35,7 +35,8 @@ export async function onRequestPost(context) {
       const pi = event.data.object;
       const inv = await findInvoice(db, pi);
       if (inv && inv.status !== "paid") {
-        await markInvoicePaid(context.env, inv, { method: piMethod(pi, "card"), paymentIntentId: pi.id });
+        const feeCents = await getChargeFee(context.env, pi);
+        await markInvoicePaid(context.env, inv, { method: piMethod(pi, "card"), paymentIntentId: pi.id, feeCents });
       }
     } else if (event.type === "payment_intent.processing") {
       // Async payment (ACH bank transfer, etc.) started — show it as processing

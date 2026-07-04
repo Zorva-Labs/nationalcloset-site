@@ -62,6 +62,7 @@ const NAV_GROUPS = [
 
 // JS actions — no nav, opens an inline modal that creates the entity and routes to its page on success
 const QUICK_ADD = [
+  { label: "New lead",         action: "quickAddLead",        kbd: "L", icon: iconLead() },
   { label: "New contact",      action: "quickAddContact",     kbd: "C", icon: iconUsers() },
   { label: "New job",          action: "quickAddJob",         kbd: "J", icon: iconBriefcase() },
   { label: "Book appointment", action: "quickAddAppointment", kbd: "A", icon: iconCal() },
@@ -617,6 +618,56 @@ async function quickAddContact({ skipNav = false } = {}) {
   });
 }
 
+async function quickAddLead() {
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `
+    <div class="modal" style="max-width:480px">
+      <div class="modal-head">New lead</div>
+      <div class="modal-body">
+        <div class="form">
+          <label><span>Name</span><input id="ql-name" autofocus required placeholder="Full name"/></label>
+          <div class="row">
+            <label><span>Phone</span><input id="ql-phone" type="tel"/></label>
+            <label><span>Email <span class="muted" style="font-weight:400">(optional)</span></span><input id="ql-email" type="email"/></label>
+          </div>
+          <label><span>Interested in <span class="muted" style="font-weight:400">(optional)</span></span><input id="ql-interest" placeholder="e.g. Walk-in closet, pantry, garage"/></label>
+          <label><span>Location <span class="muted" style="font-weight:400">(optional)</span></span><input id="ql-location" placeholder="City / area"/></label>
+          <label><span>Notes <span class="muted" style="font-weight:400">(optional)</span></span><textarea id="ql-message" rows="2" placeholder="What did they ask for?"></textarea></label>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" data-cancel>Cancel</button>
+        <button class="btn primary" data-save>Create &amp; open</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(bg);
+  const val = (id) => bg.querySelector("#ql-" + id).value.trim();
+  return new Promise((resolve) => {
+    const close = () => { bg.remove(); resolve(null); };
+    const save = async () => {
+      const name = val("name");
+      if (!name) { toast("Name is required", "error"); bg.querySelector("#ql-name").focus(); return; }
+      const btn = bg.querySelector("[data-save]"); btn.disabled = true; btn.textContent = "Creating…";
+      try {
+        const { id } = await fetchJSON("/api/leads", { method: "POST", body: JSON.stringify({
+          name, phone: val("phone") || null, email: val("email") || null,
+          interest: val("interest") || null, location: val("location") || null, message: val("message") || null,
+        }) });
+        bg.remove();
+        location.href = "/crm/lead.html?id=" + id;
+        resolve({ id });
+      } catch (e) { toast(e.message, "error"); btn.disabled = false; btn.textContent = "Create & open"; }
+    };
+    bg.querySelector("[data-cancel]").onclick = close;
+    bg.querySelector("[data-save]").onclick = save;
+    bg.addEventListener("click", (e) => { if (e.target === bg) close(); });
+    // Enter in any single-line field submits.
+    bg.querySelectorAll('input').forEach((i) => i.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); save(); } }));
+  });
+}
+
 async function quickAddJob() {
   const contact = await pickContact();
   if (!contact) return;
@@ -1048,7 +1099,7 @@ function recordPayment(doc, opts = {}) {
 window.SSCrm = {
   fetchJSON, mount, fmtMoney, fmtMoneyShort, parseMoney, fmtDate, fmtDay, fmtDateTime, fmtTime, esc, pill, logout, toast, confirmDialog,
   pickContact, pickJob, openModal, recordPayment,
-  quickAddContact, quickAddJob, quickAddAppointment, quickAddEstimate, quickAddProposal, quickAddContract,
+  quickAddLead, quickAddContact, quickAddJob, quickAddAppointment, quickAddEstimate, quickAddProposal, quickAddContract,
   composeEmail, renderEmailTimeline,
   PROJECT_STATUSES,
 };

@@ -1,4 +1,5 @@
 import { requireAuth, json } from "../../_lib/auth.js";
+import { upsertContact, recordActivity } from "../../_lib/db.js";
 
 const ALLOWED_STATUSES = new Set([
   "new",
@@ -61,4 +62,41 @@ export async function onRequestGet(context) {
   const byStatus = Object.fromEntries((counts.results || []).map((r) => [r.status, r.n]));
 
   return json({ leads: results, counts: byStatus });
+}
+
+// POST /api/leads — admin manually adds a lead (phone call, walk-in, referral).
+// Only name is required; email/phone/etc. are optional. When an email is given
+// we also upsert a contact so the lead ties into the customer record.
+export async function onRequestPost(context) {
+  const guard = await requireAuth(context);
+  if (guard instanceof Response) return guard;
+  const { DB } = context.env;
+  const b = await context.request.json().catch(() => ({}));
+
+  const name = (b.name || "").toString().trim();
+  if (!name) return json({ error: "Name is required" }, 400);
+  const email = (b.email || "").toString().trim() || null;
+  const phone = (b.phone || "").toString().trim() || null;
+  const location = (b.location || "").toString().trim() || null;
+  const interest = (b.interest || "").toString().trim() || null;
+  const message = (b.message || "").toString().trim() || null;
+  const status = ALLOWED_STATUSES.has(b.status) ? b.status : "new";
+
+  let contactId = null;
+  if (email) {
+    try { contactId = await upsertContact(DB, { name, email, phone }); } catch { /* non-fatal */ }
+  }
+
+  const r = await DB.prepare(
+    `INSERT INTO leads (name, phone, email, location, interest, message, status, source_page, contact_id)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,'crm-manual',?8) RETURNING id`
+  ).bind(name, phone, email, location, interest, message, status, contactId).first();
+
+  await recordActivity(DB, {
+    entityType: "lead", entityId: r.id, action: "created",
+    actorKind: "admin", actorId: guard.id, actorName: guard.email,
+    details: { source: "crm-manual", status },
+  }).catch(() => {});
+
+  return json({ id: r.id });
 }

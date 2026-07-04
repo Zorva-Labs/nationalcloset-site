@@ -9,6 +9,7 @@
 
 export const MATERIALS_DIVISOR = 2.8;  // materials cost = job total ÷ 2.8
 export const LABOR_RATE = 0.15;        // installation labor = 15% of the gross job price
+export const MIN_LABOR_CENTS = 35000;  // …but never less than $350
 
 // Flat markup baked into every customer quote (proposals + estimates). Applied
 // to each positive line total on save, so the customer's line prices and totals
@@ -30,7 +31,7 @@ export const markupLine = (cents, rate = QUOTE_MARKUP - 1) => (cents > 0 ? Math.
 export function computeBreakdown(priceCents) {
   const price = Math.max(0, Math.round(priceCents || 0));
   const materials = Math.round(price / MATERIALS_DIVISOR); // taxes/shipping/surcharge baked in
-  const labor = Math.round(price * LABOR_RATE);            // 15% of the gross job price
+  const labor = price > 0 ? Math.max(Math.round(price * LABOR_RATE), MIN_LABOR_CENTS) : 0; // 15%, min $350
   return { materials, labor };
 }
 

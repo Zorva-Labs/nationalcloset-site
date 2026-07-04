@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc30" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc31" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc30"></script>
+<script src="/crm/crm-app.js?v=ncc31"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -682,7 +682,7 @@ const finToCents = (v) => Math.max(0, Math.round((parseFloat(v) || 0) * 100));
 
 function finCalc(priceCents) {
   const materials = Math.round(priceCents / 2.8);   // taxes/shipping/surcharge folded into the 2.8×
-  const labor = Math.round(priceCents * 0.15);      // 15% of the gross job price
+  const labor = priceCents > 0 ? Math.max(Math.round(priceCents * 0.15), 35000) : 0; // 15%, min $350
   return { materials, labor };
 }
 
@@ -728,7 +728,7 @@ function finRender() {
       <tr><td style="padding:4px 0;color:var(--ink-soft)">Net to client</td><td style="text-align:right;color:var(--ink-soft);font-weight:600" id="fin-net">${SSCrm.fmtMoney(netCents)}</td></tr>
       <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
       ${finRow("materials", "Materials <span class='muted' style='font-size:11px'>· price ÷ 2.8</span>")}
-      ${finRow("labor", "Labor <span class='muted' style='font-size:11px'>· 15% of price</span>")}
+      ${finRow("labor", "Labor <span class='muted' style='font-size:11px'>· 15% of price, min $350</span>")}
       <tr><td style="padding:6px 0">Misc</td><td style="text-align:right;white-space:nowrap"><span style="color:var(--ink-soft)">$</span><input id="fin-misc" value="${finDollars(f.misc_cents)}" oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right"/></td></tr>
       <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
       <tr><td style="padding:4px 0">Total expenses</td><td style="text-align:right" id="fin-expenses">${SSCrm.fmtMoney(f.expenses_cents)}</td></tr>
@@ -767,7 +767,7 @@ function finRecalc() {
   // Materials: auto = price ÷ 2.8. Labor: auto = 15% of the gross price (not materials).
   if (document.getElementById("fin-materials-auto").checked) document.getElementById("fin-materials").value = finDollars(calc.materials);
   const matCents = finToCents(document.getElementById("fin-materials").value);
-  const laborCents = document.getElementById("fin-labor-auto").checked ? Math.round(price * 0.15) : finToCents(document.getElementById("fin-labor").value);
+  const laborCents = document.getElementById("fin-labor-auto").checked ? (price > 0 ? Math.max(Math.round(price * 0.15), 35000) : 0) : finToCents(document.getElementById("fin-labor").value);
   if (document.getElementById("fin-labor-auto").checked) document.getElementById("fin-labor").value = finDollars(laborCents);
   const sum = matCents + laborCents + finToCents(document.getElementById("fin-misc").value);
   const net = price - discount;

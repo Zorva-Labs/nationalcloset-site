@@ -129,7 +129,7 @@
     <div class="card">
       <table class="rows">
         <tr><td>Materials <span class="pct">(price ÷ 2.8)</span></td><td id="r-mat">$0</td></tr>
-        <tr><td>Labor <span class="pct">(15% of price, paid after install)</span></td><td id="r-labor">$0</td></tr>
+        <tr><td>Labor <span class="pct">(15% of price · min $350, paid after install)</span></td><td id="r-labor">$0</td></tr>
         <tr class="muted"><td>Total cost</td><td id="r-cost">$0</td></tr>
         <tr class="sep"><td>Gross quote</td><td id="r-gross">$0</td></tr>
         <tr class="disc-row" id="r-discrow" hidden><td>Discount</td><td id="r-discamt">$0</td></tr>
@@ -138,7 +138,7 @@
       </table>
     </div>
 
-    <p class="foot">Matches the CRM cost model: materials = price&nbsp;÷&nbsp;2.8 (taxes, shipping &amp; 3% surcharge folded in), labor = 15% of the gross job price. Deposit covers materials; labor &amp; profit come in the balance at completion.</p>
+    <p class="foot">Matches the CRM cost model: materials = price&nbsp;÷&nbsp;2.8 (taxes, shipping &amp; 3% surcharge folded in), labor = 15% of the gross job price (minimum&nbsp;$350). Deposit covers materials; labor &amp; profit come in the balance at completion.</p>
   </div>
 </div>
 
@@ -156,7 +156,7 @@
   // Mirrors functions/_lib/financials.js computeBreakdown — all math in cents.
   function calc(priceCents) {
     var materials = Math.round(priceCents / DIVISOR);   // taxes/shipping/surcharge folded in
-    var labor = Math.round(priceCents * LABOR);         // 15% of the gross price
+    var labor = priceCents > 0 ? Math.max(Math.round(priceCents * LABOR), 35000) : 0; // 15%, min $350
     return { materials: materials, labor: labor, cost: materials + labor };
   }
 

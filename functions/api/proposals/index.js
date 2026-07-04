@@ -17,6 +17,7 @@ export async function onRequestGet(context) {
   let sql = `SELECT pr.*, p.name AS project_name, c.name AS contact_name, c.email AS contact_email,
                (SELECT t.total_cents    FROM proposal_tiers t WHERE t.proposal_id=pr.id AND t.tier=pr.selected_tier LIMIT 1) AS sel_net,
                (SELECT t.subtotal_cents FROM proposal_tiers t WHERE t.proposal_id=pr.id AND t.tier=pr.selected_tier LIMIT 1) AS sel_gross,
+               (SELECT t.title          FROM proposal_tiers t WHERE t.proposal_id=pr.id AND t.tier=pr.selected_tier LIMIT 1) AS sel_title,
                (SELECT t.total_cents    FROM proposal_tiers t WHERE t.proposal_id=pr.id ORDER BY t.total_cents DESC LIMIT 1) AS top_net,
                (SELECT t.subtotal_cents FROM proposal_tiers t WHERE t.proposal_id=pr.id ORDER BY t.total_cents DESC LIMIT 1) AS top_gross
              FROM proposals pr
@@ -37,6 +38,7 @@ export async function onRequestGet(context) {
     const gross = sub > tot ? sub : tot;
     const discount = sub > tot ? sub - tot : 0;
     r.proposed_total_cents = tot;
+    r.selected_title = r.selected_tier ? (r.sel_title || null) : null;  // name of the option the client picked
     r.profit_cents = tot ? resolveFinancials(gross, discount, null).profit_cents : null;
   }
   return json({ proposals: rows });

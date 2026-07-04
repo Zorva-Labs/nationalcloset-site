@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc32" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc33" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc32"></script>
+<script src="/crm/crm-app.js?v=ncc33"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -44,13 +44,15 @@ function render() {
   const canSend = ["draft"].includes(p.status);
   const isAccepted = p.status === "accepted";
   const customerUrl = `${location.origin}/proposal/?t=${p.view_token}`;
+  // Show the picked option by its name (title), not the internal tier key.
+  const pickedTitle = ((tiers || []).find((t) => t.tier === p.selected_tier) || {}).title || p.selected_tier;
 
   document.getElementById("page").innerHTML = `
     ${isAccepted ? `
       <div class="banner">
         <div class="banner__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
         <div class="banner__body">
-          <strong>Customer accepted the ${SSCrm.esc(p.selected_tier)} tier.</strong>
+          <strong>Customer accepted “${SSCrm.esc(pickedTitle)}”.</strong>
           <span>Next: convert to a contract and send for signature to book the job.</span>
         </div>
       </div>` : ""}
@@ -58,7 +60,7 @@ function render() {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
       <div style="display:flex;gap:10px;align-items:center">
         ${SSCrm.pill(p.status)}
-        ${p.selected_tier ? `<span class="pill" data-s="accepted">Customer picked: ${SSCrm.esc(p.selected_tier)}</span>` : ""}
+        ${p.selected_tier ? `<span class="pill" data-s="accepted">Customer picked: ${SSCrm.esc(pickedTitle)}</span>` : ""}
         <span class="muted" style="font-size:13px"><a href="/crm/contact.html?id=${p.contact_id}">${SSCrm.esc(p.contact_name)}</a></span>
       </div>
       <div style="display:flex;gap:8px">
@@ -144,14 +146,16 @@ function autoGrowAllTitles() {
   document.querySelectorAll(".t-title").forEach(autoGrow);
 }
 
-function renderTier(t) {
+function renderTier(t, i) {
+  const many = (state.tiers || []).length > 1;
   return `<div class="card" data-tier-id="${t.id}" data-tier="${t.tier}" style="${state.proposal.selected_tier === t.tier ? "border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)" : ""};min-width:0;overflow:hidden">
     <div class="card-head" style="display:block">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
-        <span style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;font-weight:600;color:var(--ink-soft)">${SSCrm.esc(t.tier)}</span>
+        ${many ? `<span style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;font-weight:600;color:var(--ink-soft)">Option ${i + 1}</span>` : ""}
         ${t.contract_type ? `<span class="pill" style="font-size:10px;background:var(--accent-soft);color:var(--accent-ink);border-color:transparent">→ ${SSCrm.esc(CONTRACT_LABEL[t.contract_type] || t.contract_type)}</span>` : ""}
+        ${state.proposal.selected_tier === t.tier ? `<span class="pill" data-s="accepted" style="font-size:10px">✓ Client picked this</span>` : ""}
       </div>
-      <textarea class="t-title" data-f="title" rows="1" placeholder="Tier title" style="font-size:15px;font-weight:600;border:0;padding:4px 0;width:100%;box-sizing:border-box;resize:none;font-family:inherit;line-height:1.25;color:var(--ink);overflow:hidden;background:transparent" oninput="autoGrow(this)">${SSCrm.esc(t.title || "")}</textarea>
+      <textarea class="t-title" data-f="title" rows="1" placeholder="Name this option (shown to the client)" style="font-size:15px;font-weight:600;border:0;padding:4px 0;width:100%;box-sizing:border-box;resize:none;font-family:inherit;line-height:1.25;color:var(--ink);overflow:hidden;background:transparent" oninput="autoGrow(this)">${SSCrm.esc(t.title || "")}</textarea>
     </div>
     <textarea class="t-desc" data-f="description" rows="2" placeholder="Brief description (optional)" style="width:100%;border:1px solid var(--line-soft);padding:6px;border-radius:var(--r-sm);font-size:12px;margin-bottom:10px">${SSCrm.esc(t.description || "")}</textarea>
     <table class="lines"><thead><tr>

@@ -110,10 +110,10 @@ function render(p, tiers, attachments) {
     <h1>Your custom closet <em>proposal</em>.</h1>
     ${p.intro ? `<p class="doc-intro">${esc(p.intro)}</p>` : ""}
 
-    <div class="opt-grid">${tiers.map((t) => `
+    <div class="opt-grid">${tiers.map((t, i) => `
       <div class="opt ${p.selected_tier === t.tier ? "is-picked" : ""}" data-tier="${esc(t.tier)}" ${isAccepted ? "" : `onclick="pickTier('${esc(t.tier)}')" role="button" tabindex="0"`}>
-        ${many ? `<div class="opt__label">${esc(t.tier === "good" ? "Option 1" : t.tier === "better" ? "Option 2" : t.tier)}</div>` : `<div class="opt__label">Your proposal</div>`}
-        <h3 class="opt__title">${esc(t.title || "")}</h3>
+        ${p.selected_tier === t.tier ? `<div class="opt__label" style="color:var(--clay-deep)">✓ Your selection</div>` : (t.title ? "" : `<div class="opt__label">${many ? "Option " + (i + 1) : "Your proposal"}</div>`)}
+        <h3 class="opt__title">${esc(t.title || (many ? "Option " + (i + 1) : "Your proposal"))}</h3>
         <div class="opt__total">${money(t.total_cents)} ${t.total_cents ? `<span class="sub">total</span>` : ""}</div>
         ${t.description ? `<div class="opt__desc">${esc(t.description)}</div>` : ""}
         ${(t.lines && t.lines.length) ? `<ul class="opt__lines">${t.lines.map((l) => { const disc = (l.line_total_cents || 0) < 0; return `<li${disc ? ` style="color:var(--clay-deep);font-weight:600"` : ""}><span>${esc(l.description)}${l.room ? ` <em style="color:var(--muted);font-size:.85em;font-style:normal">— ${esc(l.room)}</em>` : ""}</span><span class="ln-money">${disc ? "−" + money(Math.abs(l.line_total_cents)) : money(l.line_total_cents)}</span></li>`; }).join("")}</ul>

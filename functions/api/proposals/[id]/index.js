@@ -2,6 +2,7 @@ import { requireAuth, json } from "../../../_lib/auth.js";
 import { recomputeTierTotals, recordActivity } from "../../../_lib/db.js";
 import { syncLeadQuotedFromProposal, autoMirrorOption2 } from "../../../_lib/lifecycle.js";
 import { deleteProposalDeep } from "../../../_lib/cascade.js";
+import { markupLine } from "../../../_lib/financials.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -62,7 +63,7 @@ export async function onRequestPatch(context) {
             `INSERT INTO proposal_tier_lines (tier_id, description, room, quantity, unit_price_cents, line_total_cents, position, product_id, width_in, height_in, color, options)
              VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)`
           ).bind(
-            t.id, l.description, l.room || null, qty, unit, Math.round(qty*unit), i,
+            t.id, l.description, l.room || null, qty, unit, markupLine(Math.round(qty*unit)), i,
             l.product_id || null,
             l.width_in != null ? Number(l.width_in) : null,
             l.height_in != null ? Number(l.height_in) : null,

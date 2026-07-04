@@ -1,5 +1,6 @@
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { recomputeEstimateTotals, recordActivity } from "../../../_lib/db.js";
+import { markupLine } from "../../../_lib/financials.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -29,7 +30,7 @@ export async function onRequestPatch(context) {
       if (!l.description) continue;
       const qty = Number(l.quantity || 1);
       const unit = parseInt(l.unit_price_cents || 0, 10);
-      const total = Math.round(qty * unit);
+      const total = markupLine(Math.round(qty * unit));
       await context.env.DB.prepare(
         `INSERT INTO estimate_lines (estimate_id, window_id, product_id, description, room,
            width_in, height_in, quantity, unit_price_cents, line_total_cents, position)

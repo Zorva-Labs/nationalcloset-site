@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc26" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc27" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc26"></script>
+<script src="/crm/crm-app.js?v=ncc27"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -163,7 +163,7 @@ function renderTier(t) {
     <tbody class="tier-lines">${(t.lines || []).map(tierLineRow).join("") || tierLineRow({})}</tbody></table>
     <div class="add" style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="addTierLine(this)">+ Add line</button><button onclick="addDiscountLine(this)" title="Add a discount — comes out of profit; the cost basis stays on the pre-discount price">− Add discount</button>${t.tier !== "good" ? `<button onclick="copyFromOption1(this)" title="Copy Option 1's line items here and add a Wall Finishing line">⧉ Copy Option 1 + Wall Finishing</button>` : ""}</div>
     <div style="border-top:1px solid var(--line-soft);margin-top:10px;padding-top:10px">
-      <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total <span style="font-weight:400;color:var(--ink-soft);font-size:12px">· incl. shipping, tax &amp; install</span></span><span class="tier-total money">${SSCrm.fmtMoney(t.total_cents || 0)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total <span style="font-weight:400;color:var(--ink-soft);font-size:12px">· incl. shipping, tax, install &amp; 3% markup</span></span><span class="tier-total money">${SSCrm.fmtMoney(t.total_cents || 0)}</span></div>
     </div>
     ${(() => { const sub = t.subtotal_cents || 0, tot = t.total_cents || 0; return tierCostBox(sub > tot ? sub : tot, tot || sub); })()}
   </div>`;
@@ -228,7 +228,7 @@ function tierLineRow(l) {
     <td><input data-f="room" value="${SSCrm.esc(l?.room || "")}" placeholder="Room"/></td>
     <td><input class="num" data-f="quantity" value="${l?.quantity || 1}" type="number" step="1" min="1" onchange="recalcTier(this)"/></td>
     <td><input class="num" data-f="unit" value="${l?.unit_price_cents != null ? SSCrm.fmtMoney(l.unit_price_cents) : ""}" placeholder="$0.00" onchange="fmtUnit(this)" onblur="fmtUnit(this)"/></td>
-    <td class="num money tier-line-money">${SSCrm.fmtMoney((l?.quantity || 1) * (l?.unit_price_cents || 0))}</td>
+    <td class="num money tier-line-money">${SSCrm.fmtMoney(mkq((l?.quantity || 1) * (l?.unit_price_cents || 0)))}</td>
     <td><button class="rm" onclick="this.closest('tr').remove();recalcTierEl(this.closest('.card'))" title="Remove">×</button></td>
   </tr>`;
 }
@@ -241,11 +241,17 @@ function addDiscountLine(btn) {
   card.querySelector(".tier-lines").insertAdjacentHTML("beforeend", tierLineRow({ __discount: true, description: "Discount" }));
 }
 
+// Every positive line carries a 3% quote markup, baked into the price the
+// customer sees (mirrors markupLine() on the server). Discounts (negative) are
+// not marked up.
+const QUOTE_MARKUP = 1.03;
+const mkq = (cents) => (cents > 0 ? Math.round(cents * QUOTE_MARKUP) : cents);
+
 function recalcTier(input) {
   const tr = input.closest("tr");
   const qty = Number(tr.querySelector("[data-f=quantity]").value || 0);
   const unit = SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value);
-  tr.querySelector(".tier-line-money").textContent = SSCrm.fmtMoney(qty * unit);
+  tr.querySelector(".tier-line-money").textContent = SSCrm.fmtMoney(mkq(qty * unit));
   recalcTierEl(input.closest(".card"));
 }
 // Always show the unit price as $X.XX. Reformats whatever was typed ("500",
@@ -270,7 +276,7 @@ function recalcTierEl(card) {
   card.querySelectorAll(".tier-lines tr").forEach((tr) => {
     const qty = Number(tr.querySelector("[data-f=quantity]").value || 0);
     const unit = SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value);
-    const lt = qty * unit;
+    const lt = mkq(qty * unit);
     net += lt;
     if (lt > 0) gross += lt;
   });

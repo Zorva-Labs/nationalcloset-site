@@ -9,6 +9,12 @@
 //   5. profit    = price − (materials + shipping + tax + labor + misc)
 
 export const MARKUP_MULTIPLIER = 1.35; // price = list × 1.35 (35% markup on the list)
+// Flat markup baked into every customer quote (proposals + estimates). Applied
+// to each positive line total on save, so the customer's line prices and totals
+// read this much higher — invisibly — and it flows through to contracts,
+// deposits and invoices. Discount lines (negative) are not marked up.
+export const QUOTE_MARKUP = 1.03; // 3%
+export const markupLine = (cents) => (cents > 0 ? Math.round(cents * QUOTE_MARKUP) : cents);
 export const SHIPPING_RATE = 0.05;
 export const TAX_RATE = 0.0975;
 export const LABOR_RATE = 0.15;

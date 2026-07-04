@@ -1,14 +1,15 @@
-// Job cost model. The client price is all-inclusive; the expense breakdown and
-// profit are derived FROM it (confirmed with the owner):
-//   1. remove the 35% markup:  list = price ÷ 1.35   (price = list × 1.35)
-//   2. discount tier from the list:  <$2,500 → 20%, $2,500–$4,499.99 → 25%, ≥$4,500 → 30%
-//   3. materials = list × (1 − discount)   (the tier discount comes off the list)
-//   4. shipping  = 5%   of materials
-//      tax       = 9.75% of (materials + shipping)
-//      labor     = 15%  of materials
-//   5. profit    = price − (materials + shipping + tax + labor + misc)
+// Job cost model. The client price is all-inclusive — it already bakes in a
+// 2.8× materials multiplier that covers taxes, shipping and the 3% card
+// surcharge. The expense breakdown and profit are derived FROM the price:
+//   1. materials = price ÷ 2.8   (taxes, shipping & 3% surcharge live in the 2.8)
+//   2. labor     = 15% of the gross job price   (installation)
+//   3. profit    = price − (materials + labor + misc)
+// There are NO separate shipping or tax lines anymore — they're folded into the
+// price via the 2.8 multiplier.
 
-export const MARKUP_MULTIPLIER = 1.35; // price = list × 1.35 (35% markup on the list)
+export const MATERIALS_DIVISOR = 2.8;  // materials cost = job total ÷ 2.8
+export const LABOR_RATE = 0.15;        // installation labor = 15% of the gross job price
+
 // Flat markup baked into every customer quote (proposals + estimates). Applied
 // to each positive line total on save, so the customer's line prices and totals
 // read this much higher — invisibly — and it flows through to contracts,
@@ -25,76 +26,54 @@ export function quoteMarkupRate(env) {
 // Mark up a positive line total by `rate` (fraction). Discounts (negative) pass
 // through unchanged.
 export const markupLine = (cents, rate = QUOTE_MARKUP - 1) => (cents > 0 ? Math.round(cents * (1 + rate)) : cents);
-export const SHIPPING_RATE = 0.05;
-export const TAX_RATE = 0.0975;
-export const LABOR_RATE = 0.15;
-
-// Tier is keyed off the list (price with the markup removed), not the client price.
-export function discountForBase(baseCents) {
-  const dollars = (baseCents || 0) / 100;
-  if (dollars >= 4500) return 0.30;
-  if (dollars >= 2500) return 0.25;
-  return 0.20;
-}
 
 export function computeBreakdown(priceCents) {
   const price = Math.max(0, Math.round(priceCents || 0));
-  const list = price / MARKUP_MULTIPLIER;          // remove the 35% markup → list
-  const discount = discountForBase(list);          // tier discount off the list
-  const materials = Math.round(list * (1 - discount));
-  const shipping = Math.round(materials * SHIPPING_RATE);
-  const tax = Math.round((materials + shipping) * TAX_RATE);
-  const labor = Math.round(materials * LABOR_RATE);
-  return { discount, materials, shipping, tax, labor };
+  const materials = Math.round(price / MATERIALS_DIVISOR); // taxes/shipping/surcharge baked in
+  const labor = Math.round(price * LABOR_RATE);            // 15% of the gross job price
+  return { materials, labor };
 }
 
-// The deposit collected up front. It covers the "hard costs" the business pays
-// at the start of a job — materials + shipping + taxes — so the deposit never
-// runs the job in the red. Labor + profit are collected in the balance at
-// completion. This replaces the old flat 50% deposit.
+// The deposit collected up front — the materials cost (job total ÷ 2.8), which
+// the business pays to order materials before install. Labor + profit are
+// collected in the balance at completion.
 export function depositForTotal(priceCents) {
-  const b = computeBreakdown(priceCents);
-  return b.materials + b.shipping + b.tax;
+  return computeBreakdown(priceCents).materials;
 }
 
 // Merge a stored job_financials row (manual overrides) over the formula
 // defaults. `defaultGrossCents` is the pre-discount (gross) price — the cost
 // basis. `defaultDiscountCents` is the discount that comes out of profit only.
 // Client pays NET = gross − discount; profit = net − expenses. Pass row=null
-// when there's no saved row.
+// when there's no saved row. Shipping & tax are folded into the price (2.8×), so
+// they're always 0 here (kept for back-compat with older stored rows/consumers).
 export function resolveFinancials(defaultGrossCents, defaultDiscountCents, row) {
   const priceOverridden = row && row.price_auto === 0 && row.price_cents != null;
   const gross = priceOverridden ? row.price_cents : (defaultGrossCents || 0);
-  const f = computeBreakdown(gross); // expenses are always derived from the gross
+  const f = computeBreakdown(gross);
 
-  // Materials: override if set, else the formula value. Shipping/tax/labor, when
-  // on auto, derive from the EFFECTIVE materials (so an overridden materials cost
-  // flows through to them) — not the formula materials.
+  // Materials: override if set, else the formula value. Labor, when on auto, is
+  // 15% of the gross job price (NOT of materials).
   const over = (key, auto) => row && row[auto] === 0 && row[key] != null;
   const materials = over("materials_cents", "materials_auto") ? row.materials_cents : f.materials;
-  const shipping  = over("shipping_cents", "shipping_auto") ? row.shipping_cents : Math.round(materials * SHIPPING_RATE);
-  const tax       = over("tax_cents", "tax_auto") ? row.tax_cents : Math.round((materials + shipping) * TAX_RATE);
-  const labor     = over("labor_cents", "labor_auto") ? row.labor_cents : Math.round(materials * LABOR_RATE);
+  const labor     = over("labor_cents", "labor_auto") ? row.labor_cents : f.labor;
   const misc      = (row && row.misc_cents != null) ? row.misc_cents : 0;
 
   const discountOverridden = row && row.discount_auto === 0 && row.discount_cents != null;
   const discount  = Math.max(0, discountOverridden ? row.discount_cents : (defaultDiscountCents || 0));
 
-  const expenses = materials + shipping + tax + labor + misc;
+  const expenses = materials + labor + misc;
   const net = gross - discount;
   return {
     price_cents: gross,        // gross / cost basis
-    discount: f.discount,      // tier rate (20/25/30%) — distinct from the dollar discount
     discount_cents: discount,  // dollar discount, out of profit
     net_cents: net,            // what the client pays
-    materials_cents: materials, shipping_cents: shipping, tax_cents: tax, labor_cents: labor, misc_cents: misc,
+    materials_cents: materials, shipping_cents: 0, tax_cents: 0, labor_cents: labor, misc_cents: misc,
     expenses_cents: expenses,
     profit_cents: net - expenses,
     price_auto: row ? (row.price_auto !== 0) : true,
     discount_auto: row ? (row.discount_auto !== 0) : true,
     materials_auto: row ? (row.materials_auto !== 0) : true,
-    shipping_auto: row ? (row.shipping_auto !== 0) : true,
-    tax_auto: row ? (row.tax_auto !== 0) : true,
     labor_auto: row ? (row.labor_auto !== 0) : true,
   };
 }

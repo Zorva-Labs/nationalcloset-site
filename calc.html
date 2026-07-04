@@ -84,26 +84,18 @@
   <p class="sub">Enter the gross job amount. It breaks down your costs and the minimum deposit that fully covers materials, shipping&nbsp;&amp; taxes up front.</p>
 
   <div class="card">
-    <label class="field" for="gross">Job amount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· before markup</span></label>
+    <label class="field" for="gross">Gross job amount</label>
     <div class="input-money">
       <span>$</span>
       <input id="gross" type="text" inputmode="decimal" placeholder="10,000.00" autocomplete="off" autofocus />
     </div>
-    <p class="hint">Your base price for the job (the sum of your line items, before the markup).</p>
-
-    <label class="field" for="markup" style="margin-top:18px">Markup</label>
-    <div style="display:flex;align-items:center;gap:10px">
-      <input id="markup" type="text" inputmode="decimal" value="3" autocomplete="off" style="width:88px;font-size:1.4rem;font-weight:800;padding:12px 14px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums"/>
-      <span style="font-size:1.1rem;font-weight:700;color:var(--ink-mute)">% added to the quote</span>
-    </div>
-    <p class="hint">Baked into the customer's quoted price (matches the CRM). The cost breakdown &amp; deposit are figured from the marked-up quote.</p>
+    <p class="hint">The all-inclusive price you're quoting the client — it already bakes in the 2.8× multiplier (taxes, shipping &amp; the 3% surcharge included).</p>
 
     <label class="field" for="disc" style="margin-top:18px">Discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, comes out of profit</span></label>
     <div class="input-money">
       <span>$</span>
       <input id="disc" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off" />
     </div>
-    <div id="tier" class="tier" hidden></div>
     <p class="hint">Costs (and your minimum deposit) stay based on the gross — the discount only reduces what the client pays and your profit.</p>
     <div class="btns">
       <button type="button" class="btn-ac" id="ac">AC</button>
@@ -116,7 +108,7 @@
       <div class="lbl">Minimum deposit to quote</div>
       <div class="big" id="d-min">$0</div>
       <div class="sub2" id="d-minpct">— of the job</div>
-      <div class="covers">Covers up front → <b id="d-mat">$0</b> materials · <b id="d-ship">$0</b> shipping · <b id="d-tax">$0</b> taxes</div>
+      <div class="covers">Covers your <b id="d-mat">$0</b> materials cost, ordered up front.</div>
     </div>
 
     <div id="note" class="note"></div>
@@ -136,31 +128,25 @@
 
     <div class="card">
       <table class="rows">
-        <tr class="muted"><td>List price</td><td id="r-list">$0</td></tr>
-        <tr><td>Materials <span class="pct" id="r-disc">(−20%)</span></td><td id="r-mat">$0</td></tr>
-        <tr><td>Shipping <span class="pct">(5%)</span></td><td id="r-ship">$0</td></tr>
-        <tr><td>Taxes <span class="pct">(9.75%)</span></td><td id="r-tax">$0</td></tr>
-        <tr class="muted"><td>= Hard costs <span class="pct">(deposit target)</span></td><td id="r-hard">$0</td></tr>
-        <tr><td>Labor <span class="pct">(15%, paid after install)</span></td><td id="r-labor">$0</td></tr>
+        <tr><td>Materials <span class="pct">(price ÷ 2.8)</span></td><td id="r-mat">$0</td></tr>
+        <tr><td>Labor <span class="pct">(15% of price, paid after install)</span></td><td id="r-labor">$0</td></tr>
         <tr class="muted"><td>Total cost</td><td id="r-cost">$0</td></tr>
-        <tr class="sep"><td>Job amount <span class="pct">(before markup)</span></td><td id="r-base">$0</td></tr>
-        <tr class="disc-row"><td>Markup <span class="pct" id="r-mkpct">(3%)</span></td><td id="r-mkamt">$0</td></tr>
-        <tr class="muted"><td>= Gross quote</td><td id="r-gross">$0</td></tr>
+        <tr class="sep"><td>Gross quote</td><td id="r-gross">$0</td></tr>
         <tr class="disc-row" id="r-discrow" hidden><td>Discount</td><td id="r-discamt">$0</td></tr>
         <tr class="muted" id="r-netrow" hidden><td>Net — client pays</td><td id="r-net">$0</td></tr>
         <tr class="grand"><td>Profit <span class="pct" id="r-margin"></span></td><td id="r-profit">$0</td></tr>
       </table>
     </div>
 
-    <p class="foot">Formula matches the CRM cost model exactly: tier discount off the list (&lt;$2.5k&nbsp;20% · $2.5k–4.5k&nbsp;25% · &ge;$4.5k&nbsp;30%), shipping&nbsp;5% of materials, tax&nbsp;9.75% of (materials&nbsp;+&nbsp;shipping), labor&nbsp;15% of materials.</p>
+    <p class="foot">Matches the CRM cost model: materials = price&nbsp;÷&nbsp;2.8 (taxes, shipping &amp; 3% surcharge folded in), labor = 15% of the gross job price. Deposit covers materials; labor &amp; profit come in the balance at completion.</p>
   </div>
 </div>
 
 <script>
 (function () {
-  var MARKUP = 1.35, SHIP = 0.05, TAX = 0.0975, LABOR = 0.15;
+  var DIVISOR = 2.8, LABOR = 0.15;
   var el = function (id) { return document.getElementById(id); };
-  var gross = el("gross"), disc = el("disc"), markup = el("markup");
+  var gross = el("gross"), disc = el("disc");
 
   function money(cents) {
     return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -169,88 +155,55 @@
 
   // Mirrors functions/_lib/financials.js computeBreakdown — all math in cents.
   function calc(priceCents) {
-    var list = priceCents / MARKUP;                 // derive the list price
-    var d = list / 100;
-    var disc = d >= 4500 ? 0.30 : d >= 2500 ? 0.25 : 0.20;
-    var materials = Math.round(list * (1 - disc));
-    var shipping = Math.round(materials * SHIP);
-    var tax = Math.round((materials + shipping) * TAX);
-    var labor = Math.round(materials * LABOR);
-    return {
-      list: Math.round(list), disc: disc, materials: materials, shipping: shipping,
-      tax: tax, labor: labor,
-      hard: materials + shipping + tax,
-      cost: materials + shipping + tax + labor,
-      profit: priceCents - (materials + shipping + tax + labor),
-    };
+    var materials = Math.round(priceCents / DIVISOR);   // taxes/shipping/surcharge folded in
+    var labor = Math.round(priceCents * LABOR);         // 15% of the gross price
+    return { materials: materials, labor: labor, cost: materials + labor };
   }
 
   function render() {
     var raw = gross.value.replace(/[^0-9.]/g, "");
     var dollars = parseFloat(raw);
-    var out = el("out"), tier = el("tier");
-    if (!raw || isNaN(dollars) || dollars <= 0) { out.hidden = true; tier.hidden = true; return; }
-    var baseCents = Math.round(dollars * 100);             // your base price, before markup
-
-    // Markup baked into the customer's quote (default 3%). The cost breakdown +
-    // deposit are figured from the marked-up gross, matching the CRM.
-    var mRaw = (markup.value || "").replace(/[^0-9.]/g, "");
-    var mRate = Math.max(0, Math.min(25, parseFloat(mRaw) || 0)) / 100;   // clamp 0–25%
-    var markupCents = Math.round(baseCents * mRate);
-    var price = baseCents + markupCents;                   // gross quote = cost basis for the model
+    var out = el("out");
+    if (!raw || isNaN(dollars) || dollars <= 0) { out.hidden = true; return; }
+    var price = Math.round(dollars * 100);                 // gross = all-inclusive cost basis
 
     // Discount comes out of profit only. Client pays NET = gross − discount.
     var dRaw = disc.value.replace(/[^0-9.]/g, "");
     var dVal = parseFloat(dRaw);
     var discount = (!dRaw || isNaN(dVal) || dVal < 0) ? 0 : Math.min(Math.round(dVal * 100), price);
-    var net = price - discount;                            // what the client actually pays
+    var net = price - discount;
 
-    var f = calc(price);                                   // costs always from the gross
+    var f = calc(price);
+    var deposit = f.materials;                             // min deposit = materials cost
     var profit = net - f.cost;
-    var half = Math.round(net * 0.5);                      // deposit is a share of what they pay
+    var half = Math.round(net * 0.5);
 
-    tier.hidden = false;
-    tier.textContent = Math.round(f.disc * 100) + "% material discount tier";
-
-    el("d-min").textContent = money(f.hard);
-    el("d-minpct").textContent = pct(f.hard, net) + " of the " + (discount > 0 ? "net " : "") + "job";
+    el("d-min").textContent = money(deposit);
+    el("d-minpct").textContent = pct(deposit, net) + " of the " + (discount > 0 ? "net " : "") + "job";
     el("d-mat").textContent = money(f.materials);
-    el("d-ship").textContent = money(f.shipping);
-    el("d-tax").textContent = money(f.tax);
-
     el("d-half").textContent = money(half);
-    el("d-bal").textContent = money(net - f.hard);
+    el("d-bal").textContent = money(net - deposit);
 
     var note = el("note");
-    if (half >= f.hard) {
+    if (half >= deposit) {
       note.className = "note ok";
-      note.innerHTML = '<span class="ic">✓</span><div>A standard <b>50% deposit</b> (' + money(half) + ') already covers your hard costs, with ' + money(half - f.hard) + ' to spare. You can safely quote 50%.</div>';
-      el("d-halfnote").textContent = "covers hard costs ✓";
+      note.innerHTML = '<span class="ic">✓</span><div>A standard <b>50% deposit</b> (' + money(half) + ') already covers your materials cost, with ' + money(half - deposit) + ' to spare. You can safely quote 50%.</div>';
+      el("d-halfnote").textContent = "covers materials ✓";
     } else {
       note.className = "note warn";
-      note.innerHTML = '<span class="ic">!</span><div>A 50% deposit is <b>' + money(f.hard - half) + ' short</b> of covering materials, shipping &amp; taxes. Quote at least the minimum above (' + pct(f.hard, net) + ').</div>';
-      el("d-halfnote").textContent = money(f.hard - half) + " short";
+      note.innerHTML = '<span class="ic">!</span><div>A 50% deposit is <b>' + money(deposit - half) + ' short</b> of covering your materials cost. Quote at least the minimum above (' + pct(deposit, net) + ').</div>';
+      el("d-halfnote").textContent = money(deposit - half) + " short";
     }
 
-    el("r-list").textContent = money(f.list);
-    el("r-disc").textContent = "(−" + Math.round(f.disc * 100) + "%)";
     el("r-mat").textContent = money(f.materials);
-    el("r-ship").textContent = money(f.shipping);
-    el("r-tax").textContent = money(f.tax);
-    el("r-hard").textContent = money(f.hard);
     el("r-labor").textContent = money(f.labor);
     el("r-cost").textContent = money(f.cost);
-
-    el("r-base").textContent = money(baseCents);
-    el("r-mkpct").textContent = "(" + (Math.round(mRate * 1000) / 10) + "%)";
-    el("r-mkamt").textContent = "+" + money(markupCents);
     el("r-gross").textContent = money(price);
     var showDisc = discount > 0;
     el("r-discrow").hidden = !showDisc;
     el("r-netrow").hidden = !showDisc;
     el("r-discamt").textContent = "−" + money(discount);
     el("r-net").textContent = money(net);
-
     el("r-profit").textContent = money(profit);
     el("r-margin").textContent = "· " + pct(profit, net) + " margin" + (showDisc ? " on net" : "");
 
@@ -259,7 +212,6 @@
 
   gross.addEventListener("input", render);
   disc.addEventListener("input", render);
-  markup.addEventListener("input", render);
 
   // = recomputes and scrolls the result into view (handy on mobile).
   el("eq").addEventListener("click", function () {
@@ -267,14 +219,14 @@
     var out = el("out");
     if (!out.hidden) out.scrollIntoView({ behavior: "smooth", block: "start" });
   });
-  // AC clears the amounts (markup resets to the default 3%).
+  // AC clears the amounts.
   el("ac").addEventListener("click", function () {
-    gross.value = ""; disc.value = ""; markup.value = "3";
+    gross.value = ""; disc.value = "";
     render();
     gross.focus();
   });
   // Enter key acts like =
-  [gross, disc, markup].forEach(function (i) {
+  [gross, disc].forEach(function (i) {
     i.addEventListener("keydown", function (e) { if (e.key === "Enter") el("eq").click(); });
   });
 

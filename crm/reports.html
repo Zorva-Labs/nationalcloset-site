@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Reports · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc29"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc30"/>
 <style>
   .rpt-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
   .rpt-presets{display:inline-flex;gap:4px;background:var(--bg-soft);border:1px solid var(--line);border-radius:999px;padding:4px}
@@ -36,7 +36,7 @@
   .fnl-row .pc{text-align:right;color:var(--ink-soft);font-size:12px}
 </style></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc29"></script>
+<script src="/crm/crm-app.js?v=ncc30"></script>
 <script>
 (async () => {
   const user = await SSCrm.mount({ title: "Reports", subtitle: "Profit & loss and lead performance", wide: true });
@@ -138,11 +138,11 @@
       <tr>
         <td><a href="/crm/project.html?id=${j.id}">${e(j.name || "Job #" + j.id)}</a><div class="muted" style="font-size:12px">${e(j.contact_name || "")} · ${SSCrm.fmtDate(j.created_at)}</div></td>
         <td>${SSCrm.pill(STATUS_LABEL[j.status] || j.status, j.status)}</td>
-        <td class="num">${M(j.price_cents)}</td><td class="num">${M(j.materials_cents)}</td><td class="num">${M(j.shipping_cents)}</td>
-        <td class="num">${M(j.tax_cents)}</td><td class="num">${M(j.labor_cents)}</td><td class="num">${M(j.misc_cents)}</td>
+        <td class="num">${M(j.price_cents)}</td><td class="num">${M(j.materials_cents)}</td>
+        <td class="num">${M(j.labor_cents)}</td><td class="num">${M(j.misc_cents)}</td>
         <td class="num" style="font-weight:700;color:#15803D">${M(j.profit_cents)}</td>
       </tr>`).join("")
-      : `<tr><td colspan="9" class="empty" style="padding:24px">No jobs in this range.</td></tr>`;
+      : `<tr><td colspan="7" class="empty" style="padding:24px">No jobs in this range.</td></tr>`;
 
     page.innerHTML = barHTML() + `
       <div class="rpt-cards">
@@ -158,7 +158,7 @@
             ${t.discounts ? `<tr><td>Gross sales</td><td class="amt">${M(t.gross)}</td><td class="pct"></td></tr>
             <tr class="exp"><td>Discounts</td><td class="amt">(${M(t.discounts)})</td><td class="pct">${pct(t.discounts, t.gross)}</td></tr>` : ""}
             <tr><td><strong>${t.discounts ? "Net revenue" : "Gross income"}</strong></td><td class="amt"><strong>${M(rev)}</strong></td><td class="pct">100%</td></tr>
-            ${expRow("Materials", t.materials)}${expRow("Shipping", t.shipping)}${expRow("Taxes", t.tax)}${expRow("Labor", t.labor)}${expRow("Misc", t.misc)}
+            ${expRow("Materials", t.materials)}${expRow("Labor", t.labor)}${expRow("Misc", t.misc)}
             <tr class="sum"><td>Total expenses</td><td class="amt">(${M(t.expenses)})</td><td class="pct">${pct(t.expenses, rev)}</td></tr>
             <tr class="profit"><td>Net profit</td><td class="amt">${M(t.profit)}</td><td class="pct">${pct(t.profit, rev)}</td></tr>
           </table>
@@ -166,7 +166,7 @@
         <div class="card">
           <div class="card-head"><h3>By job <span class="muted" style="font-weight:500">· ${data ? data.count : 0}</span></h3></div>
           <div class="tbl"><table>
-            <thead><tr><th>Job</th><th>Status</th><th class="num">Price</th><th class="num">Materials</th><th class="num">Ship</th><th class="num">Tax</th><th class="num">Labor</th><th class="num">Misc</th><th class="num">Profit</th></tr></thead>
+            <thead><tr><th>Job</th><th>Status</th><th class="num">Price</th><th class="num">Materials</th><th class="num">Labor</th><th class="num">Misc</th><th class="num">Profit</th></tr></thead>
             <tbody>${jobsRows}</tbody>
           </table></div>
         </div>
@@ -313,7 +313,7 @@
             <tr style="font-weight:700;border-top:2px solid var(--ink)"><td colspan="3">Total owed (completed, unbilled)</td><td class="num muted">${M(d.est_upfront_total)}</td><td class="num" style="color:#B45309">${M(d.est_labor_total)}</td></tr></tbody>
         </table></div>
       </div>
-      <p class="muted" style="font-size:12px;margin-top:14px"><strong>Materials, taxes &amp; shipping are paid up front</strong> when the job is ordered, so they're not outstanding payables. The <strong>installer's labor</strong> becomes payable <strong>after the job is completed</strong> — a completed job shows as owed until you log the installer's bill (assign vendors on the job page). Once billed it moves to <strong>Logged bills</strong> above (real A/P, aged from each due date). In-progress jobs show their labor as upcoming. Add &amp; pay bills under <a href="/crm/expenses.html">Expenses / Bills</a>.</p>`;
+      <p class="muted" style="font-size:12px;margin-top:14px"><strong>Materials are paid up front</strong> when the job is ordered (taxes &amp; shipping are folded into the price), so they're not outstanding payables. The <strong>installer's labor</strong> becomes payable <strong>after the job is completed</strong> — a completed job shows as owed until you log the installer's bill (assign vendors on the job page). Once billed it moves to <strong>Logged bills</strong> above (real A/P, aged from each due date). In-progress jobs show their labor as upcoming. Add &amp; pay bills under <a href="/crm/expenses.html">Expenses / Bills</a>.</p>`;
   }
 
   // ───────── Cash Flow view ─────────
@@ -389,10 +389,10 @@
     const expRow = (label, cents) => `<tr><td class="lab">${label}</td><td class="amt">${cents ? "(" + M(cents) + ")" : "—"}</td><td class="p">${pct(cents, rev)}</td></tr>`;
     const jobRows = data.jobs.length ? data.jobs.map((j) => `<tr>
         <td>${e(j.name || "Job #" + j.id)}<div class="sub">${e(j.contact_name || "")} · ${SSCrm.fmtDate(j.created_at)}</div></td>
-        <td class="amt">${M(j.price_cents)}</td><td class="amt">${M(j.materials_cents)}</td><td class="amt">${M(j.shipping_cents)}</td>
-        <td class="amt">${M(j.tax_cents)}</td><td class="amt">${M(j.labor_cents)}</td><td class="amt">${M(j.misc_cents)}</td>
+        <td class="amt">${M(j.price_cents)}</td><td class="amt">${M(j.materials_cents)}</td>
+        <td class="amt">${M(j.labor_cents)}</td><td class="amt">${M(j.misc_cents)}</td>
         <td class="amt strong">${M(j.profit_cents)}</td></tr>`).join("")
-      : `<tr><td colspan="8" style="text-align:center;color:#777;padding:20px">No jobs in this range.</td></tr>`;
+      : `<tr><td colspan="6" style="text-align:center;color:#777;padding:20px">No jobs in this range.</td></tr>`;
     const scope = all ? "All projects" : "Won jobs (booked → completed)";
     return `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>P&amp;L — ${e(BIZ.name)} — ${e(rangeLabel())}</title><style>${PRINT_CSS}</style></head><body>
       ${letterhead()}
@@ -409,13 +409,13 @@
         ${t.discounts ? `<tr><td>Gross sales</td><td class="amt">${M(t.gross)}</td><td class="p"></td></tr>
         <tr><td class="lab">Discounts</td><td class="amt">(${M(t.discounts)})</td><td class="p">${pct(t.discounts, t.gross)}</td></tr>` : ""}
         <tr><td><strong>${t.discounts ? "Net revenue" : "Gross income"}</strong></td><td class="amt"><strong>${M(rev)}</strong></td><td class="p">100%</td></tr>
-        ${expRow("Materials", t.materials)}${expRow("Shipping", t.shipping)}${expRow("Taxes", t.tax)}${expRow("Labor", t.labor)}${expRow("Misc", t.misc)}
+        ${expRow("Materials", t.materials)}${expRow("Labor", t.labor)}${expRow("Misc", t.misc)}
         <tr class="tot"><td>Total expenses</td><td class="amt">(${M(t.expenses)})</td><td class="p">${pct(t.expenses, rev)}</td></tr>
         <tr class="tot"><td>Net profit</td><td class="amt" style="color:#15803D">${M(t.profit)}</td><td class="p">${pct(t.profit, rev)}</td></tr>
       </table>
       <h2>By job</h2>
       <table class="data">
-        <thead><tr><th>Job</th><th>Price</th><th>Materials</th><th>Ship</th><th>Tax</th><th>Labor</th><th>Misc</th><th>Profit</th></tr></thead>
+        <thead><tr><th>Job</th><th>Price</th><th>Materials</th><th>Labor</th><th>Misc</th><th>Profit</th></tr></thead>
         <tbody>${jobRows}</tbody>
       </table>
       <div class="foot"><span>Generated ${generatedOn()} · ${e(BIZ.name)}</span><span>Internal management report</span></div>
@@ -595,9 +595,9 @@
     } else {
       if (!data) return;
       const t = data.totals, c = (x) => (x / 100).toFixed(2);
-      const rows = [["Job", "Contact", "Status", "Created", "Price", "Materials", "Shipping", "Taxes", "Labor", "Misc", "Expenses", "Profit"]];
-      data.jobs.forEach((j) => rows.push([j.name || "Job #" + j.id, j.contact_name || "", j.status, (j.created_at || "").slice(0, 10), c(j.price_cents), c(j.materials_cents), c(j.shipping_cents), c(j.tax_cents), c(j.labor_cents), c(j.misc_cents), c(j.expenses_cents), c(j.profit_cents)]));
-      rows.push([], ["TOTALS", "", "", "", c(t.revenue), c(t.materials), c(t.shipping), c(t.tax), c(t.labor), c(t.misc), c(t.expenses), c(t.profit)]);
+      const rows = [["Job", "Contact", "Status", "Created", "Price", "Materials", "Labor", "Misc", "Expenses", "Profit"]];
+      data.jobs.forEach((j) => rows.push([j.name || "Job #" + j.id, j.contact_name || "", j.status, (j.created_at || "").slice(0, 10), c(j.price_cents), c(j.materials_cents), c(j.labor_cents), c(j.misc_cents), c(j.expenses_cents), c(j.profit_cents)]));
+      rows.push([], ["TOTALS", "", "", "", c(t.revenue), c(t.materials), c(t.labor), c(t.misc), c(t.expenses), c(t.profit)]);
       csvDownload(rows, `NCC-PnL-${tag}.csv`);
     }
   }

@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc29" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc30" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc29"></script>
+<script src="/crm/crm-app.js?v=ncc30"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -681,14 +681,9 @@ const finDollars = (cents) => (Math.max(0, cents || 0) / 100).toFixed(2);
 const finToCents = (v) => Math.max(0, Math.round((parseFloat(v) || 0) * 100));
 
 function finCalc(priceCents) {
-  const list = priceCents / 1.35;                           // remove the 35% markup → list
-  const b = list / 100;
-  const disc = b >= 4500 ? 0.30 : b >= 2500 ? 0.25 : 0.20;   // tier discount off the list
-  const materials = Math.round(list * (1 - disc));
-  const shipping = Math.round(materials * 0.05);
-  const tax = Math.round((materials + shipping) * 0.0975);
-  const labor = Math.round(materials * 0.15);
-  return { disc, materials, shipping, tax, labor };
+  const materials = Math.round(priceCents / 2.8);   // taxes/shipping/surcharge folded into the 2.8×
+  const labor = Math.round(priceCents * 0.15);      // 15% of the gross job price
+  return { materials, labor };
 }
 
 async function loadFinancials() {
@@ -722,7 +717,7 @@ function finRender() {
   host.innerHTML = `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <tr>
-        <td style="padding:6px 0"><strong>Quoted price</strong> <span class="muted" style="font-size:11px">· <span id="fin-tier">${Math.round(f.discount * 100)}</span>% tier · pre-discount</span></td>
+        <td style="padding:6px 0"><strong>Quoted price</strong> <span class="muted" style="font-size:11px">· all-inclusive · pre-discount</span></td>
         <td style="text-align:right;white-space:nowrap">
           <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-price-auto" ${f.price_auto ? "checked" : ""} onchange="finToggle('price')"/> auto</label>
           <span style="color:var(--ink-soft)">$</span>
@@ -732,10 +727,8 @@ function finRender() {
       ${finRow("discount", "Discount <span class='muted' style='font-size:11px'>· from proposal</span>")}
       <tr><td style="padding:4px 0;color:var(--ink-soft)">Net to client</td><td style="text-align:right;color:var(--ink-soft);font-weight:600" id="fin-net">${SSCrm.fmtMoney(netCents)}</td></tr>
       <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
-      ${finRow("materials", "Materials")}
-      ${finRow("shipping", "Shipping <span class='muted' style='font-size:11px'>· 5%</span>")}
-      ${finRow("tax", "Taxes <span class='muted' style='font-size:11px'>· 9.75%</span>")}
-      ${finRow("labor", "Labor <span class='muted' style='font-size:11px'>· 15%</span>")}
+      ${finRow("materials", "Materials <span class='muted' style='font-size:11px'>· price ÷ 2.8</span>")}
+      ${finRow("labor", "Labor <span class='muted' style='font-size:11px'>· 15% of price</span>")}
       <tr><td style="padding:6px 0">Misc</td><td style="text-align:right;white-space:nowrap"><span style="color:var(--ink-soft)">$</span><input id="fin-misc" value="${finDollars(f.misc_cents)}" oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right"/></td></tr>
       <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
       <tr><td style="padding:4px 0">Total expenses</td><td style="text-align:right" id="fin-expenses">${SSCrm.fmtMoney(f.expenses_cents)}</td></tr>
@@ -746,7 +739,7 @@ function finRender() {
       <button class="btn primary sm" onclick="saveFinancials()">Save</button>
       <button class="btn ghost sm" onclick="resetFinancials()">Reset to formula</button>
     </div>
-    <p class="muted" style="font-size:11px;margin:8px 0 0">Expenses are based on the pre-discount price. The discount comes out of profit only (profit = net − expenses). Uncheck “auto” to override any line. Feeds Reports → P&amp;L.</p>`;
+    <p class="muted" style="font-size:11px;margin:8px 0 0">Materials = price ÷ 2.8 (taxes, shipping &amp; 3% surcharge included); labor = 15% of the price. The discount comes out of profit only (profit = net − expenses). Uncheck “auto” to override a line. Feeds Reports → P&amp;L.</p>`;
 }
 
 function finReadPrice() {
@@ -768,23 +761,15 @@ function finRecalc() {
   const price = finReadPrice();
   if (document.getElementById("fin-price-auto").checked) document.getElementById("fin-price").value = finDollars(price);
   const calc = finCalc(price);
-  const tierEl = document.getElementById("fin-tier");
-  if (tierEl) tierEl.textContent = Math.round(calc.disc * 100);
   // Discount (auto = the proposal's discount) comes out of profit, not the cost basis.
   if (document.getElementById("fin-discount-auto").checked) document.getElementById("fin-discount").value = finDollars(finState.default_discount_cents || 0);
   const discount = finToCents(document.getElementById("fin-discount").value);
-  // Materials: auto = formula. Shipping/tax/labor, when on auto, derive from the
-  // EFFECTIVE materials (override or formula) so an overridden materials cost
-  // flows through to them.
+  // Materials: auto = price ÷ 2.8. Labor: auto = 15% of the gross price (not materials).
   if (document.getElementById("fin-materials-auto").checked) document.getElementById("fin-materials").value = finDollars(calc.materials);
   const matCents = finToCents(document.getElementById("fin-materials").value);
-  const shipCents = document.getElementById("fin-shipping-auto").checked ? Math.round(matCents * 0.05) : finToCents(document.getElementById("fin-shipping").value);
-  if (document.getElementById("fin-shipping-auto").checked) document.getElementById("fin-shipping").value = finDollars(shipCents);
-  const taxCents = document.getElementById("fin-tax-auto").checked ? Math.round((matCents + shipCents) * 0.0975) : finToCents(document.getElementById("fin-tax").value);
-  if (document.getElementById("fin-tax-auto").checked) document.getElementById("fin-tax").value = finDollars(taxCents);
-  const laborCents = document.getElementById("fin-labor-auto").checked ? Math.round(matCents * 0.15) : finToCents(document.getElementById("fin-labor").value);
+  const laborCents = document.getElementById("fin-labor-auto").checked ? Math.round(price * 0.15) : finToCents(document.getElementById("fin-labor").value);
   if (document.getElementById("fin-labor-auto").checked) document.getElementById("fin-labor").value = finDollars(laborCents);
-  const sum = matCents + shipCents + taxCents + laborCents + finToCents(document.getElementById("fin-misc").value);
+  const sum = matCents + laborCents + finToCents(document.getElementById("fin-misc").value);
   const net = price - discount;
   document.getElementById("fin-net").textContent = SSCrm.fmtMoney(net);
   document.getElementById("fin-expenses").textContent = SSCrm.fmtMoney(sum);
@@ -799,7 +784,7 @@ async function saveFinancials() {
   const discAuto = document.getElementById("fin-discount-auto").checked;
   body.discount_auto = discAuto;
   if (!discAuto) body.discount_cents = finToCents(document.getElementById("fin-discount").value);
-  ["materials", "shipping", "tax", "labor"].forEach((k) => {
+  ["materials", "labor"].forEach((k) => {
     const auto = document.getElementById(`fin-${k}-auto`).checked;
     body[`${k}_auto`] = auto;
     if (!auto) body[`${k}_cents`] = finToCents(document.getElementById(`fin-${k}`).value);

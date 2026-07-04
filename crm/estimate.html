@@ -24,6 +24,7 @@ let state;
 
 function render() {
   const { estimate: e, lines } = state;
+  if (state.quote_markup_rate != null) MK_RATE = state.quote_markup_rate;
   document.getElementById("page-title").textContent = `${e.number || "Draft estimate"} · ${SSCrm.fmtMoney(e.total_cents)}`;
   const isSent = ["sent","viewed","approved","declined"].includes(e.status);
   const customerUrl = `${location.origin}/estimate/?t=${e.view_token}`;
@@ -52,7 +53,7 @@ function render() {
       <div class="add"><button onclick="addLine()">+ Add line</button></div>
 
       <div class="totals">
-        <div class="r"><span>Subtotal <span style="font-weight:400;color:var(--ink-soft);font-size:12px">· incl. 3% markup</span></span><span id="t-sub">${SSCrm.fmtMoney(e.subtotal_cents)}</span></div>
+        <div class="r"><span>Subtotal <span style="font-weight:400;color:var(--ink-soft);font-size:12px">· incl. ${mkPct()}% markup</span></span><span id="t-sub">${SSCrm.fmtMoney(e.subtotal_cents)}</span></div>
         <div class="r"><span>Discount</span><input id="t-disc" type="text" value="${e.discount_cents ? "$" + (e.discount_cents/100).toFixed(2) : ""}" placeholder="$0.00" style="width:110px;text-align:right;border:1px solid var(--line);padding:5px 8px;border-radius:var(--r-sm)" onchange="recalcTotals()"/></div>
         <div class="r"><span>Tax</span><input id="t-tax" type="text" value="${e.tax_cents ? "$" + (e.tax_cents/100).toFixed(2) : ""}" placeholder="$0.00" style="width:110px;text-align:right;border:1px solid var(--line);padding:5px 8px;border-radius:var(--r-sm)" onchange="recalcTotals()"/></div>
         <div class="r grand"><span>Total</span><span id="t-grand">${SSCrm.fmtMoney(e.total_cents)}</span></div>
@@ -68,10 +69,11 @@ function render() {
   `;
 }
 
-// Every positive line carries a 3% quote markup, baked into the price the
-// customer sees (mirrors markupLine() on the server).
-const QUOTE_MARKUP = 1.03;
-const mkq = (cents) => (cents > 0 ? Math.round(cents * QUOTE_MARKUP) : cents);
+// Every positive line carries the quote markup, baked into the price the
+// customer sees (mirrors markupLine() on the server). Rate comes from the API.
+let MK_RATE = 0.03;
+const mkq = (cents) => (cents > 0 ? Math.round(cents * (1 + MK_RATE)) : cents);
+const mkPct = () => Math.round(MK_RATE * 100);
 
 function lineRow(l, i) {
   const total = mkq((Number(l.quantity || 1)) * (l.unit_price_cents || 0));

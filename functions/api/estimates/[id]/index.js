@@ -1,6 +1,6 @@
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { recomputeEstimateTotals, recordActivity } from "../../../_lib/db.js";
-import { markupLine } from "../../../_lib/financials.js";
+import { markupLine, quoteMarkupRate } from "../../../_lib/financials.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -14,7 +14,7 @@ export async function onRequestGet(context) {
   ).bind(id).first();
   if (!estimate) return json({ error: "Not found" }, 404);
   const lines = (await context.env.DB.prepare(`SELECT * FROM estimate_lines WHERE estimate_id=?1 ORDER BY position, id`).bind(id).all()).results || [];
-  return json({ estimate, lines });
+  return json({ estimate, lines, quote_markup_rate: quoteMarkupRate(context.env) });
 }
 
 export async function onRequestPatch(context) {
@@ -24,13 +24,14 @@ export async function onRequestPatch(context) {
 
   // Handle line bulk save (admin saves the line-item table)
   if (Array.isArray(body.lines)) {
+    const mkRate = quoteMarkupRate(context.env);
     await context.env.DB.prepare(`DELETE FROM estimate_lines WHERE estimate_id=?1`).bind(id).run();
     for (let i = 0; i < body.lines.length; i++) {
       const l = body.lines[i];
       if (!l.description) continue;
       const qty = Number(l.quantity || 1);
       const unit = parseInt(l.unit_price_cents || 0, 10);
-      const total = markupLine(Math.round(qty * unit));
+      const total = markupLine(Math.round(qty * unit), mkRate);
       await context.env.DB.prepare(
         `INSERT INTO estimate_lines (estimate_id, window_id, product_id, description, room,
            width_in, height_in, quantity, unit_price_cents, line_total_cents, position)

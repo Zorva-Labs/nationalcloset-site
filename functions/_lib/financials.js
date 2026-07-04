@@ -13,8 +13,18 @@ export const MARKUP_MULTIPLIER = 1.35; // price = list × 1.35 (35% markup on th
 // to each positive line total on save, so the customer's line prices and totals
 // read this much higher — invisibly — and it flows through to contracts,
 // deposits and invoices. Discount lines (negative) are not marked up.
-export const QUOTE_MARKUP = 1.03; // 3%
-export const markupLine = (cents) => (cents > 0 ? Math.round(cents * QUOTE_MARKUP) : cents);
+export const QUOTE_MARKUP = 1.03; // default 3% (fallback when env unset)
+
+// Configurable markup RATE (a fraction, e.g. 0.03 = 3%) via wrangler [vars]
+// QUOTE_MARKUP_RATE. Clamped 0–25%, defaults to 3%. Change the value and
+// redeploy to adjust the markup on all new/edited quotes — no code change.
+export function quoteMarkupRate(env) {
+  const r = parseFloat(env && env.QUOTE_MARKUP_RATE);
+  return Number.isFinite(r) && r >= 0 && r <= 0.25 ? r : 0.03;
+}
+// Mark up a positive line total by `rate` (fraction). Discounts (negative) pass
+// through unchanged.
+export const markupLine = (cents, rate = QUOTE_MARKUP - 1) => (cents > 0 ? Math.round(cents * (1 + rate)) : cents);
 export const SHIPPING_RATE = 0.05;
 export const TAX_RATE = 0.0975;
 export const LABOR_RATE = 0.15;

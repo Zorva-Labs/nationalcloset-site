@@ -37,6 +37,7 @@ async function retype(kind) {
 
 function render() {
   const { proposal: p, tiers, comments } = state;
+  if (state.quote_markup_rate != null) MK_RATE = state.quote_markup_rate;
   // Derive the proposal "kind" from its option count: 1 option = single, 2 = custom.
   const currentKind = (tiers || []).length <= 1 ? "single" : "custom";
   document.getElementById("page-title").textContent = `${p.number} · ${p.project_name}`;
@@ -163,7 +164,7 @@ function renderTier(t) {
     <tbody class="tier-lines">${(t.lines || []).map(tierLineRow).join("") || tierLineRow({})}</tbody></table>
     <div class="add" style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="addTierLine(this)">+ Add line</button><button onclick="addDiscountLine(this)" title="Add a discount — comes out of profit; the cost basis stays on the pre-discount price">− Add discount</button>${t.tier !== "good" ? `<button onclick="copyFromOption1(this)" title="Copy Option 1's line items here and add a Wall Finishing line">⧉ Copy Option 1 + Wall Finishing</button>` : ""}</div>
     <div style="border-top:1px solid var(--line-soft);margin-top:10px;padding-top:10px">
-      <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total <span style="font-weight:400;color:var(--ink-soft);font-size:12px">· incl. shipping, tax, install &amp; 3% markup</span></span><span class="tier-total money">${SSCrm.fmtMoney(t.total_cents || 0)}</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total <span style="font-weight:400;color:var(--ink-soft);font-size:12px">· incl. shipping, tax, install &amp; ${mkPct()}% markup</span></span><span class="tier-total money">${SSCrm.fmtMoney(t.total_cents || 0)}</span></div>
     </div>
     ${(() => { const sub = t.subtotal_cents || 0, tot = t.total_cents || 0; return tierCostBox(sub > tot ? sub : tot, tot || sub); })()}
   </div>`;
@@ -241,11 +242,12 @@ function addDiscountLine(btn) {
   card.querySelector(".tier-lines").insertAdjacentHTML("beforeend", tierLineRow({ __discount: true, description: "Discount" }));
 }
 
-// Every positive line carries a 3% quote markup, baked into the price the
-// customer sees (mirrors markupLine() on the server). Discounts (negative) are
-// not marked up.
-const QUOTE_MARKUP = 1.03;
-const mkq = (cents) => (cents > 0 ? Math.round(cents * QUOTE_MARKUP) : cents);
+// Every positive line carries the quote markup, baked into the price the
+// customer sees (mirrors markupLine() on the server). The rate comes from the
+// API (config-driven); discounts (negative) are not marked up.
+let MK_RATE = 0.03;
+const mkq = (cents) => (cents > 0 ? Math.round(cents * (1 + MK_RATE)) : cents);
+const mkPct = () => Math.round(MK_RATE * 100);
 
 function recalcTier(input) {
   const tr = input.closest("tr");

@@ -84,12 +84,19 @@
   <p class="sub">Enter the gross job amount. It breaks down your costs and the minimum deposit that fully covers materials, shipping&nbsp;&amp; taxes up front.</p>
 
   <div class="card">
-    <label class="field" for="gross">Gross job amount</label>
+    <label class="field" for="gross">Job amount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· before markup</span></label>
     <div class="input-money">
       <span>$</span>
-      <input id="gross" type="text" inputmode="decimal" placeholder="10,682.90" autocomplete="off" autofocus />
+      <input id="gross" type="text" inputmode="decimal" placeholder="10,000.00" autocomplete="off" autofocus />
     </div>
-    <p class="hint">The all-in price you're quoting the client. This is the cost basis.</p>
+    <p class="hint">Your base price for the job (the sum of your line items, before the markup).</p>
+
+    <label class="field" for="markup" style="margin-top:18px">Markup</label>
+    <div style="display:flex;align-items:center;gap:10px">
+      <input id="markup" type="text" inputmode="decimal" value="3" autocomplete="off" style="width:88px;font-size:1.4rem;font-weight:800;padding:12px 14px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums"/>
+      <span style="font-size:1.1rem;font-weight:700;color:var(--ink-mute)">% added to the quote</span>
+    </div>
+    <p class="hint">Baked into the customer's quoted price (matches the CRM). The cost breakdown &amp; deposit are figured from the marked-up quote.</p>
 
     <label class="field" for="disc" style="margin-top:18px">Discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, comes out of profit</span></label>
     <div class="input-money">
@@ -136,7 +143,9 @@
         <tr class="muted"><td>= Hard costs <span class="pct">(deposit target)</span></td><td id="r-hard">$0</td></tr>
         <tr><td>Labor <span class="pct">(15%, paid after install)</span></td><td id="r-labor">$0</td></tr>
         <tr class="muted"><td>Total cost</td><td id="r-cost">$0</td></tr>
-        <tr class="sep"><td>Gross quote</td><td id="r-gross">$0</td></tr>
+        <tr class="sep"><td>Job amount <span class="pct">(before markup)</span></td><td id="r-base">$0</td></tr>
+        <tr class="disc-row"><td>Markup <span class="pct" id="r-mkpct">(3%)</span></td><td id="r-mkamt">$0</td></tr>
+        <tr class="muted"><td>= Gross quote</td><td id="r-gross">$0</td></tr>
         <tr class="disc-row" id="r-discrow" hidden><td>Discount</td><td id="r-discamt">$0</td></tr>
         <tr class="muted" id="r-netrow" hidden><td>Net — client pays</td><td id="r-net">$0</td></tr>
         <tr class="grand"><td>Profit <span class="pct" id="r-margin"></span></td><td id="r-profit">$0</td></tr>
@@ -151,7 +160,7 @@
 (function () {
   var MARKUP = 1.35, SHIP = 0.05, TAX = 0.0975, LABOR = 0.15;
   var el = function (id) { return document.getElementById(id); };
-  var gross = el("gross"), disc = el("disc");
+  var gross = el("gross"), disc = el("disc"), markup = el("markup");
 
   function money(cents) {
     return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -181,7 +190,14 @@
     var dollars = parseFloat(raw);
     var out = el("out"), tier = el("tier");
     if (!raw || isNaN(dollars) || dollars <= 0) { out.hidden = true; tier.hidden = true; return; }
-    var price = Math.round(dollars * 100);                 // gross = cost basis
+    var baseCents = Math.round(dollars * 100);             // your base price, before markup
+
+    // Markup baked into the customer's quote (default 3%). The cost breakdown +
+    // deposit are figured from the marked-up gross, matching the CRM.
+    var mRaw = (markup.value || "").replace(/[^0-9.]/g, "");
+    var mRate = Math.max(0, Math.min(25, parseFloat(mRaw) || 0)) / 100;   // clamp 0–25%
+    var markupCents = Math.round(baseCents * mRate);
+    var price = baseCents + markupCents;                   // gross quote = cost basis for the model
 
     // Discount comes out of profit only. Client pays NET = gross − discount.
     var dRaw = disc.value.replace(/[^0-9.]/g, "");
@@ -225,6 +241,9 @@
     el("r-labor").textContent = money(f.labor);
     el("r-cost").textContent = money(f.cost);
 
+    el("r-base").textContent = money(baseCents);
+    el("r-mkpct").textContent = "(" + (Math.round(mRate * 1000) / 10) + "%)";
+    el("r-mkamt").textContent = "+" + money(markupCents);
     el("r-gross").textContent = money(price);
     var showDisc = discount > 0;
     el("r-discrow").hidden = !showDisc;
@@ -240,6 +259,7 @@
 
   gross.addEventListener("input", render);
   disc.addEventListener("input", render);
+  markup.addEventListener("input", render);
 
   // = recomputes and scrolls the result into view (handy on mobile).
   el("eq").addEventListener("click", function () {
@@ -247,14 +267,14 @@
     var out = el("out");
     if (!out.hidden) out.scrollIntoView({ behavior: "smooth", block: "start" });
   });
-  // AC clears everything.
+  // AC clears the amounts (markup resets to the default 3%).
   el("ac").addEventListener("click", function () {
-    gross.value = ""; disc.value = "";
+    gross.value = ""; disc.value = ""; markup.value = "3";
     render();
     gross.focus();
   });
   // Enter key acts like =
-  [gross, disc].forEach(function (i) {
+  [gross, disc, markup].forEach(function (i) {
     i.addEventListener("keydown", function (e) { if (e.key === "Enter") el("eq").click(); });
   });
 

@@ -1,7 +1,19 @@
 // POST /api/stripe/webhook — Stripe event receiver. The source of truth for
 // marking an invoice paid. Verifies the signature against STRIPE_WEBHOOK_SECRET.
 import { verifyStripeSignature } from "../../_lib/stripe.js";
-import { markInvoicePaid } from "../../_lib/invoices.js";
+import { markInvoicePaid, markInvoiceProcessing } from "../../_lib/invoices.js";
+
+// Best-effort chosen-method from a PaymentIntent (falls back to ACH, the usual
+// async/"processing" method).
+function piMethod(pi, fallback = "us_bank_account") {
+  return pi.charges?.data?.[0]?.payment_method_details?.type || fallback;
+}
+async function findInvoice(db, pi) {
+  const invoiceId = pi.metadata?.invoice_id ? parseInt(pi.metadata.invoice_id, 10) : null;
+  return invoiceId
+    ? await db.prepare(`SELECT * FROM invoices WHERE id=?1`).bind(invoiceId).first()
+    : await db.prepare(`SELECT * FROM invoices WHERE stripe_payment_intent_id=?1`).bind(pi.id).first();
+}
 
 export async function onRequestPost(context) {
   const secret = context.env.STRIPE_WEBHOOK_SECRET;
@@ -18,16 +30,28 @@ export async function onRequestPost(context) {
   if (!secret) console.warn("[stripe-webhook] no STRIPE_WEBHOOK_SECRET set — signature NOT verified");
 
   try {
+    const db = context.env.DB;
     if (event.type === "payment_intent.succeeded") {
       const pi = event.data.object;
-      const invoiceId = pi.metadata?.invoice_id ? parseInt(pi.metadata.invoice_id, 10) : null;
-      const db = context.env.DB;
-      const inv = invoiceId
-        ? await db.prepare(`SELECT * FROM invoices WHERE id=?1`).bind(invoiceId).first()
-        : await db.prepare(`SELECT * FROM invoices WHERE stripe_payment_intent_id=?1`).bind(pi.id).first();
+      const inv = await findInvoice(db, pi);
       if (inv && inv.status !== "paid") {
-        const method = pi.charges?.data?.[0]?.payment_method_details?.type || "card";
-        await markInvoicePaid(context.env, inv, { method, paymentIntentId: pi.id });
+        await markInvoicePaid(context.env, inv, { method: piMethod(pi, "card"), paymentIntentId: pi.id });
+      }
+    } else if (event.type === "payment_intent.processing") {
+      // Async payment (ACH bank transfer, etc.) started — show it as processing
+      // and email the office. It'll flip to paid on payment_intent.succeeded.
+      const pi = event.data.object;
+      const inv = await findInvoice(db, pi);
+      if (inv && !["paid", "processing", "void"].includes(inv.status)) {
+        await markInvoiceProcessing(context.env, inv, { method: piMethod(pi, "us_bank_account"), paymentIntentId: pi.id });
+      }
+    } else if (event.type === "payment_intent.payment_failed") {
+      // A processing payment bounced (e.g. ACH failure) — revert to open so it's
+      // billable again.
+      const pi = event.data.object;
+      const inv = await findInvoice(db, pi);
+      if (inv && inv.status === "processing") {
+        await db.prepare(`UPDATE invoices SET status='open', updated_at=datetime('now') WHERE id=?1`).bind(inv.id).run();
       }
     }
   } catch (e) {

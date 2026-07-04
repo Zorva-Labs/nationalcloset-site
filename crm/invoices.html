@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Invoices · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc33"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc34"/>
 <style>
   .inv-stats { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; }
   .inv-stat { flex: 1 1 160px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
@@ -20,7 +20,7 @@
   .tbl td.inv-act { text-align: right; white-space: nowrap; }
 </style></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc33"></script>
+<script src="/crm/crm-app.js?v=ncc34"></script>
 <script>
 (async () => {
   const user = await SSCrm.mount({ title: "Invoices", subtitle: "Every invoice across all jobs", wide: true });
@@ -39,12 +39,13 @@
   const init = new URLSearchParams(location.search).get("filter");
   if (init === "open" || init === "paid") filter = init;
 
-  const isOpen = (i) => i.status === "open" || i.status === "draft";
+  const isOpen = (i) => i.status === "open" || i.status === "draft" || i.status === "processing";
   const isPaid = (i) => i.status === "paid";
   const TYPE_LABEL = { deposit: "Deposit", balance: "Balance", full: "Full", custom: "Custom" };
 
   function statusPill(s) {
     if (s === "paid")  return `<span class="pill" data-s="completed">Paid</span>`;
+    if (s === "processing") return `<span class="pill" style="background:#FEF3C7;color:#92400E;border:1px solid #FDE68A">⏳ Processing</span>`;
     if (s === "void")  return `<span class="pill" data-s="lost">Void</span>`;
     if (s === "draft") return `<span class="pill" data-s="new">Draft</span>`;
     return `<span class="pill" data-s="sent">Open</span>`; // open

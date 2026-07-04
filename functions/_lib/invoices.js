@@ -16,6 +16,75 @@ function money(cents) {
   return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+const INV_TYPE_LABEL = { deposit: "deposit", balance: "final balance", full: "payment", custom: "payment" };
+function methodLabel(m) {
+  if (m === "us_bank_account" || m === "bank") return "bank transfer (ACH)";
+  if (m === "klarna") return "Klarna";
+  if (m === "card") return "card";
+  return m || "card";
+}
+
+// Email the office (STAFF_EMAIL) on EVERY payment event — when an ACH/async
+// payment starts processing, and again when any payment clears. kind is
+// "processing" | "paid".
+async function notifyStaffPayment(env, { invoice, project, kind, method, amountCents }) {
+  const to = env.STAFF_EMAIL || "hello@nationalclosetco.com";
+  const who = project?.contact_name || "A customer";
+  const ml = methodLabel(method);
+  const amt = money(amountCents != null ? amountCents : invoice.amount_cents);
+  const typeLbl = INV_TYPE_LABEL[invoice.type] || "payment";
+  const processing = kind === "processing";
+  const subject = processing
+    ? `⏳ ${amt} ${typeLbl} processing (${ml}) — ${who} · ${invoice.number}`
+    : `✅ ${amt} ${typeLbl} received (${ml}) — ${who} · ${invoice.number}`;
+  const html = brandedEmail({
+    title: processing ? "A payment is processing" : "Payment received",
+    body: `
+      <p>${processing
+        ? `<strong>${who}</strong> paid the ${typeLbl} for <strong>${project?.name || "their project"}</strong> by <strong>${ml}</strong>. It's <strong>processing</strong> and usually clears in a few business days — you'll get another email the moment it settles. No action needed.`
+        : `<strong>${who}</strong>'s ${typeLbl} of <strong>${amt}</strong> (${ml}) for <strong>${project?.name || "their project"}</strong> has <strong>cleared</strong>.`}</p>
+      <table style="border-collapse:collapse;margin:10px 0 4px">
+        <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Invoice</td><td style="padding:4px 0;font-weight:600">${invoice.number}</td></tr>
+        <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Amount</td><td style="padding:4px 0;font-weight:700;font-size:18px">${amt}</td></tr>
+        <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Method</td><td style="padding:4px 0">${ml}</td></tr>
+        <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Status</td><td style="padding:4px 0;font-weight:700;color:${processing ? "#B45309" : "#067647"}">${processing ? "Processing" : "Paid"}</td></tr>
+      </table>`,
+  });
+  const text = `${processing ? "PROCESSING" : "PAID"}: ${amt} ${typeLbl} (${ml}) — ${who}, ${invoice.number}.`;
+  const messageId = makeMessageId();
+  const res = await sendEmail(env, { from: "National Closet Co. <notifications@nationalclosetco.com>", to, subject, html, text, messageId }).catch(() => null);
+  await logOutboundEmail(env, {
+    to, subject, html, text, messageId,
+    projectId: invoice.project_id, contactId: project?.contact_id || null,
+    templateKind: processing ? "payment_processing_staff" : "payment_paid_staff",
+    status: (res?.skipped || res?.error) ? "failed" : "sent",
+  }).catch(() => {});
+}
+
+// Mark an invoice as PROCESSING — an async payment (ACH bank transfer, or a
+// redirect method) has started but hasn't settled. Notifies the office. The job
+// is NOT booked and the invoice is NOT counted as paid until it clears
+// (markInvoicePaid via the webhook). Idempotent — won't re-notify.
+export async function markInvoiceProcessing(env, invoice, { method = "us_bank_account", paymentIntentId, when } = {}) {
+  const db = env.DB;
+  const fresh = await db.prepare(`SELECT status FROM invoices WHERE id=?1`).bind(invoice.id).first().catch(() => null);
+  const cur = fresh?.status || invoice.status;
+  if (["paid", "processing", "void"].includes(cur)) return { already: true };
+  await db.prepare(
+    `UPDATE invoices SET status='processing', paid_method=?1, stripe_payment_intent_id=COALESCE(?2, stripe_payment_intent_id), updated_at=datetime('now') WHERE id=?3`
+  ).bind(method, paymentIntentId || null, invoice.id).run();
+  await recordActivity(db, {
+    entityType: "project", entityId: invoice.project_id, action: "invoice-processing",
+    actorKind: "customer", actorName: "Stripe",
+    details: { invoice_id: invoice.id, number: invoice.number, method },
+  }).catch(() => {});
+  const project = await db.prepare(
+    `SELECT p.*, c.name AS contact_name, c.email AS contact_email FROM projects p JOIN contacts c ON c.id=p.contact_id WHERE p.id=?1`
+  ).bind(invoice.project_id).first().catch(() => null);
+  await notifyStaffPayment(env, { invoice, project, kind: "processing", method, amountCents: invoice.amount_cents }).catch(() => {});
+  return { ok: true };
+}
+
 // Pre-discount GROSS cost basis for a project — the number the deposit is
 // figured from. The accepted proposal's selected tier stores the gross in
 // subtotal_cents and the discounted client price in total_cents; the discount
@@ -341,5 +410,8 @@ export async function markInvoicePaid(env, invoice, { method = "card", paymentIn
       templateKind: "invoice_receipt", status: failed ? "failed" : "sent",
     }).catch(() => {});
   }
+
+  // Notify the office on every cleared payment, regardless of method.
+  await notifyStaffPayment(env, { invoice, project, kind: "paid", method, amountCents: invoice.amount_cents }).catch(() => {});
   return { ok: true };
 }

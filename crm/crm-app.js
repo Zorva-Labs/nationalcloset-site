@@ -397,7 +397,7 @@ function esc(s) {
 const PILL_LABELS = {
   contracted: "Booked", scheduled_install: "Scheduled", installing: "Installing", completed: "Completed",
   scheduled: "Consult Booked", tier_selected: "Option selected", signed_by_customer: "Signed",
-  fully_executed: "Executed",
+  fully_executed: "Executed", processing: "Processing",
 };
 function pill(s) { const label = PILL_LABELS[s] || (s || "").replace(/_/g, " "); return `<span class="pill" data-s="${esc(s)}">${esc(label)}</span>`; }
 function initials(email) { return (email || "?").slice(0, 1).toUpperCase(); }

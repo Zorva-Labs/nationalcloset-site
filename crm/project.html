@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc33" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc34" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc33"></script>
+<script src="/crm/crm-app.js?v=ncc34"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -300,6 +300,7 @@ function switchTab(tab) {
 // ───────── Invoices tab (Stripe-backed deposit/balance/custom invoices) ─────────
 const INV_STATUS = {
   open:  { label: "Awaiting payment", cls: "" },
+  processing: { label: "Processing", cls: "" },
   paid:  { label: "Paid", cls: "completed" },
   void:  { label: "Void", cls: "lost" },
   draft: { label: "Draft", cls: "draft" },
@@ -335,9 +336,10 @@ function renderInvoices(host, invoices) {
   const m = SSCrm.fmtMoney, e = SSCrm.esc;
   const phone = (state?.project?.contact_phone || "").replace(/[^0-9+]/g, "");
 
-  const open   = invoices.filter((iv) => iv.status === "open");
-  const paid   = invoices.filter((iv) => iv.status === "paid");
-  const voided = invoices.filter((iv) => iv.status === "void");
+  const open       = invoices.filter((iv) => iv.status === "open");
+  const processing = invoices.filter((iv) => iv.status === "processing");
+  const paid       = invoices.filter((iv) => iv.status === "paid");
+  const voided     = invoices.filter((iv) => iv.status === "void");
 
   const paidCents = paid.reduce((s, iv) => s + (iv.amount_cents || 0), 0);
   const openCents = open.reduce((s, iv) => s + (iv.amount_cents || 0), 0);
@@ -370,6 +372,12 @@ function renderInvoices(host, invoices) {
       <td style="text-align:right;white-space:nowrap"><button class="btn primary sm" onclick="jobRecordPayment(${iv.id})">💵 Record payment</button> <button class="btn ghost sm" onclick="copyPayLink('https://nationalclosetco.com/invoice/?t=${e(iv.view_token)}')">Copy link</button> ${openBtn(iv)}</td>
     </tr>`).join("");
 
+  const procRows = processing.map((iv) => `<tr>
+      <td>${numLink(iv)}<div class="muted" style="font-size:12px">${e(INV_TYPE[iv.type] || iv.type)} · <span style="color:#92400E;font-weight:600">⏳ ${iv.paid_method === "us_bank_account" ? "ACH bank transfer" : (e(iv.paid_method) || "payment")} processing</span></div></td>
+      <td class="money">${m(iv.amount_cents)}</td>
+      <td style="text-align:right;white-space:nowrap"><span class="pill" style="background:#FEF3C7;color:#92400E;border:1px solid #FDE68A">Clearing…</span> <button class="btn ghost sm" onclick="jobRecordPayment(${iv.id})" title="Manually mark this paid (e.g. the bank transfer cleared)">Mark paid</button> ${openBtn(iv)}</td>
+    </tr>`).join("");
+
   const custLink = (iv) => iv.view_token ? `<a class="btn ghost sm" href="https://nationalclosetco.com/invoice/?t=${e(iv.view_token)}" target="_blank" rel="noopener" title="Open the customer-facing invoice">↗ Link</a> ` : "";
   const paidRows = paid.map((iv) => `<tr>
       <td>${numLink(iv)}<div class="muted" style="font-size:12px">${e(INV_TYPE[iv.type] || iv.type)} · paid ${e(SSCrm.fmtDate(iv.paid_at))}${iv.paid_method ? ` · ${e(iv.paid_method)}` : ""}</div></td>
@@ -391,6 +399,7 @@ function renderInvoices(host, invoices) {
   host.innerHTML = invoices.length
     ? summary
       + section("Outstanding", openRows, open.length)
+      + section("Processing", procRows, processing.length)
       + section("Paid", paidRows, paid.length)
       + section("Voided", voidRows, voided.length)
     : summary + `<div class="card"><div class="empty">No invoices yet. Create a deposit or balance invoice — the customer pays by card online.</div></div>`;

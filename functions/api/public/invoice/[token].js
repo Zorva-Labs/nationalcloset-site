@@ -4,7 +4,7 @@
 // exactly the balance due for every method.
 import { json } from "../../../_lib/auth.js";
 import { createPaymentIntent, retrievePaymentIntent, updatePaymentIntentAmount } from "../../../_lib/stripe.js";
-import { markInvoicePaid, getProjectBilling } from "../../../_lib/invoices.js";
+import { markInvoicePaid, markInvoiceProcessing, getProjectBilling } from "../../../_lib/invoices.js";
 
 // A stored PI is reusable only if it was created with automatic_payment_methods.
 // Legacy intents built from an explicit payment_method_types list are recreated
@@ -96,7 +96,9 @@ export async function onRequestGet(context) {
       // customer is done; the webhook finalizes it. Show a processing state so
       // they don't try to pay again.
       if (pi && pi.status === "processing") {
-        return json({ processing: true, invoice: publicView(inv, project) });
+        const method = pi.charges?.data?.[0]?.payment_method_details?.type || "us_bank_account";
+        await markInvoiceProcessing(context.env, inv, { method, paymentIntentId: pi.id }).catch(() => {});
+        return json({ processing: true, invoice: publicView({ ...inv, status: "processing" }, project) });
       }
       // Recreate stale intents: canceled, or legacy explicit-method-list intents.
       if (pi && (pi.status === "canceled" || !piAcceptable(pi))) pi = null;

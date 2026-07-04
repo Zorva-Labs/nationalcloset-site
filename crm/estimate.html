@@ -6,10 +6,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc28" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc29" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc28"></script>
+<script src="/crm/crm-app.js?v=ncc29"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/estimates.html";
@@ -53,7 +53,7 @@ function render() {
       <div class="add"><button onclick="addLine()">+ Add line</button></div>
 
       <div class="totals">
-        <div class="r"><span>Subtotal <span style="font-weight:400;color:var(--ink-soft);font-size:12px">· incl. ${mkPct()}% markup</span></span><span id="t-sub">${SSCrm.fmtMoney(e.subtotal_cents)}</span></div>
+        <div class="r"><span>Subtotal${mkPct() > 0 ? ` <span style="font-weight:400;color:var(--ink-soft);font-size:12px">· incl. ${mkPct()}% markup</span>` : ""}</span><span id="t-sub">${SSCrm.fmtMoney(e.subtotal_cents)}</span></div>
         <div class="r"><span>Discount</span><input id="t-disc" type="text" value="${e.discount_cents ? "$" + (e.discount_cents/100).toFixed(2) : ""}" placeholder="$0.00" style="width:110px;text-align:right;border:1px solid var(--line);padding:5px 8px;border-radius:var(--r-sm)" onchange="recalcTotals()"/></div>
         <div class="r"><span>Tax</span><input id="t-tax" type="text" value="${e.tax_cents ? "$" + (e.tax_cents/100).toFixed(2) : ""}" placeholder="$0.00" style="width:110px;text-align:right;border:1px solid var(--line);padding:5px 8px;border-radius:var(--r-sm)" onchange="recalcTotals()"/></div>
         <div class="r grand"><span>Total</span><span id="t-grand">${SSCrm.fmtMoney(e.total_cents)}</span></div>

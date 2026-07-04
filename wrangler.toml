@@ -16,7 +16,8 @@ MAIL_DEFAULT_REPLY = "hello@nationalclosetco.com"
 STAFF_EMAIL = "hello@nationalclosetco.com"
 # Flat markup baked into every customer quote (proposals + estimates). Fraction:
 # 0.03 = 3%. Clamped 0–25%. Change here and redeploy to adjust — no code change.
-QUOTE_MARKUP_RATE = "0.03"
+# Set to 0: prices are entered with any markup already included (no auto-markup).
+QUOTE_MARKUP_RATE = "0"
 # Stripe publishable key is public (safe in client/source). Secret key +
 # webhook signing secret are encrypted Pages secrets (STRIPE_SECRET_KEY,
 # STRIPE_WEBHOOK_SECRET) — NOT here.

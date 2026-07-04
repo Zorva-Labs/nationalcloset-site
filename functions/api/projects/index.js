@@ -52,6 +52,11 @@ export async function onRequestGet(context) {
              LEFT JOIN job_financials jf ON jf.project_id = p.id WHERE 1=1`;
   const binds = [];
   if (status) { binds.push(status); sql += ` AND p.status=?${binds.length}`; }
+  else if (url.searchParams.get("include_completed") !== "1") {
+    // Default Jobs list hides completed jobs — they live under the Completed
+    // category (?status=completed). Any explicit status filter still shows them.
+    sql += ` AND p.status != 'completed'`;
+  }
   if (contactId) { binds.push(parseInt(contactId, 10)); sql += ` AND p.contact_id=?${binds.length}`; }
   sql += ` ORDER BY p.updated_at DESC LIMIT 200`;
   const rows = (await context.env.DB.prepare(sql).bind(...binds).all()).results || [];

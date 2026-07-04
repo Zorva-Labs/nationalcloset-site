@@ -25,38 +25,42 @@ function methodLabel(m) {
 }
 
 // Email the office (STAFF_EMAIL) on EVERY payment event — when an ACH/async
-// payment starts processing, and again when any payment clears. kind is
-// "processing" | "paid".
+// payment starts processing, when any payment clears, and if a payment fails.
+// kind is "processing" | "paid" | "failed".
 async function notifyStaffPayment(env, { invoice, project, kind, method, amountCents }) {
   const to = env.STAFF_EMAIL || "hello@nationalclosetco.com";
   const who = project?.contact_name || "A customer";
+  const proj = project?.name || "their project";
   const ml = methodLabel(method);
   const amt = money(amountCents != null ? amountCents : invoice.amount_cents);
   const typeLbl = INV_TYPE_LABEL[invoice.type] || "payment";
-  const processing = kind === "processing";
-  const subject = processing
-    ? `⏳ ${amt} ${typeLbl} processing (${ml}) — ${who} · ${invoice.number}`
-    : `✅ ${amt} ${typeLbl} received (${ml}) — ${who} · ${invoice.number}`;
+  const M = {
+    processing: { icon: "⏳", word: "processing", title: "A payment is processing", color: "#B45309",
+      body: `<strong>${who}</strong> paid the ${typeLbl} for <strong>${proj}</strong> by <strong>${ml}</strong>. It's <strong>processing</strong> and usually clears in a few business days — you'll get another email the moment it settles. The job has been booked in the meantime; no action needed.` },
+    paid: { icon: "✅", word: "received", title: "Payment received", color: "#067647",
+      body: `<strong>${who}</strong>'s ${typeLbl} of <strong>${amt}</strong> (${ml}) for <strong>${proj}</strong> has <strong>cleared</strong>.` },
+    failed: { icon: "⚠️", word: "FAILED", title: "A payment failed", color: "#B91C1C",
+      body: `<strong>${who}</strong>'s ${typeLbl} for <strong>${proj}</strong> by <strong>${ml}</strong> <strong>did not go through</strong>. The invoice is back to <strong>open</strong> and payable again. If the job was already booked from the processing payment, review whether to keep it booked or follow up with the customer.` },
+  }[kind] || {};
+  const subject = `${M.icon} ${amt} ${typeLbl} ${M.word} (${ml}) — ${who} · ${invoice.number}`;
   const html = brandedEmail({
-    title: processing ? "A payment is processing" : "Payment received",
+    title: M.title,
     body: `
-      <p>${processing
-        ? `<strong>${who}</strong> paid the ${typeLbl} for <strong>${project?.name || "their project"}</strong> by <strong>${ml}</strong>. It's <strong>processing</strong> and usually clears in a few business days — you'll get another email the moment it settles. No action needed.`
-        : `<strong>${who}</strong>'s ${typeLbl} of <strong>${amt}</strong> (${ml}) for <strong>${project?.name || "their project"}</strong> has <strong>cleared</strong>.`}</p>
+      <p>${M.body}</p>
       <table style="border-collapse:collapse;margin:10px 0 4px">
         <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Invoice</td><td style="padding:4px 0;font-weight:600">${invoice.number}</td></tr>
         <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Amount</td><td style="padding:4px 0;font-weight:700;font-size:18px">${amt}</td></tr>
         <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Method</td><td style="padding:4px 0">${ml}</td></tr>
-        <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Status</td><td style="padding:4px 0;font-weight:700;color:${processing ? "#B45309" : "#067647"}">${processing ? "Processing" : "Paid"}</td></tr>
+        <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Status</td><td style="padding:4px 0;font-weight:700;color:${M.color}">${M.word === "received" ? "Paid" : (kind === "failed" ? "Failed" : "Processing")}</td></tr>
       </table>`,
   });
-  const text = `${processing ? "PROCESSING" : "PAID"}: ${amt} ${typeLbl} (${ml}) — ${who}, ${invoice.number}.`;
+  const text = `${M.word}: ${amt} ${typeLbl} (${ml}) — ${who}, ${invoice.number}.`;
   const messageId = makeMessageId();
   const res = await sendEmail(env, { from: "National Closet Co. <notifications@nationalclosetco.com>", to, subject, html, text, messageId }).catch(() => null);
   await logOutboundEmail(env, {
     to, subject, html, text, messageId,
     projectId: invoice.project_id, contactId: project?.contact_id || null,
-    templateKind: processing ? "payment_processing_staff" : "payment_paid_staff",
+    templateKind: `payment_${kind}_staff`,
     status: (res?.skipped || res?.error) ? "failed" : "sent",
   }).catch(() => {});
 }
@@ -78,10 +82,45 @@ export async function markInvoiceProcessing(env, invoice, { method = "us_bank_ac
     actorKind: "customer", actorName: "Stripe",
     details: { invoice_id: invoice.id, number: invoice.number, method },
   }).catch(() => {});
+
+  // Promote it to a JOB now — even though the money hasn't cleared — so it moves
+  // out of the lead pipeline immediately (a deposit/full payment was initiated).
+  // The contract's deposit_paid flag stays OFF until it actually settles
+  // (markInvoicePaid). Guarded so we don't re-book an already-booked job.
+  if (["deposit", "full"].includes(invoice.type)) {
+    const proj = await db.prepare(`SELECT status FROM projects WHERE id=?1`).bind(invoice.project_id).first().catch(() => null);
+    const JOB = ["contracted", "scheduled_install", "installing", "completed"];
+    if (proj && !JOB.includes(proj.status)) {
+      await markProjectBooked(db, invoice.project_id, invoice.contract_id).catch((e) => console.error("[invoice/book-processing]", String(e)));
+    }
+  }
+
   const project = await db.prepare(
     `SELECT p.*, c.name AS contact_name, c.email AS contact_email FROM projects p JOIN contacts c ON c.id=p.contact_id WHERE p.id=?1`
   ).bind(invoice.project_id).first().catch(() => null);
   await notifyStaffPayment(env, { invoice, project, kind: "processing", method, amountCents: invoice.amount_cents }).catch(() => {});
+  return { ok: true };
+}
+
+// A processing payment failed (e.g. an ACH bank transfer bounced). Revert the
+// invoice to 'open' so it's payable again and alert the office. We do NOT
+// auto-unbook the job — the office decides — but the email flags it. No-op if
+// the invoice is already paid or void.
+export async function markInvoiceFailed(env, invoice, { method = "us_bank_account" } = {}) {
+  const db = env.DB;
+  const fresh = await db.prepare(`SELECT status FROM invoices WHERE id=?1`).bind(invoice.id).first().catch(() => null);
+  const cur = fresh?.status || invoice.status;
+  if (cur === "paid" || cur === "void") return { already: true };
+  await db.prepare(`UPDATE invoices SET status='open', updated_at=datetime('now') WHERE id=?1`).bind(invoice.id).run();
+  await recordActivity(db, {
+    entityType: "project", entityId: invoice.project_id, action: "invoice-payment-failed",
+    actorKind: "customer", actorName: "Stripe",
+    details: { invoice_id: invoice.id, number: invoice.number, method },
+  }).catch(() => {});
+  const project = await db.prepare(
+    `SELECT p.*, c.name AS contact_name, c.email AS contact_email FROM projects p JOIN contacts c ON c.id=p.contact_id WHERE p.id=?1`
+  ).bind(invoice.project_id).first().catch(() => null);
+  await notifyStaffPayment(env, { invoice, project, kind: "failed", method, amountCents: invoice.amount_cents }).catch(() => {});
   return { ok: true };
 }
 

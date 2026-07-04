@@ -1,7 +1,7 @@
 // POST /api/stripe/webhook — Stripe event receiver. The source of truth for
 // marking an invoice paid. Verifies the signature against STRIPE_WEBHOOK_SECRET.
 import { verifyStripeSignature } from "../../_lib/stripe.js";
-import { markInvoicePaid, markInvoiceProcessing } from "../../_lib/invoices.js";
+import { markInvoicePaid, markInvoiceProcessing, markInvoiceFailed } from "../../_lib/invoices.js";
 
 // Best-effort chosen-method from a PaymentIntent (falls back to ACH, the usual
 // async/"processing" method).
@@ -46,12 +46,12 @@ export async function onRequestPost(context) {
         await markInvoiceProcessing(context.env, inv, { method: piMethod(pi, "us_bank_account"), paymentIntentId: pi.id });
       }
     } else if (event.type === "payment_intent.payment_failed") {
-      // A processing payment bounced (e.g. ACH failure) — revert to open so it's
-      // billable again.
+      // A processing payment bounced (e.g. ACH failure) — revert to open and
+      // alert the office (the job may have been booked from the processing PI).
       const pi = event.data.object;
       const inv = await findInvoice(db, pi);
       if (inv && inv.status === "processing") {
-        await db.prepare(`UPDATE invoices SET status='open', updated_at=datetime('now') WHERE id=?1`).bind(inv.id).run();
+        await markInvoiceFailed(context.env, inv, { method: piMethod(pi) });
       }
     }
   } catch (e) {

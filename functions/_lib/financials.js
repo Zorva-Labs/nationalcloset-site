@@ -35,11 +35,18 @@ export function computeBreakdown(priceCents) {
   return { materials, labor };
 }
 
-// The deposit collected up front — the materials cost (job total ÷ 2.8), which
-// the business pays to order materials before install. Labor + profit are
-// collected in the balance at completion.
-export function depositForTotal(priceCents) {
-  return computeBreakdown(priceCents).materials;
+// The deposit collected up front. Two rules, whichever is larger:
+//   • at least 50% of what the client pays (net), and
+//   • never less than the materials cost (price ÷ 2.8, figured from the gross),
+//     so the deposit always covers materials even on a discounted job.
+// Capped at the net so it can't exceed the total. Pass netCents when it differs
+// from the gross (a discount); otherwise net defaults to the gross.
+export function depositForTotal(priceCents, netCents) {
+  const gross = Math.max(0, Math.round(priceCents || 0));
+  const net = (netCents != null && netCents > 0) ? Math.round(netCents) : gross;
+  if (net <= 0) return 0;
+  const materials = computeBreakdown(gross).materials;
+  return Math.min(net, Math.max(Math.round(net * 0.5), materials));
 }
 
 // Merge a stored job_financials row (manual overrides) over the formula

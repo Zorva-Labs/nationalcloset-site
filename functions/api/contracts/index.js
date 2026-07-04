@@ -129,7 +129,7 @@ export async function onRequestPost(context) {
       ).bind(body.proposal_id).first().catch(() => null);
       if (tier && tier.gross > tier.net) grossBasis = tier.gross;
     }
-    depositCents = depositForTotal(grossBasis);  // hard costs: materials + shipping + tax
+    depositCents = depositForTotal(grossBasis, totalCents);  // ≥50%, covers materials
   }
 
   // Load the default template for this contract type from the editable document_templates table.

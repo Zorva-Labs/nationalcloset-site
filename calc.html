@@ -108,7 +108,7 @@
       <div class="lbl">Minimum deposit to quote</div>
       <div class="big" id="d-min">$0</div>
       <div class="sub2" id="d-minpct">— of the job</div>
-      <div class="covers">Covers your <b id="d-mat">$0</b> materials cost, ordered up front.</div>
+      <div class="covers">At least 50% of the job — and always covers your <b id="d-mat">$0</b> materials cost.</div>
     </div>
 
     <div id="note" class="note"></div>
@@ -172,9 +172,10 @@
     var net = price - discount;
 
     var f = calc(price);
-    var deposit = f.materials;                             // min deposit = materials cost
-    var profit = net - f.cost;
     var half = Math.round(net * 0.5);
+    // Deposit = at least 50% of the net, but never less than materials. Capped at net.
+    var deposit = Math.min(net, Math.max(half, f.materials));
+    var profit = net - f.cost;
 
     el("d-min").textContent = money(deposit);
     el("d-minpct").textContent = pct(deposit, net) + " of the " + (discount > 0 ? "net " : "") + "job";
@@ -183,14 +184,14 @@
     el("d-bal").textContent = money(net - deposit);
 
     var note = el("note");
-    if (half >= deposit) {
+    if (f.materials <= half) {
       note.className = "note ok";
-      note.innerHTML = '<span class="ic">✓</span><div>A standard <b>50% deposit</b> (' + money(half) + ') already covers your materials cost, with ' + money(half - deposit) + ' to spare. You can safely quote 50%.</div>';
+      note.innerHTML = '<span class="ic">✓</span><div>The <b>50% deposit</b> (' + money(half) + ') already covers your <b>' + money(f.materials) + '</b> materials cost, with ' + money(half - f.materials) + ' to spare.</div>';
       el("d-halfnote").textContent = "covers materials ✓";
     } else {
       note.className = "note warn";
-      note.innerHTML = '<span class="ic">!</span><div>A 50% deposit is <b>' + money(deposit - half) + ' short</b> of covering your materials cost. Quote at least the minimum above (' + pct(deposit, net) + ').</div>';
-      el("d-halfnote").textContent = money(deposit - half) + " short";
+      note.innerHTML = '<span class="ic">!</span><div>Materials (<b>' + money(f.materials) + '</b>) exceed 50%, so the deposit is bumped up to <b>' + money(deposit) + '</b> (' + pct(deposit, net) + ') to cover them.</div>';
+      el("d-halfnote").textContent = "below materials";
     }
 
     el("r-mat").textContent = money(f.materials);

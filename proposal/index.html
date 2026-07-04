@@ -120,8 +120,8 @@ function render(p, tiers, attachments) {
         <div class="opt__sum">
           <div class="opt__sum-row opt__sum-total"><span>Total</span><span>${money(t.total_cents)}</span></div>
           <div class="opt__sum-row" style="border:0;color:var(--muted);font-size:.82rem;font-weight:500"><span>Includes shipping, tax &amp; installation</span><span></span></div>
-          <div class="opt__sum-row" style="margin-top:6px"><span>Deposit to start</span><span>${money(depositFor((t.subtotal_cents || 0) > (t.total_cents || 0) ? t.subtotal_cents : t.total_cents))}</span></div>
-          <div class="opt__sum-row" style="border:0;color:var(--muted);font-size:.82rem;font-weight:500"><span>Balance at completion</span><span>${money(Math.max(0, (t.total_cents || 0) - depositFor((t.subtotal_cents || 0) > (t.total_cents || 0) ? t.subtotal_cents : t.total_cents)))}</span></div>
+          <div class="opt__sum-row" style="margin-top:6px"><span>Deposit to start</span><span>${money(depositFor((t.subtotal_cents || 0) > (t.total_cents || 0) ? t.subtotal_cents : t.total_cents, t.total_cents))}</span></div>
+          <div class="opt__sum-row" style="border:0;color:var(--muted);font-size:.82rem;font-weight:500"><span>Balance at completion</span><span>${money(Math.max(0, (t.total_cents || 0) - depositFor((t.subtotal_cents || 0) > (t.total_cents || 0) ? t.subtotal_cents : t.total_cents, t.total_cents)))}</span></div>
         </div>` : `<div class="opt__empty">Itemized details to follow.</div>`}
         ${!isAccepted ? `<button class="btn opt-btn" type="button" onclick="event.stopPropagation();pickTier('${esc(t.tier)}')">${p.selected_tier === t.tier ? "✓ Selected" : (many ? "Choose this option" : "Select")}</button>` : ""}
       </div>`).join("")}
@@ -213,16 +213,14 @@ async function accept() {
 }
 
 function money(c) { if (c == null) return "—"; return "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
-// Deposit = hard costs (materials + shipping + tax), mirrors _lib/financials.js.
-function depositFor(total) {
-  total = Math.max(0, total || 0);
-  const list = total / 1.35;
-  const b = list / 100;
-  const disc = b >= 4500 ? 0.30 : b >= 2500 ? 0.25 : 0.20;
-  const mat = Math.round(list * (1 - disc));
-  const sh = Math.round(mat * 0.05);
-  const tx = Math.round((mat + sh) * 0.0975);
-  return mat + sh + tx;
+// Deposit = at least 50% of the net, but never less than materials (price ÷ 2.8
+// from the gross). Capped at the net. Mirrors _lib/financials.js depositForTotal.
+function depositFor(grossCents, netCents) {
+  const gross = Math.max(0, grossCents || 0);
+  const net = (netCents != null && netCents > 0) ? netCents : gross;
+  if (net <= 0) return 0;
+  const materials = Math.round(gross / 2.8);
+  return Math.min(net, Math.max(Math.round(net * 0.5), materials));
 }
 function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 </script>

@@ -47,7 +47,7 @@ export async function getProjectBilling(db, projectId) {
       // Explicit contract deposit wins (manual override); otherwise the
       // hard-cost deposit (materials + shipping + taxes) figured from the
       // pre-discount gross, so a discount never reduces the deposit.
-      depositCents: k.deposit_cents && k.deposit_cents > 0 ? k.deposit_cents : depositForTotal(gross),
+      depositCents: k.deposit_cents && k.deposit_cents > 0 ? k.deposit_cents : depositForTotal(gross, k.total_cents || 0),
       contractId: k.id,
       proposalId: null,
     };
@@ -59,7 +59,7 @@ export async function getProjectBilling(db, projectId) {
   if (p) {
     const total = p.selected_total_cents || 0;
     const gross = await projectGrossBasis(db, projectId, total);
-    return { totalCents: total, depositCents: depositForTotal(gross), contractId: null, proposalId: p.id };
+    return { totalCents: total, depositCents: depositForTotal(gross, total), contractId: null, proposalId: p.id };
   }
   return { totalCents: 0, depositCents: 0, contractId: null, proposalId: null };
 }

@@ -61,7 +61,7 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
   // Deposit is figured from the pre-discount GROSS (tier subtotal), so a
   // discount (which lives between subtotal and total) never lowers it.
   const grossBasis = (tier.subtotal_cents || 0) > totalCents ? tier.subtotal_cents : totalCents;
-  const depositCents = depositForTotal(grossBasis);  // hard costs: materials + shipping + tax
+  const depositCents = depositForTotal(grossBasis, totalCents);  // ≥50%, covers materials
 
   const r = await db.prepare(
     `INSERT INTO contracts (project_id, proposal_id, number, view_token, status, contract_type, total_cents, deposit_cents,

@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc31" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc32" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc31"></script>
+<script src="/crm/crm-app.js?v=ncc32"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -171,31 +171,24 @@ function renderTier(t) {
 }
 
 // Internal cost & profit breakdown — CRM-only (never rendered on the customer
-// proposal). Mirrors the cost model: list = price ÷ 1.35, tier discount off the
-// list, materials = list × (1 − discount); shipping 5% / tax 9.75% / labor 15%.
+// proposal). Mirrors the cost model: materials = price ÷ 2.8 (taxes, shipping &
+// 3% surcharge folded in); labor = 15% of the gross price, minimum $350.
 function tierCostCalc(grossCents, netCents) {
-  const list = (grossCents || 0) / 1.35;
-  const b = list / 100;
-  const disc = b >= 4500 ? 0.30 : b >= 2500 ? 0.25 : 0.20;
-  const materials = Math.round(list * (1 - disc));
-  const shipping = Math.round(materials * 0.05);
-  const tax = Math.round((materials + shipping) * 0.0975);
-  const labor = Math.round(materials * 0.15);
-  const cost = materials + shipping + tax + labor;
+  const g = grossCents || 0;
+  const materials = Math.round(g / 2.8);
+  const labor = g > 0 ? Math.max(Math.round(g * 0.15), 35000) : 0;
+  const cost = materials + labor;
   const profit = (netCents || 0) - cost;
   const margin = netCents ? Math.round((profit / netCents) * 100) : 0;
-  return { list: Math.round(list), disc, materials, shipping, tax, labor, cost, profit, margin };
+  return { materials, labor, cost, profit, margin };
 }
 function tierCostRows(grossCents, netCents) {
   const c = tierCostCalc(grossCents, netCents);
   const m = SSCrm.fmtMoney;
   const discount = (grossCents || 0) - (netCents || 0);
   const row = (l, v, strong) => `<div style="${strong ? "font-weight:700;color:var(--ink)" : ""}">${l}</div><div style="text-align:right;${strong ? "font-weight:700;color:var(--ink)" : ""}">${v}</div>`;
-  return row(`List <span style="opacity:.7">(price ÷ 1.35)</span>`, m(c.list))
-    + row(`Materials <span style="opacity:.7">· ${Math.round(c.disc * 100)}% off</span>`, m(c.materials))
-    + row("Shipping (5%)", m(c.shipping))
-    + row("Taxes (9.75%)", m(c.tax))
-    + row("Labor (15%)", m(c.labor))
+  return row(`Materials <span style="opacity:.7">(price ÷ 2.8)</span>`, m(c.materials))
+    + row(`Labor <span style="opacity:.7">(15%, min $350)</span>`, m(c.labor))
     + row("Total cost", m(c.cost), true)
     + (discount > 0 ? row("Discount (off profit)", "−" + m(discount)) : "")
     + row("Profit", `<span style="color:#15803D;font-weight:700">${m(c.profit)} · ${c.margin}%</span>`, true);

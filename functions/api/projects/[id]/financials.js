@@ -7,7 +7,7 @@
 // from the accepted proposal's selected tier; any line can be overridden.
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { getProjectBilling } from "../../../_lib/invoices.js";
-import { resolveFinancials, computeBreakdown } from "../../../_lib/financials.js";
+import { resolveFinancials, computeBreakdown, SHIPPING_RATE, TAX_RATE } from "../../../_lib/financials.js";
 import { recordActivity } from "../../../_lib/db.js";
 
 // Gross (pre-discount) cost basis + dollar discount for a job. Prefer the
@@ -74,11 +74,13 @@ export async function onRequestPut(context) {
   const discount = discountOverride ? cents(body.discount_cents) : b.discountCents;
 
   // Each expense line: auto (use formula) unless the client flags it manual.
-  // Materials = price ÷ 2.8; labor = 15% of the gross price. Shipping & tax are
-  // folded into the price (2.8×), so they're always 0 (kept for schema/back-compat).
+  // Materials = price ÷ 2.8; shipping = 5% of the EFFECTIVE materials; tax =
+  // 9.75% of (materials + shipping); labor = 15% of the gross price. Shipping &
+  // tax derive from the effective materials so an overridden materials cost
+  // flows through (mirrors resolveFinancials).
   const m = (body.materials_auto === false) ? { v: cents(body.materials_cents), a: 0 } : { v: f.materials, a: 1 };
-  const s = { v: 0, a: 1 };
-  const t = { v: 0, a: 1 };
+  const s = (body.shipping_auto === false) ? { v: cents(body.shipping_cents), a: 0 } : { v: Math.round(m.v * SHIPPING_RATE), a: 1 };
+  const t = (body.tax_auto === false) ? { v: cents(body.tax_cents), a: 0 } : { v: Math.round((m.v + s.v) * TAX_RATE), a: 1 };
   const l = (body.labor_auto === false) ? { v: cents(body.labor_cents), a: 0 } : { v: f.labor, a: 1 };
   const misc = cents(body.misc_cents);
 

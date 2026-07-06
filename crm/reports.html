@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Reports · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc35"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc36"/>
 <style>
   .rpt-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
   .rpt-presets{display:inline-flex;gap:4px;background:var(--bg-soft);border:1px solid var(--line);border-radius:999px;padding:4px}
@@ -36,7 +36,7 @@
   .fnl-row .pc{text-align:right;color:var(--ink-soft);font-size:12px}
 </style></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc35"></script>
+<script src="/crm/crm-app.js?v=ncc36"></script>
 <script>
 (async () => {
   const user = await SSCrm.mount({ title: "Reports", subtitle: "Profit & loss and lead performance", wide: true });
@@ -158,7 +158,7 @@
             ${t.discounts ? `<tr><td>Gross sales</td><td class="amt">${M(t.gross)}</td><td class="pct"></td></tr>
             <tr class="exp"><td>Discounts</td><td class="amt">(${M(t.discounts)})</td><td class="pct">${pct(t.discounts, t.gross)}</td></tr>` : ""}
             <tr><td><strong>${t.discounts ? "Net revenue" : "Gross income"}</strong></td><td class="amt"><strong>${M(rev)}</strong></td><td class="pct">100%</td></tr>
-            ${expRow("Materials", t.materials)}${expRow("Labor", t.labor)}${expRow("Misc", t.misc)}${expRow("Processing fees", t.fee)}
+            ${expRow("Materials", t.materials)}${expRow("Shipping", t.shipping)}${expRow("Taxes", t.tax)}${expRow("Labor", t.labor)}${expRow("Misc", t.misc)}${expRow("Processing fees", t.fee)}
             <tr class="sum"><td>Total expenses</td><td class="amt">(${M(t.expenses)})</td><td class="pct">${pct(t.expenses, rev)}</td></tr>
             <tr class="profit"><td>Net profit</td><td class="amt">${M(t.profit)}</td><td class="pct">${pct(t.profit, rev)}</td></tr>
           </table>
@@ -409,7 +409,7 @@
         ${t.discounts ? `<tr><td>Gross sales</td><td class="amt">${M(t.gross)}</td><td class="p"></td></tr>
         <tr><td class="lab">Discounts</td><td class="amt">(${M(t.discounts)})</td><td class="p">${pct(t.discounts, t.gross)}</td></tr>` : ""}
         <tr><td><strong>${t.discounts ? "Net revenue" : "Gross income"}</strong></td><td class="amt"><strong>${M(rev)}</strong></td><td class="p">100%</td></tr>
-        ${expRow("Materials", t.materials)}${expRow("Labor", t.labor)}${expRow("Misc", t.misc)}${expRow("Processing fees", t.fee)}
+        ${expRow("Materials", t.materials)}${expRow("Shipping", t.shipping)}${expRow("Taxes", t.tax)}${expRow("Labor", t.labor)}${expRow("Misc", t.misc)}${expRow("Processing fees", t.fee)}
         <tr class="tot"><td>Total expenses</td><td class="amt">(${M(t.expenses)})</td><td class="p">${pct(t.expenses, rev)}</td></tr>
         <tr class="tot"><td>Net profit</td><td class="amt" style="color:#15803D">${M(t.profit)}</td><td class="p">${pct(t.profit, rev)}</td></tr>
       </table>
@@ -595,9 +595,9 @@
     } else {
       if (!data) return;
       const t = data.totals, c = (x) => (x / 100).toFixed(2);
-      const rows = [["Job", "Contact", "Status", "Created", "Price", "Materials", "Labor", "Misc", "Expenses", "Profit"]];
-      data.jobs.forEach((j) => rows.push([j.name || "Job #" + j.id, j.contact_name || "", j.status, (j.created_at || "").slice(0, 10), c(j.price_cents), c(j.materials_cents), c(j.labor_cents), c(j.misc_cents), c(j.expenses_cents), c(j.profit_cents)]));
-      rows.push([], ["TOTALS", "", "", "", c(t.revenue), c(t.materials), c(t.labor), c(t.misc), c(t.expenses), c(t.profit)]);
+      const rows = [["Job", "Contact", "Status", "Created", "Price", "Materials", "Shipping", "Taxes", "Labor", "Misc", "Fees", "Expenses", "Profit"]];
+      data.jobs.forEach((j) => rows.push([j.name || "Job #" + j.id, j.contact_name || "", j.status, (j.created_at || "").slice(0, 10), c(j.price_cents), c(j.materials_cents), c(j.shipping_cents), c(j.tax_cents), c(j.labor_cents), c(j.misc_cents), c(j.fee_cents), c(j.expenses_cents), c(j.profit_cents)]));
+      rows.push([], ["TOTALS", "", "", "", c(t.revenue), c(t.materials), c(t.shipping), c(t.tax), c(t.labor), c(t.misc), c(t.fee), c(t.expenses), c(t.profit)]);
       csvDownload(rows, `NCC-PnL-${tag}.csv`);
     }
   }

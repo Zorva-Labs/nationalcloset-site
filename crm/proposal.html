@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc35" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc36" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc35"></script>
+<script src="/crm/crm-app.js?v=ncc36"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -175,16 +175,18 @@ function renderTier(t, i) {
 }
 
 // Internal cost & profit breakdown — CRM-only (never rendered on the customer
-// proposal). Mirrors the cost model: materials = price ÷ 2.8 (taxes, shipping &
-// 3% surcharge folded in); labor = 15% of the gross price, minimum $350.
+// proposal). Mirrors the cost model: materials = price ÷ 2.8; shipping = 5% of
+// materials; taxes = 9.75% of (materials + shipping); labor = 15% of gross, min $350.
 function tierCostCalc(grossCents, netCents) {
   const g = grossCents || 0;
   const materials = Math.round(g / 2.8);
+  const shipping = Math.round(materials * 0.05);
+  const tax = Math.round((materials + shipping) * 0.0975);
   const labor = g > 0 ? Math.max(Math.round(g * 0.15), 35000) : 0;
-  const cost = materials + labor;
+  const cost = materials + shipping + tax + labor;
   const profit = (netCents || 0) - cost;
   const margin = netCents ? Math.round((profit / netCents) * 100) : 0;
-  return { materials, labor, cost, profit, margin };
+  return { materials, shipping, tax, labor, cost, profit, margin };
 }
 function tierCostRows(grossCents, netCents) {
   const c = tierCostCalc(grossCents, netCents);
@@ -192,6 +194,8 @@ function tierCostRows(grossCents, netCents) {
   const discount = (grossCents || 0) - (netCents || 0);
   const row = (l, v, strong) => `<div style="${strong ? "font-weight:700;color:var(--ink)" : ""}">${l}</div><div style="text-align:right;${strong ? "font-weight:700;color:var(--ink)" : ""}">${v}</div>`;
   return row(`Materials <span style="opacity:.7">(price ÷ 2.8)</span>`, m(c.materials))
+    + row(`Shipping <span style="opacity:.7">(5%)</span>`, m(c.shipping))
+    + row(`Taxes <span style="opacity:.7">(9.75%)</span>`, m(c.tax))
     + row(`Labor <span style="opacity:.7">(15%, min $350)</span>`, m(c.labor))
     + row("Total cost", m(c.cost), true)
     + (discount > 0 ? row("Discount (off profit)", "−" + m(discount)) : "")

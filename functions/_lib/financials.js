@@ -1,5 +1,5 @@
 // Job cost model. The expense breakdown and profit are derived FROM the price:
-//   1. materials = price ÷ 2.8
+//   1. materials = price ÷ 1.8
 //   2. shipping  = 5%  of materials            (default; editable per job)
 //   3. taxes     = 9.75% of (materials+shipping) (default; editable per job)
 //   4. labor     = 15% of the gross job price, min $350   (installation)
@@ -7,7 +7,7 @@
 // The deposit covers the up-front hard costs (materials + shipping + taxes) and
 // is never less than 50% of the net.
 
-export const MATERIALS_DIVISOR = 2.8;  // materials cost = job total ÷ 2.8 (default)
+export const MATERIALS_DIVISOR = 1.8;  // materials cost = job total ÷ 1.8 (default)
 export const SHIPPING_RATE = 0.05;     // shipping = 5% of materials (default)
 export const TAX_RATE = 0.0975;        // taxes = 9.75% of (materials + shipping) (default)
 export const LABOR_RATE = 0.15;        // installation labor = 15% of the gross job price (default)

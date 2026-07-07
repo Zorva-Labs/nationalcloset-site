@@ -100,7 +100,7 @@
 
     <label class="field" style="margin-top:18px">Rates <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· adjust the formula</span></label>
     <div class="rates">
-      <label class="rate"><span>Materials ÷</span><input id="r-divisor" type="text" inputmode="decimal" value="2.8" autocomplete="off"/></label>
+      <label class="rate"><span>Materials ÷</span><input id="r-divisor" type="text" inputmode="decimal" value="1.8" autocomplete="off"/></label>
       <label class="rate"><span>Shipping</span><input id="r-shiprate" type="text" inputmode="decimal" value="5" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Taxes</span><input id="r-taxrate" type="text" inputmode="decimal" value="9.75" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Labor</span><input id="r-laborrate" type="text" inputmode="decimal" value="15" autocomplete="off"/><i>%</i></label>
@@ -145,7 +145,7 @@
 
     <div class="card">
       <table class="rows">
-        <tr><td>Materials <span class="pct" id="r-matlbl">(price ÷ 2.8)</span></td><td id="r-mat">$0</td></tr>
+        <tr><td>Materials <span class="pct" id="r-matlbl">(price ÷ 1.8)</span></td><td id="r-mat">$0</td></tr>
         <tr class="disc-row"><td>Mfr. discount <span class="pct" id="r-matdisclbl">(20%)</span></td><td id="r-matdiscamt">$0</td></tr>
         <tr><td>Shipping <span class="pct" id="r-shiplbl">(5%)</span></td><td id="r-ship">$0</td></tr>
         <tr><td>Taxes <span class="pct" id="r-taxlbl">(9.75%)</span></td><td id="r-tax2">$0</td></tr>
@@ -163,7 +163,7 @@
 
 <script>
 (function () {
-  var DEF = { divisor: 2.8, ship: 5, tax: 9.75, labor: 15, matDisc: 20 };  // defaults (percent form)
+  var DEF = { divisor: 1.8, ship: 5, tax: 9.75, labor: 15, matDisc: 20 };  // defaults (percent form)
   var el = function (id) { return document.getElementById(id); };
   var gross = el("gross"), disc = el("disc");
   var rDiv = el("r-divisor"), rShip = el("r-shiprate"), rTax = el("r-taxrate"), rLabor = el("r-laborrate"), rMatDisc = el("r-matdisc");
@@ -279,7 +279,7 @@
   // AC clears the amount + discount and resets the rates to defaults.
   el("ac").addEventListener("click", function () {
     gross.value = ""; disc.value = "";
-    rDiv.value = "2.8"; rShip.value = "5"; rTax.value = "9.75"; rLabor.value = "15"; rMatDisc.value = "20";
+    rDiv.value = "1.8"; rShip.value = "5"; rTax.value = "9.75"; rLabor.value = "15"; rMatDisc.value = "20";
     render();
     gross.focus();
   });

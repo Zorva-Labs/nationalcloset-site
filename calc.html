@@ -31,13 +31,13 @@
   .input-money input{width:100%;font-size:1.9rem;font-weight:800;padding:14px 16px 14px 36px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
   .input-money input:focus{outline:none;border-color:var(--clay)}
   .hint{font-size:.78rem;color:var(--ink-mute);margin-top:8px}
-  .rates{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .rate{display:flex;align-items:center;gap:8px;border:2px solid var(--line);border-radius:10px;background:#fff;padding:9px 12px}
+  .rates{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  .rate{display:flex;align-items:center;gap:8px;min-width:0;border:2px solid var(--line);border-radius:10px;background:#fff;padding:9px 12px}
   .rate:focus-within{border-color:var(--clay)}
   .rate span{font-size:.82rem;font-weight:700;color:var(--ink-soft);white-space:nowrap}
-  .rate input{flex:1;min-width:0;border:0;outline:none;font-size:1.15rem;font-weight:800;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums;background:transparent}
+  .rate input{flex:1;min-width:0;width:100%;border:0;outline:none;font-size:1.15rem;font-weight:800;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums;background:transparent}
   .rate i{font-style:normal;font-weight:700;color:var(--ink-mute)}
-  @media(max-width:420px){.rates{grid-template-columns:1fr 1fr}}
+  @media(max-width:440px){.rates{grid-template-columns:1fr}}
   .btns{display:flex;gap:10px;margin-top:18px}
   .btns button{font-family:inherit;font-weight:800;font-size:1.05rem;border-radius:10px;border:2px solid var(--ink);cursor:pointer;padding:13px 0;transition:transform .06s,background .15s,color .15s}
   .btns button:active{transform:translateY(1px)}

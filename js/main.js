@@ -2,6 +2,38 @@
 (function () {
   "use strict";
 
+  /* ---------- Conversion tracking (GA4 live; Google Ads AW- staged) ----------
+     GA4 (G-EWFCJ3F5FG) is already loaded in each page's <head>, so track()
+     fires the standard GA4 conversion events immediately. To also fire DIRECT
+     Google Ads conversions (account 896-812-2786), fill in GADS_ID and the
+     per-action labels below — the AW tag then activates automatically. Leave
+     them blank to stay GA4-only (import GA4 conversions into Ads instead). */
+  var GADS_ID = "";                          // e.g. "AW-XXXXXXXXXX" (Google Ads Conversion ID)
+  var GADS_LABELS = { lead: "", call: "" };  // conversion labels from the Ads account
+  if (typeof gtag === "function" && GADS_ID) { gtag("config", GADS_ID); }
+
+  // Fire a GA4 event and, when configured, the matching Google Ads conversion.
+  function track(eventName, params, adsKey) {
+    if (typeof gtag !== "function") return;
+    try { gtag("event", eventName, params || {}); } catch (e) {}
+    if (GADS_ID && adsKey && GADS_LABELS[adsKey]) {
+      try { gtag("event", "conversion", { send_to: GADS_ID + "/" + GADS_LABELS[adsKey] }); } catch (e) {}
+    }
+  }
+
+  /* Click-to-call conversion — any tel: link (delegated, capture phase so it
+     still counts even if another handler stops propagation). Never blocks the call. */
+  document.addEventListener("click", function (e) {
+    var a = e.target && e.target.closest && e.target.closest('a[href^="tel:"]');
+    if (a) track("contact", { method: "phone", link_url: a.getAttribute("href") }, "call");
+  }, true);
+
+  /* Consultation / "Book" & "Request a Bid" CTA clicks — a funnel signal only
+     (GA4, not an Ads conversion), since they just scroll to the on-page form. */
+  document.querySelectorAll('a[href="#consult"], a[href="#partner-form"]').forEach(function (a) {
+    a.addEventListener("click", function () { track("consult_cta_click", { cta: a.getAttribute("href") }); });
+  });
+
   /* ---------- Nav scroll state ---------- */
   var nav = document.querySelector(".nav");
   var mobicta = document.querySelector(".mobicta");
@@ -157,7 +189,12 @@
       // than telling the customer "received" on a lead that never saved.
       postLead()
         .catch(function () { return new Promise(function (res) { setTimeout(res, 1000); }).then(postLead); })
-        .then(function () { done(); })
+        .then(function () {
+          // Conversion fires only once the lead is actually saved (bots take the
+          // honeypot early-return above and never reach here).
+          track("generate_lead", { form_location: payload.source, currency: "USD" }, "lead");
+          done();
+        })
         .catch(function (err) { console.warn("lead save failed after retry", err); fail(); });
     });
   });

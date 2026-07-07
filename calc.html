@@ -106,7 +106,7 @@
       <label class="rate"><span>Labor</span><input id="r-laborrate" type="text" inputmode="decimal" value="15" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Mfr. discount</span><input id="r-matdisc" type="text" inputmode="decimal" value="20" autocomplete="off"/><i>%</i></label>
     </div>
-    <p class="hint">Materials = price ÷ multiplier; shipping = % of materials; taxes = % of (materials + shipping) — both figured before the discount. The manufacturer discount then comes off the materials cost; labor = % of price (min $350). Net materials, shipping &amp; taxes are covered by the deposit.</p>
+    <p class="hint">Materials = price ÷ multiplier, then the manufacturer discount comes off that actual materials cost; shipping = % of net materials; taxes = % of (net materials + shipping); labor = % of price (min $350). Net materials, shipping &amp; taxes are covered by the deposit.</p>
 
     <label class="field" for="disc" style="margin-top:18px">Discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, comes out of profit</span></label>
     <div class="input-money">
@@ -192,15 +192,15 @@
   // Mirrors functions/_lib/financials.js computeBreakdown — all math in cents,
   // using the editable rates.
   function calc(priceCents, r) {
-    var matList = Math.round(priceCents / r.divisor);    // materials cost (modifier applied)
-    // Shipping & taxes are figured on the materials cost BEFORE the discount.
-    var shipping = Math.round(matList * r.shipRate);
-    var taxes = Math.round((matList + shipping) * r.taxRate);
-    // The manufacturer discount then comes off the materials cost only.
+    // price ÷ modifier = actual materials cost, then the mfr discount comes off that.
+    var matList = Math.round(priceCents / r.divisor);    // actual materials cost
     var matDisc = Math.round(matList * r.matDiscRate);   // manufacturer discount (credit)
     var materials = matList - matDisc;                   // net materials cost we actually pay
+    // Shipping & taxes follow the net (post-discount) materials.
+    var shipping = Math.round(materials * r.shipRate);
+    var taxes = Math.round((materials + shipping) * r.taxRate);
     var labor = priceCents > 0 ? Math.max(Math.round(priceCents * r.laborRate), 35000) : 0; // min $350
-    var hard = materials + shipping + taxes;             // up-front hard costs (net materials + ship + tax)
+    var hard = materials + shipping + taxes;             // up-front hard costs (net of discount)
     return { matList: matList, matDisc: matDisc, materials: materials, shipping: shipping, tax: taxes, labor: labor, hard: hard, cost: hard + labor };
   }
 

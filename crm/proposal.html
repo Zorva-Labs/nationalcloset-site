@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc36" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc37" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc36"></script>
+<script src="/crm/crm-app.js?v=ncc37"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -90,15 +90,6 @@ function render() {
           <textarea id="intro" rows="3">${SSCrm.esc(p.intro || "")}</textarea>
         </label>
       </div>
-    </div>
-
-    <div class="card" style="margin-top:16px">
-      <div class="card-head"><h2>Job drawings (PDF)</h2></div>
-      <p class="muted" style="font-size:12px;margin:0 0 12px">Attach drawings of the job. On the proposal, the customer must initial to confirm the drawings are of the project they want. These follow the client into the job folder.</p>
-      <div id="drawings-list">${renderDrawings(state.attachments || [])}</div>
-      <label class="btn secondary sm" style="margin-top:10px;display:inline-block;cursor:pointer">
-        + Add PDF<input type="file" accept="application/pdf,.pdf" style="display:none" onchange="uploadDrawing(this)"/>
-      </label>
     </div>
 
     <div class="card" style="margin-top:16px">
@@ -337,42 +328,6 @@ async function saveAll() {
       tiers,
     })});
     SSCrm.toast("Saved", "success");
-    state = await SSCrm.fetchJSON("/api/proposals/" + id);
-    render();
-  } catch (e) { SSCrm.toast(e.message, "error"); }
-}
-function fmtSize(b) { b = b || 0; return b >= 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB"; }
-function renderDrawings(list) {
-  if (!list.length) return `<p class="muted" style="font-size:13px;margin:0">No drawings attached yet.</p>`;
-  return list.map((a) => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line-soft)">
-    <span style="font-size:18px">📄</span>
-    <a href="/api/attachments/${a.id}" target="_blank" rel="noopener" style="font-weight:600;flex:1;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${SSCrm.esc(a.filename)}</a>
-    <span class="muted" style="font-size:12px;white-space:nowrap">${fmtSize(a.size_bytes)}</span>
-    <a class="btn ghost sm" href="/api/attachments/${a.id}?dl=1">Download</a>
-    <button class="btn ghost sm" onclick="deleteDrawing(${a.id})" title="Remove">×</button>
-  </div>`).join("");
-}
-async function uploadDrawing(input) {
-  const file = input.files && input.files[0];
-  if (!file) return;
-  if (file.size > 20 * 1024 * 1024) { SSCrm.toast("File too large (max 20 MB)", "error"); input.value = ""; return; }
-  const fd = new FormData(); fd.append("file", file);
-  SSCrm.toast("Uploading…", "info");
-  try {
-    const res = await fetch(`/api/proposals/${id}/attachments`, { method: "POST", body: fd, credentials: "same-origin" });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || "Upload failed");
-    SSCrm.toast("Drawing attached", "success");
-    state = await SSCrm.fetchJSON("/api/proposals/" + id);
-    render();
-  } catch (e) { SSCrm.toast(e.message || "Upload failed", "error"); }
-  input.value = "";
-}
-async function deleteDrawing(aid) {
-  if (!(await SSCrm.confirmDialog("Remove this drawing?"))) return;
-  try {
-    await SSCrm.fetchJSON(`/api/attachments/${aid}`, { method: "DELETE" });
-    SSCrm.toast("Removed", "success");
     state = await SSCrm.fetchJSON("/api/proposals/" + id);
     render();
   } catch (e) { SSCrm.toast(e.message, "error"); }

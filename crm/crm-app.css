@@ -404,6 +404,7 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 .pill[data-s="completed"],
 .pill[data-s="fully_executed"]     { color: var(--s-complete); background: #ECFDF5; border-color: #D1FAE5; }
 .pill[data-s="lost"], .pill[data-s="cancelled"], .pill[data-s="declined"], .pill[data-s="voided"] { color: var(--s-lost); background: #F1F5F9; }
+.pill[data-s="expired"]            { color: #B9542F; background: #F6E6DF; border-color: #EBC7B7; }
 .pill[data-s="draft"]              { color: var(--ink-muted); background: var(--bg-soft); }
 
 /* Big-status banner (e.g. "Job Booked!" on project page) */

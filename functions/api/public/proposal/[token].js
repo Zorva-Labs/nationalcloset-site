@@ -5,6 +5,21 @@ import { json, hashIp } from "../../../_lib/auth.js";
 import { trackView, recordActivity } from "../../../_lib/db.js";
 import { createContractFromProposalTier, syncLeadQuotedFromProposal } from "../../../_lib/lifecycle.js";
 import { createInvoice } from "../../../_lib/invoices.js";
+import { sendEmail, brandedEmail, escapeHtml } from "../../../_lib/email.js";
+
+// A proposal is expired once its 2-day window has passed and it hasn't been
+// accepted/declined. Computed live so the customer sees the expired state the
+// moment it lapses, even before the cron sweep flips the stored status.
+function isExpired(p) {
+  if (!p) return false;
+  if (p.status === "accepted" || p.status === "declined") return false;
+  if (p.status === "expired") return true;
+  if (!p.valid_until) return false;
+  const s = String(p.valid_until).trim();
+  const iso = s.includes("T") ? s : s.replace(" ", "T") + (s.length <= 10 ? "T00:00:00Z" : "Z");
+  const d = new Date(iso);
+  return !isNaN(d.getTime()) && d.getTime() <= Date.now();
+}
 
 export async function onRequestGet(context) {
   const token = context.params.token;
@@ -21,17 +36,52 @@ export async function onRequestGet(context) {
   const comments = (await context.env.DB.prepare(`SELECT id, tier, author_kind, author_name, body, created_at FROM proposal_comments WHERE proposal_id=?1 ORDER BY created_at ASC`).bind(p.id).all()).results || [];
   const attachments = (await context.env.DB.prepare(`SELECT id, filename, size_bytes FROM proposal_attachments WHERE proposal_id=?1 ORDER BY created_at`).bind(p.id).all()).results || [];
   await trackView(context.env.DB, "proposals", p.id);
-  if (p.status === "sent") await context.env.DB.prepare(`UPDATE proposals SET status='viewed' WHERE id=?1`).bind(p.id).run();
-  const safe = { ...p }; delete safe.notes_internal; delete safe.author_user_id;
+  const expired = isExpired(p);
+  if (p.status === "sent" && !expired) await context.env.DB.prepare(`UPDATE proposals SET status='viewed' WHERE id=?1`).bind(p.id).run();
+  const safe = { ...p, expired }; delete safe.notes_internal; delete safe.author_user_id;
   return json({ proposal: safe, tiers, comments, attachments });
 }
 
 export async function onRequestPost(context) {
   const token = context.params.token;
   const body = await context.request.json().catch(() => ({}));
-  const p = await context.env.DB.prepare(`SELECT * FROM proposals WHERE view_token=?1`).bind(token).first();
+  const p = await context.env.DB.prepare(
+    `SELECT pr.*, pj.name AS project_name, pj.id AS proj_id, c.name AS contact_name, c.email AS contact_email
+     FROM proposals pr JOIN projects pj ON pj.id=pr.project_id JOIN contacts c ON c.id=pj.contact_id
+     WHERE pr.view_token=?1`
+  ).bind(token).first();
   if (!p) return json({ error: "Not found" }, 404);
   const ipHash = await hashIp(context.request.headers.get("CF-Connecting-IP"));
+
+  // The customer whose proposal has lapsed can only ask for a fresh one — no
+  // selecting a tier or accepting expired pricing.
+  const expired = isExpired(p);
+  if (body.action === "request_update") {
+    const note = String(body.message || "").trim().slice(0, 1000);
+    await recordActivity(context.env.DB, {
+      entityType: "proposal", entityId: p.id, action: "update-requested",
+      actorKind: "customer", actorName: p.contact_name || null,
+      details: { ip_hash: ipHash, message: note || null },
+    });
+    const staff = context.env.STAFF_EMAIL || "hello@nationalclosetco.com";
+    const adminUrl = `https://nationalclosetco.com/crm/proposal.html?id=${p.id}`;
+    const html = brandedEmail({
+      title: "A customer wants an updated proposal.",
+      preheader: `${p.contact_name || "A customer"} — ${p.number}`,
+      body: `
+        <p><strong>${escapeHtml(p.contact_name || "A customer")}</strong> opened an expired proposal (<strong>${escapeHtml(p.number)}</strong> · ${escapeHtml(p.project_name || "")}) and asked for updated pricing.</p>
+        ${note ? `<p style="border-left:3px solid #D2683F;padding-left:14px;color:#3A362F">"${escapeHtml(note)}"</p>` : ""}
+        <p>Re-open the proposal, refresh the numbers, and resend — that stamps a new 2-day window.</p>`,
+      ctaLabel: "Open the proposal",
+      ctaUrl: adminUrl,
+      signature: false,
+    });
+    await sendEmail(context.env, { to: staff, subject: `Updated proposal requested — ${p.number}`, html }).catch(() => {});
+    return json({ ok: true });
+  }
+  if (expired && (body.action === "select_tier" || body.action === "accept")) {
+    return json({ error: "This proposal has expired. Please request an updated proposal." }, 410);
+  }
 
   if (body.action === "select_tier") {
     if (!["good","better","best"].includes(body.tier)) return json({ error: "Invalid tier" }, 400);

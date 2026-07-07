@@ -31,6 +31,13 @@
   .input-money input{width:100%;font-size:1.9rem;font-weight:800;padding:14px 16px 14px 36px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
   .input-money input:focus{outline:none;border-color:var(--clay)}
   .hint{font-size:.78rem;color:var(--ink-mute);margin-top:8px}
+  .rates{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .rate{display:flex;align-items:center;gap:8px;border:2px solid var(--line);border-radius:10px;background:#fff;padding:9px 12px}
+  .rate:focus-within{border-color:var(--clay)}
+  .rate span{font-size:.82rem;font-weight:700;color:var(--ink-soft);white-space:nowrap}
+  .rate input{flex:1;min-width:0;border:0;outline:none;font-size:1.15rem;font-weight:800;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums;background:transparent}
+  .rate i{font-style:normal;font-weight:700;color:var(--ink-mute)}
+  @media(max-width:420px){.rates{grid-template-columns:1fr 1fr}}
   .btns{display:flex;gap:10px;margin-top:18px}
   .btns button{font-family:inherit;font-weight:800;font-size:1.05rem;border-radius:10px;border:2px solid var(--ink);cursor:pointer;padding:13px 0;transition:transform .06s,background .15s,color .15s}
   .btns button:active{transform:translateY(1px)}
@@ -89,19 +96,16 @@
       <span>$</span>
       <input id="gross" type="text" inputmode="decimal" placeholder="10,000.00" autocomplete="off" autofocus />
     </div>
-    <p class="hint">The price you're quoting the client (materials = price ÷ 2.8).</p>
+    <p class="hint">The price you're quoting the client.</p>
 
-    <div class="row" style="display:flex;gap:14px;margin-top:18px">
-      <div style="flex:1">
-        <label class="field" for="ship">Shipping <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· blank = 5%</span></label>
-        <div class="input-money"><span>$</span><input id="ship" type="text" inputmode="decimal" placeholder="auto" autocomplete="off"/></div>
-      </div>
-      <div style="flex:1">
-        <label class="field" for="tax">Taxes <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· blank = 9.75%</span></label>
-        <div class="input-money"><span>$</span><input id="tax" type="text" inputmode="decimal" placeholder="auto" autocomplete="off"/></div>
-      </div>
+    <label class="field" style="margin-top:18px">Rates <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· adjust the formula</span></label>
+    <div class="rates">
+      <label class="rate"><span>Materials ÷</span><input id="r-divisor" type="text" inputmode="decimal" value="2.8" autocomplete="off"/></label>
+      <label class="rate"><span>Shipping</span><input id="r-shiprate" type="text" inputmode="decimal" value="5" autocomplete="off"/><i>%</i></label>
+      <label class="rate"><span>Taxes</span><input id="r-taxrate" type="text" inputmode="decimal" value="9.75" autocomplete="off"/><i>%</i></label>
+      <label class="rate"><span>Labor</span><input id="r-laborrate" type="text" inputmode="decimal" value="15" autocomplete="off"/><i>%</i></label>
     </div>
-    <p class="hint">Leave blank to auto-figure shipping (5% of materials) and taxes (9.75% of materials + shipping), or type your own. Both are covered by the deposit.</p>
+    <p class="hint">Materials = price ÷ multiplier; shipping = % of materials; taxes = % of (materials + shipping); labor = % of price (min $350). Materials, shipping &amp; taxes are covered by the deposit.</p>
 
     <label class="field" for="disc" style="margin-top:18px">Discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, comes out of profit</span></label>
     <div class="input-money">
@@ -140,11 +144,11 @@
 
     <div class="card">
       <table class="rows">
-        <tr><td>Materials <span class="pct">(price ÷ 2.8)</span></td><td id="r-mat">$0</td></tr>
+        <tr><td>Materials <span class="pct" id="r-matlbl">(price ÷ 2.8)</span></td><td id="r-mat">$0</td></tr>
         <tr><td>Shipping <span class="pct" id="r-shiplbl">(5%)</span></td><td id="r-ship">$0</td></tr>
         <tr><td>Taxes <span class="pct" id="r-taxlbl">(9.75%)</span></td><td id="r-tax2">$0</td></tr>
         <tr class="muted"><td>= Hard costs <span class="pct">(deposit target)</span></td><td id="r-hard">$0</td></tr>
-        <tr><td>Labor <span class="pct">(15% of price · min $350, paid after install)</span></td><td id="r-labor">$0</td></tr>
+        <tr><td>Labor <span class="pct" id="r-laborlbl">(15% of price · min $350, paid after install)</span></td><td id="r-labor">$0</td></tr>
         <tr class="muted"><td>Total cost</td><td id="r-cost">$0</td></tr>
         <tr class="sep"><td>Gross quote</td><td id="r-gross">$0</td></tr>
         <tr class="disc-row" id="r-discrow" hidden><td>Discount</td><td id="r-discamt">$0</td></tr>
@@ -157,23 +161,38 @@
 
 <script>
 (function () {
-  var DIVISOR = 2.8, LABOR = 0.15;
+  var DEF = { divisor: 2.8, ship: 5, tax: 9.75, labor: 15 };  // defaults (percent form)
   var el = function (id) { return document.getElementById(id); };
-  var gross = el("gross"), disc = el("disc"), ship = el("ship"), tax = el("tax");
-  function override(inp) { var r = inp.value.replace(/[^0-9.]/g, ""); var v = parseFloat(r); return (!r || isNaN(v) || v < 0) ? null : Math.round(v * 100); }
+  var gross = el("gross"), disc = el("disc");
+  var rDiv = el("r-divisor"), rShip = el("r-shiprate"), rTax = el("r-taxrate"), rLabor = el("r-laborrate");
+
+  // Read a rate input; fall back to the default on blank/invalid.
+  function rate(inp, def, isDivisor) {
+    var v = parseFloat((inp.value || "").replace(/[^0-9.]/g, ""));
+    if (!isFinite(v) || v < 0 || (isDivisor && v <= 0)) return def;
+    return v;
+  }
+  function rates() {
+    return {
+      divisor: rate(rDiv, DEF.divisor, true),
+      shipRate: rate(rShip, DEF.ship) / 100,
+      taxRate: rate(rTax, DEF.tax) / 100,
+      laborRate: rate(rLabor, DEF.labor) / 100,
+    };
+  }
 
   function money(cents) {
     return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
   function pct(part, whole) { return whole ? Math.round((part / whole) * 100) + "%" : "0%"; }
 
-  // Mirrors functions/_lib/financials.js computeBreakdown — all math in cents.
-  // shipOv / taxOv are optional overrides (blank = auto-computed).
-  function calc(priceCents, shipOv, taxOv) {
-    var materials = Math.round(priceCents / DIVISOR);
-    var shipping = (shipOv != null) ? shipOv : Math.round(materials * 0.05);
-    var taxes = (taxOv != null) ? taxOv : Math.round((materials + shipping) * 0.0975);
-    var labor = priceCents > 0 ? Math.max(Math.round(priceCents * LABOR), 35000) : 0; // 15%, min $350
+  // Mirrors functions/_lib/financials.js computeBreakdown — all math in cents,
+  // using the editable rates.
+  function calc(priceCents, r) {
+    var materials = Math.round(priceCents / r.divisor);
+    var shipping = Math.round(materials * r.shipRate);
+    var taxes = Math.round((materials + shipping) * r.taxRate);
+    var labor = priceCents > 0 ? Math.max(Math.round(priceCents * r.laborRate), 35000) : 0; // min $350
     var hard = materials + shipping + taxes;             // up-front hard costs
     return { materials: materials, shipping: shipping, tax: taxes, labor: labor, hard: hard, cost: hard + labor };
   }
@@ -191,7 +210,8 @@
     var discount = (!dRaw || isNaN(dVal) || dVal < 0) ? 0 : Math.min(Math.round(dVal * 100), price);
     var net = price - discount;
 
-    var f = calc(price, override(ship), override(tax));
+    var r = rates();
+    var f = calc(price, r);
     var half = Math.round(net * 0.5);
     // Deposit = at least 50% of the net, but never less than the hard costs
     // (materials + shipping + taxes). Capped at net.
@@ -215,12 +235,15 @@
       el("d-halfnote").textContent = "below hard costs";
     }
 
+    var pctStr = function (frac) { return "(" + (+(frac * 100).toFixed(4)) + "%)"; };
     el("r-mat").textContent = money(f.materials);
     el("r-ship").textContent = money(f.shipping);
     el("r-tax2").textContent = money(f.tax);
     el("r-hard").textContent = money(f.hard);
-    el("r-shiplbl").textContent = override(ship) != null ? "(custom)" : "(5%)";
-    el("r-taxlbl").textContent = override(tax) != null ? "(custom)" : "(9.75%)";
+    el("r-matlbl").textContent = "(price ÷ " + (+r.divisor.toFixed(4)) + ")";
+    el("r-shiplbl").textContent = pctStr(r.shipRate);
+    el("r-taxlbl").textContent = pctStr(r.taxRate);
+    el("r-laborlbl").textContent = "(" + (+(r.laborRate * 100).toFixed(4)) + "% of price · min $350, paid after install)";
     el("r-labor").textContent = money(f.labor);
     el("r-cost").textContent = money(f.cost);
     el("r-gross").textContent = money(price);
@@ -235,10 +258,8 @@
     out.hidden = false;
   }
 
-  gross.addEventListener("input", render);
-  disc.addEventListener("input", render);
-  ship.addEventListener("input", render);
-  tax.addEventListener("input", render);
+  var inputs = [gross, disc, rDiv, rShip, rTax, rLabor];
+  inputs.forEach(function (i) { i.addEventListener("input", render); });
 
   // = recomputes and scrolls the result into view (handy on mobile).
   el("eq").addEventListener("click", function () {
@@ -246,14 +267,15 @@
     var out = el("out");
     if (!out.hidden) out.scrollIntoView({ behavior: "smooth", block: "start" });
   });
-  // AC clears the amounts.
+  // AC clears the amount + discount and resets the rates to defaults.
   el("ac").addEventListener("click", function () {
-    gross.value = ""; disc.value = ""; ship.value = ""; tax.value = "";
+    gross.value = ""; disc.value = "";
+    rDiv.value = "2.8"; rShip.value = "5"; rTax.value = "9.75"; rLabor.value = "15";
     render();
     gross.focus();
   });
   // Enter key acts like =
-  [gross, disc, ship, tax].forEach(function (i) {
+  inputs.forEach(function (i) {
     i.addEventListener("keydown", function (e) { if (e.key === "Enter") el("eq").click(); });
   });
 

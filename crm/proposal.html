@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc39" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc40" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc39"></script>
+<script src="/crm/crm-app.js?v=ncc40"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -172,19 +172,21 @@ function renderTier(t, i) {
 // materials; taxes = 9.75% of (materials + shipping); labor = 15% of gross, min $350.
 // Editable formula rates for the internal cost preview (session-only; defaults
 // mirror _lib/financials.js). The rate bar above the options edits these.
-const PROP_RATES = { divisor: 2.8, shipRate: 0.05, taxRate: 0.0975, laborRate: 0.15 };
+const PROP_RATES = { divisor: 2.8, shipRate: 0.05, taxRate: 0.0975, laborRate: 0.15, matDiscRate: 0.20 };
 const propPctStr = (frac) => String(+((frac * 100).toFixed(4)));
 function tierCostCalc(grossCents, netCents) {
   const g = grossCents || 0;
   const r = PROP_RATES;
-  const materials = Math.round(g / r.divisor);
+  const matList = Math.round(g / r.divisor);           // materials at list price
+  const matDisc = Math.round(matList * r.matDiscRate); // manufacturer discount (credit)
+  const materials = matList - matDisc;                 // net materials cost we actually pay
   const shipping = Math.round(materials * r.shipRate);
   const tax = Math.round((materials + shipping) * r.taxRate);
   const labor = g > 0 ? Math.max(Math.round(g * r.laborRate), 35000) : 0;
   const cost = materials + shipping + tax + labor;
   const profit = (netCents || 0) - cost;
   const margin = netCents ? Math.round((profit / netCents) * 100) : 0;
-  return { materials, shipping, tax, labor, cost, profit, margin };
+  return { matList, matDisc, materials, shipping, tax, labor, cost, profit, margin };
 }
 function tierCostRows(grossCents, netCents) {
   const c = tierCostCalc(grossCents, netCents);
@@ -192,7 +194,8 @@ function tierCostRows(grossCents, netCents) {
   const r = PROP_RATES;
   const discount = (grossCents || 0) - (netCents || 0);
   const row = (l, v, strong) => `<div style="${strong ? "font-weight:700;color:var(--ink)" : ""}">${l}</div><div style="text-align:right;${strong ? "font-weight:700;color:var(--ink)" : ""}">${v}</div>`;
-  return row(`Materials <span style="opacity:.7">(price ÷ ${+r.divisor.toFixed(4)})</span>`, m(c.materials))
+  return row(`Materials <span style="opacity:.7">(price ÷ ${+r.divisor.toFixed(4)})</span>`, m(c.matList))
+    + row(`Mfr. discount <span style="opacity:.7">(${propPctStr(r.matDiscRate)}%)</span>`, `<span style="color:#B45309">−${m(c.matDisc)}</span>`)
     + row(`Shipping <span style="opacity:.7">(${propPctStr(r.shipRate)}%)</span>`, m(c.shipping))
     + row(`Taxes <span style="opacity:.7">(${propPctStr(r.taxRate)}%)</span>`, m(c.tax))
     + row(`Labor <span style="opacity:.7">(${propPctStr(r.laborRate)}%, min $350)</span>`, m(c.labor))
@@ -213,16 +216,18 @@ function propRatesBar() {
       <label style="display:flex;align-items:center;gap:6px">Shipping ${inp("prop-rate-ship", propPctStr(r.shipRate))}%</label>
       <label style="display:flex;align-items:center;gap:6px">Taxes ${inp("prop-rate-tax", propPctStr(r.taxRate))}%</label>
       <label style="display:flex;align-items:center;gap:6px">Labor ${inp("prop-rate-labor", propPctStr(r.laborRate))}% <span class="muted">min $350</span></label>
+      <label style="display:flex;align-items:center;gap:6px">Mfr. discount ${inp("prop-rate-matdisc", propPctStr(r.matDiscRate))}%</label>
     </div>
   </div>`;
 }
 function applyPropRates() {
   const num = (id) => parseFloat((document.getElementById(id) || {}).value);
-  const div = num("prop-rate-divisor"), sh = num("prop-rate-ship"), tx = num("prop-rate-tax"), lb = num("prop-rate-labor");
+  const div = num("prop-rate-divisor"), sh = num("prop-rate-ship"), tx = num("prop-rate-tax"), lb = num("prop-rate-labor"), md = num("prop-rate-matdisc");
   if (isFinite(div) && div > 0) PROP_RATES.divisor = div;
   if (isFinite(sh) && sh >= 0) PROP_RATES.shipRate = sh / 100;
   if (isFinite(tx) && tx >= 0) PROP_RATES.taxRate = tx / 100;
   if (isFinite(lb) && lb >= 0) PROP_RATES.laborRate = lb / 100;
+  if (isFinite(md) && md >= 0) PROP_RATES.matDiscRate = md / 100;
   document.querySelectorAll('.card[data-tier]').forEach((card) => recalcTierEl(card));
 }
 function tierCostBox(grossCents, netCents) {

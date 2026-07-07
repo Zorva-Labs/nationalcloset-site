@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc40" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc41" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc40"></script>
+<script src="/crm/crm-app.js?v=ncc41"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -177,11 +177,13 @@ const propPctStr = (frac) => String(+((frac * 100).toFixed(4)));
 function tierCostCalc(grossCents, netCents) {
   const g = grossCents || 0;
   const r = PROP_RATES;
-  const matList = Math.round(g / r.divisor);           // materials at list price
+  const matList = Math.round(g / r.divisor);           // materials cost (modifier applied)
+  // Shipping & taxes are figured on the materials cost BEFORE the discount.
+  const shipping = Math.round(matList * r.shipRate);
+  const tax = Math.round((matList + shipping) * r.taxRate);
+  // The manufacturer discount then comes off the materials cost only.
   const matDisc = Math.round(matList * r.matDiscRate); // manufacturer discount (credit)
   const materials = matList - matDisc;                 // net materials cost we actually pay
-  const shipping = Math.round(materials * r.shipRate);
-  const tax = Math.round((materials + shipping) * r.taxRate);
   const labor = g > 0 ? Math.max(Math.round(g * r.laborRate), 35000) : 0;
   const cost = materials + shipping + tax + labor;
   const profit = (netCents || 0) - cost;

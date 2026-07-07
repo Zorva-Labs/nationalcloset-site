@@ -8,16 +8,19 @@
      Google Ads conversions (account 896-812-2786), fill in GADS_ID and the
      per-action labels below — the AW tag then activates automatically. Leave
      them blank to stay GA4-only (import GA4 conversions into Ads instead). */
-  var GADS_ID = "";                          // e.g. "AW-XXXXXXXXXX" (Google Ads Conversion ID)
-  var GADS_LABELS = { lead: "", call: "" };  // conversion labels from the Ads account
+  var GADS_ID = "AW-18306256681";            // Google Ads Conversion ID (account 896-812-2786)
+  var GADS_LABELS = { lead: "UnZvCNvcxMwcEKmejZlE", call: "" };  // "Submit lead form" label set; "call" pending
   if (typeof gtag === "function" && GADS_ID) { gtag("config", GADS_ID); }
 
   // Fire a GA4 event and, when configured, the matching Google Ads conversion.
-  function track(eventName, params, adsKey) {
+  // adsParams (optional) is merged into the Ads conversion hit (e.g. value/currency).
+  function track(eventName, params, adsKey, adsParams) {
     if (typeof gtag !== "function") return;
     try { gtag("event", eventName, params || {}); } catch (e) {}
     if (GADS_ID && adsKey && GADS_LABELS[adsKey]) {
-      try { gtag("event", "conversion", { send_to: GADS_ID + "/" + GADS_LABELS[adsKey] }); } catch (e) {}
+      var c = { send_to: GADS_ID + "/" + GADS_LABELS[adsKey] };
+      if (adsParams) { for (var k in adsParams) { if (Object.prototype.hasOwnProperty.call(adsParams, k)) c[k] = adsParams[k]; } }
+      try { gtag("event", "conversion", c); } catch (e) {}
     }
   }
 
@@ -191,8 +194,12 @@
         .catch(function () { return new Promise(function (res) { setTimeout(res, 1000); }).then(postLead); })
         .then(function () {
           // Conversion fires only once the lead is actually saved (bots take the
-          // honeypot early-return above and never reach here).
-          track("generate_lead", { form_location: payload.source, currency: "USD" }, "lead");
+          // honeypot early-return above and never reach here). value/currency
+          // match the Ads "Submit lead form" action (1.0 USD).
+          track("generate_lead",
+            { value: 1.0, currency: "USD", form_location: payload.source },
+            "lead",
+            { value: 1.0, currency: "USD" });
           done();
         })
         .catch(function (err) { console.warn("lead save failed after retry", err); fail(); });

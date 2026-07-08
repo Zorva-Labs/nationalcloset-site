@@ -100,13 +100,13 @@
 
     <label class="field" style="margin-top:18px">Rates <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· adjust the formula</span></label>
     <div class="rates">
-      <label class="rate"><span>Materials ÷</span><input id="r-divisor" type="text" inputmode="decimal" value="0" autocomplete="off"/></label>
+      <label class="rate"><span>Materials ÷</span><input id="r-divisor" type="text" inputmode="decimal" value="2.8" autocomplete="off"/></label>
       <label class="rate"><span>Shipping</span><input id="r-shiprate" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Taxes</span><input id="r-taxrate" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Labor</span><input id="r-laborrate" type="text" inputmode="decimal" value="15" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Mfr. discount</span><input id="r-matdisc" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
     </div>
-    <p class="hint">Only labor defaults (15% of price, min $350). Materials, shipping, taxes &amp; the manufacturer discount all default to 0 — set them as needed. Materials = price ÷ multiplier (0 = none), then the manufacturer discount comes off that; shipping = % of net materials; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the deposit.</p>
+    <p class="hint">Defaults: materials = price ÷ 2.8 and labor = 15% of price (min $350). Shipping, taxes &amp; the manufacturer discount default to 0 — set them as needed. The manufacturer discount comes off the materials cost; shipping = % of net materials; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the deposit.</p>
 
     <label class="field" for="disc" style="margin-top:18px">Discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, comes out of profit</span></label>
     <div class="input-money">
@@ -145,7 +145,7 @@
 
     <div class="card">
       <table class="rows">
-        <tr><td>Materials <span class="pct" id="r-matlbl">(price ÷ 0)</span></td><td id="r-mat">$0</td></tr>
+        <tr><td>Materials <span class="pct" id="r-matlbl">(price ÷ 2.8)</span></td><td id="r-mat">$0</td></tr>
         <tr class="disc-row"><td>Mfr. discount <span class="pct" id="r-matdisclbl">(20%)</span></td><td id="r-matdiscamt">$0</td></tr>
         <tr><td>Shipping <span class="pct" id="r-shiplbl">(5%)</span></td><td id="r-ship">$0</td></tr>
         <tr><td>Taxes <span class="pct" id="r-taxlbl">(0%)</span></td><td id="r-tax2">$0</td></tr>
@@ -163,7 +163,7 @@
 
 <script>
 (function () {
-  var DEF = { divisor: 0, ship: 0, tax: 0, labor: 15, matDisc: 0 };  // only labor defaults non-zero
+  var DEF = { divisor: 2.8, ship: 0, tax: 0, labor: 15, matDisc: 0 };  // materials ÷2.8 + labor 15% default; shipping/taxes/mfr 0
   var el = function (id) { return document.getElementById(id); };
   var gross = el("gross"), disc = el("disc");
   var rDiv = el("r-divisor"), rShip = el("r-shiprate"), rTax = el("r-taxrate"), rLabor = el("r-laborrate"), rMatDisc = el("r-matdisc");
@@ -279,7 +279,7 @@
   // AC clears the amount + discount and resets the rates to defaults.
   el("ac").addEventListener("click", function () {
     gross.value = ""; disc.value = "";
-    rDiv.value = "0"; rShip.value = "0"; rTax.value = "0"; rLabor.value = "15"; rMatDisc.value = "0";
+    rDiv.value = "2.8"; rShip.value = "0"; rTax.value = "0"; rLabor.value = "15"; rMatDisc.value = "0";
     render();
     gross.focus();
   });

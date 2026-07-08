@@ -100,13 +100,13 @@
 
     <label class="field" style="margin-top:18px">Rates <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· adjust the formula</span></label>
     <div class="rates">
-      <label class="rate"><span>Materials ÷</span><input id="r-divisor" type="text" inputmode="decimal" value="1.8" autocomplete="off"/></label>
-      <label class="rate"><span>Shipping</span><input id="r-shiprate" type="text" inputmode="decimal" value="5" autocomplete="off"/><i>%</i></label>
-      <label class="rate"><span>Taxes</span><input id="r-taxrate" type="text" inputmode="decimal" value="9.75" autocomplete="off"/><i>%</i></label>
+      <label class="rate"><span>Materials ÷</span><input id="r-divisor" type="text" inputmode="decimal" value="0" autocomplete="off"/></label>
+      <label class="rate"><span>Shipping</span><input id="r-shiprate" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
+      <label class="rate"><span>Taxes</span><input id="r-taxrate" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Labor</span><input id="r-laborrate" type="text" inputmode="decimal" value="15" autocomplete="off"/><i>%</i></label>
-      <label class="rate"><span>Mfr. discount</span><input id="r-matdisc" type="text" inputmode="decimal" value="20" autocomplete="off"/><i>%</i></label>
+      <label class="rate"><span>Mfr. discount</span><input id="r-matdisc" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
     </div>
-    <p class="hint">Materials = price ÷ multiplier, then the manufacturer discount comes off that actual materials cost; shipping = % of net materials; taxes = % of (net materials + shipping); labor = % of price (min $350). Net materials, shipping &amp; taxes are covered by the deposit.</p>
+    <p class="hint">Only labor defaults (15% of price, min $350). Materials, shipping, taxes &amp; the manufacturer discount all default to 0 — set them as needed. Materials = price ÷ multiplier (0 = none), then the manufacturer discount comes off that; shipping = % of net materials; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the deposit.</p>
 
     <label class="field" for="disc" style="margin-top:18px">Discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, comes out of profit</span></label>
     <div class="input-money">
@@ -145,10 +145,10 @@
 
     <div class="card">
       <table class="rows">
-        <tr><td>Materials <span class="pct" id="r-matlbl">(price ÷ 1.8)</span></td><td id="r-mat">$0</td></tr>
+        <tr><td>Materials <span class="pct" id="r-matlbl">(price ÷ 0)</span></td><td id="r-mat">$0</td></tr>
         <tr class="disc-row"><td>Mfr. discount <span class="pct" id="r-matdisclbl">(20%)</span></td><td id="r-matdiscamt">$0</td></tr>
         <tr><td>Shipping <span class="pct" id="r-shiplbl">(5%)</span></td><td id="r-ship">$0</td></tr>
-        <tr><td>Taxes <span class="pct" id="r-taxlbl">(9.75%)</span></td><td id="r-tax2">$0</td></tr>
+        <tr><td>Taxes <span class="pct" id="r-taxlbl">(0%)</span></td><td id="r-tax2">$0</td></tr>
         <tr class="muted"><td>= Hard costs <span class="pct">(deposit target)</span></td><td id="r-hard">$0</td></tr>
         <tr><td>Labor <span class="pct" id="r-laborlbl">(15% of price · min $350, paid after install)</span></td><td id="r-labor">$0</td></tr>
         <tr class="muted"><td>Total cost</td><td id="r-cost">$0</td></tr>
@@ -163,7 +163,7 @@
 
 <script>
 (function () {
-  var DEF = { divisor: 1.8, ship: 5, tax: 9.75, labor: 15, matDisc: 20 };  // defaults (percent form)
+  var DEF = { divisor: 0, ship: 0, tax: 0, labor: 15, matDisc: 0 };  // only labor defaults non-zero
   var el = function (id) { return document.getElementById(id); };
   var gross = el("gross"), disc = el("disc");
   var rDiv = el("r-divisor"), rShip = el("r-shiprate"), rTax = el("r-taxrate"), rLabor = el("r-laborrate"), rMatDisc = el("r-matdisc");
@@ -193,7 +193,7 @@
   // using the editable rates.
   function calc(priceCents, r) {
     // price ÷ modifier = actual materials cost, then the mfr discount comes off that.
-    var matList = Math.round(priceCents / r.divisor);    // actual materials cost
+    var matList = r.divisor > 0 ? Math.round(priceCents / r.divisor) : 0;    // divisor 0 → no materials
     var matDisc = Math.round(matList * r.matDiscRate);   // manufacturer discount (credit)
     var materials = matList - matDisc;                   // net materials cost we actually pay
     // Shipping & taxes follow the net (post-discount) materials.
@@ -279,7 +279,7 @@
   // AC clears the amount + discount and resets the rates to defaults.
   el("ac").addEventListener("click", function () {
     gross.value = ""; disc.value = "";
-    rDiv.value = "1.8"; rShip.value = "5"; rTax.value = "9.75"; rLabor.value = "15"; rMatDisc.value = "20";
+    rDiv.value = "0"; rShip.value = "0"; rTax.value = "0"; rLabor.value = "15"; rMatDisc.value = "0";
     render();
     gross.focus();
   });

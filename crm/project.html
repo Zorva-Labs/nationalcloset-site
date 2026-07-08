@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc44" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc45" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc44"></script>
+<script src="/crm/crm-app.js?v=ncc45"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -690,7 +690,7 @@ const finDollars = (cents) => (Math.max(0, cents || 0) / 100).toFixed(2);
 const finToCents = (v) => Math.max(0, Math.round((parseFloat(v) || 0) * 100));
 // Default formula rates (mirror functions/_lib/financials.js). Each is editable
 // per job — the inputs in the line labels feed these.
-const FIN_DEF = { divisor: 1.8, shipRate: 0.05, taxRate: 0.0975, laborRate: 0.15 };
+const FIN_DEF = { divisor: 0, shipRate: 0, taxRate: 0, laborRate: 0.15 };  // only labor defaults non-zero
 const finPctStr = (frac) => String(+(((frac || 0) * 100).toFixed(4)));  // 0.0975 → "9.75"
 // Pull a saved rate off finState (falls back to the default).
 const finRateVal = (key, def) => { const v = finState && finState[key]; return (Number.isFinite(v) && v > 0) ? v : def; };
@@ -712,7 +712,7 @@ function finReadRates() {
 
 function finCalc(priceCents, rates) {
   const r = rates || FIN_DEF;
-  const materials = Math.round(priceCents / r.divisor);
+  const materials = r.divisor > 0 ? Math.round(priceCents / r.divisor) : 0;  // divisor 0 → no materials
   const shipping = Math.round(materials * r.shipRate);
   const tax = Math.round((materials + shipping) * r.taxRate);
   const labor = priceCents > 0 ? Math.max(Math.round(priceCents * r.laborRate), 35000) : 0; // min $350
@@ -775,7 +775,7 @@ function finRender() {
       <button class="btn primary sm" onclick="saveFinancials()">Save</button>
       <button class="btn ghost sm" onclick="resetFinancials()">Reset to formula</button>
     </div>
-    <p class="muted" style="font-size:11px;margin:8px 0 0">Materials = price ÷ divisor; shipping = % of materials; taxes = % of (materials + shipping); labor = % of the price, min $350. <strong>The multiplier &amp; percentages are editable</strong> — change them in the line labels and Save (they’re stored per job). The discount comes out of profit only (profit = net − expenses). Uncheck “auto” to override a line’s dollar amount. Feeds Reports → P&amp;L.</p>`;
+    <p class="muted" style="font-size:11px;margin:8px 0 0"><strong>Only labor defaults (15% of the price, min $350).</strong> Materials, shipping &amp; taxes default to 0 — set the multiplier &amp; percentages in the line labels per job and Save (materials = price ÷ divisor; shipping = % of materials; taxes = % of materials + shipping; a divisor of 0 means no materials). The discount comes out of profit only (profit = net − expenses). Uncheck “auto” to override a line’s dollar amount. Feeds Reports → P&amp;L.</p>`;
 }
 
 function finReadPrice() {

@@ -1,21 +1,23 @@
-// Job cost model. The expense breakdown and profit are derived FROM the price:
-//   1. materials = price ÷ 1.8
-//   2. shipping  = 5%  of materials            (default; editable per job)
-//   3. taxes     = 9.75% of (materials+shipping) (default; editable per job)
+// Job cost model. The expense breakdown and profit are derived FROM the price.
+// Everything EXCEPT labor defaults to 0 — the estimator sets materials, shipping
+// and taxes per job. Only labor auto-computes by default (15% of the gross).
+//   1. materials = price ÷ divisor   (default divisor 0 → materials $0)
+//   2. shipping  = shipRate of materials            (default 0%)
+//   3. taxes     = taxRate of (materials+shipping)  (default 0%)
 //   4. labor     = 15% of the gross job price, min $350   (installation)
 //   5. profit    = net − (materials + shipping + taxes + labor + misc + fee)
 // The deposit covers the up-front hard costs (materials + shipping + taxes) and
 // is never less than 50% of the net.
 
-export const MATERIALS_DIVISOR = 1.8;  // materials cost = job total ÷ 1.8 (default)
-export const SHIPPING_RATE = 0.05;     // shipping = 5% of materials (default)
-export const TAX_RATE = 0.0975;        // taxes = 9.75% of (materials + shipping) (default)
-export const LABOR_RATE = 0.15;        // installation labor = 15% of the gross job price (default)
+export const MATERIALS_DIVISOR = 0;    // 0 = no auto materials by default (set per job)
+export const SHIPPING_RATE = 0;        // shipping default 0% (set per job)
+export const TAX_RATE = 0;             // taxes default 0% (set per job)
+export const LABOR_RATE = 0.15;        // installation labor = 15% of the gross job price (the only non-zero default)
 export const MIN_LABOR_CENTS = 35000;  // …but never less than $350
 
 // The four formula rates are adjustable per job (stored on job_financials).
 // A stored value overrides the default; NULL/absent falls back to the default.
-// The divisor must be > 0; the percentages may be 0 (e.g. no shipping charged).
+// A divisor of 0 means "no materials" (materials $0); the percentages default 0.
 export function ratesFrom(row) {
   const pos = (v, d) => (Number.isFinite(v) && v > 0 ? v : d);
   const frac = (v, d) => (Number.isFinite(v) && v >= 0 ? v : d);
@@ -53,7 +55,7 @@ export function computeBreakdown(priceCents, rates) {
   const taxRate   = Number.isFinite(r.taxRate)   ? r.taxRate   : TAX_RATE;
   const laborRate = Number.isFinite(r.laborRate) ? r.laborRate : LABOR_RATE;
   const price = Math.max(0, Math.round(priceCents || 0));
-  const materials = Math.round(price / divisor);
+  const materials = divisor > 0 ? Math.round(price / divisor) : 0;  // divisor 0 → no materials
   const shipping = Math.round(materials * shipRate);
   const tax = Math.round((materials + shipping) * taxRate);
   const labor = price > 0 ? Math.max(Math.round(price * laborRate), MIN_LABOR_CENTS) : 0; // %, min $350

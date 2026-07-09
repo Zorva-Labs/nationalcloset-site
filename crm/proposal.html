@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc46" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc47" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc46"></script>
+<script src="/crm/crm-app.js?v=ncc47"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -172,7 +172,7 @@ function renderTier(t, i) {
 // materials; taxes = 9.75% of (materials + shipping); labor = 15% of gross, min $350.
 // Editable formula rates for the internal cost preview (session-only; defaults
 // mirror _lib/financials.js). The rate bar above the options edits these.
-const PROP_RATES = { divisor: 2.8, shipRate: 0, taxRate: 0, laborRate: 0.15, matDiscRate: 0 };  // materials ÷2.8 + labor 15% default; shipping/taxes/mfr 0
+const PROP_RATES = { divisor: 2.8, shipRate: 0, taxRate: 0, laborRate: 0.15, matDiscRate: 0, feeRate: 0.03 };  // materials ÷2.8, labor 15%, processing fee 3%; shipping/taxes/mfr 0
 const propPctStr = (frac) => String(+((frac * 100).toFixed(4)));
 function tierCostCalc(grossCents, netCents) {
   const g = grossCents || 0;
@@ -185,10 +185,11 @@ function tierCostCalc(grossCents, netCents) {
   const shipping = Math.round(materials * r.shipRate);
   const tax = Math.round((materials + shipping) * r.taxRate);
   const labor = g > 0 ? Math.max(Math.round(g * r.laborRate), 35000) : 0;
-  const cost = materials + shipping + tax + labor;
+  const fee = Math.round((netCents || 0) * r.feeRate);  // payment-processing fee, out of profit
+  const cost = materials + shipping + tax + labor + fee;
   const profit = (netCents || 0) - cost;
   const margin = netCents ? Math.round((profit / netCents) * 100) : 0;
-  return { matList, matDisc, materials, shipping, tax, labor, cost, profit, margin };
+  return { matList, matDisc, materials, shipping, tax, labor, fee, cost, profit, margin };
 }
 function tierCostRows(grossCents, netCents) {
   const c = tierCostCalc(grossCents, netCents);
@@ -201,6 +202,7 @@ function tierCostRows(grossCents, netCents) {
     + row(`Shipping <span style="opacity:.7">(${propPctStr(r.shipRate)}%)</span>`, m(c.shipping))
     + row(`Taxes <span style="opacity:.7">(${propPctStr(r.taxRate)}%)</span>`, m(c.tax))
     + row(`Labor <span style="opacity:.7">(${propPctStr(r.laborRate)}%, min $350)</span>`, m(c.labor))
+    + row(`Processing fee <span style="opacity:.7">(${propPctStr(r.feeRate)}% of net)</span>`, m(c.fee))
     + row("Total cost", m(c.cost), true)
     + (discount > 0 ? row("Discount (off profit)", "−" + m(discount)) : "")
     + row("Profit", `<span style="color:#15803D;font-weight:700">${m(c.profit)} · ${c.margin}%</span>`, true);
@@ -219,17 +221,19 @@ function propRatesBar() {
       <label style="display:flex;align-items:center;gap:6px">Taxes ${inp("prop-rate-tax", propPctStr(r.taxRate))}%</label>
       <label style="display:flex;align-items:center;gap:6px">Labor ${inp("prop-rate-labor", propPctStr(r.laborRate))}% <span class="muted">min $350</span></label>
       <label style="display:flex;align-items:center;gap:6px">Mfr. discount ${inp("prop-rate-matdisc", propPctStr(r.matDiscRate))}%</label>
+      <label style="display:flex;align-items:center;gap:6px">Processing fee ${inp("prop-rate-fee", propPctStr(r.feeRate))}%</label>
     </div>
   </div>`;
 }
 function applyPropRates() {
   const num = (id) => parseFloat((document.getElementById(id) || {}).value);
-  const div = num("prop-rate-divisor"), sh = num("prop-rate-ship"), tx = num("prop-rate-tax"), lb = num("prop-rate-labor"), md = num("prop-rate-matdisc");
+  const div = num("prop-rate-divisor"), sh = num("prop-rate-ship"), tx = num("prop-rate-tax"), lb = num("prop-rate-labor"), md = num("prop-rate-matdisc"), fe = num("prop-rate-fee");
   if (isFinite(div) && div > 0) PROP_RATES.divisor = div;
   if (isFinite(sh) && sh >= 0) PROP_RATES.shipRate = sh / 100;
   if (isFinite(tx) && tx >= 0) PROP_RATES.taxRate = tx / 100;
   if (isFinite(lb) && lb >= 0) PROP_RATES.laborRate = lb / 100;
   if (isFinite(md) && md >= 0) PROP_RATES.matDiscRate = md / 100;
+  if (isFinite(fe) && fe >= 0) PROP_RATES.feeRate = fe / 100;
   document.querySelectorAll('.card[data-tier]').forEach((card) => recalcTierEl(card));
 }
 function tierCostBox(grossCents, netCents) {

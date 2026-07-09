@@ -1,5 +1,5 @@
 import { requireAuth, json } from "../../_lib/auth.js";
-import { resolveFinancials } from "../../_lib/financials.js";
+import { resolveFinancials, processingFee } from "../../_lib/financials.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -77,7 +77,8 @@ export async function onRequestGet(context) {
       price_auto: r.jf_price_auto, discount_auto: r.jf_discount_auto, materials_auto: r.jf_materials_auto,
       shipping_auto: r.jf_shipping_auto, tax_auto: r.jf_tax_auto, labor_auto: r.jf_labor_auto,
     } : null;
-    r.net_profit_cents = gross ? resolveFinancials(gross, discount, jfRow).profit_cents - (r.fee_cents || 0) : null;
+    if (gross) { const fin = resolveFinancials(gross, discount, jfRow); r.net_profit_cents = fin.profit_cents - processingFee(fin.net_cents, fin.fee_rate, r.fee_cents); }
+    else r.net_profit_cents = null;
   }
 
   // Always include the counts map so the list page can show filter badges.

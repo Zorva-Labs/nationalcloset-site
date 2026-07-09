@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc46" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc47" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc46"></script>
+<script src="/crm/crm-app.js?v=ncc47"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -690,7 +690,7 @@ const finDollars = (cents) => (Math.max(0, cents || 0) / 100).toFixed(2);
 const finToCents = (v) => Math.max(0, Math.round((parseFloat(v) || 0) * 100));
 // Default formula rates (mirror functions/_lib/financials.js). Each is editable
 // per job — the inputs in the line labels feed these.
-const FIN_DEF = { divisor: 2.8, shipRate: 0, taxRate: 0, laborRate: 0.15 };  // materials ÷2.8 + labor 15% default; shipping/taxes 0
+const FIN_DEF = { divisor: 2.8, shipRate: 0, taxRate: 0, laborRate: 0.15, feeRate: 0.03 };  // materials ÷2.8, labor 15%, processing fee 3%; shipping/taxes 0
 const finPctStr = (frac) => String(+(((frac || 0) * 100).toFixed(4)));  // 0.0975 → "9.75"
 // Pull a saved rate off finState (falls back to the default).
 const finRateVal = (key, def) => { const v = finState && finState[key]; return (Number.isFinite(v) && v > 0) ? v : def; };
@@ -701,12 +701,13 @@ const finRateInp = (id, val) => `<input id="${id}" value="${val}" oninput="finRe
 // Read the four editable rate inputs; fall back to defaults on blank/invalid.
 function finReadRates() {
   const num = (id) => parseFloat((document.getElementById(id) || {}).value);
-  const div = num("fin-rate-divisor"), sh = num("fin-rate-ship"), tx = num("fin-rate-tax"), lb = num("fin-rate-labor");
+  const div = num("fin-rate-divisor"), sh = num("fin-rate-ship"), tx = num("fin-rate-tax"), lb = num("fin-rate-labor"), fe = num("fin-rate-fee");
   return {
     divisor:   (isFinite(div) && div > 0) ? div : FIN_DEF.divisor,
     shipRate:  (isFinite(sh) && sh >= 0) ? sh / 100 : FIN_DEF.shipRate,
     taxRate:   (isFinite(tx) && tx >= 0) ? tx / 100 : FIN_DEF.taxRate,
     laborRate: (isFinite(lb) && lb >= 0) ? lb / 100 : FIN_DEF.laborRate,
+    feeRate:   (isFinite(fe) && fe >= 0) ? fe / 100 : FIN_DEF.feeRate,
   };
 }
 
@@ -765,7 +766,7 @@ function finRender() {
       ${finRow("tax", `Taxes <span class='muted' style='font-size:11px'>· ${finRateInp("fin-rate-tax", finPctStr(finFracVal("tax_rate", FIN_DEF.taxRate)))}% of (materials + shipping)</span>`)}
       ${finRow("labor", `Labor <span class='muted' style='font-size:11px'>· ${finRateInp("fin-rate-labor", finPctStr(finFracVal("labor_rate", FIN_DEF.laborRate)))}% of price, min $350</span>`)}
       <tr><td style="padding:6px 0">Misc</td><td style="text-align:right;white-space:nowrap"><span style="color:var(--ink-soft)">$</span><input id="fin-misc" value="${finDollars(f.misc_cents)}" oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right"/></td></tr>
-      ${(f.processing_fee_cents || 0) > 0 ? `<tr><td style="padding:6px 0">Processing fee <span class='muted' style='font-size:11px'>· card / Klarna, actual</span></td><td style="text-align:right;color:#B45309" id="fin-fee">${SSCrm.fmtMoney(f.processing_fee_cents)}</td></tr>` : ""}
+      <tr><td style="padding:6px 0">Processing fee <span class='muted' style='font-size:11px'>· ${f.processing_fee_is_actual ? "card / Klarna, actual" : `${finRateInp("fin-rate-fee", finPctStr(finFracVal("fee_rate", FIN_DEF.feeRate)))}% of net, est.`}</span></td><td style="text-align:right;color:#B45309" id="fin-fee">${SSCrm.fmtMoney(f.processing_fee_cents || 0)}</td></tr>
       <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
       <tr><td style="padding:4px 0">Total expenses</td><td style="text-align:right" id="fin-expenses">${SSCrm.fmtMoney(f.expenses_cents)}</td></tr>
       <tr style="font-weight:700"><td style="padding:4px 0">Profit</td><td style="text-align:right" id="fin-profit">${SSCrm.fmtMoney(f.profit_cents)}</td></tr>
@@ -812,9 +813,11 @@ function finRecalc() {
   if (document.getElementById("fin-tax-auto").checked) document.getElementById("fin-tax").value = finDollars(taxCents);
   const laborCents = document.getElementById("fin-labor-auto").checked ? (price > 0 ? Math.max(Math.round(price * rates.laborRate), 35000) : 0) : finToCents(document.getElementById("fin-labor").value);
   if (document.getElementById("fin-labor-auto").checked) document.getElementById("fin-labor").value = finDollars(laborCents);
-  const fee = finState.processing_fee_cents || 0;   // actual Stripe fee already collected (read-only)
-  const sum = matCents + shipCents + taxCents + laborCents + finToCents(document.getElementById("fin-misc").value) + fee;
   const net = price - discount;
+  // Processing fee: actual Stripe fee if collected, else the estimate (feeRate × net).
+  const feeCents = finState.processing_fee_is_actual ? (finState.processing_fee_cents || 0) : Math.round(net * rates.feeRate);
+  const feeEl = document.getElementById("fin-fee"); if (feeEl) feeEl.textContent = SSCrm.fmtMoney(feeCents);
+  const sum = matCents + shipCents + taxCents + laborCents + finToCents(document.getElementById("fin-misc").value) + feeCents;
   document.getElementById("fin-net").textContent = SSCrm.fmtMoney(net);
   document.getElementById("fin-expenses").textContent = SSCrm.fmtMoney(sum);
   document.getElementById("fin-profit").textContent = SSCrm.fmtMoney(net - sum);
@@ -840,6 +843,7 @@ async function saveFinancials() {
   body.shipping_rate = rates.shipRate;
   body.tax_rate = rates.taxRate;
   body.labor_rate = rates.laborRate;
+  body.fee_rate = rates.feeRate;
   try {
     const r = await SSCrm.fetchJSON(`/api/projects/${state.project.id}/financials`, { method: "PUT", body: JSON.stringify(body) });
     finState = r.financials;

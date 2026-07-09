@@ -7,8 +7,8 @@
 // from the accepted proposal's selected tier; any line can be overridden.
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { getProjectBilling } from "../../../_lib/invoices.js";
-import { resolveFinancials, computeBreakdown,
-         MATERIALS_DIVISOR, SHIPPING_RATE, TAX_RATE, LABOR_RATE } from "../../../_lib/financials.js";
+import { resolveFinancials, computeBreakdown, processingFee,
+         MATERIALS_DIVISOR, SHIPPING_RATE, TAX_RATE, LABOR_RATE, FEE_RATE } from "../../../_lib/financials.js";
 import { recordActivity } from "../../../_lib/db.js";
 
 // Gross (pre-discount) cost basis + dollar discount for a job. Prefer the
@@ -41,10 +41,13 @@ async function projectFeeCents(env, projectId) {
   ).bind(projectId).first().catch(() => null);
   return r?.fee || 0;
 }
-// Fold the processing fee into the financials as a cost line that reduces profit.
-function withFee(fin, feeCents) {
-  const fee = feeCents || 0;
-  return { ...fin, processing_fee_cents: fee, expenses_cents: (fin.expenses_cents || 0) + fee, profit_cents: (fin.profit_cents || 0) - fee };
+// Fold the processing fee into the financials as a cost line that reduces
+// profit. Uses the ACTUAL Stripe fees when any were collected, otherwise the
+// estimate (fee_rate × net, default 3%).
+function withFee(fin, actualFeeCents) {
+  const fee = processingFee(fin.net_cents, fin.fee_rate, actualFeeCents);
+  return { ...fin, processing_fee_cents: fee, processing_fee_is_actual: (actualFeeCents || 0) > 0,
+           expenses_cents: (fin.expenses_cents || 0) + fee, profit_cents: (fin.profit_cents || 0) - fee };
 }
 
 export async function onRequestGet(context) {
@@ -76,6 +79,7 @@ export async function onRequestPut(context) {
     shipRate:  fracRate(body.shipping_rate, SHIPPING_RATE),
     taxRate:   fracRate(body.tax_rate, TAX_RATE),
     laborRate: fracRate(body.labor_rate, LABOR_RATE),
+    feeRate:   fracRate(body.fee_rate, FEE_RATE),
   };
 
   // Gross price: manual override if a value is sent AND price_auto is not true.
@@ -100,17 +104,17 @@ export async function onRequestPut(context) {
     `INSERT INTO job_financials
        (project_id, price_cents, discount_pct, materials_cents, shipping_cents, tax_cents, labor_cents, misc_cents,
         discount_cents, price_auto, discount_auto, materials_auto, shipping_auto, tax_auto, labor_auto, notes,
-        materials_divisor, shipping_rate, tax_rate, labor_rate, updated_at)
-     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20, datetime('now'))
+        materials_divisor, shipping_rate, tax_rate, labor_rate, fee_rate, updated_at)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21, datetime('now'))
      ON CONFLICT(project_id) DO UPDATE SET
        price_cents=?2, discount_pct=?3, materials_cents=?4, shipping_cents=?5, tax_cents=?6, labor_cents=?7,
        misc_cents=?8, discount_cents=?9, price_auto=?10, discount_auto=?11, materials_auto=?12, shipping_auto=?13,
        tax_auto=?14, labor_auto=?15, notes=?16,
-       materials_divisor=?17, shipping_rate=?18, tax_rate=?19, labor_rate=?20, updated_at=datetime('now')`
+       materials_divisor=?17, shipping_rate=?18, tax_rate=?19, labor_rate=?20, fee_rate=?21, updated_at=datetime('now')`
   ).bind(
     id, price, 0, m.v, s.v, t.v, l.v, misc, discount,
     priceOverride ? 0 : 1, discountOverride ? 0 : 1, m.a, s.a, t.a, l.a, (body.notes || null),
-    rates.divisor, rates.shipRate, rates.taxRate, rates.laborRate,
+    rates.divisor, rates.shipRate, rates.taxRate, rates.laborRate, rates.feeRate,
   ).run();
 
   const row = await context.env.DB.prepare(`SELECT * FROM job_financials WHERE project_id=?1`).bind(id).first();

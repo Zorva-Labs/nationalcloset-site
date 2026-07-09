@@ -14,8 +14,9 @@ export const SHIPPING_RATE = 0;        // shipping default 0% (set per job)
 export const TAX_RATE = 0;             // taxes default 0% (set per job)
 export const LABOR_RATE = 0.15;        // installation labor = 15% of the gross job price (the only non-zero default)
 export const MIN_LABOR_CENTS = 35000;  // …but never less than $350
+export const FEE_RATE = 0.03;          // payment-processing fee = 3% of net (default; editable per job)
 
-// The four formula rates are adjustable per job (stored on job_financials).
+// The formula rates are adjustable per job (stored on job_financials).
 // A stored value overrides the default; NULL/absent falls back to the default.
 // A divisor of 0 means "no materials" (materials $0); the percentages default 0.
 export function ratesFrom(row) {
@@ -26,7 +27,18 @@ export function ratesFrom(row) {
     shipRate:  frac(row && row.shipping_rate, SHIPPING_RATE),
     taxRate:   frac(row && row.tax_rate, TAX_RATE),
     laborRate: frac(row && row.labor_rate, LABOR_RATE),
+    feeRate:   frac(row && row.fee_rate, FEE_RATE),
   };
+}
+
+// The processing-fee cost for a job: the ACTUAL Stripe fees collected on paid
+// invoices when there are any, otherwise the estimate (feeRate × net, default
+// 3%). One source of truth so the job card, reports and pipeline all agree.
+export function processingFee(netCents, feeRate, actualFeeCents) {
+  const actual = actualFeeCents || 0;
+  if (actual > 0) return actual;
+  const rate = (Number.isFinite(feeRate) && feeRate >= 0) ? feeRate : FEE_RATE;
+  return Math.round(Math.max(0, netCents || 0) * rate);
 }
 
 // Flat markup baked into every customer quote (proposals + estimates). Applied
@@ -122,6 +134,7 @@ export function resolveFinancials(defaultGrossCents, defaultDiscountCents, row) 
     shipping_rate: rates.shipRate,
     tax_rate: rates.taxRate,
     labor_rate: rates.laborRate,
+    fee_rate: rates.feeRate,
     min_labor_cents: MIN_LABOR_CENTS,
   };
 }

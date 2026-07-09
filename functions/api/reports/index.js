@@ -5,7 +5,7 @@
 //   every project. Each job's numbers come from its saved overrides where set,
 //   otherwise from the cost formula applied to its contract/proposal total.
 import { requireAuth, json } from "../../_lib/auth.js";
-import { resolveFinancials } from "../../_lib/financials.js";
+import { resolveFinancials, processingFee } from "../../_lib/financials.js";
 
 const WON = ["contracted", "scheduled_install", "installing", "completed"];
 
@@ -57,8 +57,9 @@ export async function onRequestGet(context) {
     // A job_financials row exists iff its columns came back non-null.
     const hasRow = r.price_cents != null;
     const fin = resolveFinancials(gross, discount, hasRow ? r : null);
-    // Fold actual Stripe processing fees (card/Klarna) into expenses & profit.
-    const fee = r.fee_cents || 0;
+    // Processing fee: actual Stripe fees (card/Klarna) when collected, else the
+    // estimate (fee_rate × net, default 3%). Folded into expenses & profit.
+    const fee = processingFee(fin.net_cents, fin.fee_rate, r.fee_cents);
     const expenses = fin.expenses_cents + fee;
     const profit = fin.profit_cents - fee;
     jobs.push({

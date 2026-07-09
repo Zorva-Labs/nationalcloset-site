@@ -105,8 +105,9 @@
       <label class="rate"><span>Taxes</span><input id="r-taxrate" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Labor</span><input id="r-laborrate" type="text" inputmode="decimal" value="15" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Mfr. discount</span><input id="r-matdisc" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
+      <label class="rate"><span>Processing fee</span><input id="r-feerate" type="text" inputmode="decimal" value="3" autocomplete="off"/><i>%</i></label>
     </div>
-    <p class="hint">Defaults: materials = price ÷ 2.8 and labor = 15% of price (min $350). Shipping, taxes &amp; the manufacturer discount default to 0 — set them as needed. The manufacturer discount comes off the materials cost; shipping = % of net materials; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the deposit.</p>
+    <p class="hint">Defaults: materials = price ÷ 2.8, labor = 15% of price (min $350) and a 3% processing fee of net. Shipping, taxes &amp; the manufacturer discount default to 0 — set them as needed. The manufacturer discount comes off the materials cost; shipping = % of net materials; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the deposit; the processing fee comes out of profit.</p>
 
     <label class="field" for="disc" style="margin-top:18px">Discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, comes out of profit</span></label>
     <div class="input-money">
@@ -151,6 +152,7 @@
         <tr><td>Taxes <span class="pct" id="r-taxlbl">(0%)</span></td><td id="r-tax2">$0</td></tr>
         <tr class="muted"><td>= Hard costs <span class="pct">(deposit target)</span></td><td id="r-hard">$0</td></tr>
         <tr><td>Labor <span class="pct" id="r-laborlbl">(15% of price · min $350, paid after install)</span></td><td id="r-labor">$0</td></tr>
+        <tr><td>Processing fee <span class="pct" id="r-feelbl">(3%)</span></td><td id="r-fee">$0</td></tr>
         <tr class="muted"><td>Total cost</td><td id="r-cost">$0</td></tr>
         <tr class="sep"><td>Gross quote</td><td id="r-gross">$0</td></tr>
         <tr class="disc-row" id="r-discrow" hidden><td>Discount</td><td id="r-discamt">$0</td></tr>
@@ -163,10 +165,10 @@
 
 <script>
 (function () {
-  var DEF = { divisor: 2.8, ship: 0, tax: 0, labor: 15, matDisc: 0 };  // materials ÷2.8 + labor 15% default; shipping/taxes/mfr 0
+  var DEF = { divisor: 2.8, ship: 0, tax: 0, labor: 15, matDisc: 0, fee: 3 };  // materials ÷2.8, labor 15%, processing fee 3%; shipping/taxes/mfr 0
   var el = function (id) { return document.getElementById(id); };
   var gross = el("gross"), disc = el("disc");
-  var rDiv = el("r-divisor"), rShip = el("r-shiprate"), rTax = el("r-taxrate"), rLabor = el("r-laborrate"), rMatDisc = el("r-matdisc");
+  var rDiv = el("r-divisor"), rShip = el("r-shiprate"), rTax = el("r-taxrate"), rLabor = el("r-laborrate"), rMatDisc = el("r-matdisc"), rFee = el("r-feerate");
 
   // Read a rate input; fall back to the default on blank/invalid.
   function rate(inp, def, isDivisor) {
@@ -181,6 +183,7 @@
       taxRate: rate(rTax, DEF.tax) / 100,
       laborRate: rate(rLabor, DEF.labor) / 100,
       matDiscRate: rate(rMatDisc, DEF.matDisc) / 100,   // manufacturer discount on materials
+      feeRate: rate(rFee, DEF.fee) / 100,               // payment-processing fee on net
     };
   }
 
@@ -223,7 +226,9 @@
     // Deposit = at least 50% of the net, but never less than the hard costs
     // (materials + shipping + taxes). Capped at net.
     var deposit = Math.min(net, Math.max(half, f.hard));
-    var profit = net - f.cost;
+    var fee = Math.round(net * r.feeRate);       // payment-processing fee, out of profit
+    var totalCost = f.cost + fee;
+    var profit = net - totalCost;
 
     el("d-min").textContent = money(deposit);
     el("d-minpct").textContent = pct(deposit, net) + " of the " + (discount > 0 ? "net " : "") + "job";
@@ -254,7 +259,9 @@
     el("r-taxlbl").textContent = pctStr(r.taxRate);
     el("r-laborlbl").textContent = "(" + (+(r.laborRate * 100).toFixed(4)) + "% of price · min $350, paid after install)";
     el("r-labor").textContent = money(f.labor);
-    el("r-cost").textContent = money(f.cost);
+    el("r-fee").textContent = money(fee);
+    el("r-feelbl").textContent = pctStr(r.feeRate);
+    el("r-cost").textContent = money(totalCost);
     el("r-gross").textContent = money(price);
     var showDisc = discount > 0;
     el("r-discrow").hidden = !showDisc;
@@ -267,7 +274,7 @@
     out.hidden = false;
   }
 
-  var inputs = [gross, disc, rDiv, rShip, rTax, rLabor, rMatDisc];
+  var inputs = [gross, disc, rDiv, rShip, rTax, rLabor, rMatDisc, rFee];
   inputs.forEach(function (i) { i.addEventListener("input", render); });
 
   // = recomputes and scrolls the result into view (handy on mobile).
@@ -279,7 +286,7 @@
   // AC clears the amount + discount and resets the rates to defaults.
   el("ac").addEventListener("click", function () {
     gross.value = ""; disc.value = "";
-    rDiv.value = "2.8"; rShip.value = "0"; rTax.value = "0"; rLabor.value = "15"; rMatDisc.value = "0";
+    rDiv.value = "2.8"; rShip.value = "0"; rTax.value = "0"; rLabor.value = "15"; rMatDisc.value = "0"; rFee.value = "3";
     render();
     gross.focus();
   });

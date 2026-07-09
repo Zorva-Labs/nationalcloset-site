@@ -12,15 +12,25 @@
   var GADS_LABELS = { lead: "UnZvCNvcxMwcEKmejZlE", call: "" };  // "Submit lead form" label set; "call" pending
   if (typeof gtag === "function" && GADS_ID) { gtag("config", GADS_ID); }
 
-  // Fire a GA4 event and, when configured, the matching Google Ads conversion.
-  // adsParams (optional) is merged into the Ads conversion hit (e.g. value/currency).
+  // Map our GA4 event names to standard Meta Pixel events so Facebook gets
+  // conversion activity to optimize toward (the pixel otherwise only fires PageView).
+  var FB_EVENTS = { generate_lead: "Lead", contact: "Contact" };
+
+  // Fire a GA4 event, the matching Google Ads conversion (when configured), and
+  // the matching Meta Pixel event. Each is independent so one being blocked/absent
+  // doesn't stop the others. adsParams (optional) is merged into the Ads/Pixel hit.
   function track(eventName, params, adsKey, adsParams) {
-    if (typeof gtag !== "function") return;
-    try { gtag("event", eventName, params || {}); } catch (e) {}
-    if (GADS_ID && adsKey && GADS_LABELS[adsKey]) {
-      var c = { send_to: GADS_ID + "/" + GADS_LABELS[adsKey] };
-      if (adsParams) { for (var k in adsParams) { if (Object.prototype.hasOwnProperty.call(adsParams, k)) c[k] = adsParams[k]; } }
-      try { gtag("event", "conversion", c); } catch (e) {}
+    if (typeof gtag === "function") {
+      try { gtag("event", eventName, params || {}); } catch (e) {}
+      if (GADS_ID && adsKey && GADS_LABELS[adsKey]) {
+        var c = { send_to: GADS_ID + "/" + GADS_LABELS[adsKey] };
+        if (adsParams) { for (var k in adsParams) { if (Object.prototype.hasOwnProperty.call(adsParams, k)) c[k] = adsParams[k]; } }
+        try { gtag("event", "conversion", c); } catch (e) {}
+      }
+    }
+    var fb = FB_EVENTS[eventName];
+    if (fb && typeof fbq === "function") {
+      try { fbq("track", fb, adsParams || {}); } catch (e) {}
     }
   }
 

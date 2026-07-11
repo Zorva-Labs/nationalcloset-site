@@ -44,6 +44,8 @@ export async function onRequestGet(context) {
                     jf.price_auto AS jf_price_auto, jf.discount_auto AS jf_discount_auto,
                     jf.materials_auto AS jf_materials_auto, jf.shipping_auto AS jf_shipping_auto,
                     jf.tax_auto AS jf_tax_auto, jf.labor_auto AS jf_labor_auto,
+                    jf.materials_divisor AS jf_materials_divisor, jf.shipping_rate AS jf_shipping_rate,
+                    jf.tax_rate AS jf_tax_rate, jf.labor_rate AS jf_labor_rate, jf.fee_rate AS jf_fee_rate,
                     (SELECT t.subtotal_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
                        WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_gross,
                     (SELECT t.total_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
@@ -76,6 +78,8 @@ export async function onRequestGet(context) {
       labor_cents: r.jf_labor_cents, misc_cents: r.jf_misc_cents,
       price_auto: r.jf_price_auto, discount_auto: r.jf_discount_auto, materials_auto: r.jf_materials_auto,
       shipping_auto: r.jf_shipping_auto, tax_auto: r.jf_tax_auto, labor_auto: r.jf_labor_auto,
+      materials_divisor: r.jf_materials_divisor, shipping_rate: r.jf_shipping_rate,
+      tax_rate: r.jf_tax_rate, labor_rate: r.jf_labor_rate, fee_rate: r.jf_fee_rate,
     } : null;
     if (gross) { const fin = resolveFinancials(gross, discount, jfRow); r.net_profit_cents = fin.profit_cents - processingFee(fin.net_cents, fin.fee_rate, r.fee_cents); }
     else r.net_profit_cents = null;

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Jobs · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc52"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc53"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc52"></script>
+<script src="/crm/crm-app.js?v=ncc53"></script>
 <script>
 // A project only counts as a "Job" once the contract is signed AND the deposit
 // is paid (status 'contracted'). Until then the deal stays a LEAD in the
@@ -58,9 +58,9 @@ function totalsBar(open, completed) {
     <div style="font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;color:${color || "var(--ink)"}">${value}</div>
     <div class="muted" style="font-size:11px">${sub}</div></div>`;
   return `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px">
-    ${tile("Open jobs", m(o.total), `${o.n} job${o.n === 1 ? "" : "s"} · ${m(o.profit)} projected profit`)}
-    ${tile("Completed jobs", m(c.total), `${c.n} job${c.n === 1 ? "" : "s"} · ${m(c.profit)} profit`)}
-    ${tile("All jobs", m(o.total + c.total), `${o.n + c.n} jobs · ${m(o.profit + c.profit)} net profit`, "#15803D")}
+    ${tile("Open net profit", m(o.profit), `${o.n} job${o.n === 1 ? "" : "s"} · ${m(o.total)} value · projected`, "#15803D")}
+    ${tile("Completed net profit", m(c.profit), `${c.n} job${c.n === 1 ? "" : "s"} · ${m(c.total)} value`, "#15803D")}
+    ${tile("Total net profit", m(o.profit + c.profit), `${o.n + c.n} jobs · ${m(o.total + c.total)} value`, "#15803D")}
   </div>`;
 }
 

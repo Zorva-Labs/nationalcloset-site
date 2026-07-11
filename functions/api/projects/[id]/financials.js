@@ -45,8 +45,11 @@ async function projectFeeCents(env, projectId) {
 // profit. Uses the ACTUAL Stripe fees when any were collected, otherwise the
 // estimate (fee_rate × net, default 3%).
 function withFee(fin, actualFeeCents) {
-  const fee = processingFee(fin.net_cents, fin.fee_rate, actualFeeCents);
-  return { ...fin, processing_fee_cents: fee, processing_fee_is_actual: (actualFeeCents || 0) > 0,
+  const isManual = fin.fee_auto === false;
+  const fee = processingFee(fin.net_cents, fin.fee_rate, actualFeeCents, fin.fee_manual_cents, isManual ? 0 : 1);
+  return { ...fin, processing_fee_cents: fee,
+           processing_fee_is_actual: !isManual && (actualFeeCents || 0) > 0,
+           processing_fee_is_manual: isManual,
            expenses_cents: (fin.expenses_cents || 0) + fee, profit_cents: (fin.profit_cents || 0) - fee };
 }
 
@@ -99,22 +102,27 @@ export async function onRequestPut(context) {
   const t = (body.tax_auto === false) ? { v: cents(body.tax_cents), a: 0 } : { v: Math.round((m.v + s.v) * rates.taxRate), a: 1 };
   const l = (body.labor_auto === false) ? { v: cents(body.labor_cents), a: 0 } : { v: f.labor, a: 1 };
   const misc = cents(body.misc_cents);
+  // Processing fee: manual dollar override when fee_auto is explicitly false
+  // (e.g. the real ACH fee), else automatic (actual Stripe fee or the % estimate).
+  const feeManual = (body.fee_auto === false);
+  const feeCol = { v: feeManual ? cents(body.fee_cents) : null, a: feeManual ? 0 : 1 };
 
   await context.env.DB.prepare(
     `INSERT INTO job_financials
        (project_id, price_cents, discount_pct, materials_cents, shipping_cents, tax_cents, labor_cents, misc_cents,
         discount_cents, price_auto, discount_auto, materials_auto, shipping_auto, tax_auto, labor_auto, notes,
-        materials_divisor, shipping_rate, tax_rate, labor_rate, fee_rate, updated_at)
-     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21, datetime('now'))
+        materials_divisor, shipping_rate, tax_rate, labor_rate, fee_rate, fee_cents, fee_auto, updated_at)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23, datetime('now'))
      ON CONFLICT(project_id) DO UPDATE SET
        price_cents=?2, discount_pct=?3, materials_cents=?4, shipping_cents=?5, tax_cents=?6, labor_cents=?7,
        misc_cents=?8, discount_cents=?9, price_auto=?10, discount_auto=?11, materials_auto=?12, shipping_auto=?13,
        tax_auto=?14, labor_auto=?15, notes=?16,
-       materials_divisor=?17, shipping_rate=?18, tax_rate=?19, labor_rate=?20, fee_rate=?21, updated_at=datetime('now')`
+       materials_divisor=?17, shipping_rate=?18, tax_rate=?19, labor_rate=?20, fee_rate=?21,
+       fee_cents=?22, fee_auto=?23, updated_at=datetime('now')`
   ).bind(
     id, price, 0, m.v, s.v, t.v, l.v, misc, discount,
     priceOverride ? 0 : 1, discountOverride ? 0 : 1, m.a, s.a, t.a, l.a, (body.notes || null),
-    rates.divisor, rates.shipRate, rates.taxRate, rates.laborRate, rates.feeRate,
+    rates.divisor, rates.shipRate, rates.taxRate, rates.laborRate, rates.feeRate, feeCol.v, feeCol.a,
   ).run();
 
   const row = await context.env.DB.prepare(`SELECT * FROM job_financials WHERE project_id=?1`).bind(id).first();

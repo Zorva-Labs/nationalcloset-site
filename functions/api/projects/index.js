@@ -46,6 +46,7 @@ export async function onRequestGet(context) {
                     jf.tax_auto AS jf_tax_auto, jf.labor_auto AS jf_labor_auto,
                     jf.materials_divisor AS jf_materials_divisor, jf.shipping_rate AS jf_shipping_rate,
                     jf.tax_rate AS jf_tax_rate, jf.labor_rate AS jf_labor_rate, jf.fee_rate AS jf_fee_rate,
+                    jf.fee_cents AS jf_fee_cents, jf.fee_auto AS jf_fee_auto,
                     (SELECT t.subtotal_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
                        WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_gross,
                     (SELECT t.total_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
@@ -80,9 +81,13 @@ export async function onRequestGet(context) {
       shipping_auto: r.jf_shipping_auto, tax_auto: r.jf_tax_auto, labor_auto: r.jf_labor_auto,
       materials_divisor: r.jf_materials_divisor, shipping_rate: r.jf_shipping_rate,
       tax_rate: r.jf_tax_rate, labor_rate: r.jf_labor_rate, fee_rate: r.jf_fee_rate,
+      fee_cents: r.jf_fee_cents, fee_auto: r.jf_fee_auto,
     } : null;
-    if (gross) { const fin = resolveFinancials(gross, discount, jfRow); r.net_profit_cents = fin.profit_cents - processingFee(fin.net_cents, fin.fee_rate, r.fee_cents); }
-    else r.net_profit_cents = null;
+    if (gross) {
+      const fin = resolveFinancials(gross, discount, jfRow);
+      const fee = processingFee(fin.net_cents, fin.fee_rate, r.fee_cents, fin.fee_manual_cents, fin.fee_auto === false ? 0 : 1);
+      r.net_profit_cents = fin.profit_cents - fee;
+    } else r.net_profit_cents = null;
   }
 
   // Always include the counts map so the list page can show filter badges.

@@ -31,10 +31,14 @@ export function ratesFrom(row) {
   };
 }
 
-// The processing-fee cost for a job: the ACTUAL Stripe fees collected on paid
-// invoices when there are any, otherwise the estimate (feeRate × net, default
-// 3%). One source of truth so the job card, reports and pipeline all agree.
-export function processingFee(netCents, feeRate, actualFeeCents) {
+// The processing-fee cost for a job. Precedence:
+//   1. a MANUAL override (feeAuto===0 with a fee_cents value) — e.g. the small
+//      actual ACH fee typed in by hand;
+//   2. the ACTUAL Stripe fees collected on paid invoices, if any;
+//   3. the estimate (feeRate × net, default 3%).
+// One source of truth so the job card, reports and pipeline all agree.
+export function processingFee(netCents, feeRate, actualFeeCents, manualCents, feeAuto) {
+  if (feeAuto === 0 && Number.isFinite(manualCents)) return Math.max(0, Math.round(manualCents));
   const actual = actualFeeCents || 0;
   if (actual > 0) return actual;
   const rate = (Number.isFinite(feeRate) && feeRate >= 0) ? feeRate : FEE_RATE;
@@ -135,6 +139,8 @@ export function resolveFinancials(defaultGrossCents, defaultDiscountCents, row) 
     tax_rate: rates.taxRate,
     labor_rate: rates.laborRate,
     fee_rate: rates.feeRate,
+    fee_auto: row ? (row.fee_auto !== 0) : true,
+    fee_manual_cents: (row && row.fee_cents != null) ? row.fee_cents : null,
     min_labor_cents: MIN_LABOR_CENTS,
   };
 }

@@ -24,6 +24,8 @@ export async function onRequestGet(context) {
             jf.price_cents, jf.discount_pct, jf.materials_cents, jf.shipping_cents, jf.tax_cents,
             jf.labor_cents, jf.misc_cents, jf.discount_cents, jf.price_auto, jf.discount_auto,
             jf.materials_auto, jf.shipping_auto, jf.tax_auto, jf.labor_auto,
+            jf.materials_divisor, jf.shipping_rate, jf.tax_rate, jf.labor_rate, jf.fee_rate,
+            jf.fee_cents, jf.fee_auto,
             (SELECT k.total_cents FROM contracts k WHERE k.project_id=p.id
                ORDER BY CASE k.status WHEN 'fully_executed' THEN 0 WHEN 'signed_by_customer' THEN 1 WHEN 'sent' THEN 2 ELSE 3 END,
                         datetime(k.created_at) DESC LIMIT 1) AS contract_total,
@@ -31,7 +33,7 @@ export async function onRequestGet(context) {
                WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_gross,
             (SELECT t.total_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
                WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_net,
-            (SELECT COALESCE(SUM(iv.fee_cents),0) FROM invoices iv WHERE iv.project_id=p.id AND iv.status='paid') AS fee_cents
+            (SELECT COALESCE(SUM(iv.fee_cents),0) FROM invoices iv WHERE iv.project_id=p.id AND iv.status='paid') AS actual_fee_cents
        FROM projects p
        LEFT JOIN contacts c ON c.id = p.contact_id
        LEFT JOIN job_financials jf ON jf.project_id = p.id
@@ -57,9 +59,9 @@ export async function onRequestGet(context) {
     // A job_financials row exists iff its columns came back non-null.
     const hasRow = r.price_cents != null;
     const fin = resolveFinancials(gross, discount, hasRow ? r : null);
-    // Processing fee: actual Stripe fees (card/Klarna) when collected, else the
-    // estimate (fee_rate × net, default 3%). Folded into expenses & profit.
-    const fee = processingFee(fin.net_cents, fin.fee_rate, r.fee_cents);
+    // Processing fee: manual override if set, else actual Stripe fees (card/Klarna)
+    // when collected, else the estimate (fee_rate × net, default 3%). Into P&L.
+    const fee = processingFee(fin.net_cents, fin.fee_rate, r.actual_fee_cents, fin.fee_manual_cents, fin.fee_auto === false ? 0 : 1);
     const expenses = fin.expenses_cents + fee;
     const profit = fin.profit_cents - fee;
     jobs.push({

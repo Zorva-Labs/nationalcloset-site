@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Jobs · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc51"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc52"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc51"></script>
+<script src="/crm/crm-app.js?v=ncc52"></script>
 <script>
 // A project only counts as a "Job" once the contract is signed AND the deposit
 // is paid (status 'contracted'). Until then the deal stays a LEAD in the
@@ -17,6 +17,53 @@
 const JOB_STATUSES = new Set(["contracted", "scheduled_install", "installing", "completed"]);
 const JOB_STATUS_LABELS = { contracted: "Booked", scheduled_install: "Scheduled", installing: "Installing", completed: "Completed" };
 
+const OPEN_STATUSES = ["contracted", "scheduled_install", "installing"];
+const m = SSCrm.fmtMoney;
+
+function rowHtml(p) {
+  const total = p.job_total_cents;
+  const balance = total != null ? Math.max(0, total - (p.paid_cents || 0)) : null;
+  const balanceCell = balance == null ? `<span class="muted">—</span>`
+    : balance === 0 ? `<span style="color:#10B981;font-weight:600">Paid</span>` : SSCrm.fmtMoney(balance);
+  const matChip = (on, label, color) => on
+    ? `<span title="${label}" style="display:inline-block;font-size:10px;font-weight:700;line-height:1;padding:3px 6px;border-radius:999px;color:#fff;background:${color}">${label}</span>` : "";
+  const matCell = [
+    matChip(p.materials_ordered_at, "Ordered", "#2563EB"),
+    matChip(p.materials_received_at, "Received", "#15803D"),
+    matChip(p.materials_damaged_at, "Damaged", "#B91C1C"),
+  ].filter(Boolean).join(" ") || `<span class="muted">—</span>`;
+  return `<tr class="clickable" onclick="location.href='/crm/project.html?id=${p.id}'">
+    <td><strong>${SSCrm.esc(p.contact_name || "—")}</strong></td>
+    <td>${p.contact_email ? `<a href="mailto:${SSCrm.esc(p.contact_email)}" onclick="event.stopPropagation()">${SSCrm.esc(p.contact_email)}</a>` : `<span class="muted">—</span>`}</td>
+    <td>${p.contact_phone ? `<a href="tel:${SSCrm.esc(p.contact_phone)}" onclick="event.stopPropagation()">${SSCrm.esc(p.contact_phone)}</a>` : `<span class="muted">—</span>`}</td>
+    <td>${p.contact_city ? SSCrm.esc(p.contact_city) : `<span class="muted">—</span>`}</td>
+    <td class="money">${total != null ? SSCrm.fmtMoney(total) : `<span class="muted">—</span>`}</td>
+    <td class="money">${p.net_profit_cents != null ? `<span style="color:#15803D;font-weight:600">${SSCrm.fmtMoney(p.net_profit_cents)}</span>` : `<span class="muted">—</span>`}</td>
+    <td class="money">${balanceCell}</td>
+    <td style="white-space:nowrap">${matCell}</td>
+    <td>${SSCrm.pill(p.status)}</td>
+    <td>${p.install_date ? SSCrm.fmtDay(p.install_date) : `<span class="muted">—</span>`}</td>
+    <td class="muted">${SSCrm.fmtDate(p.updated_at)}</td>
+  </tr>`;
+}
+const THEAD = `<thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>City</th><th class="money">Total</th><th class="money">Net profit</th><th class="money">Balance</th><th>Materials</th><th>Status</th><th>Install date</th><th>Updated</th></tr></thead>`;
+const tableHtml = (list) => `<div class="tbl"><table>${THEAD}<tbody>${list.map(rowHtml).join("")}</tbody></table></div>`;
+const sectionTitle = (t, n) => `<h3 style="margin:22px 0 10px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft)">${t} <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">${n}</span></h3>`;
+
+function totalsBar(open, completed) {
+  const sum = (list) => list.reduce((a, p) => ({ n: a.n + 1, total: a.total + (p.job_total_cents || 0), profit: a.profit + (p.net_profit_cents || 0) }), { n: 0, total: 0, profit: 0 });
+  const o = sum(open), c = sum(completed);
+  const tile = (label, value, sub, color) => `<div style="flex:1;min-width:150px;background:var(--bg-soft,#f7f7f5);border:1px solid var(--line);border-radius:10px;padding:12px 14px">
+    <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+    <div style="font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;color:${color || "var(--ink)"}">${value}</div>
+    <div class="muted" style="font-size:11px">${sub}</div></div>`;
+  return `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px">
+    ${tile("Open jobs", m(o.total), `${o.n} job${o.n === 1 ? "" : "s"} · ${m(o.profit)} projected profit`)}
+    ${tile("Completed jobs", m(c.total), `${c.n} job${c.n === 1 ? "" : "s"} · ${m(c.profit)} profit`)}
+    ${tile("All jobs", m(o.total + c.total), `${o.n + c.n} jobs · ${m(o.profit + c.profit)} net profit`, "#15803D")}
+  </div>`;
+}
+
 (async () => {
   const params = new URLSearchParams(location.search);
   const filterStatus = params.get("status");
@@ -28,50 +75,31 @@ const JOB_STATUS_LABELS = { contracted: "Booked", scheduled_install: "Scheduled"
     actions: `${filterStatus ? `<a class="btn ghost" href="/crm/projects.html">← All jobs</a>` : ""}<a class="btn secondary" href="/crm/pipeline.html">Pipeline (all stages) →</a>`,
     wide: true });
   if (!user) return;
-  const { projects: all } = await SSCrm.fetchJSON("/api/projects");
-  let projects = all.filter((p) => JOB_STATUSES.has(p.status));
-  if (filterStatus && JOB_STATUSES.has(filterStatus)) {
-    projects = projects.filter((p) => p.status === filterStatus);
-  }
+  const { projects: all } = await SSCrm.fetchJSON("/api/projects?include_completed=1");
   const page = document.getElementById("page");
-  if (!projects.length) {
-    const pending = all.length - all.filter((p) => JOB_STATUSES.has(p.status)).length;
-    page.innerHTML = `<div class="tbl"><div class="empty">
-      ${filterStatus ? `No ${JOB_STATUS_LABELS[filterStatus] || filterStatus} jobs.` : "No booked jobs yet."}
-      ${!filterStatus && pending > 0 ? `<div style="margin-top:8px;font-size:13px">${pending} project${pending === 1 ? " is" : "s are"} in flight on the lead side — they'll appear here once the customer signs.</div>` : ""}
+
+  // Deep-linked single-status view (from the sidebar) keeps the simple filter.
+  if (filterStatus && JOB_STATUSES.has(filterStatus)) {
+    const list = all.filter((p) => p.status === filterStatus);
+    page.innerHTML = list.length ? tableHtml(list)
+      : `<div class="tbl"><div class="empty">No ${JOB_STATUS_LABELS[filterStatus] || filterStatus} jobs.</div></div>`;
+    return;
+  }
+
+  const openJobs = all.filter((p) => OPEN_STATUSES.includes(p.status));
+  const completedJobs = all.filter((p) => p.status === "completed");
+
+  if (!openJobs.length && !completedJobs.length) {
+    const pending = all.length;
+    page.innerHTML = `<div class="tbl"><div class="empty">No booked jobs yet.
+      ${pending > 0 ? `<div style="margin-top:8px;font-size:13px">${pending} project${pending === 1 ? " is" : "s are"} in flight on the lead side — they'll appear here once the customer signs.</div>` : ""}
     </div></div>`;
     return;
   }
-  page.innerHTML = `<div class="tbl"><table>
-    <thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>City</th><th class="money">Total</th><th class="money">Net profit</th><th class="money">Balance</th><th>Materials</th><th>Status</th><th>Install date</th><th>Updated</th></tr></thead>
-    <tbody>${projects.map((p) => {
-      const total = p.job_total_cents;
-      const balance = total != null ? Math.max(0, total - (p.paid_cents || 0)) : null;
-      const balanceCell = balance == null
-        ? `<span class="muted">—</span>`
-        : balance === 0
-          ? `<span style="color:#10B981;font-weight:600">Paid</span>`
-          : SSCrm.fmtMoney(balance);
-      const matChip = (on, label, color) => on
-        ? `<span title="${label}" style="display:inline-block;font-size:10px;font-weight:700;line-height:1;padding:3px 6px;border-radius:999px;color:#fff;background:${color}">${label}</span>` : "";
-      const matCell = [
-        matChip(p.materials_ordered_at, "Ordered", "#2563EB"),
-        matChip(p.materials_received_at, "Received", "#15803D"),
-        matChip(p.materials_damaged_at, "Damaged", "#B91C1C"),
-      ].filter(Boolean).join(" ") || `<span class="muted">—</span>`;
-      return `<tr class="clickable" onclick="location.href='/crm/project.html?id=${p.id}'">
-      <td><strong>${SSCrm.esc(p.contact_name || "—")}</strong></td>
-      <td>${p.contact_email ? `<a href="mailto:${SSCrm.esc(p.contact_email)}" onclick="event.stopPropagation()">${SSCrm.esc(p.contact_email)}</a>` : `<span class="muted">—</span>`}</td>
-      <td>${p.contact_phone ? `<a href="tel:${SSCrm.esc(p.contact_phone)}" onclick="event.stopPropagation()">${SSCrm.esc(p.contact_phone)}</a>` : `<span class="muted">—</span>`}</td>
-      <td>${p.contact_city ? SSCrm.esc(p.contact_city) : `<span class="muted">—</span>`}</td>
-      <td class="money">${total != null ? SSCrm.fmtMoney(total) : `<span class="muted">—</span>`}</td>
-      <td class="money">${p.net_profit_cents != null ? `<span style="color:#15803D;font-weight:600">${SSCrm.fmtMoney(p.net_profit_cents)}</span>` : `<span class="muted">—</span>`}</td>
-      <td class="money">${balanceCell}</td>
-      <td style="white-space:nowrap">${matCell}</td>
-      <td>${SSCrm.pill(p.status)}</td>
-      <td>${p.install_date ? SSCrm.fmtDay(p.install_date) : `<span class="muted">—</span>`}</td>
-      <td class="muted">${SSCrm.fmtDate(p.updated_at)}</td>
-    </tr>`;
-    }).join("")}</tbody></table></div>`;
+
+  page.innerHTML = totalsBar(openJobs, completedJobs)
+    + sectionTitle("Open jobs", `${openJobs.length}`)
+    + (openJobs.length ? tableHtml(openJobs) : `<div class="tbl"><div class="empty">No open jobs.</div></div>`)
+    + (completedJobs.length ? sectionTitle("Completed", `${completedJobs.length}`) + tableHtml(completedJobs) : "");
 })();
 </script></body></html>

@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc53" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc54" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc53"></script>
+<script src="/crm/crm-app.js?v=ncc54"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -159,30 +159,58 @@ function renderJobPipeline(project) {
 }
 
 // Contextual action card under the pipeline — the single next step for the job.
+// Inline install-date picker — set or change the date right here; it saves the
+// moment a date is chosen (no modal), and moves the job forward automatically.
+function installDateField(project) {
+  return `<label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft);font-weight:600">
+    📅 Install date
+    <input type="date" value="${project.install_date || ""}" onchange="setInstallDate(this.value)"
+      style="padding:7px 10px;border:2px solid var(--line);border-radius:8px;font:inherit;color:var(--ink)"/>
+  </label>`;
+}
+
 function renderJobActions(project) {
   const s = project.status;
   if (!["contracted", "scheduled_install", "installing", "completed"].includes(s)) return "";
   const when = project.install_date ? SSCrm.fmtDay(project.install_date) : "";
+  const dateField = installDateField(project);
   let body = "";
   if (s === "contracted") {
     body = `
-      <div class="job-action__text"><strong>Job booked.</strong> Schedule the installation to move it forward.</div>
-      <button class="btn primary" onclick="scheduleInstall()">📅 Schedule install</button>`;
+      <div class="job-action__text"><strong>Job booked.</strong> Pick an install date to schedule it.</div>
+      <div class="job-action__btns">${dateField}</div>`;
   } else if (s === "scheduled_install") {
     body = `
       <div class="job-action__text"><strong>Install scheduled${when ? ` for ${when}` : ""}.</strong> It moves to <em>Installing</em> automatically on that date.</div>
-      <div class="job-action__btns">
-        <button class="btn secondary" onclick="scheduleInstall()">Reschedule</button>
-        <button class="btn ghost" onclick="quickStatus('installing')">Start install now</button>
-      </div>`;
+      <div class="job-action__btns">${dateField}<button class="btn ghost" onclick="quickStatus('installing')">Start install now</button></div>`;
   } else if (s === "installing") {
     body = `
       <div class="job-action__text"><strong>Installation in progress${when ? ` — install date ${when}` : ""}.</strong> Mark it complete when the work is finished.</div>
-      <button class="btn primary" onclick="completeJob()">✓ Complete job</button>`;
+      <div class="job-action__btns">${dateField}<button class="btn primary" onclick="completeJob()">✓ Complete job</button></div>`;
   } else if (s === "completed") {
-    body = `<div class="job-action__text"><strong>Job completed 🎉</strong>${when ? ` &nbsp;Installed ${when}.` : ""}</div>`;
+    body = `
+      <div class="job-action__text"><strong>Job completed 🎉</strong>${when ? ` &nbsp;Installed ${when}.` : ""}</div>
+      <div class="job-action__btns">${dateField}</div>`;
   }
   return `<div class="job-action card">${body}</div>`;
+}
+
+// Save the picked install date and advance the job. Setting a date on a booked
+// (or scheduled) job moves it to Scheduled, or straight to Installing if the
+// date is today/past. On an already-installing/completed job it just corrects
+// the date without changing the status.
+async function setInstallDate(date) {
+  if (!date) return;
+  const s = state?.project?.status;
+  const body = { install_date: date };
+  if (s === "contracted" || s === "scheduled_install") {
+    body.status = (date <= localToday()) ? "installing" : "scheduled_install";
+  }
+  try {
+    await SSCrm.fetchJSON("/api/projects/" + id, { method: "PATCH", body: JSON.stringify(body) });
+    SSCrm.toast("Install date saved", "success");
+    await render();
+  } catch (e) { SSCrm.toast(e.message || "Could not save the date", "error"); }
 }
 
 async function quickStatus(key) {

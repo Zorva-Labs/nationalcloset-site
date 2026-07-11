@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Jobs · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc49"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc50"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc49"></script>
+<script src="/crm/crm-app.js?v=ncc50"></script>
 <script>
 // A project only counts as a "Job" once the contract is signed AND the deposit
 // is paid (status 'contracted'). Until then the deal stays a LEAD in the
@@ -43,7 +43,7 @@ const JOB_STATUS_LABELS = { contracted: "Booked", scheduled_install: "Scheduled"
     return;
   }
   page.innerHTML = `<div class="tbl"><table>
-    <thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>City</th><th class="money">Total</th><th class="money">Net profit</th><th class="money">Balance</th><th>Status</th><th>Install date</th><th>Updated</th></tr></thead>
+    <thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>City</th><th class="money">Total</th><th class="money">Net profit</th><th class="money">Balance</th><th>Materials</th><th>Status</th><th>Install date</th><th>Updated</th></tr></thead>
     <tbody>${projects.map((p) => {
       const total = p.job_total_cents;
       const balance = total != null ? Math.max(0, total - (p.paid_cents || 0)) : null;
@@ -52,6 +52,13 @@ const JOB_STATUS_LABELS = { contracted: "Booked", scheduled_install: "Scheduled"
         : balance === 0
           ? `<span style="color:#10B981;font-weight:600">Paid</span>`
           : SSCrm.fmtMoney(balance);
+      const matChip = (on, label, color) => on
+        ? `<span title="${label}" style="display:inline-block;font-size:10px;font-weight:700;line-height:1;padding:3px 6px;border-radius:999px;color:#fff;background:${color}">${label}</span>` : "";
+      const matCell = [
+        matChip(p.materials_ordered_at, "Ordered", "#2563EB"),
+        matChip(p.materials_received_at, "Received", "#15803D"),
+        matChip(p.materials_damaged_at, "Damaged", "#B91C1C"),
+      ].filter(Boolean).join(" ") || `<span class="muted">—</span>`;
       return `<tr class="clickable" onclick="location.href='/crm/project.html?id=${p.id}'">
       <td><strong>${SSCrm.esc(p.contact_name || "—")}</strong></td>
       <td>${p.contact_email ? `<a href="mailto:${SSCrm.esc(p.contact_email)}" onclick="event.stopPropagation()">${SSCrm.esc(p.contact_email)}</a>` : `<span class="muted">—</span>`}</td>
@@ -60,6 +67,7 @@ const JOB_STATUS_LABELS = { contracted: "Booked", scheduled_install: "Scheduled"
       <td class="money">${total != null ? SSCrm.fmtMoney(total) : `<span class="muted">—</span>`}</td>
       <td class="money">${p.net_profit_cents != null ? `<span style="color:#15803D;font-weight:600">${SSCrm.fmtMoney(p.net_profit_cents)}</span>` : `<span class="muted">—</span>`}</td>
       <td class="money">${balanceCell}</td>
+      <td style="white-space:nowrap">${matCell}</td>
       <td>${SSCrm.pill(p.status)}</td>
       <td>${p.install_date ? SSCrm.fmtDay(p.install_date) : `<span class="muted">—</span>`}</td>
       <td class="muted">${SSCrm.fmtDate(p.updated_at)}</td>

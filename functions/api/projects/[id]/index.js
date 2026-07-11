@@ -100,6 +100,12 @@ export async function onRequestPatch(context) {
   for (const k of allowed) {
     if (body[k] !== undefined) { fields.push(`${k}=?${binds.length+1}`); binds.push(body[k] === "" ? null : body[k]); }
   }
+  // Materials tracking toggles: a checked box stamps the current time, unchecking
+  // clears it. Keys are fixed (no user SQL), so the literal expression is safe.
+  const stampCols = { materials_ordered: "materials_ordered_at", materials_received: "materials_received_at", materials_damaged: "materials_damaged_at" };
+  for (const [k, col] of Object.entries(stampCols)) {
+    if (body[k] !== undefined) fields.push(`${col}=${body[k] ? "datetime('now')" : "NULL"}`);
+  }
   if (!fields.length) return json({ error: "Nothing to update" }, 400);
 
   // If the status is changing into a job stage, capture the previous status so

@@ -4,10 +4,14 @@ import { genToken, nextSequence, formatDocNumber } from "./tokens.js";
 import { recordActivity, recomputeTierTotals } from "./db.js";
 import { depositForTotal } from "./financials.js";
 
+// Appended to every contract's terms so a renter confirms they have the owner's
+// permission before we remove existing shelving/cabinets and install our systems.
+const RENTAL_CLAUSE = `<h3>Rental or Leased Property</h3><p>If this property is rented or leased, you confirm that you have obtained the property owner's or landlord's written permission for National Closet Company to remove any existing shelving, cabinets or fixtures and to install our systems in their place. Obtaining this permission is the customer's responsibility, and National Closet Company is not liable for any dispute arising from the lack of it.</p>`;
+
 const FALLBACK_TERMS = {
-  custom_order: `<h3>Materials &amp; Manufacture</h3><p>Made-to-order, 2-6 week lead.</p><h3>Deposit</h3><p>Deposit (covering materials, shipping &amp; tax) due at signing; balance at completion. Pay in full anytime.</p><h3>Warranty</h3><p>Original manufacturer warranty + 90-day workmanship.</p>`,
-  install_only: `<h3>Scope</h3><p>Install only — customer-supplied product. No deposit. Pay on completion. 90-day workmanship warranty on the install only.</p>`,
-  repair: `<h3>Scope</h3><p>Repair service. Pay on completion. 90-day warranty on the repair.</p>`,
+  custom_order: `<h3>Materials &amp; Manufacture</h3><p>Made-to-order, 2-6 week lead.</p><h3>Deposit</h3><p>Deposit (covering materials, shipping &amp; tax) due at signing; balance at completion. Pay in full anytime.</p><h3>Warranty</h3><p>Original manufacturer warranty + 90-day workmanship.</p>` + RENTAL_CLAUSE,
+  install_only: `<h3>Scope</h3><p>Install only — customer-supplied product. No deposit. Pay on completion. 90-day workmanship warranty on the install only.</p>` + RENTAL_CLAUSE,
+  repair: `<h3>Scope</h3><p>Repair service. Pay on completion. 90-day warranty on the repair.</p>` + RENTAL_CLAUSE,
 };
 
 const FALLBACK_INTROS = {

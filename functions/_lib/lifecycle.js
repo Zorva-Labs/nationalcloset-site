@@ -9,7 +9,7 @@ import { depositForTotal } from "./financials.js";
 const RENTAL_CLAUSE = `<h3>Rental or Leased Property</h3><p>If this property is rented or leased, you confirm that you have obtained the property owner's or landlord's written permission for National Closet Company to remove any existing shelving, cabinets or fixtures and to install our systems in their place. Obtaining this permission is the customer's responsibility, and National Closet Company is not liable for any dispute arising from the lack of it.</p>`;
 
 const FALLBACK_TERMS = {
-  custom_order: `<h3>Materials &amp; Manufacture</h3><p>Made-to-order, 2-6 week lead.</p><h3>Deposit</h3><p>Deposit (covering materials, shipping &amp; tax) due at signing; balance at completion. Pay in full anytime.</p><h3>Warranty</h3><p>Original manufacturer warranty + 90-day workmanship.</p>` + RENTAL_CLAUSE,
+  custom_order: `<h3>Materials &amp; Manufacture</h3><p>Custom materials typically take 4 to 8 weeks to be manufactured and delivered after the deposit, depending on holidays, shipping, supplier lead times and other unforeseen circumstances. Once all materials have arrived, any repairs and the installation are scheduled.</p><h3>Deposit</h3><p>Deposit (covering materials, shipping &amp; tax) due at signing; balance at completion. Pay in full anytime.</p><h3>Warranty</h3><p>Original manufacturer warranty + 90-day workmanship.</p>` + RENTAL_CLAUSE,
   install_only: `<h3>Scope</h3><p>Install only — customer-supplied product. No deposit. Pay on completion. 90-day workmanship warranty on the install only.</p>` + RENTAL_CLAUSE,
   repair: `<h3>Scope</h3><p>Repair service. Pay on completion. 90-day warranty on the repair.</p>` + RENTAL_CLAUSE,
 };
@@ -21,7 +21,7 @@ const FALLBACK_INTROS = {
 };
 
 const FALLBACK_WINDOWS = {
-  custom_order: "Weeks 4–6 from contract execution",
+  custom_order: "Materials 4–8 weeks (holidays/shipping/unforeseen delays may affect timing); install scheduled once materials arrive",
   install_only: "Scheduled within 1–2 weeks of customer-supplied products arriving on site",
   repair: "Single visit, typically within 1 week",
 };

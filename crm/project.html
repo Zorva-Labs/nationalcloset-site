@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc56" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc57" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc56"></script>
+<script src="/crm/crm-app.js?v=ncc57"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -639,6 +639,7 @@ function renderOverview(s) {
               </select>
             </label>
             <label><span>Site address</span><input id="p-addr" value="${e(project.site_address || "")}"/></label>
+            <label><span>PO number <span class="muted" style="font-weight:400;font-size:11px">· optional</span></span><input id="p-po" value="${e(project.po_number || "")}" placeholder="e.g. PO-10482"/></label>
             <label><span>Description</span><textarea id="p-desc" rows="3">${e(project.description || "")}</textarea></label>
             <div class="form-actions"><button class="btn primary" onclick="saveProject()">Save</button></div>
           </div>
@@ -1140,6 +1141,7 @@ async function saveProject() {
       name: document.getElementById("p-name").value.trim(),
       status: document.getElementById("p-status").value,
       site_address: document.getElementById("p-addr").value.trim(),
+      po_number: document.getElementById("p-po").value.trim(),
       description: document.getElementById("p-desc").value.trim(),
     })});
     SSCrm.toast("Saved", "success");

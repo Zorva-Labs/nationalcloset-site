@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Jobs · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc56"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc57"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc56"></script>
+<script src="/crm/crm-app.js?v=ncc57"></script>
 <script>
 // A project only counts as a "Job" once the contract is signed AND the deposit
 // is paid (status 'contracted'). Until then the deal stays a LEAD in the
@@ -37,6 +37,7 @@ function rowHtml(p) {
     <td>${p.contact_email ? `<a href="mailto:${SSCrm.esc(p.contact_email)}" onclick="event.stopPropagation()">${SSCrm.esc(p.contact_email)}</a>` : `<span class="muted">—</span>`}</td>
     <td>${p.contact_phone ? `<a href="tel:${SSCrm.esc(p.contact_phone)}" onclick="event.stopPropagation()">${SSCrm.esc(p.contact_phone)}</a>` : `<span class="muted">—</span>`}</td>
     <td>${p.contact_city ? SSCrm.esc(p.contact_city) : `<span class="muted">—</span>`}</td>
+    <td>${p.po_number ? SSCrm.esc(p.po_number) : `<span class="muted">—</span>`}</td>
     <td class="money">${total != null ? SSCrm.fmtMoney(total) : `<span class="muted">—</span>`}</td>
     <td class="money">${p.net_profit_cents != null ? `<span style="color:#15803D;font-weight:600">${SSCrm.fmtMoney(p.net_profit_cents)}</span>` : `<span class="muted">—</span>`}</td>
     <td class="money">${balanceCell}</td>
@@ -46,7 +47,7 @@ function rowHtml(p) {
     <td class="muted">${SSCrm.fmtDate(p.updated_at)}</td>
   </tr>`;
 }
-const THEAD = `<thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>City</th><th class="money">Total</th><th class="money">Net profit</th><th class="money">Balance</th><th>Materials</th><th>Status</th><th>Install date</th><th>Updated</th></tr></thead>`;
+const THEAD = `<thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>City</th><th>PO #</th><th class="money">Total</th><th class="money">Net profit</th><th class="money">Balance</th><th>Materials</th><th>Status</th><th>Install date</th><th>Updated</th></tr></thead>`;
 const tableHtml = (list) => `<div class="tbl"><table>${THEAD}<tbody>${list.map(rowHtml).join("")}</tbody></table></div>`;
 const sectionTitle = (t, n) => `<h3 style="margin:22px 0 10px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft)">${t} <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">${n}</span></h3>`;
 

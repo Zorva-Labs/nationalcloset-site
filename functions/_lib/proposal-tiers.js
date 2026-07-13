@@ -41,7 +41,7 @@ export function introForKind(kind) {
   if (kind === "single") {
     return "Thank you for the opportunity to design your custom closets. Your space is ready for a straightforward installation — no wall repair or removal of old shelving needed. Below is your proposal to design, build, and professionally install your new custom closet system.";
   }
-  return "Thank you for the opportunity to design your custom closets. Below are two options: Option 1 installs your new system with the walls left as-is (you remove the old shelving, patch, and paint beforehand), and Option 2 is fully turnkey — we remove the old shelving, repair and paint the walls, then build and install. Pick the one that fits.";
+  return "Thank you for the opportunity to design your project. Below are two options to choose from. Option 1 is our design-and-install service: we build and professionally install your new system, while you handle the prep — removing the existing shelving and taking care of any patching and painting at your discretion beforehand. Option 2 is fully turnkey: we remove the existing shelving or cabinets, patch and freshly paint the area where they were, then design, build, and install your new system — nothing for you to do. Simply pick the one that fits.";
 }
 
 // The contract type to default the proposal to (used as a fallback when a tier

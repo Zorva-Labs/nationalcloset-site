@@ -6,7 +6,7 @@ export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const id = parseInt(context.params.id, 10);
   const contract = await context.env.DB.prepare(
-    `SELECT k.*, p.name AS project_name, p.site_address, c.id AS contact_id,
+    `SELECT k.*, p.name AS project_name, p.site_address, p.po_number AS po_number, c.id AS contact_id,
             c.name AS contact_name, c.email AS contact_email, c.phone AS contact_phone,
             c.address_street, c.address_city, c.address_state, c.address_zip
      FROM contracts k JOIN projects p ON p.id=k.project_id JOIN contacts c ON c.id=p.contact_id

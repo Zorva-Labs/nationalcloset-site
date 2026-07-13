@@ -13,7 +13,7 @@ const SITE_URL = "https://nationalclosetco.com";
 export async function onRequestGet(context) {
   const token = context.params.token;
   const k = await context.env.DB.prepare(
-    `SELECT kc.*, pj.name AS project_name, pj.site_address, c.name AS contact_name, c.email AS contact_email
+    `SELECT kc.*, pj.name AS project_name, pj.site_address, pj.po_number AS po_number, c.name AS contact_name, c.email AS contact_email
      FROM contracts kc JOIN projects pj ON pj.id=kc.project_id JOIN contacts c ON c.id=pj.contact_id
      WHERE kc.view_token=?1`
   ).bind(token).first();

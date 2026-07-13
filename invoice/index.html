@@ -131,7 +131,7 @@
       root.innerHTML = `
         <div class="card">
           <div class="card__top">
-            <div class="eyebrow">${esc(typeLabel)} · Invoice ${esc(inv.number)}</div>
+            <div class="eyebrow">${esc(typeLabel)} · Invoice ${esc(inv.number)}${inv.po_number ? ` · PO ${esc(inv.po_number)}` : ""}</div>
             <h1>${esc(inv.project_name || "Custom closet project")}</h1>
             <p class="sub">${esc(inv.contact_name ? "For " + inv.contact_name : "")}</p>
             <div class="amount"><span id="amt-due">${money(base)}</span> <small>due</small></div>

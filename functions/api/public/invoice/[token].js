@@ -56,6 +56,7 @@ function publicView(inv, project) {
     status: inv.status,
     contact_name: project?.contact_name || "",
     project_name: project?.name || "",
+    po_number: project?.po_number || "",
   };
 }
 
@@ -65,7 +66,7 @@ export async function onRequestGet(context) {
   const inv = await db.prepare(`SELECT * FROM invoices WHERE view_token=?1`).bind(token).first();
   if (!inv) return json({ error: "Invoice not found" }, 404);
   const project = await db.prepare(
-    `SELECT p.id, p.name, c.name AS contact_name, c.email AS contact_email
+    `SELECT p.id, p.name, p.po_number, c.name AS contact_name, c.email AS contact_email
        FROM projects p JOIN contacts c ON c.id=p.contact_id WHERE p.id=?1`
   ).bind(inv.project_id).first().catch(() => null);
 

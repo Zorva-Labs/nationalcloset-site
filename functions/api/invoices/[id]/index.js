@@ -11,7 +11,7 @@ export async function onRequestGet(context) {
   const inv = await context.env.DB.prepare(
     `SELECT i.*, c.name AS contact_name, c.email AS contact_email, c.phone AS contact_phone,
             c.address_street, c.address_city, c.address_state, c.address_zip,
-            p.name AS project_name
+            p.name AS project_name, p.po_number AS po_number
        FROM invoices i
        LEFT JOIN contacts c ON c.id = i.contact_id
        LEFT JOIN projects p ON p.id = i.project_id

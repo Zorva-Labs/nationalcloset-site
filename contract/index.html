@@ -160,6 +160,7 @@ function render(k, lines) {
     <div class="doc-meta">
       <div><strong>Customer</strong>${esc(k.contact_name)}</div>
       <div><strong>Project</strong>${esc(k.project_name)}</div>
+      ${k.po_number ? `<div><strong>PO #</strong>${esc(k.po_number)}</div>` : ""}
       ${k.site_address ? `<div><strong>Site</strong>${esc(k.site_address)}</div>` : ""}
       <div><strong>Install window</strong>${esc(k.estimated_install_window || "TBD")}</div>
     </div>

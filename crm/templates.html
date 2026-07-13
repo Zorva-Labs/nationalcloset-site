@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Templates · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc54"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc55"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc54"></script>
+<script src="/crm/crm-app.js?v=ncc55"></script>
 <script>
 const TABS = [
   { key: "email",      label: "Email" },
@@ -160,10 +160,9 @@ function renderEditor() {
         ` : ""}
 
         ${t.kind === "proposal" ? `
-          <div class="row-3">
-            <label><span>Good tier title</span><input id="d-tg" value="${SSCrm.esc(t.tier_good_title || "")}"/></label>
-            <label><span>Better tier title</span><input id="d-tb" value="${SSCrm.esc(t.tier_better_title || "")}"/></label>
-            <label><span>Best tier title</span><input id="d-tx" value="${SSCrm.esc(t.tier_best_title || "")}"/></label>
+          <div class="row">
+            <label><span>Option 1 title</span><input id="d-tg" value="${SSCrm.esc(t.tier_good_title || "")}"/></label>
+            <label><span>Option 2 title</span><input id="d-tb" value="${SSCrm.esc(t.tier_better_title || "")}"/></label>
           </div>
         ` : ""}
 
@@ -199,7 +198,7 @@ async function newTemplate() {
     try {
       const body = { kind: activeTab, name, subkind, is_default: false };
       if (activeTab === "contract") { body.terms_html = "<h3>New section</h3><p>Edit me.</p>"; body.intro = "Intro paragraph."; body.estimated_install_window = "TBD"; }
-      if (activeTab === "proposal") { body.intro = "Intro paragraph."; body.tier_good_title = "Good"; body.tier_better_title = "Better"; body.tier_best_title = "Best"; }
+      if (activeTab === "proposal") { body.intro = "Intro paragraph."; body.tier_good_title = "Option 1"; body.tier_better_title = "Option 2"; body.tier_best_title = null; }
       if (activeTab === "estimate") { body.notes_customer = "Notes here."; body.valid_days = 30; }
       await SSCrm.fetchJSON("/api/document-templates", { method: "POST", body: JSON.stringify(body) });
       await loadAll(); render();
@@ -238,7 +237,7 @@ async function saveDoc(id) {
   if (t.kind === "proposal") {
     body.tier_good_title = document.getElementById("d-tg").value.trim();
     body.tier_better_title = document.getElementById("d-tb").value.trim();
-    body.tier_best_title = document.getElementById("d-tx").value.trim();
+    body.tier_best_title = null;   // no 3rd option
   }
   if (t.kind === "estimate") {
     body.notes_customer = document.getElementById("d-notes").value;

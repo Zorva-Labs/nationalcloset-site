@@ -196,7 +196,8 @@ function render(p, tiers, attachments) {
             const soft = `style="border:0;color:var(--muted);font-size:.82rem;font-weight:500"`;
             return `<div class="opt__sum-row" style="margin-top:6px"><span>Due at signing</span><span>${money(s.deposit)}</span></div>
           <div class="opt__sum-row" ${soft}><span>Due when install is scheduled</span><span>${money(s.atScheduling)}</span></div>
-          <div class="opt__sum-row" ${soft}><span>Due day of install</span><span>${money(s.atInstall)}</span></div>`;
+          <div class="opt__sum-row" ${soft}><span>Due day of install</span><span>${money(s.atInstall)}</span></div>
+          <div class="opt__sum-row" ${soft}><span>— or pay in full anytime</span><span>${money(t.total_cents)}</span></div>`;
           })()}
         </div>` : `<div class="opt__empty">Itemized details to follow.</div>`}
         ${!isAccepted ? `<button class="btn opt-btn" type="button" onclick="event.stopPropagation();pickTier('${esc(t.tier)}')">${p.selected_tier === t.tier ? "✓ Selected" : (many ? "Choose this option" : "Select")}</button>` : ""}

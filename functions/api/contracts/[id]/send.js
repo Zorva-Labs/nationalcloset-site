@@ -32,7 +32,8 @@ export async function onRequestPost(context) {
           <li>Total: <strong>${total}</strong></li>
           <li>Due at signing: <strong>${deposit}</strong> — releases your order</li>
           ${rest > 0 ? `<li>Due when your install is scheduled: <strong>${money(atScheduling)}</strong></li>
-          <li>Due the day of installation: <strong>${money(rest - atScheduling)}</strong></li>` : ""}
+          <li>Due the day of installation: <strong>${money(rest - atScheduling)}</strong></li>
+          <li>Or pay in full at any time: <strong>${total}</strong> — no fee for paying early</li>` : ""}
         </ul>
         <p>After you sign online, we'll counter-sign and release the order to our manufacturing partners. Payments can be made by check, cash, ACH, Venmo, or Cash App — we'll coordinate that separately.</p>
       `,
@@ -40,7 +41,7 @@ export async function onRequestPost(context) {
     ctaUrl: url,
   });
   const text = `Your contract ${k.number} is ready to sign: ${url}\nTotal: ${total}\nDue at signing: ${deposit}`
-    + (rest > 0 ? `\nDue at scheduling: ${money(atScheduling)}\nDue day of install: ${money(rest - atScheduling)}` : "");
+    + (rest > 0 ? `\nDue at scheduling: ${money(atScheduling)}\nDue day of install: ${money(rest - atScheduling)}\nOr pay in full anytime: ${total}` : "");
   const result = await sendEmail(context.env, { to: k.contact_email, subject, html, text });
   const failed = result?.skipped || result?.error || (result?.status && result.status >= 400);
   await logOutboundEmail(context.env, {

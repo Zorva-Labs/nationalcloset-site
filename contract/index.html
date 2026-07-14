@@ -179,7 +179,8 @@ function render(k, lines) {
         if (rest <= 0) return "";
         const atScheduling = Math.round(rest / 2);
         return `<div class="r"><span>Due when install is scheduled</span><span>${money(atScheduling)}</span></div>
-      <div class="r"><span>Due day of install</span><span>${money(rest - atScheduling)}</span></div>`;
+      <div class="r"><span>Due day of install</span><span>${money(rest - atScheduling)}</span></div>
+      <div class="r" style="opacity:.75;font-size:.92em"><span>— or pay in full at any time</span><span>${money(k.total_cents)}</span></div>`;
       })()}
     </div>
 
@@ -189,7 +190,7 @@ function render(k, lines) {
     ${isExecuted ? `
       <div class="signed-box">
         <h2>Your job is booked! 🎉</h2>
-        <p>Signed on ${formatDt(k.signed_by_customer_at)}.${k.deposit_cents > 0 ? ` Due now: <strong style="color:var(--color-champagne)">${money(k.deposit_cents)}</strong>.` : ""} Thank you! We'll reach out after we receive and process your order to coordinate the rest — nothing else is needed from you right now. Your remaining payments come later: 25% once your materials arrive and we schedule your install, and the final 25% the day of installation.</p>
+        <p>Signed on ${formatDt(k.signed_by_customer_at)}.${k.deposit_cents > 0 ? ` Due now: <strong style="color:var(--color-champagne)">${money(k.deposit_cents)}</strong>.` : ""} Thank you! We'll reach out after we receive and process your order to coordinate the rest — nothing else is needed from you right now. Your remaining payments come later: 25% once your materials arrive and we schedule your install, and the final 25% the day of installation — or you're welcome to pay in full at any time instead.</p>
         <button onclick="window.print()" class="no-print" style="margin-top:18px;padding:13px 24px;background:var(--color-champagne);color:var(--color-ink);border:0;font:inherit;font-weight:700;font-size:0.9rem;border-radius:8px;cursor:pointer">🖨 Print / Save PDF</button>
       </div>
     ` : isSigned ? `

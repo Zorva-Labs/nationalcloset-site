@@ -16,7 +16,7 @@ function money(cents) {
   return "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-const INV_TYPE_LABEL = { deposit: "deposit", balance: "final balance", full: "payment", custom: "payment" };
+const INV_TYPE_LABEL = { deposit: "deposit", scheduling: "scheduling payment", balance: "final payment", full: "payment", custom: "payment" };
 function methodLabel(m) {
   if (m === "us_bank_account" || m === "bank") return "bank transfer (ACH)";
   if (m === "klarna") return "Klarna";
@@ -187,8 +187,10 @@ export async function createInvoice(env, opts) {
   const { projectId, type } = opts;
   if (!projectId || !type) throw new Error("projectId + type required");
 
-  // Dedup deposit/balance — don't double-bill if multiple triggers fire.
-  if (type === "deposit" || type === "balance") {
+  // Dedup the three scheduled milestones — don't double-bill if multiple
+  // triggers fire (e.g. a reschedule re-setting the install date, or a job
+  // marked "installing" and then "completed").
+  if (type === "deposit" || type === "scheduling" || type === "balance") {
     const dupe = await existingInvoice(db, projectId, type);
     if (dupe) return { invoice: dupe, deduped: true };
   }
@@ -205,14 +207,18 @@ export async function createInvoice(env, opts) {
   let amountCents = opts.amountCents;
   if (amountCents == null) {
     if (type === "deposit") amountCents = billing.depositCents;
-    else if (type === "balance") {
-      // Balance = job total minus everything already invoiced (any non-void
-      // invoice), so a deposit that was upgraded to a full payment leaves a
-      // $0 balance instead of double-billing.
+    else if (type === "scheduling" || type === "balance") {
+      // What's left = job total minus everything already invoiced (any non-void
+      // invoice), so a deposit that was upgraded to a full payment leaves $0 to
+      // bill instead of double-charging.
       const inv = await db.prepare(
         `SELECT COALESCE(SUM(amount_cents),0) AS n FROM invoices WHERE project_id=?1 AND status != 'void'`
       ).bind(projectId).first().catch(() => null);
-      amountCents = Math.max(0, billing.totalCents - (inv?.n || 0));
+      const rest = Math.max(0, billing.totalCents - (inv?.n || 0));
+      // Scheduling takes half of what's left (25% of the job when the deposit
+      // landed at the standard 50%); the final balance then sweeps up the
+      // remainder, so the two always sum to `rest` with no rounding leak.
+      amountCents = type === "scheduling" ? Math.round(rest / 2) : rest;
     } else if (type === "full") amountCents = billing.totalCents;
     else amountCents = 0;
   }
@@ -221,7 +227,8 @@ export async function createInvoice(env, opts) {
 
   const description = opts.description || ({
     deposit: "Deposit (50%) to release your custom closet order",
-    balance: "Remaining balance for your custom closet project",
+    scheduling: "Second payment (25%) — your installation is scheduled",
+    balance: "Final payment (25%) — due the day of installation",
     full: "Custom closet project — payment",
   })[type] || "Invoice";
 
@@ -263,7 +270,7 @@ export async function sendInvoiceEmail(env, invoice, project) {
 
   const payUrl = `${SITE_URL}/invoice/?t=${invoice.view_token}`;
   const first = (project.contact_name || "there").split(" ")[0];
-  const labelByType = { deposit: "deposit", balance: "final balance", full: "payment" };
+  const labelByType = { deposit: "deposit", scheduling: "scheduling payment", balance: "final payment", full: "payment" };
   const label = labelByType[invoice.type] || "payment";
   const subject = `Invoice ${invoice.number} — ${money(invoice.amount_cents)} ${invoice.type === "deposit" ? "deposit" : "due"}`;
   const html = brandedEmail({
@@ -418,7 +425,10 @@ export async function markInvoicePaid(env, invoice, { method = "card", paymentIn
     // balance that follows a deposit). This is NOT a balance owed on the
     // invoice the customer just paid — that invoice is paid in full.
     const futureBalance = Math.max(0, (billing.totalCents || 0) - paidSum);
-    const futureLabel = invoice.type === "deposit" ? "Remaining (25% at scheduling, 25% at install)" : "Remaining project balance";
+    const futureLabel = {
+      deposit: "Remaining (25% at scheduling, 25% at install)",
+      scheduling: "Remaining (due the day of installation)",
+    }[invoice.type] || "Remaining project balance";
 
     const subject = `Receipt — ${money(invoice.amount_cents)} paid in full (${invoice.number})`;
     const html = brandedEmail({
@@ -434,6 +444,8 @@ export async function markInvoicePaid(env, invoice, { method = "card", paymentIn
         </table>
         ${invoice.type === "deposit"
           ? `<p>Your order is now moving forward — we'll be in touch to schedule your installation.${hasTotal && futureBalance > 0 ? ` Your remaining <strong>${money(futureBalance)}</strong> is split into two payments: half once your materials arrive and we schedule your install, and half on installation day.` : ""}</p>`
+          : invoice.type === "scheduling"
+          ? `<p>You're on the schedule — we'll see you on install day.${hasTotal && futureBalance > 0 ? ` Your final payment of <strong>${money(futureBalance)}</strong> will be invoiced the day of installation.` : ""}</p>`
           : (hasTotal && futureBalance > 0 ? `<p>Your remaining project balance of <strong>${money(futureBalance)}</strong> will be invoiced when it's due.</p>` : "")}
         ${hasTotal && futureBalance <= 0 ? `<p>Your project is now paid in full. 🎉 Thank you for choosing National Closet Company!</p>` : ""}
       `,

@@ -127,7 +127,7 @@
       const plan = data.plan || null;  // { deposit_cents, full_cents, current_plan } | null
       let payAmount = base;            // updated when the deposit/full plan changes
 
-      const typeLabel = { deposit: "Deposit", balance: "Final balance", full: "Payment", custom: "Invoice" }[inv.type] || "Invoice";
+      const typeLabel = { deposit: "Deposit", scheduling: "Scheduling payment", balance: "Final payment", full: "Payment", custom: "Invoice" }[inv.type] || "Invoice";
       root.innerHTML = `
         <div class="card">
           <div class="card__top">

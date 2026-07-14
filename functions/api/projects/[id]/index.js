@@ -108,12 +108,13 @@ export async function onRequestPatch(context) {
   }
   if (!fields.length) return json({ error: "Nothing to update" }, 400);
 
-  // If the status is changing into a job stage, capture the previous status so
-  // we only fire the stage email on a real transition (not a no-op re-save).
-  let prevStatus = null;
-  if (body.status !== undefined) {
-    const cur = await context.env.DB.prepare(`SELECT status FROM projects WHERE id=?1`).bind(id).first();
+  // Capture the previous status + install date so the stage email and the
+  // milestone invoices only fire on a real transition (not a no-op re-save).
+  let prevStatus = null, prevInstallDate = null;
+  if (body.status !== undefined || body.install_date !== undefined) {
+    const cur = await context.env.DB.prepare(`SELECT status, install_date FROM projects WHERE id=?1`).bind(id).first();
     prevStatus = cur?.status || null;
+    prevInstallDate = cur?.install_date || null;
   }
 
   fields.push(`updated_at=datetime('now')`);
@@ -128,12 +129,31 @@ export async function onRequestPatch(context) {
     if (context.waitUntil) context.waitUntil(p); else await p;
   }
 
-  // On completion, auto-create + send the final balance invoice (total minus
-  // the deposit already invoiced). Dedup prevents a second balance invoice.
-  if (body.status === "completed" && prevStatus !== "completed") {
-    const inv = createInvoice(context.env, { projectId: id, type: "balance", actor: { id: auth.id, name: auth.email } })
-      .catch((e) => console.error("[invoice/balance]", String(e)));
-    if (context.waitUntil) context.waitUntil(inv); else await inv;
+  // Milestone invoices (50% deposit at signing / 25% at scheduling / 25% on
+  // install day). createInvoice dedups per type per project, so a reschedule or
+  // an installing→completed hop can't double-bill, and each amount is figured
+  // from what's still uninvoiced — a customer who paid in full gets neither.
+  const milestones = [];
+  // Setting the install date for the first time = the install is scheduled.
+  if (body.install_date !== undefined && body.install_date && !prevInstallDate) {
+    milestones.push("scheduling");
+  }
+  // The final payment is due the day of installation — fire it when the crew is
+  // marked on site. Completion is a backstop for jobs that skip 'installing'.
+  if ((body.status === "installing" || body.status === "completed") && body.status !== prevStatus) {
+    milestones.push("balance");
+  }
+  if (milestones.length) {
+    // Strictly sequential: each amount is derived from what's already invoiced,
+    // so running scheduling and balance concurrently (one PATCH that both sets
+    // the date and starts the install) would let both claim the same money.
+    const chain = (async () => {
+      for (const type of milestones) {
+        await createInvoice(context.env, { projectId: id, type, actor: { id: auth.id, name: auth.email } })
+          .catch((e) => console.error(`[invoice/${type}]`, String(e)));
+      }
+    })();
+    if (context.waitUntil) context.waitUntil(chain); else await chain;
   }
   return json({ ok: true });
 }

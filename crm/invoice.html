@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc60" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc61" />
   <link rel="icon" href="/img/favicon-nc.png" />
   <style>
     .inv-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:16px; }
@@ -61,14 +61,14 @@
   </style>
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc60"></script>
+<script src="/crm/crm-app.js?v=ncc61"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
 let data = null, editing = false;
 const e = (s) => SSCrm.esc(s);
 const m = (c) => SSCrm.fmtMoney(c);
-const TYPE_LABEL = { deposit: "Deposit", balance: "Final balance", full: "Full payment", custom: "Invoice" };
+const TYPE_LABEL = { deposit: "Deposit (50%)", scheduling: "Scheduling (25%)", balance: "Final (25%)", full: "Full payment", custom: "Invoice" };
 const STATUS = { open: ["open","Awaiting payment"], paid: ["paid","Paid"], void: ["void","Void"], draft: ["open","Draft"] };
 
 (async () => {
@@ -160,7 +160,7 @@ function render() {
         <div style="text-align:right">
           <div class="lbl">${editing ? "Invoice type" : "For"}</div>
           <div class="who">${editing
-            ? `<select id="f-type" class="inv-field"><option value="deposit" ${iv.type==='deposit'?'selected':''}>Deposit</option><option value="balance" ${iv.type==='balance'?'selected':''}>Final balance</option><option value="full" ${iv.type==='full'?'selected':''}>Full payment</option><option value="custom" ${iv.type==='custom'?'selected':''}>Custom</option></select>`
+            ? `<select id="f-type" class="inv-field"><option value="deposit" ${iv.type==='deposit'?'selected':''}>Deposit (50%)</option><option value="scheduling" ${iv.type==='scheduling'?'selected':''}>Scheduling (25%)</option><option value="balance" ${iv.type==='balance'?'selected':''}>Final (25%)</option><option value="full" ${iv.type==='full'?'selected':''}>Full payment</option><option value="custom" ${iv.type==='custom'?'selected':''}>Custom</option></select>`
             : `${TYPE_LABEL[iv.type] || "Invoice"}${iv.project_name ? "<br><span class='muted'>" + e(iv.project_name) + "</span>" : ""}`}</div>
         </div>
       </div>

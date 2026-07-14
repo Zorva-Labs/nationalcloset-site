@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc68" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc69" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc68"></script>
+<script src="/crm/crm-app.js?v=ncc69"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -106,9 +106,10 @@ function render() {
         The free <strong>shoe / storage tower</strong> costs you ${usd(TOWER_COST_CENTS)}
         but reads as a <strong>${usd(towerValueCents())} value</strong> at your ${PROP_RATES.divisor} markup —
         the markup is the leverage, so it lands far bigger than the equivalent dollars off while costing a fraction of the margin.
+        Qualifies on projects of <strong>${usd(TOWER_MIN_CENTS)}+</strong> — at that size the tower is ~14% of profit; on a $2.5k job it would be ~29%.
         <strong>Give it a deadline</strong> — a standing offer is just your price.
       </p>
-      <textarea id="promo-note" rows="3" placeholder="e.g. Book by March 30th and we'll add a shoe tower or storage tower to your closet — free. A $935 value, on us." style="width:100%;border:1px solid var(--line-soft);padding:8px 10px;border-radius:var(--r-sm);font:inherit;font-size:13px;box-sizing:border-box">${SSCrm.esc(p.promo_note || "")}</textarea>
+      <textarea id="promo-note" rows="3" placeholder="e.g. Book by March 30th and we'll add a shoe tower or storage tower to your closet — free. A $935 value, on us. On projects of $5,000 or more." style="width:100%;border:1px solid var(--line-soft);padding:8px 10px;border-radius:var(--r-sm);font:inherit;font-size:13px;box-sizing:border-box">${SSCrm.esc(p.promo_note || "")}</textarea>
       <div class="form-actions" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn ghost sm" type="button" onclick="fillPromo()">＋ Use the standard upgrade offer</button>
         <button class="btn ghost sm" type="button" onclick="clearPromo()">Clear</button>
@@ -193,6 +194,10 @@ function renderTier(t, i) {
 // the customer sees it at the same markup as everything else on the quote, so
 // the advertised value tracks the markup instead of being typed in by hand.
 const TOWER_COST_CENTS = 33400;
+// Minimum job to qualify. At $5k the tower is ~14% of profit; below ~$3k it's
+// closer to a quarter of it, and nothing in our book falls between $2.6k and $5.7k,
+// so this threshold protects margin without excluding work we'd otherwise have won.
+const TOWER_MIN_CENTS = 500000;
 const towerValueCents = () => Math.round(TOWER_COST_CENTS * PROP_RATES.divisor);
 // Advertised figures read as round dollars — "$935", never "$935.20".
 const usd = (cents) => "$" + Math.round(cents / 100).toLocaleString("en-US");
@@ -432,7 +437,7 @@ function fillPromo() {
   const el = document.getElementById("promo-note");
   const until = state?.proposal?.valid_until;
   const by = until ? SSCrm.fmtDay(until) : null;
-  el.value = `Book${by ? " by " + by : " this month"} and we'll add a shoe tower or storage tower to your closet — free. A ${usd(towerValueCents())} value, on us.`;
+  el.value = `Book${by ? " by " + by : " this month"} and we'll add a shoe tower or storage tower to your closet — free. A ${usd(towerValueCents())} value, on us. On projects of ${usd(TOWER_MIN_CENTS)} or more.`;
   el.focus();
 }
 function clearPromo() { const el = document.getElementById("promo-note"); el.value = ""; el.focus(); }

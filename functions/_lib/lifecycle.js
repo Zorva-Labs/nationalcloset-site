@@ -17,8 +17,8 @@ const PAYMENT_SCHEDULE = `<h3>Payment Schedule</h3><p>The total contract price i
 const MATERIALS_LEADTIME = `<h3>Materials &amp; Manufacture</h3><p>Custom materials typically take 4 to 8 weeks to be manufactured and delivered after the Deposit, depending on holidays, shipping, supplier lead times and other unforeseen circumstances. Once all materials have arrived, any repairs and the installation are scheduled.</p>`;
 
 const FALLBACK_TERMS = {
-  custom_order: MATERIALS_LEADTIME + PAYMENT_SCHEDULE + `<h3>Warranty</h3><p>Original manufacturer warranty + 90-day workmanship.</p>` + RENTAL_CLAUSE,
-  wallprep: MATERIALS_LEADTIME + `<h3>Wall Repair &amp; Paint</h3><p>We remove the existing shelving, patch and repair the walls, and paint the immediate installation area before the new system goes in.</p>` + PAYMENT_SCHEDULE + `<h3>Warranty</h3><p>Original manufacturer warranty + 90-day workmanship.</p>` + RENTAL_CLAUSE,
+  custom_order: MATERIALS_LEADTIME + PAYMENT_SCHEDULE + `<h3>Warranty</h3><p>Full manufacturer warranty on components + a 1-year workmanship guarantee from the date of installation.</p>` + RENTAL_CLAUSE,
+  wallprep: MATERIALS_LEADTIME + `<h3>Wall Repair &amp; Paint</h3><p>We remove the existing shelving, patch and repair the walls, and paint the immediate installation area before the new system goes in.</p>` + PAYMENT_SCHEDULE + `<h3>Warranty</h3><p>Full manufacturer warranty on components + a 1-year workmanship guarantee from the date of installation.</p>` + RENTAL_CLAUSE,
   install_only: `<h3>Scope</h3><p>Install only — customer-supplied product. No deposit. Pay on completion. 90-day workmanship warranty on the install only.</p>` + RENTAL_CLAUSE,
   repair: `<h3>Scope</h3><p>Repair service. Pay on completion. 90-day warranty on the repair.</p>` + RENTAL_CLAUSE,
 };

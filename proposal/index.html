@@ -48,6 +48,15 @@
     .opt__sum-total{margin-top:6px;padding-top:8px;border-top:1px solid var(--line);font-weight:800;font-size:1.05rem;color:var(--ink)}
     .pay-note{margin:0 0 30px;padding:13px 16px;background:var(--fog);border-radius:10px;color:var(--ink-soft);font-size:.86rem;line-height:1.6;text-align:center}
     .pay-note strong{color:var(--ink)}
+    /* Everything the price already covers — the bundle is the selling point, so
+       name each piece instead of hiding it inside one number. */
+    .incl{border:1.5px solid var(--line);border-radius:12px;padding:20px clamp(18px,3vw,26px);margin:0 0 18px;background:#fff}
+    .incl__t{font-family:var(--font);font-weight:800;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--clay-deep);margin:0 0 14px}
+    .incl__list{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px 18px}
+    .incl__list li{display:flex;align-items:flex-start;gap:9px;font-size:.92rem;color:var(--ink-soft);line-height:1.45}
+    .incl__list .tick{flex:none;width:19px;height:19px;border-radius:50%;background:var(--clay-wash);color:var(--clay-deep);display:grid;place-items:center;font-size:.62rem;font-weight:800;margin-top:1px}
+    .incl__foot{margin:14px 0 0;padding-top:12px;border-top:1px solid var(--line-soft);font-size:.84rem;color:var(--muted);text-align:center}
+    .incl__foot strong{color:var(--ink)}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-family:var(--font);font-weight:700;font-size:.95rem;border:0;border-radius:7px;padding:13px 22px;cursor:pointer;min-height:48px;transition:transform .25s cubic-bezier(.22,1,.36,1),background .2s}
     .opt-btn{margin-top:20px;width:100%;background:var(--ink);color:#fff}
     .opt:hover .opt-btn{background:#000}
@@ -204,7 +213,20 @@ function render(p, tiers, attachments) {
       </div>`).join("")}
     </div>
 
-    <p class="pay-note">Your price is all-inclusive — it <strong>includes shipping, tax &amp; installation</strong>, with no hidden fees. You pay in three steps: <strong>50% at signing</strong> (a little more if that's what it takes to cover your materials &amp; shipping) to release your order to the manufacturer, <strong>25% once your materials arrive and we schedule your install</strong>, and the final <strong>25% the day of installation</strong> — or you can pay in full anytime. Pay securely by card, bank transfer (ACH), digital wallet or <strong>Klarna</strong> (buy now, pay later), with no added processing fee.</p>
+    <div class="incl">
+      <h3 class="incl__t">Included — at no extra charge</h3>
+      <ul class="incl__list">
+        <li><span class="tick">✓</span><span>In-home design consultation &amp; measure</span></li>
+        <li><span class="tick">✓</span><span>Delivery &amp; shipping</span></li>
+        <li><span class="tick">✓</span><span>Sales tax</span></li>
+        <li><span class="tick">✓</span><span>Professional installation by our own crew</span></li>
+        <li><span class="tick">✓</span><span>1-year workmanship guarantee</span></li>
+        <li><span class="tick">✓</span><span>Full manufacturer warranty on components</span></li>
+      </ul>
+      <p class="incl__foot">Six things other companies quote as add-ons. Your price above already covers all of them — <strong>no hidden fees, nothing billed later</strong>.</p>
+    </div>
+
+    <p class="pay-note">Your price is all-inclusive, with no hidden fees. You pay in three steps: <strong>50% at signing</strong> (a little more if that's what it takes to cover your materials &amp; shipping) to release your order to the manufacturer, <strong>25% once your materials arrive and we schedule your install</strong>, and the final <strong>25% the day of installation</strong> — or you can pay in full anytime. Pay securely by card, bank transfer (ACH), digital wallet or <strong>Klarna</strong> (buy now, pay later), with no added processing fee.</p>
 
     ${p.job_notes ? `
       <div style="margin-top:24px;background:var(--fog);border-radius:12px;padding:20px clamp(18px,3vw,26px)">

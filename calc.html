@@ -117,14 +117,14 @@
 
     <label class="field" style="margin-top:18px">Rates <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· adjust the formula</span></label>
     <div class="rates">
-      <label class="rate"><span>Materials ÷</span><input id="r-divisor" type="text" inputmode="decimal" value="2.8" autocomplete="off"/></label>
+      <label class="rate"><span>Materials ÷</span><input id="r-divisor" type="text" inputmode="decimal" value="4.0" autocomplete="off"/></label>
       <label class="rate"><span>Shipping</span><input id="r-shiprate" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Taxes</span><input id="r-taxrate" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Labor</span><input id="r-laborrate" type="text" inputmode="decimal" value="15" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Mfr. discount</span><input id="r-matdisc" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Processing fee</span><input id="r-feerate" type="text" inputmode="decimal" value="3" autocomplete="off"/><i>%</i></label>
     </div>
-    <p class="hint">Defaults: materials = price ÷ 2.8, labor = 15% of price (min $350) and a 3% processing fee of net. Shipping, taxes &amp; the manufacturer discount default to 0 — set them as needed. The manufacturer discount comes off the materials cost; shipping = % of net materials; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the up-front payment; the processing fee comes out of profit.</p>
+    <p class="hint">Defaults: list price = materials × 4.0 with a standard 30% discount (a 2.8 effective markup), labor = 15% of price (min $350) and a 3% processing fee of net. Shipping, taxes &amp; the manufacturer discount default to 0 — set them as needed. The manufacturer discount comes off the materials cost; shipping = % of net materials; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the up-front payment; the processing fee comes out of profit.</p>
 
     <label class="field" for="disc" style="margin-top:18px">Discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, comes out of profit</span></label>
     <div class="disc-wrap">
@@ -180,7 +180,7 @@
 
     <div class="card">
       <table class="rows">
-        <tr><td>Materials <span class="pct" id="r-matlbl">(price ÷ 2.8)</span></td><td id="r-mat">$0</td></tr>
+        <tr><td>Materials <span class="pct" id="r-matlbl">(price ÷ 4.0)</span></td><td id="r-mat">$0</td></tr>
         <tr class="disc-row"><td>Mfr. discount <span class="pct" id="r-matdisclbl">(20%)</span></td><td id="r-matdiscamt">$0</td></tr>
         <tr><td>Shipping <span class="pct" id="r-shiplbl">(5%)</span></td><td id="r-ship">$0</td></tr>
         <tr><td>Taxes <span class="pct" id="r-taxlbl">(0%)</span></td><td id="r-tax2">$0</td></tr>
@@ -199,7 +199,7 @@
 
 <script>
 (function () {
-  var DEF = { divisor: 2.8, ship: 0, tax: 0, labor: 15, matDisc: 0, fee: 3 };  // materials ÷2.8, labor 15%, processing fee 3%; shipping/taxes/mfr 0
+  var DEF = { divisor: 4.0, ship: 0, tax: 0, labor: 15, matDisc: 0, fee: 3, disc: 30 };  // list price = materials x4.0, less the standard 30% -> 2.8 effective
   var el = function (id) { return document.getElementById(id); };
   var gross = el("gross"), disc = el("disc");
 
@@ -345,10 +345,17 @@
     if (!out.hidden) out.scrollIntoView({ behavior: "smooth", block: "start" });
   });
   // AC clears the amount + discount and resets the rates to defaults.
+  // Everything resets from DEF — the old version hardcoded its own copies of
+  // the rates, so AC silently restored a stale markup after any default change.
+  function resetDefaults() {
+    disc.value = String(DEF.disc);
+    rDiv.value = String(DEF.divisor); rShip.value = String(DEF.ship); rTax.value = String(DEF.tax);
+    rLabor.value = String(DEF.labor); rMatDisc.value = String(DEF.matDisc); rFee.value = String(DEF.fee);
+    window.setDiscMode("pct");   // the standard discount is a %, not a dollar figure — also renders
+  }
   el("ac").addEventListener("click", function () {
-    gross.value = ""; disc.value = "";
-    rDiv.value = "2.8"; rShip.value = "0"; rTax.value = "0"; rLabor.value = "15"; rMatDisc.value = "0"; rFee.value = "3";
-    render();
+    gross.value = "";
+    resetDefaults();
     gross.focus();
   });
   // Enter key acts like =
@@ -356,7 +363,7 @@
     i.addEventListener("keydown", function (e) { if (e.key === "Enter") el("eq").click(); });
   });
 
-  render();
+  resetDefaults();   // start on the standard 4.0 list price less 30%
 })();
 </script>
 </body>

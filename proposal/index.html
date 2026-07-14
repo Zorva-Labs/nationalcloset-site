@@ -272,13 +272,13 @@ async function accept() {
 }
 
 function money(c) { if (c == null) return "—"; return "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
-// Deposit = at least 50% of the net, but never less than materials (price ÷ 2.8
+// Deposit = at least 50% of the net, but never less than materials (price ÷ 3.0
 // from the gross). Capped at the net. Mirrors _lib/financials.js depositForTotal.
 function depositFor(grossCents, netCents) {
   const gross = Math.max(0, grossCents || 0);
   const net = (netCents != null && netCents > 0) ? netCents : gross;
   if (net <= 0) return 0;
-  const materials = Math.round(gross / 2.8);
+  const materials = Math.round(gross / 3.0);
   return Math.min(net, Math.max(Math.round(net * 0.5), materials));
 }
 // The three payments the customer actually makes: 50% (or whatever covers

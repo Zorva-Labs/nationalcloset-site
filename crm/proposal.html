@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc64" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc65" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc64"></script>
+<script src="/crm/crm-app.js?v=ncc65"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -172,7 +172,7 @@ function renderTier(t, i) {
 // materials; taxes = 9.75% of (materials + shipping); labor = 15% of gross, min $350.
 // Editable formula rates for the internal cost preview (session-only; defaults
 // mirror _lib/financials.js). The rate bar above the options edits these.
-const PROP_RATES = { divisor: 3.0, shipRate: 0, taxRate: 0, laborRate: 0.15, matDiscRate: 0, feeRate: 0.03 };  // materials ÷3.0, labor 15%, processing fee 3%; shipping/taxes/mfr 0
+const PROP_RATES = { divisor: 3.1, shipRate: 0, taxRate: 0, laborRate: 0.15, matDiscRate: 0, feeRate: 0.03 };  // materials ÷3.1, labor 15%, processing fee 3%; shipping/taxes/mfr 0
 const propPctStr = (frac) => String(+((frac * 100).toFixed(4)));
 function tierCostCalc(grossCents, netCents) {
   const g = grossCents || 0;

@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc67" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc68" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc67"></script>
+<script src="/crm/crm-app.js?v=ncc68"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -103,11 +103,12 @@ function render() {
       <div class="card-head"><h2>Limited-time offer <span class="muted" style="font-weight:400;font-size:12px">· optional</span></h2></div>
       <p class="muted" style="font-size:12px;margin:0 0 10px">
         Shown as a highlighted banner on the customer's proposal. Leave it blank for no offer.
-        Free upgrades beat a discount — at a ${PROP_RATES.divisor} markup, $1 of retail value costs you about
-        $${(1 / PROP_RATES.divisor).toFixed(2)} in materials, so "$800 in free upgrades" looks far more generous than "$500 off"
-        and costs you a third as much. <strong>Give it a deadline</strong> — a standing offer is just your price.
+        The free <strong>shoe / storage tower</strong> costs you ${usd(TOWER_COST_CENTS)}
+        but reads as a <strong>${usd(towerValueCents())} value</strong> at your ${PROP_RATES.divisor} markup —
+        the markup is the leverage, so it lands far bigger than the equivalent dollars off while costing a fraction of the margin.
+        <strong>Give it a deadline</strong> — a standing offer is just your price.
       </p>
-      <textarea id="promo-note" rows="3" placeholder="e.g. Book by March 30th and we'll include $800 in free upgrades — soft-close drawers, a valet rod and LED lighting, on us." style="width:100%;border:1px solid var(--line-soft);padding:8px 10px;border-radius:var(--r-sm);font:inherit;font-size:13px;box-sizing:border-box">${SSCrm.esc(p.promo_note || "")}</textarea>
+      <textarea id="promo-note" rows="3" placeholder="e.g. Book by March 30th and we'll add a shoe tower or storage tower to your closet — free. A $935 value, on us." style="width:100%;border:1px solid var(--line-soft);padding:8px 10px;border-radius:var(--r-sm);font:inherit;font-size:13px;box-sizing:border-box">${SSCrm.esc(p.promo_note || "")}</textarea>
       <div class="form-actions" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn ghost sm" type="button" onclick="fillPromo()">＋ Use the standard upgrade offer</button>
         <button class="btn ghost sm" type="button" onclick="clearPromo()">Clear</button>
@@ -188,7 +189,15 @@ function renderTier(t, i) {
 // materials; taxes = 9.75% of (materials + shipping); labor = 15% of gross, min $350.
 // Editable formula rates for the internal cost preview (session-only; defaults
 // mirror _lib/financials.js). The rate bar above the options edits these.
-const PROP_RATES = { divisor: 3.1, shipRate: 0, taxRate: 0, laborRate: 0.15, matDiscRate: 0, feeRate: 0.03 };  // materials ÷3.1, labor 15%, processing fee 3%; shipping/taxes/mfr 0
+// The standing incentive: a free shoe/storage tower. We pay our supplier cost;
+// the customer sees it at the same markup as everything else on the quote, so
+// the advertised value tracks the markup instead of being typed in by hand.
+const TOWER_COST_CENTS = 33400;
+const towerValueCents = () => Math.round(TOWER_COST_CENTS * PROP_RATES.divisor);
+// Advertised figures read as round dollars — "$935", never "$935.20".
+const usd = (cents) => "$" + Math.round(cents / 100).toLocaleString("en-US");
+
+const PROP_RATES = { divisor: 2.8, shipRate: 0, taxRate: 0, laborRate: 0.15, matDiscRate: 0, feeRate: 0.03 };  // materials ÷2.8, labor 15%, processing fee 3%; shipping/taxes/mfr 0
 const propPctStr = (frac) => String(+((frac * 100).toFixed(4)));
 function tierCostCalc(grossCents, netCents) {
   const g = grossCents || 0;
@@ -423,7 +432,7 @@ function fillPromo() {
   const el = document.getElementById("promo-note");
   const until = state?.proposal?.valid_until;
   const by = until ? SSCrm.fmtDay(until) : null;
-  el.value = `Book${by ? " by " + by : " this month"} and we'll include $800 in free upgrades — soft-close drawers, a valet rod and LED lighting, on us.`;
+  el.value = `Book${by ? " by " + by : " this month"} and we'll add a shoe tower or storage tower to your closet — free. A ${usd(towerValueCents())} value, on us.`;
   el.focus();
 }
 function clearPromo() { const el = document.getElementById("promo-note"); el.value = ""; el.focus(); }

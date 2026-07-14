@@ -77,12 +77,24 @@
   .note .ic{font-weight:800;flex:none}
 
   .split{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
-  .mini{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px}
-  .mini .l{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-mute)}
-  .mini .v{font-size:1.4rem;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin-top:2px}
-  .mini .m{font-size:.78rem;color:var(--ink-mute);margin-top:2px}
+  /* .mini-txt is display:contents here, so .l/.m are direct flex children and
+     the three tiles read label → amount → note, same as always. */
+  .mini{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;min-width:0}
+  .mini-txt{display:contents}
+  .mini .l{order:1;font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-mute)}
+  .mini .v{order:2;font-size:1.4rem;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin-top:2px}
+  .mini .m{order:3;font-size:.78rem;color:var(--ink-mute);margin-top:2px}
   .foot{font-size:.76rem;color:var(--ink-mute);text-align:center;line-height:1.6;margin-top:8px}
-  @media(max-width:420px){.split{grid-template-columns:1fr}}
+  /* Three tiles need ~170px each to hold "$1,303.53" plus a note without
+     wrapping mid-word — below that, stack them as label-left / amount-right
+     rows so they stay compact instead of becoming three tall boxes. */
+  @media(max-width:580px){
+    .split{grid-template-columns:1fr;gap:8px}
+    .mini{flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px}
+    .mini-txt{display:block;min-width:0}
+    .mini .v{margin-top:0;font-size:1.25rem;white-space:nowrap;flex:none}
+    .mini .m{margin-top:1px}
+  }
 </style>
 </head>
 <body>
@@ -144,19 +156,25 @@
 
     <div class="split">
       <div class="mini">
-        <div class="l">1 · At signing</div>
+        <div class="mini-txt">
+          <div class="l">1 · At signing</div>
+          <div class="m" id="d-halfnote">50% (or hard costs)</div>
+        </div>
         <div class="v" id="d-half">$0</div>
-        <div class="m" id="d-halfnote">50% (or hard costs)</div>
       </div>
       <div class="mini">
-        <div class="l">2 · At scheduling</div>
+        <div class="mini-txt">
+          <div class="l">2 · At scheduling</div>
+          <div class="m">25% — materials in</div>
+        </div>
         <div class="v" id="d-sched">$0</div>
-        <div class="m">25% — materials in</div>
       </div>
       <div class="mini">
-        <div class="l">3 · Day of install</div>
+        <div class="mini-txt">
+          <div class="l">3 · Day of install</div>
+          <div class="m">25% — covers labor + profit</div>
+        </div>
         <div class="v" id="d-bal">$0</div>
-        <div class="m">25% — covers labor + profit</div>
       </div>
     </div>
 

@@ -173,7 +173,14 @@ function render(k, lines) {
     </table>
     <div class="doc-totals">
       <div class="r grand"><span>Total</span><span>${money(k.total_cents)}</span></div>
-      <div class="r deposit"><span>Deposit due at signing</span><span>${money(k.deposit_cents)}</span></div>
+      <div class="r deposit"><span>Due at signing</span><span>${money(k.deposit_cents)}</span></div>
+      ${(() => {
+        const rest = Math.max(0, (k.total_cents || 0) - (k.deposit_cents || 0));
+        if (rest <= 0) return "";
+        const atScheduling = Math.round(rest / 2);
+        return `<div class="r"><span>Due when install is scheduled</span><span>${money(atScheduling)}</span></div>
+      <div class="r"><span>Due day of install</span><span>${money(rest - atScheduling)}</span></div>`;
+      })()}
     </div>
 
     <h2>Terms &amp; conditions</h2>
@@ -182,7 +189,7 @@ function render(k, lines) {
     ${isExecuted ? `
       <div class="signed-box">
         <h2>Your job is booked! 🎉</h2>
-        <p>Signed on ${formatDt(k.signed_by_customer_at)}.${k.deposit_cents > 0 ? ` Deposit due: <strong style="color:var(--color-champagne)">${money(k.deposit_cents)}</strong>.` : ""} Thank you! We'll reach out after we receive and process your order to coordinate the rest — nothing else is needed from you right now.</p>
+        <p>Signed on ${formatDt(k.signed_by_customer_at)}.${k.deposit_cents > 0 ? ` Due now: <strong style="color:var(--color-champagne)">${money(k.deposit_cents)}</strong>.` : ""} Thank you! We'll reach out after we receive and process your order to coordinate the rest — nothing else is needed from you right now. Your remaining payments come later: 25% once your materials arrive and we schedule your install, and the final 25% the day of installation.</p>
         <button onclick="window.print()" class="no-print" style="margin-top:18px;padding:13px 24px;background:var(--color-champagne);color:var(--color-ink);border:0;font:inherit;font-weight:700;font-size:0.9rem;border-radius:8px;cursor:pointer">🖨 Print / Save PDF</button>
       </div>
     ` : isSigned ? `

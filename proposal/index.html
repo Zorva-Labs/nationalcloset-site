@@ -191,14 +191,19 @@ function render(p, tiers, attachments) {
         <div class="opt__sum">
           <div class="opt__sum-row opt__sum-total"><span>Total</span><span>${money(t.total_cents)}</span></div>
           <div class="opt__sum-row" style="border:0;color:var(--muted);font-size:.82rem;font-weight:500"><span>Includes shipping, tax &amp; installation</span><span></span></div>
-          <div class="opt__sum-row" style="margin-top:6px"><span>Deposit to start</span><span>${money(depositFor((t.subtotal_cents || 0) > (t.total_cents || 0) ? t.subtotal_cents : t.total_cents, t.total_cents))}</span></div>
-          <div class="opt__sum-row" style="border:0;color:var(--muted);font-size:.82rem;font-weight:500"><span>Balance at completion</span><span>${money(Math.max(0, (t.total_cents || 0) - depositFor((t.subtotal_cents || 0) > (t.total_cents || 0) ? t.subtotal_cents : t.total_cents, t.total_cents)))}</span></div>
+          ${(() => {
+            const s = scheduleFor((t.subtotal_cents || 0) > (t.total_cents || 0) ? t.subtotal_cents : t.total_cents, t.total_cents);
+            const soft = `style="border:0;color:var(--muted);font-size:.82rem;font-weight:500"`;
+            return `<div class="opt__sum-row" style="margin-top:6px"><span>Due at signing</span><span>${money(s.deposit)}</span></div>
+          <div class="opt__sum-row" ${soft}><span>Due when install is scheduled</span><span>${money(s.atScheduling)}</span></div>
+          <div class="opt__sum-row" ${soft}><span>Due day of install</span><span>${money(s.atInstall)}</span></div>`;
+          })()}
         </div>` : `<div class="opt__empty">Itemized details to follow.</div>`}
         ${!isAccepted ? `<button class="btn opt-btn" type="button" onclick="event.stopPropagation();pickTier('${esc(t.tier)}')">${p.selected_tier === t.tier ? "✓ Selected" : (many ? "Choose this option" : "Select")}</button>` : ""}
       </div>`).join("")}
     </div>
 
-    <p class="pay-note">Your price is all-inclusive — it <strong>includes shipping, tax &amp; installation</strong>, with no hidden fees. <strong>To begin,</strong> a deposit covers materials, shipping &amp; taxes; the balance is due when installation is complete — or you can pay in full anytime. Pay securely by card, bank transfer (ACH), digital wallet or <strong>Klarna</strong> (buy now, pay later), with no added processing fee.</p>
+    <p class="pay-note">Your price is all-inclusive — it <strong>includes shipping, tax &amp; installation</strong>, with no hidden fees. You pay in three steps: <strong>50% at signing</strong> (a little more if that's what it takes to cover your materials &amp; shipping) to release your order to the manufacturer, <strong>25% once your materials arrive and we schedule your install</strong>, and the final <strong>25% the day of installation</strong> — or you can pay in full anytime. Pay securely by card, bank transfer (ACH), digital wallet or <strong>Klarna</strong> (buy now, pay later), with no added processing fee.</p>
 
     ${p.job_notes ? `
       <div style="margin-top:24px;background:var(--fog);border-radius:12px;padding:20px clamp(18px,3vw,26px)">
@@ -274,6 +279,16 @@ function depositFor(grossCents, netCents) {
   if (net <= 0) return 0;
   const materials = Math.round(gross / 2.8);
   return Math.min(net, Math.max(Math.round(net * 0.5), materials));
+}
+// The three payments the customer actually makes: 50% (or whatever covers
+// materials + shipping, if that's more) at signing, then the rest split evenly
+// between scheduling and install day. Always sums back to the net exactly.
+function scheduleFor(grossCents, netCents) {
+  const net = (netCents != null && netCents > 0) ? netCents : Math.max(0, grossCents || 0);
+  const deposit = depositFor(grossCents, netCents);
+  const rest = Math.max(0, net - deposit);
+  const atScheduling = Math.round(rest / 2);
+  return { deposit, atScheduling, atInstall: rest - atScheduling };
 }
 function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 </script>

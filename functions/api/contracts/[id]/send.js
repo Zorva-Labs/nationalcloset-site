@@ -16,7 +16,11 @@ export async function onRequestPost(context) {
   if (!k) return json({ error: "Not found" }, 404);
   const url = `${SITE_URL}/contract/?t=${k.view_token}`;
   const total = "$" + (k.total_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const deposit = "$" + (k.deposit_cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const money = (c) => "$" + ((c || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const deposit = money(k.deposit_cents);
+  // Payments 2 and 3 split whatever is left after the up-front payment.
+  const rest = Math.max(0, (k.total_cents || 0) - (k.deposit_cents || 0));
+  const atScheduling = Math.round(rest / 2);
   const subject = `Your contract — ${k.number} (please review &amp; sign)`;
   const html = brandedEmail({
     title: "Your contract is ready to sign.",
@@ -26,14 +30,17 @@ export async function onRequestPost(context) {
         <ul style="font-size:15px;color:#3A362F;line-height:1.7;padding-left:20px">
           <li>Contract: <strong>${escapeHtml(k.number)}</strong></li>
           <li>Total: <strong>${total}</strong></li>
-          <li>Deposit to release order: <strong>${deposit}</strong></li>
+          <li>Due at signing: <strong>${deposit}</strong> — releases your order</li>
+          ${rest > 0 ? `<li>Due when your install is scheduled: <strong>${money(atScheduling)}</strong></li>
+          <li>Due the day of installation: <strong>${money(rest - atScheduling)}</strong></li>` : ""}
         </ul>
-        <p>After you sign online, we'll counter-sign and release the order to our manufacturing partners. The deposit can be paid by check, cash, ACH, Venmo, or Cash App — we'll coordinate that separately.</p>
+        <p>After you sign online, we'll counter-sign and release the order to our manufacturing partners. Payments can be made by check, cash, ACH, Venmo, or Cash App — we'll coordinate that separately.</p>
       `,
     ctaLabel: "Review &amp; Sign",
     ctaUrl: url,
   });
-  const text = `Your contract ${k.number} is ready to sign: ${url}\nTotal: ${total}\nDeposit: ${deposit}`;
+  const text = `Your contract ${k.number} is ready to sign: ${url}\nTotal: ${total}\nDue at signing: ${deposit}`
+    + (rest > 0 ? `\nDue at scheduling: ${money(atScheduling)}\nDue day of install: ${money(rest - atScheduling)}` : "");
   const result = await sendEmail(context.env, { to: k.contact_email, subject, html, text });
   const failed = result?.skipped || result?.error || (result?.status && result.status >= 400);
   await logOutboundEmail(context.env, {

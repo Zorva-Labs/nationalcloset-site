@@ -8,20 +8,31 @@ import { depositForTotal } from "./financials.js";
 // permission before we remove existing shelving/cabinets and install our systems.
 const RENTAL_CLAUSE = `<h3>Rental or Leased Property</h3><p>If this property is rented or leased, you confirm that you have obtained the property owner's or landlord's written permission for National Closet Company to remove any existing shelving, cabinets or fixtures and to install our systems in their place. Obtaining this permission is the customer's responsibility, and National Closet Company is not liable for any dispute arising from the lack of it.</p>`;
 
+// The payment policy for any contract that carries a custom material order:
+// 50% up front (or whatever covers materials + shipping, if that's more),
+// 25% when the install is scheduled, 25% the day of install. Kept in one const
+// so custom_order and wallprep can't drift apart.
+const PAYMENT_SCHEDULE = `<h3>Payment Schedule</h3><p>The total contract price is paid in three installments:</p><ul><li><strong>50% due at signing</strong> (the &ldquo;Deposit&rdquo;) — or, if greater, the amount required to cover the materials and shipping for this order. Manufacturing and scheduling begin only after the Deposit is received.</li><li><strong>25% due when installation is scheduled</strong> — invoiced once all materials have arrived and the install date is set.</li><li><strong>25% due the day of installation.</strong></li></ul><p>The Deposit is non-refundable once materials are released to the manufacturer. You may pay any installment early, or pay in full, at any time.</p>`;
+
+const MATERIALS_LEADTIME = `<h3>Materials &amp; Manufacture</h3><p>Custom materials typically take 4 to 8 weeks to be manufactured and delivered after the Deposit, depending on holidays, shipping, supplier lead times and other unforeseen circumstances. Once all materials have arrived, any repairs and the installation are scheduled.</p>`;
+
 const FALLBACK_TERMS = {
-  custom_order: `<h3>Materials &amp; Manufacture</h3><p>Custom materials typically take 4 to 8 weeks to be manufactured and delivered after the deposit, depending on holidays, shipping, supplier lead times and other unforeseen circumstances. Once all materials have arrived, any repairs and the installation are scheduled.</p><h3>Deposit</h3><p>Deposit (covering materials, shipping &amp; tax) due at signing; balance at completion. Pay in full anytime.</p><h3>Warranty</h3><p>Original manufacturer warranty + 90-day workmanship.</p>` + RENTAL_CLAUSE,
+  custom_order: MATERIALS_LEADTIME + PAYMENT_SCHEDULE + `<h3>Warranty</h3><p>Original manufacturer warranty + 90-day workmanship.</p>` + RENTAL_CLAUSE,
+  wallprep: MATERIALS_LEADTIME + `<h3>Wall Repair &amp; Paint</h3><p>We remove the existing shelving, patch and repair the walls, and paint the immediate installation area before the new system goes in.</p>` + PAYMENT_SCHEDULE + `<h3>Warranty</h3><p>Original manufacturer warranty + 90-day workmanship.</p>` + RENTAL_CLAUSE,
   install_only: `<h3>Scope</h3><p>Install only — customer-supplied product. No deposit. Pay on completion. 90-day workmanship warranty on the install only.</p>` + RENTAL_CLAUSE,
   repair: `<h3>Scope</h3><p>Repair service. Pay on completion. 90-day warranty on the repair.</p>` + RENTAL_CLAUSE,
 };
 
 const FALLBACK_INTROS = {
   custom_order: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the supply and installation of custom closets and storage systems at the project address listed.",
+  wallprep: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the supply and installation of custom closets and storage systems at the project address listed, and includes wall repair and painting of the immediate installation area before the new system is installed.",
   install_only: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the professional installation of closets and storage systems supplied by the customer at the project address listed.",
   repair: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the repair service detailed in the scope of work below.",
 };
 
 const FALLBACK_WINDOWS = {
   custom_order: "Materials 4–8 weeks (holidays/shipping/unforeseen delays may affect timing); install scheduled once materials arrive",
+  wallprep: "Materials 4–8 weeks (holidays/shipping/unforeseen delays may affect timing); repairs and install scheduled once materials arrive",
   install_only: "Scheduled within 1–2 weeks of customer-supplied products arriving on site",
   repair: "Single visit, typically within 1 week",
 };

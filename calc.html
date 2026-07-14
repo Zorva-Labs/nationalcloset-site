@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <!-- Internal tool — keep it out of every index. -->
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
-<title>Deposit Calculator · National Closet Co. (internal)</title>
+<title>Payment Schedule Calculator · National Closet Co. (internal)</title>
 <link rel="icon" type="image/png" href="/img/favicon-ncc.png" />
 <style>
   :root{
@@ -71,7 +71,7 @@
   .note.warn{background:var(--clay-wash);color:var(--clay-deep)}
   .note .ic{font-weight:800;flex:none}
 
-  .split{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .split{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
   .mini{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px}
   .mini .l{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-mute)}
   .mini .v{font-size:1.4rem;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin-top:2px}
@@ -84,10 +84,10 @@
 <div class="wrap">
   <div class="head">
     <img src="/img/ncc-logo-nc.png" alt="National Closet Company" />
-    <div class="t">National Closet Co.<small>Internal · Deposit calculator</small></div>
+    <div class="t">National Closet Co.<small>Internal · Payment schedule</small></div>
   </div>
 
-  <h1>Deposit calculator</h1>
+  <h1>Payment schedule calculator</h1>
   <p class="sub">Enter the gross job amount.</p>
 
   <div class="card">
@@ -107,14 +107,14 @@
       <label class="rate"><span>Mfr. discount</span><input id="r-matdisc" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Processing fee</span><input id="r-feerate" type="text" inputmode="decimal" value="3" autocomplete="off"/><i>%</i></label>
     </div>
-    <p class="hint">Defaults: materials = price ÷ 2.8, labor = 15% of price (min $350) and a 3% processing fee of net. Shipping, taxes &amp; the manufacturer discount default to 0 — set them as needed. The manufacturer discount comes off the materials cost; shipping = % of net materials; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the deposit; the processing fee comes out of profit.</p>
+    <p class="hint">Defaults: materials = price ÷ 2.8, labor = 15% of price (min $350) and a 3% processing fee of net. Shipping, taxes &amp; the manufacturer discount default to 0 — set them as needed. The manufacturer discount comes off the materials cost; shipping = % of net materials; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the up-front payment; the processing fee comes out of profit.</p>
 
     <label class="field" for="disc" style="margin-top:18px">Discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, comes out of profit</span></label>
     <div class="input-money">
       <span>$</span>
       <input id="disc" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off" />
     </div>
-    <p class="hint">Costs (and your minimum deposit) stay based on the gross — the discount only reduces what the client pays and your profit.</p>
+    <p class="hint">Costs (and your minimum up-front payment) stay based on the gross — the discount only reduces what the client pays and your profit.</p>
     <div class="btns">
       <button type="button" class="btn-ac" id="ac">AC</button>
       <button type="button" class="btn-eq" id="eq">=</button>
@@ -123,24 +123,29 @@
 
   <div id="out" hidden>
     <div class="deposit">
-      <div class="lbl">Minimum deposit to quote</div>
+      <div class="lbl">Minimum up front to quote</div>
       <div class="big" id="d-min">$0</div>
       <div class="sub2" id="d-minpct">— of the job</div>
-      <div class="covers">At least 50% of the job — and always covers your <b id="d-mat">$0</b> in materials, shipping &amp; taxes.</div>
+      <div class="covers">At least 50% of the job — and always covers your <b id="d-mat">$0</b> in materials, shipping &amp; taxes. The rest bills 25% at scheduling, 25% on install day.</div>
     </div>
 
     <div id="note" class="note"></div>
 
     <div class="split">
       <div class="mini">
-        <div class="l">Standard 50% deposit</div>
+        <div class="l">1 · At signing</div>
         <div class="v" id="d-half">$0</div>
-        <div class="m" id="d-halfnote">half the job</div>
+        <div class="m" id="d-halfnote">50% (or hard costs)</div>
       </div>
       <div class="mini">
-        <div class="l">Balance at completion</div>
+        <div class="l">2 · At scheduling</div>
+        <div class="v" id="d-sched">$0</div>
+        <div class="m">25% — materials in</div>
+      </div>
+      <div class="mini">
+        <div class="l">3 · Day of install</div>
         <div class="v" id="d-bal">$0</div>
-        <div class="m">covers labor + profit</div>
+        <div class="m">25% — covers labor + profit</div>
       </div>
     </div>
 
@@ -233,18 +238,23 @@
     el("d-min").textContent = money(deposit);
     el("d-minpct").textContent = pct(deposit, net) + " of the " + (discount > 0 ? "net " : "") + "job";
     el("d-mat").textContent = money(f.hard);
-    el("d-half").textContent = money(half);
-    el("d-bal").textContent = money(net - deposit);
+    // Payments 2 and 3 split what's left after the deposit evenly (25%/25% of
+    // the job when the deposit lands at the standard 50%).
+    var rest = Math.max(0, net - deposit);
+    var atScheduling = Math.round(rest / 2);
+    el("d-half").textContent = money(deposit);
+    el("d-sched").textContent = money(atScheduling);
+    el("d-bal").textContent = money(rest - atScheduling);
 
     var note = el("note");
     if (f.hard <= half) {
       note.className = "note ok";
-      note.innerHTML = '<span class="ic">✓</span><div>The <b>50% deposit</b> (' + money(half) + ') already covers your <b>' + money(f.hard) + '</b> in materials, shipping &amp; taxes, with ' + money(half - f.hard) + ' to spare.</div>';
-      el("d-halfnote").textContent = "covers hard costs ✓";
+      note.innerHTML = '<span class="ic">✓</span><div>The <b>50% up front</b> (' + money(half) + ') already covers your <b>' + money(f.hard) + '</b> in materials, shipping &amp; taxes, with ' + money(half - f.hard) + ' to spare. The rest bills 25% at scheduling and 25% on install day.</div>';
+      el("d-halfnote").textContent = "50% · covers hard costs ✓";
     } else {
       note.className = "note warn";
-      note.innerHTML = '<span class="ic">!</span><div>Hard costs (<b>' + money(f.hard) + '</b>) exceed 50%, so the deposit is bumped up to <b>' + money(deposit) + '</b> (' + pct(deposit, net) + ') to cover them.</div>';
-      el("d-halfnote").textContent = "below hard costs";
+      note.innerHTML = '<span class="ic">!</span><div>Hard costs (<b>' + money(f.hard) + '</b>) exceed 50%, so the up-front payment is bumped to <b>' + money(deposit) + '</b> (' + pct(deposit, net) + ') to cover them. The remaining ' + money(rest) + ' splits evenly between scheduling and install day.</div>';
+      el("d-halfnote").textContent = "raised to cover hard costs";
     }
 
     var pctStr = function (frac) { return "(" + (+(frac * 100).toFixed(4)) + "%)"; };

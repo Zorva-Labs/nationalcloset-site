@@ -142,7 +142,7 @@
           <div class="pay">
             ${plan ? `<div class="plan">
               <label class="plan-opt"><input type="radio" name="plan" value="deposit" ${plan.current_plan !== "full" ? "checked" : ""}/>
-                <span><b>Pay deposit</b> · ${money(plan.deposit_cents)}<small>Covers materials, shipping &amp; taxes. Balance due at completion.</small></span></label>
+                <span><b>Pay deposit</b> · ${money(plan.deposit_cents)}<small>Releases your order to the manufacturer. The rest is billed 25% when your install is scheduled and 25% the day of install.</small></span></label>
               <label class="plan-opt"><input type="radio" name="plan" value="full" ${plan.current_plan === "full" ? "checked" : ""}/>
                 <span><b>Pay in full</b> · ${money(plan.full_cents)}<small>Settle the whole project now — nothing due later.</small></span></label>
             </div>` : ""}

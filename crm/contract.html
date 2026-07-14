@@ -5,7 +5,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc58" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc59" />
 <style>
   /* ── Printable contract document ────────────────────────────────────────
      The CRM screen shows an *editable* form (textareas, inputs) for admins.
@@ -98,7 +98,7 @@
 </style>
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc58"></script>
+<script src="/crm/crm-app.js?v=ncc59"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 const wantCountersign = new URLSearchParams(location.search).get("action") === "countersign";
@@ -173,7 +173,7 @@ function render() {
 
       <div class="totals">
         <div class="r"><span>Total</span><span id="t-grand">${SSCrm.fmtMoney(k.total_cents)}</span></div>
-        <div class="r"><span>Deposit due at signing</span><input id="t-deposit" type="text" value="${k.deposit_cents ? "$" + (k.deposit_cents/100).toFixed(2) : ""}" style="width:120px;text-align:right;border:1px solid var(--line);padding:5px 8px;border-radius:var(--r-sm)"/></div>
+        <div class="r"><span>Due at signing (50% / hard costs)</span><input id="t-deposit" type="text" value="${k.deposit_cents ? "$" + (k.deposit_cents/100).toFixed(2) : ""}" style="width:120px;text-align:right;border:1px solid var(--line);padding:5px 8px;border-radius:var(--r-sm)"/></div>
       </div>
     </div>
 
@@ -324,7 +324,7 @@ function renderContractDoc(k, lines) {
         </table>
         <div class="pd-totals">
           <div class="r grand"><span>Total</span><span>${SSCrm.fmtMoney(k.total_cents)}</span></div>
-          ${k.deposit_cents ? `<div class="r deposit"><span>Deposit due at signing</span><span>${SSCrm.fmtMoney(k.deposit_cents)}</span></div>` : ""}
+          ${k.deposit_cents ? `<div class="r deposit"><span>Due at signing</span><span>${SSCrm.fmtMoney(k.deposit_cents)}</span></div>` : ""}
         </div>
       </section>
 

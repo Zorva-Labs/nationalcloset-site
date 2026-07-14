@@ -220,8 +220,8 @@ export async function createInvoice(env, opts) {
   if (amountCents <= 0) return { skipped: true, reason: "zero_amount" };
 
   const description = opts.description || ({
-    deposit: "Deposit to begin your custom closet project",
-    balance: "Final balance for your completed installation",
+    deposit: "Deposit (50%) to release your custom closet order",
+    balance: "Remaining balance for your custom closet project",
     full: "Custom closet project — payment",
   })[type] || "Invoice";
 
@@ -418,7 +418,7 @@ export async function markInvoicePaid(env, invoice, { method = "card", paymentIn
     // balance that follows a deposit). This is NOT a balance owed on the
     // invoice the customer just paid — that invoice is paid in full.
     const futureBalance = Math.max(0, (billing.totalCents || 0) - paidSum);
-    const futureLabel = invoice.type === "deposit" ? "Final balance (due at completion)" : "Remaining project balance";
+    const futureLabel = invoice.type === "deposit" ? "Remaining (25% at scheduling, 25% at install)" : "Remaining project balance";
 
     const subject = `Receipt — ${money(invoice.amount_cents)} paid in full (${invoice.number})`;
     const html = brandedEmail({
@@ -433,7 +433,7 @@ export async function markInvoicePaid(env, invoice, { method = "card", paymentIn
           <tr><td style="padding:4px 16px 4px 0;color:#6B6457">${futureLabel}</td><td style="padding:4px 0;font-weight:600">${money(futureBalance)}</td></tr>` : ""}
         </table>
         ${invoice.type === "deposit"
-          ? `<p>Your order is now moving forward — we'll be in touch to schedule your installation.${hasTotal && futureBalance > 0 ? ` The final balance of <strong>${money(futureBalance)}</strong> will be invoiced once your installation is complete.` : ""}</p>`
+          ? `<p>Your order is now moving forward — we'll be in touch to schedule your installation.${hasTotal && futureBalance > 0 ? ` Your remaining <strong>${money(futureBalance)}</strong> is split into two payments: half once your materials arrive and we schedule your install, and half on installation day.` : ""}</p>`
           : (hasTotal && futureBalance > 0 ? `<p>Your remaining project balance of <strong>${money(futureBalance)}</strong> will be invoiced when it's due.</p>` : "")}
         ${hasTotal && futureBalance <= 0 ? `<p>Your project is now paid in full. 🎉 Thank you for choosing National Closet Company!</p>` : ""}
       `,

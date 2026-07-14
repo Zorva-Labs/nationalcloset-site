@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc66" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc67" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc66"></script>
+<script src="/crm/crm-app.js?v=ncc67"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -97,6 +97,22 @@ function render() {
       <p class="muted" style="font-size:12px;margin:0 0 10px">Extra details promised to the client — shown on the proposal and on the job screen.</p>
       <textarea id="job-notes" rows="4" placeholder="e.g. Includes soft-close hinges on all drawers, crown molding, and paint touch-up after install." style="width:100%;border:1px solid var(--line-soft);padding:8px 10px;border-radius:var(--r-sm);font:inherit;font-size:13px;box-sizing:border-box">${SSCrm.esc(p.job_notes || "")}</textarea>
       <div class="form-actions" style="margin-top:8px"><button class="btn secondary sm" onclick="saveAll()">💾 Save</button></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-head"><h2>Limited-time offer <span class="muted" style="font-weight:400;font-size:12px">· optional</span></h2></div>
+      <p class="muted" style="font-size:12px;margin:0 0 10px">
+        Shown as a highlighted banner on the customer's proposal. Leave it blank for no offer.
+        Free upgrades beat a discount — at a ${PROP_RATES.divisor} markup, $1 of retail value costs you about
+        $${(1 / PROP_RATES.divisor).toFixed(2)} in materials, so "$800 in free upgrades" looks far more generous than "$500 off"
+        and costs you a third as much. <strong>Give it a deadline</strong> — a standing offer is just your price.
+      </p>
+      <textarea id="promo-note" rows="3" placeholder="e.g. Book by March 30th and we'll include $800 in free upgrades — soft-close drawers, a valet rod and LED lighting, on us." style="width:100%;border:1px solid var(--line-soft);padding:8px 10px;border-radius:var(--r-sm);font:inherit;font-size:13px;box-sizing:border-box">${SSCrm.esc(p.promo_note || "")}</textarea>
+      <div class="form-actions" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost sm" type="button" onclick="fillPromo()">＋ Use the standard upgrade offer</button>
+        <button class="btn ghost sm" type="button" onclick="clearPromo()">Clear</button>
+        <button class="btn secondary sm" onclick="saveAll()">💾 Save</button>
+      </div>
     </div>
 
     ${propRatesBar()}
@@ -401,6 +417,17 @@ function copyFromOption1(btn) {
   SSCrm.toast("Copied Option 1 and added a Wall Finishing line.", "success");
 }
 
+// The standard offer, dated to the proposal's own expiry so the upgrade
+// deadline and the quote deadline are the same day (no second clock to explain).
+function fillPromo() {
+  const el = document.getElementById("promo-note");
+  const until = state?.proposal?.valid_until;
+  const by = until ? SSCrm.fmtDay(until) : null;
+  el.value = `Book${by ? " by " + by : " this month"} and we'll include $800 in free upgrades — soft-close drawers, a valet rod and LED lighting, on us.`;
+  el.focus();
+}
+function clearPromo() { const el = document.getElementById("promo-note"); el.value = ""; el.focus(); }
+
 async function saveAll() {
   const tiers = [...document.querySelectorAll("[data-tier-id]")].map((card) => ({
     id: parseInt(card.dataset.tierId, 10),
@@ -422,6 +449,7 @@ async function saveAll() {
     await SSCrm.fetchJSON("/api/proposals/" + id, { method: "PATCH", body: JSON.stringify({
       intro: document.getElementById("intro").value.trim(),
       job_notes: jn ? jn.value.trim() : "",
+      promo_note: (document.getElementById("promo-note")?.value || "").trim(),
       tiers,
     })});
     SSCrm.toast("Saved", "success");

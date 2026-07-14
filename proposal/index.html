@@ -78,6 +78,12 @@
     .expiry-bar{display:flex;align-items:flex-start;gap:12px;background:var(--clay-wash);border:1px solid #EBC7B7;border-left:4px solid var(--clay);border-radius:10px;padding:14px 18px;margin:0 0 34px;color:var(--ink-soft);font-size:.92rem;line-height:1.55}
     .expiry-bar .clock{font-size:1.15rem;line-height:1.3;flex-shrink:0}
     .expiry-bar b{color:var(--clay-deep)}
+    /* Optional per-proposal incentive. Sits directly under the expiry bar so the
+       offer deadline and the quote deadline read as one date, not two clocks. */
+    .promo-bar{display:flex;align-items:flex-start;gap:13px;background:var(--ink);border-radius:10px;padding:16px 20px;margin:0 0 34px;color:#fff;font-size:.95rem;line-height:1.55}
+    .expiry-bar + .promo-bar{margin-top:-22px}   /* same deadline — keep them paired */
+    .promo-bar .gift{font-size:1.25rem;line-height:1.25;flex-shrink:0}
+    .promo-bar .tag{display:block;font-size:.62rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--clay);margin-bottom:3px}
     .expired-card{background:#fff;border:1.5px solid var(--line);border-top:5px solid var(--clay);border-radius:14px;padding:clamp(26px,4vw,42px);margin-top:12px;text-align:center}
     .expired-card .badge{display:inline-block;font-size:.66rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--clay-deep);background:var(--clay-wash);padding:6px 13px;border-radius:100px;margin-bottom:16px}
     .expired-card h2{font-family:var(--font);font-weight:800;font-size:clamp(1.6rem,3.4vw,2.2rem);letter-spacing:-0.02em;margin:0 0 14px;color:var(--ink)}
@@ -189,6 +195,7 @@ function render(p, tiers, attachments) {
     <h1>Your custom closet <em>proposal</em>.</h1>
     ${p.intro ? `<p class="doc-intro">${esc(p.intro)}</p>` : ""}
     ${(!isAccepted && expDate) ? `<div class="expiry-bar"><span class="clock">⏳</span><span><b>This proposal expires ${expDate}.</b> Prices for materials, shipping, and labor can change from week to week, so we can only hold this pricing for ${EXPIRY_DAYS} days from the day it was sent. Accept before then to lock it in.</span></div>` : ""}
+    ${(!isAccepted && p.promo_note) ? `<div class="promo-bar"><span class="gift">🎁</span><span><span class="tag">Limited-time offer</span>${esc(p.promo_note)}</span></div>` : ""}
 
     <div class="opt-grid">${tiers.map((t, i) => `
       <div class="opt ${p.selected_tier === t.tier ? "is-picked" : ""}" data-tier="${esc(t.tier)}" ${isAccepted ? "" : `onclick="pickTier('${esc(t.tier)}')" role="button" tabindex="0"`}>

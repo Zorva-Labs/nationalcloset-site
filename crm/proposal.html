@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc61" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc62" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc61"></script>
+<script src="/crm/crm-app.js?v=ncc62"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -247,11 +247,24 @@ function tierLineRow(l) {
   // basis stays on the pre-discount gross). Render them as a distinct row.
   if (l && (l.__discount || (l.line_total_cents != null && l.line_total_cents < 0) || (l.unit_price_cents != null && l.unit_price_cents < 0))) {
     const unit = (l && l.unit_price_cents != null) ? l.unit_price_cents : 0;
-    return `<tr data-discount="1">
+    // A discount can be typed as a dollar amount or as a % of this option's
+    // positive lines. The visible field holds what was typed; the hidden
+    // data-f="unit" always holds the RESOLVED negative cents, so every reader
+    // (save, copy, totals) keeps working unchanged.
+    return `<tr data-discount="1" data-disc-mode="usd">
       <td><input data-f="description" value="${SSCrm.esc(l?.description || "Discount")}" placeholder="Discount"/><input type="hidden" data-f="product_id" value=""/></td>
       <td><input data-f="room" value="" placeholder="—" disabled style="opacity:.4"/></td>
       <td><input class="num" data-f="quantity" value="1" type="number" readonly tabindex="-1" style="opacity:.5"/></td>
-      <td><input class="num" data-f="unit" value="${unit ? SSCrm.fmtMoney(unit) : ""}" placeholder="-$0.00" onchange="fmtUnitNeg(this)" onblur="fmtUnitNeg(this)" style="color:#B91C1C;font-weight:600"/></td>
+      <td>
+        <div style="display:flex;gap:5px;align-items:center">
+          <span style="display:inline-flex;flex:none">
+            <button type="button" class="disc-u" onclick="setLineDiscMode(this,'usd')" style="${discBtn(true)};border-radius:5px 0 0 5px">$</button
+            ><button type="button" class="disc-p" onclick="setLineDiscMode(this,'pct')" style="${discBtn(false)};border-left:0;border-radius:0 5px 5px 0">%</button>
+          </span>
+          <input class="num disc-val" value="${unit ? SSCrm.fmtMoney(Math.abs(unit)) : ""}" placeholder="0.00" oninput="recalcTier(this)" onblur="fmtDisc(this)" style="color:#B91C1C;font-weight:600;min-width:0"/>
+        </div>
+        <input type="hidden" data-f="unit" value="${unit ? SSCrm.fmtMoney(unit) : ""}"/>
+      </td>
       <td class="num money tier-line-money" style="color:#B91C1C">${SSCrm.fmtMoney(unit)}</td>
       <td><button class="rm" onclick="this.closest('tr').remove();recalcTierEl(this.closest('.card'))" title="Remove">×</button></td>
     </tr>`;
@@ -285,12 +298,43 @@ let MK_RATE = 0.03;
 const mkq = (cents) => (cents > 0 ? Math.round(cents * (1 + MK_RATE)) : cents);
 const mkPct = () => Math.round(MK_RATE * 100);
 
-function recalcTier(input) {
+// recalcTierEl repaints every line's money cell (a % discount depends on the
+// other lines, so a single row can't be costed in isolation).
+function recalcTier(input) { recalcTierEl(input.closest(".card")); }
+
+const discBtn = (on) => `padding:2px 7px;border:1px solid var(--line);font:inherit;font-size:11px;font-weight:700;line-height:15px;cursor:pointer;background:${on ? "#B91C1C" : "#fff"};color:${on ? "#fff" : "var(--ink-soft)"}`;
+
+// Flip one discount line between $ and % entry.
+function setLineDiscMode(btn, mode) {
+  const tr = btn.closest("tr");
+  tr.dataset.discMode = mode === "pct" ? "pct" : "usd";
+  const pct = tr.dataset.discMode === "pct";
+  tr.querySelector(".disc-u").setAttribute("style", discBtn(!pct) + ";border-radius:5px 0 0 5px");
+  tr.querySelector(".disc-p").setAttribute("style", discBtn(pct) + ";border-left:0;border-radius:0 5px 5px 0");
+  const val = tr.querySelector(".disc-val");
+  // "$1,000.00" is meaningless as a percentage — strip to the bare number.
+  val.value = String(val.value || "").replace(/[^0-9.]/g, "");
+  val.placeholder = pct ? "0" : "0.00";
+  recalcTierEl(tr.closest(".card"));
+}
+// Tidy the typed value on blur: money in $ mode, bare number in % mode.
+function fmtDisc(input) {
   const tr = input.closest("tr");
-  const qty = Number(tr.querySelector("[data-f=quantity]").value || 0);
-  const unit = SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value);
-  tr.querySelector(".tier-line-money").textContent = SSCrm.fmtMoney(mkq(qty * unit));
-  recalcTierEl(input.closest(".card"));
+  const raw = String(input.value || "").replace(/[^0-9.]/g, "");
+  const v = parseFloat(raw);
+  if (!raw || isNaN(v) || v <= 0) { input.value = ""; }
+  else if (tr.dataset.discMode === "pct") { input.value = String(Math.min(v, 100)); }
+  else { input.value = SSCrm.fmtMoney(Math.round(v * 100)); }
+  recalcTierEl(tr.closest(".card"));
+}
+// Resolve one discount row to negative cents against this option's gross.
+function lineDiscountCents(tr, gross) {
+  const v = parseFloat(String(tr.querySelector(".disc-val")?.value || "").replace(/[^0-9.]/g, "")) || 0;
+  if (v <= 0) return 0;
+  const cents = tr.dataset.discMode === "pct"
+    ? Math.round(gross * Math.min(v, 100) / 100)
+    : Math.round(v * 100);
+  return -Math.min(Math.max(0, cents), Math.max(0, gross));   // never below $0 net
 }
 // Always show the unit price as $X.XX. Reformats whatever was typed ("500",
 // "500.5", "$500") into "$500.00" on change/blur, then recalculates the line.
@@ -299,25 +343,34 @@ function fmtUnit(input) {
   input.value = v ? SSCrm.fmtMoney(SSCrm.parseMoney(v)) : "";
   recalcTier(input);
 }
-// Discount unit field — always negative (a discount never adds to the price).
-function fmtUnitNeg(input) {
-  const v = (input.value || "").trim();
-  const cents = -Math.abs(SSCrm.parseMoney(v));
-  input.value = cents ? SSCrm.fmtMoney(cents) : "";
-  recalcTier(input);
-}
 const QUOTE_TAX_RATE = 0; // all-inclusive pricing — no separate tax line (matches recomputeTierTotals)
 function recalcTierEl(card) {
   // net = all lines (incl. negative discounts) = what the client pays.
   // gross = positive lines only = pre-discount cost basis.
-  let net = 0, gross = 0;
-  card.querySelectorAll(".tier-lines tr").forEach((tr) => {
+  //
+  // Two passes: the priced lines set the gross first, because a % discount is
+  // figured from it and can't be resolved until every other line is counted.
+  const rows = [...card.querySelectorAll(".tier-lines tr")];
+  let base = 0, gross = 0;
+  rows.forEach((tr) => {
+    if (tr.dataset.discount === "1") return;
     const qty = Number(tr.querySelector("[data-f=quantity]").value || 0);
     const unit = SSCrm.parseMoney(tr.querySelector("[data-f=unit]").value);
     const lt = mkq(qty * unit);
-    net += lt;
+    tr.querySelector(".tier-line-money").textContent = SSCrm.fmtMoney(lt);
+    base += lt;
     if (lt > 0) gross += lt;
   });
+  let disc = 0;
+  rows.forEach((tr) => {
+    if (tr.dataset.discount !== "1") return;
+    const cents = lineDiscountCents(tr, gross);
+    // The hidden field is what save/copy read — keep it the resolved cents.
+    tr.querySelector("[data-f=unit]").value = cents ? SSCrm.fmtMoney(cents) : "";
+    tr.querySelector(".tier-line-money").textContent = SSCrm.fmtMoney(cents);
+    disc += cents;
+  });
+  const net = base + disc;
   card.querySelector(".tier-total").textContent = SSCrm.fmtMoney(net);
   const box = card.querySelector(".tier-cost-rows");
   if (box) box.innerHTML = tierCostRows(gross, net);

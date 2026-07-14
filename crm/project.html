@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc61" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc62" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc61"></script>
+<script src="/crm/crm-app.js?v=ncc62"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -795,14 +795,47 @@ async function loadFinancials() {
   }
 }
 
-function finRow(key, label) {
+// A $/% segmented toggle for fields that can be entered either way (the
+// discount). Whatever is typed resolves to cents — the percentage is an entry
+// convenience, not a stored rate.
+const finUnitMode = { discount: "usd" };
+const finUnitBtn = (on) => `padding:1px 6px;border:1px solid var(--line);font:inherit;font-size:11px;font-weight:700;line-height:16px;cursor:pointer;background:${on ? "var(--ink)" : "#fff"};color:${on ? "#fff" : "var(--ink-soft)"}`;
+function finUnitTog(key, disabled) {
+  const m = finUnitMode[key];
+  return `<span style="margin-right:6px;display:inline-flex;${disabled ? "opacity:.45;pointer-events:none" : ""}">
+    <button type="button" id="fin-${key}-usd" onclick="finUnitToggle('${key}','usd')" style="${finUnitBtn(m === "usd")};border-radius:5px 0 0 5px">$</button
+    ><button type="button" id="fin-${key}-pct" onclick="finUnitToggle('${key}','pct')" style="${finUnitBtn(m === "pct")};border-left:0;border-radius:0 5px 5px 0">%</button>
+  </span>`;
+}
+function finUnitToggle(key, mode) {
+  finUnitMode[key] = mode === "pct" ? "pct" : "usd";
+  const auto = document.getElementById(`fin-${key}-auto`);
+  // Switching units on an auto field would be meaningless — the value is
+  // overwritten from the proposal on every recalc. Flip it to manual.
+  if (auto && auto.checked) { auto.checked = false; finToggle(key); }
+  document.getElementById(`fin-${key}-usd`).setAttribute("style", finUnitBtn(finUnitMode[key] === "usd") + ";border-radius:5px 0 0 5px");
+  document.getElementById(`fin-${key}-pct`).setAttribute("style", finUnitBtn(finUnitMode[key] === "pct") + ";border-left:0;border-radius:0 5px 5px 0");
+  finRecalc();
+}
+// Resolve a $-or-% field to cents against `base`; never exceeds the base.
+function finUnitCents(key, base) {
+  const el = document.getElementById(`fin-${key}`);
+  const v = parseFloat(String(el?.value || "").replace(/[^0-9.]/g, "")) || 0;
+  if (v <= 0) return 0;
+  const cents = finUnitMode[key] === "pct" ? Math.round(base * Math.min(v, 100) / 100) : Math.round(v * 100);
+  return Math.min(Math.max(0, cents), Math.max(0, base || 0));
+}
+
+function finRow(key, label, opts) {
   const auto = finState[key + "_auto"];
+  const unit = opts?.pctable ? finUnitTog(key, auto) : `<span style="color:var(--ink-soft)">$</span>`;
   return `<tr>
     <td style="padding:6px 0">${label}</td>
     <td style="text-align:right;white-space:nowrap">
       <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-${key}-auto" ${auto ? "checked" : ""} onchange="finToggle('${key}')"/> auto</label>
-      <span style="color:var(--ink-soft)">$</span>
+      ${unit}
       <input id="fin-${key}" value="${finDollars(finState[key + "_cents"])}" ${auto ? "readonly" : ""} oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right;${auto ? "background:var(--bg-soft);color:var(--ink-soft)" : ""}"/>
+      ${opts?.pctable ? `<div id="fin-${key}-eq" class="muted" style="font-size:10px;margin-top:2px;height:12px"></div>` : ""}
     </td></tr>`;
 }
 
@@ -821,7 +854,7 @@ function finRender() {
           <input id="fin-price" value="${finDollars(f.price_cents)}" ${f.price_auto ? "readonly" : ""} oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right;font-weight:600;${f.price_auto ? "background:var(--bg-soft);color:var(--ink-soft)" : ""}"/>
         </td>
       </tr>
-      ${finRow("discount", "Discount <span class='muted' style='font-size:11px'>· from proposal</span>")}
+      ${finRow("discount", "Discount <span class='muted' style='font-size:11px'>· from proposal · $ or %</span>", { pctable: true })}
       <tr><td style="padding:4px 0;color:var(--ink-soft)">Net to client</td><td style="text-align:right;color:var(--ink-soft);font-weight:600" id="fin-net">${SSCrm.fmtMoney(netCents)}</td></tr>
       <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
       ${finRow("materials", `Materials <span class='muted' style='font-size:11px'>· price ÷ ${finRateInp("fin-rate-divisor", finRateVal("materials_divisor", FIN_DEF.divisor))}</span>`)}
@@ -870,8 +903,17 @@ function finRecalc() {
   const rates = finReadRates();
   const calc = finCalc(price, rates);
   // Discount (auto = the proposal's discount) comes out of profit, not the cost basis.
-  if (document.getElementById("fin-discount-auto").checked) document.getElementById("fin-discount").value = finDollars(finState.default_discount_cents || 0);
-  const discount = finToCents(document.getElementById("fin-discount").value);
+  const discAutoOn = document.getElementById("fin-discount-auto").checked;
+  if (discAutoOn) {
+    // Auto pulls the proposal's discount, which is always a dollar figure.
+    finUnitMode.discount = "usd";
+    document.getElementById("fin-discount").value = finDollars(finState.default_discount_cents || 0);
+  }
+  const discount = finUnitCents("discount", price);
+  const discEq = document.getElementById("fin-discount-eq");
+  if (discEq) discEq.textContent = discount > 0 && price > 0
+    ? (finUnitMode.discount === "pct" ? "= " + SSCrm.fmtMoney(discount) : "= " + Math.round((discount / price) * 100) + "% off")
+    : "";
   // Materials: auto = price ÷ divisor. Shipping: auto = shipRate of effective
   // materials. Taxes: auto = taxRate of (materials + shipping). Labor: auto =
   // laborRate of gross (min $350) — all from the editable rate inputs.
@@ -908,7 +950,7 @@ async function saveFinancials() {
   if (!priceAuto) body.price_cents = finToCents(document.getElementById("fin-price").value);
   const discAuto = document.getElementById("fin-discount-auto").checked;
   body.discount_auto = discAuto;
-  if (!discAuto) body.discount_cents = finToCents(document.getElementById("fin-discount").value);
+  if (!discAuto) body.discount_cents = finUnitCents("discount", finReadPrice());
   ["materials", "shipping", "tax", "labor"].forEach((k) => {
     const auto = document.getElementById(`fin-${k}-auto`).checked;
     body[`${k}_auto`] = auto;

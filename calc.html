@@ -31,6 +31,11 @@
   .input-money input{width:100%;font-size:1.9rem;font-weight:800;padding:14px 16px 14px 36px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
   .input-money input:focus{outline:none;border-color:var(--clay)}
   .hint{font-size:.78rem;color:var(--ink-mute);margin-top:8px}
+  .disc-wrap{display:flex;gap:10px;align-items:stretch}
+  .disc-wrap .input-money{flex:1;min-width:0}
+  .unit-tog{display:flex;flex:none;border:2px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .unit-tog button{font-family:inherit;font-size:1.15rem;font-weight:800;width:52px;border:0;background:transparent;color:var(--ink-mute);cursor:pointer}
+  .unit-tog button.on{background:var(--ink);color:#fff}
   .rates{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
   .rate{display:flex;align-items:center;gap:8px;min-width:0;border:2px solid var(--line);border-radius:10px;background:#fff;padding:9px 12px}
   .rate:focus-within{border-color:var(--clay)}
@@ -110,11 +115,17 @@
     <p class="hint">Defaults: materials = price ÷ 2.8, labor = 15% of price (min $350) and a 3% processing fee of net. Shipping, taxes &amp; the manufacturer discount default to 0 — set them as needed. The manufacturer discount comes off the materials cost; shipping = % of net materials; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the up-front payment; the processing fee comes out of profit.</p>
 
     <label class="field" for="disc" style="margin-top:18px">Discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, comes out of profit</span></label>
-    <div class="input-money">
-      <span>$</span>
-      <input id="disc" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off" />
+    <div class="disc-wrap">
+      <div class="input-money">
+        <span id="disc-sym">$</span>
+        <input id="disc" type="text" inputmode="decimal" placeholder="0.00" autocomplete="off" />
+      </div>
+      <div class="unit-tog">
+        <button type="button" id="disc-usd" class="on" onclick="setDiscMode('usd')">$</button>
+        <button type="button" id="disc-pct" onclick="setDiscMode('pct')">%</button>
+      </div>
     </div>
-    <p class="hint">Costs (and your minimum up-front payment) stay based on the gross — the discount only reduces what the client pays and your profit.</p>
+    <p class="hint" id="disc-hint">Costs (and your minimum up-front payment) stay based on the gross — the discount only reduces what the client pays and your profit.</p>
     <div class="btns">
       <button type="button" class="btn-ac" id="ac">AC</button>
       <button type="button" class="btn-eq" id="eq">=</button>
@@ -160,7 +171,7 @@
         <tr><td>Processing fee <span class="pct" id="r-feelbl">(3%)</span></td><td id="r-fee">$0</td></tr>
         <tr class="muted"><td>Total cost</td><td id="r-cost">$0</td></tr>
         <tr class="sep"><td>Gross quote</td><td id="r-gross">$0</td></tr>
-        <tr class="disc-row" id="r-discrow" hidden><td>Discount</td><td id="r-discamt">$0</td></tr>
+        <tr class="disc-row" id="r-discrow" hidden><td>Discount <span class="pct" id="r-disclbl"></span></td><td id="r-discamt">$0</td></tr>
         <tr class="muted" id="r-netrow" hidden><td>Net — client pays</td><td id="r-net">$0</td></tr>
         <tr class="grand"><td>Profit <span class="pct" id="r-margin"></span></td><td id="r-profit">$0</td></tr>
       </table>
@@ -173,6 +184,25 @@
   var DEF = { divisor: 2.8, ship: 0, tax: 0, labor: 15, matDisc: 0, fee: 3 };  // materials ÷2.8, labor 15%, processing fee 3%; shipping/taxes/mfr 0
   var el = function (id) { return document.getElementById(id); };
   var gross = el("gross"), disc = el("disc");
+
+  // The discount can be entered as a dollar amount or as a % of the gross.
+  // Either way it resolves to cents here — the gross stays the cost basis.
+  var discMode = "usd";
+  window.setDiscMode = function (m) {
+    discMode = (m === "pct") ? "pct" : "usd";
+    el("disc-usd").classList.toggle("on", discMode === "usd");
+    el("disc-pct").classList.toggle("on", discMode === "pct");
+    el("disc-sym").textContent = discMode === "pct" ? "%" : "$";
+    disc.placeholder = discMode === "pct" ? "0" : "0.00";
+    render();
+  };
+  function discCents(price) {
+    var raw = (disc.value || "").replace(/[^0-9.]/g, "");
+    var v = parseFloat(raw);
+    if (!raw || isNaN(v) || v <= 0) return 0;
+    var cents = discMode === "pct" ? Math.round(price * Math.min(v, 100) / 100) : Math.round(v * 100);
+    return Math.min(Math.max(0, cents), price);   // never more than the job
+  }
   var rDiv = el("r-divisor"), rShip = el("r-shiprate"), rTax = el("r-taxrate"), rLabor = el("r-laborrate"), rMatDisc = el("r-matdisc"), rFee = el("r-feerate");
 
   // Read a rate input; fall back to the default on blank/invalid.
@@ -220,9 +250,9 @@
     var price = Math.round(dollars * 100);                 // gross = all-inclusive cost basis
 
     // Discount comes out of profit only. Client pays NET = gross − discount.
-    var dRaw = disc.value.replace(/[^0-9.]/g, "");
-    var dVal = parseFloat(dRaw);
-    var discount = (!dRaw || isNaN(dVal) || dVal < 0) ? 0 : Math.min(Math.round(dVal * 100), price);
+    // Entered as either a dollar amount or a % of the gross; either way it
+    // resolves to cents here and can never exceed the price.
+    var discount = discCents(price);
     var net = price - discount;
 
     var r = rates();
@@ -277,6 +307,9 @@
     el("r-discrow").hidden = !showDisc;
     el("r-netrow").hidden = !showDisc;
     el("r-discamt").textContent = "−" + money(discount);
+    // In % mode show what the percentage actually came to; in $ mode show the
+    // effective % off, so the two readings are always comparable.
+    el("r-disclbl").textContent = price > 0 ? "(" + pct(discount, price) + " off)" : "";
     el("r-net").textContent = money(net);
     el("r-profit").textContent = money(profit);
     el("r-margin").textContent = "· " + pct(profit, net) + " margin" + (showDisc ? " on net" : "");

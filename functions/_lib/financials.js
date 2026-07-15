@@ -1,7 +1,7 @@
 // Job cost model. The expense breakdown and profit are derived FROM the price.
 // Everything EXCEPT labor defaults to 0 — the estimator sets materials, shipping
 // and taxes per job. Only labor auto-computes by default (15% of the gross).
-//   1. materials = price ÷ 4.0   (default divisor 4.0)
+//   1. materials = price ÷ 2.6   (default divisor 2.6)
 //   2. shipping  = shipRate of materials            (default 0%)
 //   3. taxes     = taxRate of (materials+shipping)  (default 0%)
 //   4. labor     = 15% of the gross job price, min $350   (installation)
@@ -9,7 +9,7 @@
 // The deposit covers the up-front hard costs (materials + shipping + taxes) and
 // is never less than 50% of the net.
 
-export const MATERIALS_DIVISOR = 4.0;  // materials cost = job total ÷ 4.0 (default; list price — the 30% discount brings the effective markup to 2.8)
+export const MATERIALS_DIVISOR = 2.6;  // materials cost = job total ÷ 2.6 (default). One honest price — no list-then-discount.
 export const SHIPPING_RATE = 0;        // shipping default 0% (set per job)
 export const TAX_RATE = 0;             // taxes default 0% (set per job)
 export const LABOR_RATE = 0.15;        // installation labor = 15% of the gross job price (the only non-zero default)

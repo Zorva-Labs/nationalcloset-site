@@ -57,6 +57,10 @@
     .incl__list .tick{flex:none;width:19px;height:19px;border-radius:50%;background:var(--clay-wash);color:var(--clay-deep);display:grid;place-items:center;font-size:.62rem;font-weight:800;margin-top:1px}
     .incl__foot{margin:14px 0 0;padding-top:12px;border-top:1px solid var(--line-soft);font-size:.84rem;color:var(--muted);text-align:center}
     .incl__foot strong{color:var(--ink)}
+    /* Only rendered when no option carries a discount — see anyDiscount below. */
+    .nodisc{border-left:3px solid var(--clay);padding:2px 0 2px 16px;margin:0 0 22px}
+    .nodisc__t{font-family:var(--font);font-weight:800;font-size:.95rem;letter-spacing:-.01em;color:var(--ink);margin:0 0 5px}
+    .nodisc p{color:var(--ink-soft);font-size:.9rem;line-height:1.6;margin:0;max-width:66ch}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-family:var(--font);font-weight:700;font-size:.95rem;border:0;border-radius:7px;padding:13px 22px;cursor:pointer;min-height:48px;transition:transform .25s cubic-bezier(.22,1,.36,1),background .2s}
     .opt-btn{margin-top:20px;width:100%;background:var(--ink);color:#fff}
     .opt:hover .opt-btn{background:#000}
@@ -181,6 +185,9 @@ function render(p, tiers, attachments) {
   if (isExpired(p)) { renderExpired(p); return; }
   const isAccepted = p.status === "accepted";
   const many = (tiers || []).length > 1;
+  // Never claim "no discount" on a quote that has one: a discount shows up as
+  // the gap between an option's pre-discount subtotal and what the client pays.
+  const anyDiscount = (tiers || []).some((t) => (t.subtotal_cents || 0) > (t.total_cents || 0));
   const expDate = expiryDateStr(p);
   document.title = `${p.number} · Your Proposal · National Closet Company`;
   document.getElementById("root").innerHTML = `
@@ -232,6 +239,12 @@ function render(p, tiers, attachments) {
       </ul>
       <p class="incl__foot">Six things other companies quote as add-ons. Your price above already covers all of them — <strong>no hidden fees, nothing billed later</strong>.</p>
     </div>
+
+    ${!anyDiscount ? `
+    <div class="nodisc">
+      <h3 class="nodisc__t">Why there's no discount on this quote</h3>
+      <p>We price the job once, at the number we can actually do it for. There's no inflated &ldquo;before&rdquo; price to knock down, and nothing to unlock by signing tonight. What you see above is our best price &mdash; first time, every time.</p>
+    </div>` : ""}
 
     <p class="pay-note">Your price is all-inclusive, with no hidden fees. You pay in three steps: <strong>50% at signing</strong> (a little more if that's what it takes to cover your materials &amp; shipping) to release your order to the manufacturer, <strong>25% once your materials arrive and we schedule your install</strong>, and the final <strong>25% the day of installation</strong> — or you can pay in full anytime. Pay securely by card, bank transfer (ACH), digital wallet or <strong>Klarna</strong> (buy now, pay later), with no added processing fee.</p>
 
@@ -301,13 +314,13 @@ async function accept() {
 }
 
 function money(c) { if (c == null) return "—"; return "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
-// Deposit = at least 50% of the net, but never less than materials (price ÷ 4.0
+// Deposit = at least 50% of the net, but never less than materials (price ÷ 2.6
 // from the gross). Capped at the net. Mirrors _lib/financials.js depositForTotal.
 function depositFor(grossCents, netCents) {
   const gross = Math.max(0, grossCents || 0);
   const net = (netCents != null && netCents > 0) ? netCents : gross;
   if (net <= 0) return 0;
-  const materials = Math.round(gross / 4.0);
+  const materials = Math.round(gross / 2.6);
   return Math.min(net, Math.max(Math.round(net * 0.5), materials));
 }
 // The three payments the customer actually makes: 50% (or whatever covers

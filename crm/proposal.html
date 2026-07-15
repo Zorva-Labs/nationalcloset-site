@@ -5,10 +5,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc74" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc75" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc74"></script>
+<script src="/crm/crm-app.js?v=ncc75"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -202,7 +202,7 @@ const towerValueCents = () => Math.round(TOWER_COST_CENTS * PROP_RATES.divisor);
 // Advertised figures read as round dollars — "$935", never "$935.20".
 const usd = (cents) => "$" + Math.round(cents / 100).toLocaleString("en-US");
 
-const PROP_RATES = { divisor: 4.0, shipRate: 0, taxRate: 0, laborRate: 0.15, matDiscRate: 0, feeRate: 0.03 };  // materials ÷4.0 list, labor 15%, processing fee 3%; shipping/taxes/mfr 0
+const PROP_RATES = { divisor: 2.6, shipRate: 0, taxRate: 0, laborRate: 0.15, matDiscRate: 0, feeRate: 0.03 };  // materials ÷2.6, labor 15%, processing fee 3%; shipping/taxes/mfr 0
 const propPctStr = (frac) => String(+((frac * 100).toFixed(4)));
 function tierCostCalc(grossCents, netCents) {
   const g = grossCents || 0;
@@ -316,17 +316,11 @@ function addTierLine(btn) {
   const card = btn.closest(".card");
   card.querySelector(".tier-lines").insertAdjacentHTML("beforeend", tierLineRow({}));
 }
-// Standard discount off the 4.0 list price. Pre-filled at 30% (which lands the
-// effective markup on 2.8) — still editable, and switchable to a $ amount.
-const DEFAULT_DISCOUNT_PCT = 30;
+// Discounts are the exception, not the model — we price once at 2.6 and quote
+// that. Added blank so nothing is discounted unless it's a deliberate choice.
 function addDiscountLine(btn) {
   const card = btn.closest(".card");
-  const host = card.querySelector(".tier-lines");
-  host.insertAdjacentHTML("beforeend", tierLineRow({ __discount: true, description: "Discount" }));
-  const tr = host.lastElementChild;
-  tr.dataset.discMode = "pct";
-  tr.querySelector(".disc-val").value = String(DEFAULT_DISCOUNT_PCT);
-  setLineDiscMode(tr.querySelector(".disc-p"), "pct");   // syncs the toggle chrome + recalcs
+  card.querySelector(".tier-lines").insertAdjacentHTML("beforeend", tierLineRow({ __discount: true, description: "Discount" }));
 }
 
 // Every positive line carries the quote markup, baked into the price the

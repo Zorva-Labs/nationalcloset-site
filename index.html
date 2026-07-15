@@ -259,6 +259,10 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .hero__sub { opacity: 0; animation: fadeUp .8s var(--ease) .5s forwards; }
 /* Playful brand slogan under the headline (handwritten Caveat) */
 .hero__slogan { font-family: "Caveat", "Montserrat", cursive; color: var(--clay-deep); font-weight: 700; font-size: clamp(1.55rem, 3.6vw, 2.35rem); line-height: 1.04; letter-spacing: 0.01em; margin-top: 0.9rem; text-align: right; }
+/* The pricing claim. Reads as a statement of fact, not a tagline — so it sits
+   flush under the h1 with a rule, rather than in a badge or a script face. */
+.no-sale { margin-top: 1rem; padding-left: 0.9rem; border-left: 3px solid var(--clay); font-size: clamp(1rem, 1.9vw, 1.15rem); font-weight: 600; color: var(--ink-soft); line-height: 1.45; }
+.no-sale strong { color: var(--ink); font-weight: 800; }
 .hero__actions { display: flex; flex-wrap: wrap; gap: 0.8rem; opacity: 0; animation: fadeUp .8s var(--ease) .62s forwards; }
 .hero__proof { display: flex; flex-wrap: wrap; gap: 1.4rem 2rem; align-items: center; padding-top: 0.6rem; opacity: 0; animation: fadeUp .8s var(--ease) .74s forwards; }
 .hero__proof .stars { color: var(--clay); letter-spacing: 2px; }
@@ -805,6 +809,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
   "@type": "FAQPage",
   "mainEntity": [
     { "@type": "Question", "name": "Are you a franchise?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "No, and that saves you money. National Closet Company is 100% family owned and operated, not a franchise. You are not paying franchise royalties, national advertising fees or an overpriced brand name, only premium materials and expert craftsmanship. It is the same caliber of custom closets the big franchise showrooms sell, at an honest, transparent price." } },
+    { "@type": "Question", "name": "Do you offer discounts or run sales?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "No, and that's on purpose. The national closet companies quote you a big number, then \"find\" 40% off if you sign tonight. That discount was never real \u2014 it was baked into the price so it could be handed back to you as a favor. We'd rather skip the theater. The price we quote is the price we can do the work for, the first time you see it. No countdown, no manager to call, no sale to wait for." } },
     { "@type": "Question", "name": "How much does a custom closet cost?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Custom closets typically cost between about $1,000 and $10,000 or more, with a national average around $2,000. A custom reach-in closet system usually runs $1,000–$2,500, a walk-in closet $3,000–$10,000+, and large luxury closets can go higher depending on size, materials and accessories. National Closet Company gives you an exact, no-obligation price at your free in-home consultation, never an estimate that changes later." } },
     { "@type": "Question", "name": "Do I have to remove my old shelving and paint first?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Only if you want to. National Closet Company gives you two quotes. With Option 1, you remove the existing shelving, patch the holes and paint, and we design, build and install your new closet, which is the most budget-friendly route. With Option 2, the turnkey option, you simply empty the space of your belongings and we handle everything else: removing the old shelving, patching and repairing the walls, painting, then building and installing your new closet. Most closet companies only offer Option 1, but we give you both." } },
     { "@type": "Question", "name": "Are custom closets worth it?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "For most homeowners, yes. A custom closet uses every inch of the room and often doubles usable storage compared with a basic builder closet, keeping you organized for years. It costs more up front than a wire kit, but the furniture-grade materials, lifetime use and everyday convenience make custom closets well worth it if you value storage and a clutter-free home." } },
@@ -952,7 +957,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
 <!-- ================= HERO ================= -->
 <section class="hero">
   <div class="hero__bg" aria-hidden="true">
-    <img src="/img/hero-closet.webp?v=ncc74" alt="Luxurious custom master walk-in closet with a center island, shoe wall and warm LED lighting by National Closet Company" width="1280" height="1280" fetchpriority="high" decoding="sync" />
+    <img src="/img/hero-closet.webp?v=ncc75" alt="Luxurious custom master walk-in closet with a center island, shoe wall and warm LED lighting by National Closet Company" width="1280" height="1280" fetchpriority="high" decoding="sync" />
   </div>
   <div class="wrap">
     <div class="hero__inner">
@@ -961,6 +966,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
           <span class="line"><span>Custom Closets</span></span>
           <span class="line"><span>Made <span class="accent">Affordable.</span></span></span>
         </h1>
+        <p class="no-sale hero__sub"><strong>No 40% off.</strong> We never marked it up 40% to begin with.</p>
         <p class="hero__slogan hero__sub">We're Closet Freaks!</p>
         <p class="lead hero__sub" style="margin-top:1.1rem">
           <strong>Beautiful custom-designed closets at a price normal families can afford.</strong>
@@ -1464,6 +1470,10 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
           <div class="faq__a"><div class="faq__a-inner">Only if you want to — we give you <strong>two quotes</strong>. With <strong>Option 1</strong>, you remove the existing shelving, patch the holes and paint, then we design, build and install (the most budget-friendly route). With <strong>Option 2 — turnkey</strong>, you simply empty the space of your belongings and we handle everything else: removing the old shelving, patching and repairing the walls, painting, then building and installing your new closet. <strong>Most closet companies only offer Option 1 — we give you both.</strong></div></div>
         </div>
         <div class="faq__item">
+          <button class="faq__q" aria-expanded="false">Do you offer discounts or run sales?<span class="faq__icon" aria-hidden="true"></span></button>
+          <div class="faq__a"><div class="faq__a-inner">No, and that&rsquo;s on purpose. The national closet companies quote you a big number, then &ldquo;find&rdquo; 40% off if you sign tonight. <strong>That discount was never real</strong> &mdash; it was baked into the price so it could be handed back to you as a favor. We&rsquo;d rather skip the theater. The price we quote is <strong>the price we can do the work for, the first time you see it</strong>. No countdown, no manager to call, no sale to wait for.</div></div>
+        </div>
+        <div class="faq__item">
           <button class="faq__q" aria-expanded="false">How much does a custom closet cost?<span class="faq__icon" aria-hidden="true"></span></button>
           <div class="faq__a"><div class="faq__a-inner">Custom closets typically cost between about <strong>$1,000 and $10,000+</strong>, with a national average around $2,000. A reach-in closet system usually runs $1,000–$2,500 and a walk-in closet $3,000–$10,000+ depending on size, materials and accessories. You'll get an exact, no-obligation price at your free in-home consultation — never an estimate that changes later.</div></div>
         </div>
@@ -1774,6 +1784,6 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
   <a class="quote" href="#consult">✨ Free Design</a>
 </div>
 
-<script src="/js/main.js?v=ncc74" defer></script>
+<script src="/js/main.js?v=ncc75" defer></script>
 </body>
 </html>

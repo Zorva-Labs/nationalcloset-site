@@ -42,6 +42,22 @@ function fmtUtc(iso) {
   // For DTSTAMP — always UTC
   return new Date(iso || Date.now()).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
 }
+function fmtDate(iso) {
+  // "2026-07-21" (or an ISO datetime) → "20260721" for a VALUE=DATE all-day event
+  return (iso || "").slice(0, 10).replace(/-/g, "");
+}
+function nextDay(iso) {
+  // All-day DTEND is exclusive — the calendar day after the start.
+  const d = new Date((iso || "").slice(0, 10) + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10).replace(/-/g, "");
+}
+function seqFrom(updatedAt) {
+  // A monotonic integer that increases each time the row is edited. Whole
+  // minutes since the epoch keeps it well inside a 32-bit int for decades.
+  const t = updatedAt ? Date.parse(updatedAt) : NaN;
+  return Number.isFinite(t) ? Math.floor(t / 60000) : 0;
+}
 function esc(s) {
   if (s == null) return "";
   return String(s).replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
@@ -75,7 +91,8 @@ export function buildAppointmentFeed(appointments) {
   ];
 
   for (const a of appointments) {
-    if (!a.start_at || !a.end_at) continue;
+    // Timed events need both ends; all-day events (installs) only need a date.
+    if (!a.start_at || (!a.all_day && !a.end_at)) continue;
     if (a.status === "cancelled" || a.status === "no-show") continue; // could keep w/ STATUS:CANCELLED — for now omit
 
     const typeLabel = TYPE_LABEL[a.type] || a.type || "Appointment";
@@ -89,14 +106,25 @@ export function buildAppointmentFeed(appointments) {
       a.project_id ? `Job: https://nationalclosetco.com/crm/project.html?id=${a.project_id}` : "",
     ].filter(Boolean).join("\\n");
 
-    // Stable UID — same appointment edited in CRM updates on phone via UID match
-    const uid = `appt-${a.id}@nationalclosetco.com`;
+    // Stable UID — same appointment edited in CRM updates on phone via UID match.
+    // Installs are keyed on the project so their UID is stable across edits too.
+    const uid = a.all_day ? `install-${a.project_id}@nationalclosetco.com` : `appt-${a.id}@nationalclosetco.com`;
 
     out.push("BEGIN:VEVENT");
     out.push(`UID:${uid}`);
     out.push(`DTSTAMP:${dtstamp}`);
-    out.push(`DTSTART;TZID=America/Chicago:${fmtLocal(a.start_at)}`);
-    out.push(`DTEND;TZID=America/Chicago:${fmtLocal(a.end_at)}`);
+    // SEQUENCE bumps whenever the row changes, so a moved/edited event actually
+    // overwrites the cached copy on the phone instead of being ignored.
+    out.push(`SEQUENCE:${seqFrom(a.updated_at)}`);
+    if (a.all_day) {
+      // Date-only all-day event. DTEND is exclusive (the next day) per RFC 5545.
+      const day = fmtDate(a.start_at);
+      out.push(`DTSTART;VALUE=DATE:${day}`);
+      out.push(`DTEND;VALUE=DATE:${nextDay(a.start_at)}`);
+    } else {
+      out.push(`DTSTART;TZID=America/Chicago:${fmtLocal(a.start_at)}`);
+      out.push(`DTEND;TZID=America/Chicago:${fmtLocal(a.end_at)}`);
+    }
     out.push(fold(`SUMMARY:${esc(summary)}`));
     if (descLines) out.push(fold(`DESCRIPTION:${descLines}`)); // already escaped
     if (a.site_address) out.push(fold(`LOCATION:${esc(a.site_address)}`));

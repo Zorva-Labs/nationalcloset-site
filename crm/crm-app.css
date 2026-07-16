@@ -567,12 +567,28 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 .cal-day--today { background: var(--accent-soft); }
 .cal-day--today .cal-day-num { color: var(--accent-ink); font-weight: 700; }
 .cal-day-num { font-size: 13px; font-weight: 600; color: var(--ink); padding: 2px 4px; line-height: 1; }
-.cal-event { font-size: 11px; padding: 3px 6px; border-radius: 3px; background: var(--accent-soft); color: var(--accent-ink); border-left: 2px solid var(--accent); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cal-event:hover { filter: brightness(0.95); }
-.cal-event[data-s="pending"] { background: #FEF3C7; color: #92400E; border-left-color: #F59E0B; }
-.cal-event[data-s="cancelled"] { background: #F1F5F9; color: var(--ink-muted); border-left-color: var(--ink-muted); text-decoration: line-through; }
-.cal-event[data-s="completed"] { background: #DCFCE7; color: #166534; border-left-color: #10B981; }
-.cal-event-time { font-weight: 600; }
+/* Calendar events are colored by TYPE first (a consult and an install must be
+   tellable apart at a glance), with status as an override for cancelled. Each
+   uses a solid left bar + tinted fill + dark ink of the same hue, so the text
+   always clears WCAG contrast on the pale fill. */
+.cal-event { font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 4px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-left: 3px solid; }
+.cal-event:hover { filter: brightness(0.97); }
+/* Consultation — blue */
+.cal-event, .cal-event[data-type="consultation"] { background: #DBEAFE; color: #1E40AF; border-left-color: #2563EB; }
+/* Install — amber/orange, clearly distinct from a consult */
+.cal-event[data-type="install"] { background: #FEEBC8; color: #9A3412; border-left-color: #EA580C; }
+/* Measure / follow-up visits — teal */
+.cal-event[data-type="measure"], .cal-event[data-type="measurement"], .cal-event[data-type="followup"], .cal-event[data-type="follow_up"] { background: #CCFBF1; color: #115E59; border-left-color: #0D9488; }
+/* Status overrides (win regardless of type) */
+.cal-event[data-s="cancelled"], .cal-event[data-s="declined"] { background: #F1F5F9 !important; color: #64748B !important; border-left-color: #94A3B8 !important; text-decoration: line-through; }
+.cal-event[data-s="completed"], .cal-event[data-s="installed"] { filter: saturate(0.7) brightness(0.99); opacity: 0.82; }
+.cal-event-time { font-weight: 700; opacity: 0.85; }
+/* Legend under the month header */
+.cal-legend { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 0 0 12px; font-size: 12px; color: var(--ink-soft); }
+.cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.cal-legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; border-left: 3px solid; }
+.cal-legend .lg-consult { background: #DBEAFE; border-left-color: #2563EB; }
+.cal-legend .lg-install { background: #FEEBC8; border-left-color: #EA580C; }
 .cal-more { font-size: 11px; color: var(--ink-soft); font-weight: 500; padding: 2px 4px; }
 @media (max-width: 700px) {
   .cal-day { min-height: 70px; padding: 4px; }

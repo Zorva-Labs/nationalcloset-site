@@ -21,7 +21,36 @@ export async function onRequestGet(context) {
   if (status) { sql += ` AND a.status = ?3`; binds.push(status); }
   sql += ` ORDER BY a.start_at ASC LIMIT 500`;
   const rows = (await DB.prepare(sql).bind(...binds).all()).results || [];
-  return json({ appointments: rows });
+
+  // Installs aren't appointment rows — they live as projects.install_date. Surface
+  // them here so the calendar shows them alongside consultations. Synthetic,
+  // read-only events (string id "install-<n>"); the calendar links them to the
+  // job rather than the appointment editor. Skipped when a status filter is set,
+  // since projects use a different status vocabulary than appointments.
+  let installEvents = [];
+  if (!status) {
+    const installs = (await DB.prepare(
+      `SELECT p.id, p.name AS project_name, p.install_date, p.status, c.name AS contact_name
+         FROM projects p LEFT JOIN contacts c ON c.id = p.contact_id
+        WHERE p.install_date IS NOT NULL AND p.install_date >= ?1 AND p.install_date <= ?2`
+    ).bind(from, to).all().catch(() => ({ results: [] }))).results || [];
+    installEvents = installs.map((p) => ({
+      id: `install-${p.id}`,
+      project_id: p.id,
+      is_install: true,
+      type: "install",
+      status: p.status,
+      // install_date is a plain date; give it a working-day span so it sorts
+      // sensibly and reads as all-day-ish on the calendar.
+      start_at: `${p.install_date}T08:00:00`,
+      end_at: `${p.install_date}T17:00:00`,
+      name: p.contact_name || p.project_name || "Install",
+      project_name: p.project_name || null,
+    }));
+  }
+
+  const all = [...rows, ...installEvents].sort((a, b) => (a.start_at || "").localeCompare(b.start_at || ""));
+  return json({ appointments: all });
 }
 
 export async function onRequestPost(context) {

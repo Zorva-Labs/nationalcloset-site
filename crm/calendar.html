@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Calendar · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc77"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc78"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc77"></script>
+<script src="/crm/crm-app.js?v=ncc78"></script>
 <script>
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DOW_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -81,14 +81,23 @@ async function render() {
           </button>
         </div>
       </div>
+      <div class="cal-legend">
+        <span><i class="lg-consult"></i> Consultation</span>
+        <span><i class="lg-install"></i> Install</span>
+      </div>
       <div class="cal-dow-row">${DOW_NAMES.map((d) => `<div class="cal-dow">${d}</div>`).join("")}</div>
       <div class="cal-month-grid">${cells.map((c) => renderCell(c, byDate, todayStr)).join("")}</div>
     </div>
   `;
 
-  // Wire click on each event
+  // Wire click on each event. Installs are synthetic (id "install-<n>") and
+  // link to the job; real appointments open the editor.
   document.querySelectorAll(".cal-event[data-id]").forEach((el) => {
-    el.addEventListener("click", (e) => { e.stopPropagation(); openAppt(parseInt(el.dataset.id, 10)); });
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (el.dataset.project) { location.href = `/crm/project.html?id=${el.dataset.project}`; return; }
+      openAppt(parseInt(el.dataset.id, 10));
+    });
   });
   document.querySelectorAll(".cal-day[data-date]").forEach((el) => {
     el.addEventListener("click", () => openDay(el.dataset.date));
@@ -105,7 +114,7 @@ function renderCell(c, byDate, todayStr) {
   const more = events.length - shown.length;
   return `<div class="${classes.join(" ")}" data-date="${iso}">
     <div class="cal-day-num">${c.date.getUTCDate()}</div>
-    ${shown.map((a) => `<div class="cal-event" data-id="${a.id}" data-s="${SSCrm.esc(a.status)}" title="${SSCrm.esc(a.name)} — ${SSCrm.esc(a.type)}"><span class="cal-event-time">${prettyTime(a.start_at)}</span> ${SSCrm.esc(a.name.split(" ")[0])}</div>`).join("")}
+    ${shown.map((a) => `<div class="cal-event" data-id="${a.id}" data-type="${SSCrm.esc(a.type || "consultation")}" data-s="${SSCrm.esc(a.status)}"${a.is_install ? ` data-project="${a.project_id}"` : ""} title="${SSCrm.esc(a.name)} — ${a.is_install ? "Install" : SSCrm.esc(a.type)}">${a.is_install ? "🔧 " : ""}<span class="cal-event-time">${prettyTime(a.start_at)}</span> ${SSCrm.esc((a.name || "").split(" ")[0])}</div>`).join("")}
     ${more > 0 ? `<div class="cal-more">+${more} more</div>` : ""}
   </div>`;
 }
@@ -143,14 +152,20 @@ async function openDay(iso) {
     <div class="modal" style="max-width:560px">
       <div class="modal-head">${prettyDate(iso)}</div>
       <div class="modal-body">
-        ${appointments.length ? `<div style="display:grid;gap:8px">${appointments.map((a) => `
+        ${appointments.length ? `<div style="display:grid;gap:8px">${appointments.map((a) => a.is_install ? `
+          <div class="cal-day-item cal-day-item--install" style="border:1px solid var(--line);border-radius:var(--r-sm);padding:12px;cursor:pointer" onclick="location.href='/crm/project.html?id=${a.project_id}'">
+            <div style="font-weight:600;color:#B45309;font-size:13px">🔧 Install day${a.start_at.slice(0,10) ? "" : ""}</div>
+            <div style="margin-top:4px;font-weight:600">${SSCrm.esc(a.name)}</div>
+            <div style="font-size:12px;color:var(--ink-soft)">${SSCrm.esc(a.project_name || "Custom closet project")}</div>
+            <div style="margin-top:6px">${SSCrm.pill(a.status)}</div>
+          </div>` : `
           <div style="border:1px solid var(--line);border-radius:var(--r-sm);padding:12px;cursor:pointer" onclick="openAppt(${a.id})">
             <div style="font-weight:600;color:var(--accent);font-size:13px">${prettyTime(a.start_at)} — ${prettyTime(a.end_at)}</div>
             <div style="margin-top:4px;font-weight:600">${SSCrm.esc(a.name)}</div>
             <div style="font-size:12px;color:var(--ink-soft)">${SSCrm.esc(a.type)} · ${a.duration_min}m${a.phone ? " · " + SSCrm.esc(a.phone) : ""}</div>
             ${a.site_address ? `<div style="font-size:12px;color:var(--ink-soft);margin-top:2px">${SSCrm.esc(a.site_address)}</div>` : ""}
             <div style="margin-top:6px">${SSCrm.pill(a.status)}</div>
-          </div>`).join("")}</div>` : `<p class="muted" style="text-align:center;padding:24px 0">No appointments this day.</p>`}
+          </div>`).join("")}</div>` : `<p class="muted" style="text-align:center;padding:24px 0">Nothing scheduled this day.</p>`}
       </div>
       <div class="modal-foot">
         <button class="btn ghost" data-close>Close</button>

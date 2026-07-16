@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc75" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc76" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc75"></script>
+<script src="/crm/crm-app.js?v=ncc76"></script>
 <script>
 // Lead pipeline ends at "Proposal" or "Lost". Once the contract is signed
 // the lead is auto-bumped to "booked" by the contract-sign handler — at
@@ -164,8 +164,12 @@ function renderOverviewTab() {
       <div style="display:grid;grid-template-columns:140px 1fr;gap:8px 14px;font-size:13px;color:var(--ink-soft)">
         <div class="muted">Submitted</div><div>${SSCrm.fmtDateTime(l.created_at)}</div>
         <div class="muted">Source page</div><div>${SSCrm.esc(l.source_page || "web")}</div>
-        ${l.utm_source ? `<div class="muted">UTM source</div><div>${SSCrm.esc(l.utm_source)}</div>` : ""}
+        ${l.utm_source ? `<div class="muted">UTM source</div><div>${SSCrm.esc(l.utm_source)}${l.utm_medium ? " / " + SSCrm.esc(l.utm_medium) : ""}</div>` : ""}
         ${l.utm_campaign ? `<div class="muted">UTM campaign</div><div>${SSCrm.esc(l.utm_campaign)}</div>` : ""}
+        ${l.utm_term ? `<div class="muted">Search term</div><div><strong>${SSCrm.esc(l.utm_term)}</strong></div>` : ""}
+        ${l.gclid ? `<div class="muted">Google Ads</div><div><span class="pill" data-s="booked">✓ paid click</span> <span class="muted" style="font-size:11px">${SSCrm.esc(String(l.gclid).slice(0, 18))}…</span></div>` : ""}
+        ${l.referrer ? `<div class="muted">Came from</div><div class="muted" style="font-size:12px;word-break:break-all">${SSCrm.esc(l.referrer)}</div>` : ""}
+        ${l.landing_page ? `<div class="muted">Landed on</div><div class="muted" style="font-size:12px;word-break:break-all">${SSCrm.esc(l.landing_page)}</div>` : ""}
         ${l.referrer ? `<div class="muted">Referrer</div><div style="font-size:12px;word-break:break-all">${SSCrm.esc(l.referrer.slice(0, 100))}</div>` : ""}
       </div>
     </div>

@@ -12,6 +12,52 @@
   var GADS_LABELS = { lead: "UnZvCNvcxMwcEKmejZlE", call: "" };  // "Submit lead form" label set; "call" pending
   if (typeof gtag === "function" && GADS_ID) { gtag("config", GADS_ID); }
 
+  /* ---------- Lead attribution ----------
+     Where the lead came from has to be read off the LANDING url and carried
+     until they submit — almost nobody converts on the first pageview, and by
+     then the ?gclid=... is long gone from the address bar. We stash it and send
+     it in the form payload.
+
+     Last-paid-click wins: a fresh gclid/utm overwrites whatever was stored, but
+     an organic page view in between never clears it. */
+  var ATTR_KEY = "ncc_attr";
+  function captureAttribution() {
+    try {
+      var qs = new URLSearchParams(location.search);
+      var gclid = qs.get("gclid") || qs.get("wbraid") || qs.get("gbraid");
+      var utm = {};
+      ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].forEach(function (k) {
+        var v = qs.get(k); if (v) utm[k] = v;
+      });
+      var isPaidHit = !!gclid || !!utm.utm_source;
+      var stored = null;
+      try { stored = JSON.parse(localStorage.getItem(ATTR_KEY) || "null"); } catch (e) {}
+      if (!isPaidHit) {
+        // Organic/direct hit — keep any earlier ad click, but record the first
+        // landing page + referrer if we have nothing at all yet.
+        if (stored) return;
+        stored = { landing_page: location.href.slice(0, 500), referrer: (document.referrer || "").slice(0, 500) || null, ts: Date.now() };
+      } else {
+        stored = {
+          gclid: gclid || null,
+          utm_source: utm.utm_source || (gclid ? "google" : null),
+          utm_medium: utm.utm_medium || (gclid ? "cpc" : null),
+          utm_campaign: utm.utm_campaign || null,
+          utm_term: utm.utm_term || null,
+          utm_content: utm.utm_content || null,
+          landing_page: location.href.slice(0, 500),
+          referrer: (document.referrer || "").slice(0, 500) || null,
+          ts: Date.now()
+        };
+      }
+      localStorage.setItem(ATTR_KEY, JSON.stringify(stored));
+    } catch (e) { /* private mode / storage disabled — attribution is best-effort */ }
+  }
+  function getAttribution() {
+    try { return JSON.parse(localStorage.getItem(ATTR_KEY) || "null") || {}; } catch (e) { return {}; }
+  }
+  captureAttribution();
+
   // Map our GA4 event names to standard Meta Pixel events so Facebook gets
   // conversion activity to optimize toward (the pixel otherwise only fires PageView).
   var FB_EVENTS = { generate_lead: "Lead", contact: "Contact" };
@@ -189,6 +235,12 @@
         company: (fd.get("company") || "").toString(), // honeypot
         source: "website" + (location.pathname === "/" ? "" : location.pathname)
       };
+      // Carry the ad click through with the lead. The server can't read any of
+      // this itself — it only ever sees a POST to /api/contact.
+      var attr = getAttribution();
+      ["gclid", "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "landing_page", "referrer"].forEach(function (k) {
+        if (attr[k]) payload[k] = attr[k];
+      });
       if (payload.company) { done(); return; } // bot — accept silently
       function postLead() {
         return fetch("/api/contact", {

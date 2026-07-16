@@ -103,13 +103,26 @@ https://nationalclosetco.com/crm/
       const ipRaw = request.headers.get("CF-Connecting-IP") || "";
       const ipHash = ipRaw ? await sha256B64Trunc(ipRaw, 22) : null;
       const ua = (request.headers.get("user-agent") || "").slice(0, 240);
-      const ref = (request.headers.get("referer") || "").slice(0, 500) || null;
       const urlObj = new URL(request.url);
-      const utm_source = urlObj.searchParams.get("utm_source");
-      const utm_medium = urlObj.searchParams.get("utm_medium");
-      const utm_campaign = urlObj.searchParams.get("utm_campaign");
-      const utm_term = urlObj.searchParams.get("utm_term");
-      const utm_content = urlObj.searchParams.get("utm_content");
+      // Attribution comes from the BODY. This endpoint only ever sees a POST to
+      // /api/contact, so request.url carries no campaign params and the referer
+      // header is our own page — reading them here (as this once did) always
+      // yielded null. The client reads them off the landing URL and sends them.
+      // Query params stay as a fallback for any non-JS/server-side caller.
+      const pick = (k) => {
+        const v = data[k] != null && data[k] !== "" ? data[k] : urlObj.searchParams.get(k);
+        return v ? String(v).slice(0, 500) : null;
+      };
+      const utm_source = pick("utm_source");
+      const utm_medium = pick("utm_medium");
+      const utm_campaign = pick("utm_campaign");
+      const utm_term = pick("utm_term");
+      const utm_content = pick("utm_content");
+      const gclid = pick("gclid");
+      const landingPage = pick("landing_page");
+      // Prefer the real referrer the browser saw on the landing page; the
+      // request header only tells us which of our own pages hosted the form.
+      const ref = pick("referrer") || (request.headers.get("referer") || "").slice(0, 500) || null;
 
       // Upsert a contact FIRST so we can stamp lead.contact_id at insert
       // time. Every lead now appears in the contacts list the moment it's
@@ -132,8 +145,8 @@ https://nationalclosetco.com/crm/
            address_street, address_city, address_state, address_zip, location,
            interest, message,
            source_page, utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-           referrer, user_agent, ip_hash, contact_id)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
+           referrer, user_agent, ip_hash, contact_id, gclid, landing_page)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)
          RETURNING id`
       )
         .bind(
@@ -142,7 +155,7 @@ https://nationalclosetco.com/crm/
           interest || null, message || null,
           source,
           utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-          ref, ua, ipHash, contactId
+          ref, ua, ipHash, contactId, gclid, landingPage
         )
         .first();
       leadId = leadRow?.id || null;

@@ -5,6 +5,7 @@
 
 import { sendEmail, brandedEmail, makeMessageId } from "../_lib/email.js";
 import { upsertContact } from "../_lib/db.js";
+import { genToken } from "../_lib/tokens.js";
 import { logOutboundEmail } from "../_lib/email-log.js";
 
 const TO_ADDRESS = "hello@nationalclosetco.com";
@@ -98,6 +99,7 @@ https://nationalclosetco.com/crm/
   let dbError = null;
   let leadId = null;
   let contactId = null;
+  let updateToken = null;
   if (env.DB) {
     try {
       const ipRaw = request.headers.get("CF-Connecting-IP") || "";
@@ -120,6 +122,9 @@ https://nationalclosetco.com/crm/
       const utm_content = pick("utm_content");
       const gclid = pick("gclid");
       const landingPage = pick("landing_page");
+      // Handed back to this browser only, so the confirmation step can attach a
+      // service address to THIS lead without lead ids ever going public.
+      updateToken = genToken(24);
       // Prefer the real referrer the browser saw on the landing page; the
       // request header only tells us which of our own pages hosted the form.
       const ref = pick("referrer") || (request.headers.get("referer") || "").slice(0, 500) || null;
@@ -145,8 +150,8 @@ https://nationalclosetco.com/crm/
            address_street, address_city, address_state, address_zip, location,
            interest, message,
            source_page, utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-           referrer, user_agent, ip_hash, contact_id, gclid, landing_page)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)
+           referrer, user_agent, ip_hash, contact_id, gclid, landing_page, update_token)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)
          RETURNING id`
       )
         .bind(
@@ -155,7 +160,7 @@ https://nationalclosetco.com/crm/
           interest || null, message || null,
           source,
           utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-          ref, ua, ipHash, contactId, gclid, landingPage
+          ref, ua, ipHash, contactId, gclid, landingPage, updateToken
         )
         .first();
       leadId = leadRow?.id || null;
@@ -225,7 +230,8 @@ https://nationalclosetco.com/crm/
       503
     );
   }
-  return json({ success: true }, 200);
+  // The token lets the page ask for a service address as a second step.
+  return json({ success: true, update_token: dbOk ? updateToken : null }, 200);
 }
 
 async function sha256B64Trunc(s, n) {

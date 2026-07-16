@@ -80,6 +80,54 @@
     }
   }
 
+  /* ---------- Step 2: service address ----------
+     The form asks for name/phone/email/project only — on a paid click every
+     extra field costs conversions. The lead is saved and the conversion has
+     already fired by the time this renders, so the address is a bonus: skipping
+     it costs us nothing, and we'd have had to ask on the phone anyway. */
+  function mountAddressStep(success, token) {
+    if (success.querySelector(".addr-step")) return;
+    var box = document.createElement("div");
+    box.className = "addr-step";
+    box.style.cssText = "margin-top:20px;padding-top:18px;border-top:1px solid var(--line,#E4E1DA);text-align:left";
+    box.innerHTML =
+      '<p style="margin:0 0 12px;font-size:.95rem;color:var(--ink-soft,#3A362F)">' +
+        '<strong>One quick thing</strong> — what address is the project at? It helps us plan your visit. ' +
+        '<span style="color:var(--muted,#6C665B)">Totally optional.</span></p>' +
+      '<div style="display:flex;flex-direction:column;gap:8px">' +
+        '<input class="addr-street" type="text" autocomplete="address-line1" placeholder="123 Main St" style="width:100%;padding:11px 13px;border:1.5px solid var(--line,#E4E1DA);border-radius:8px;font:inherit;font-size:15px;box-sizing:border-box"/>' +
+        '<div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1.2fr);gap:8px">' +
+          '<input class="addr-city" type="text" autocomplete="address-level2" placeholder="Nashville" style="min-width:0;padding:11px 13px;border:1.5px solid var(--line,#E4E1DA);border-radius:8px;font:inherit;font-size:15px;box-sizing:border-box"/>' +
+          '<input class="addr-state" type="text" autocomplete="address-level1" placeholder="TN" maxlength="2" style="min-width:0;padding:11px 13px;border:1.5px solid var(--line,#E4E1DA);border-radius:8px;font:inherit;font-size:15px;box-sizing:border-box"/>' +
+          '<input class="addr-zip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="37203" style="min-width:0;padding:11px 13px;border:1.5px solid var(--line,#E4E1DA);border-radius:8px;font:inherit;font-size:15px;box-sizing:border-box"/>' +
+        '</div>' +
+        '<button type="button" class="addr-save" style="margin-top:4px;padding:12px 18px;border:0;border-radius:8px;background:var(--clay,#D2683F);color:#fff;font:inherit;font-weight:700;font-size:15px;cursor:pointer">Add address</button>' +
+      '</div>';
+    success.appendChild(box);
+
+    var btn = box.querySelector(".addr-save");
+    btn.addEventListener("click", function () {
+      var payload = {
+        token: token,
+        address_street: box.querySelector(".addr-street").value.trim(),
+        address_city: box.querySelector(".addr-city").value.trim(),
+        address_state: box.querySelector(".addr-state").value.trim(),
+        address_zip: box.querySelector(".addr-zip").value.trim()
+      };
+      if (!payload.address_street && !payload.address_city && !payload.address_zip) { fadeOut("No problem — we'll grab it when we call."); return; }
+      btn.disabled = true; btn.textContent = "Saving…";
+      fetch("/api/contact-address", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+      }).then(function (r) {
+        // The lead is already safe either way, so never alarm them about this.
+        fadeOut(r.ok ? "Got it — thank you!" : "Thanks! We'll confirm the address when we call.");
+      }).catch(function () { fadeOut("Thanks! We'll confirm the address when we call."); });
+    });
+    function fadeOut(msg) {
+      box.innerHTML = '<p style="margin:0;font-size:.95rem;color:var(--ink-soft,#3A362F)">' + msg + "</p>";
+    }
+  }
+
   /* Click-to-call conversion — any tel: link (delegated, capture phase so it
      still counts even if another handler stops propagation). Never blocks the call. */
   document.addEventListener("click", function (e) {
@@ -197,12 +245,13 @@
       var original = btn ? btn.innerHTML : "";
       if (btn) { btn.disabled = true; btn.innerHTML = "Sending…"; }
 
-      function done() {
+      function done(token) {
         if (btn) { btn.disabled = false; btn.innerHTML = original; }
         if (success) {
           form.style.display = "none";
           success.classList.add("show");
           success.scrollIntoView({ behavior: "smooth", block: "center" });
+          if (token) mountAddressStep(success, token);
         }
       }
       // Only reached if the lead truly fails to save — surface it so the
@@ -227,10 +276,6 @@
         phone: (fd.get("phone") || "").toString(),
         email: (fd.get("email") || "").toString(),
         interest: (fd.get("project") || "").toString(),
-        address_street: (fd.get("street") || "").toString(),
-        address_city: (fd.get("city") || "").toString(),
-        address_state: (fd.get("state") || "").toString(),
-        address_zip: (fd.get("zip") || "").toString(),
         message: (fd.get("msg") || "").toString(),
         company: (fd.get("company") || "").toString(), // honeypot
         source: "website" + (location.pathname === "/" ? "" : location.pathname)
@@ -247,22 +292,27 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
-        }).then(function (r) { if (!r.ok) throw new Error("http_" + r.status); return r; });
+        }).then(function (r) {
+          if (!r.ok) throw new Error("http_" + r.status);
+          return r.json().catch(function () { return {}; });
+        });
       }
       // Show success ONLY when the lead is actually saved. Retry once on a
       // transient failure (e.g. a deploy blip), then surface an error rather
       // than telling the customer "received" on a lead that never saved.
       postLead()
         .catch(function () { return new Promise(function (res) { setTimeout(res, 1000); }).then(postLead); })
-        .then(function () {
+        .then(function (res) {
           // Conversion fires only once the lead is actually saved (bots take the
           // honeypot early-return above and never reach here). value/currency
-          // match the Ads "Submit lead form" action (1.0 USD).
+          // match the Ads "Submit lead form" action (1.0 USD). Note this fires
+          // BEFORE the address step — the lead is already banked, so a customer
+          // who skips the address still counts as a conversion.
           track("generate_lead",
             { value: 1.0, currency: "USD", form_location: payload.source },
             "lead",
             { value: 1.0, currency: "USD" });
-          done();
+          done(res && res.update_token);
         })
         .catch(function (err) { console.warn("lead save failed after retry", err); fail(); });
     });

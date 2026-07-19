@@ -17,7 +17,7 @@ import { upsertContact } from "../../_lib/db.js";
 const FIELDS = new Set([
   "name", "phone", "email", "location", "interest", "message",
   "address_street", "address_city", "address_state", "address_zip",
-  "status", "assigned_to", "source_page",
+  "status", "assigned_to", "source_page", "created_at",
   "utm_source", "utm_medium", "utm_campaign", "utm_term",
 ]);
 const STATUSES = new Set(["new", "contacted", "replied", "consult", "proposal", "lost"]);
@@ -25,6 +25,15 @@ const MAX_ROWS = 500;
 
 const clean = (v, n = 300) => (v == null ? "" : String(v).trim().slice(0, n));
 const digits = (s) => clean(s).replace(/[^\d]/g, "");
+// Meta exports phones as "p:+17175550123" — drop the prefix, keep the rest.
+const cleanPhone = (v) => clean(v).replace(/^p:/i, "").trim();
+// Accept an exported timestamp so imported leads keep their real date instead
+// of all landing on "today". Returns SQLite-friendly UTC, or null if unparseable.
+function toSqlDate(v) {
+  const s = clean(v, 40); if (!s) return null;
+  const d = new Date(s); if (isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 19).replace("T", " ");
+}
 
 // "$1,250.00" / "1250" → cents. Blank or unparseable → null (not 0, so a missing
 // value never looks like a real $0 quote).
@@ -71,7 +80,7 @@ export async function onRequestPost(context) {
     if (!name) { result.failed++; result.errors.push({ row: rowNo, error: "missing name" }); continue; }
 
     const email = f.email ? f.email.toLowerCase() : "";
-    const phone = f.phone || "";
+    const phone = cleanPhone(f.phone);
     if (email && !/^\S+@\S+\.\S+$/.test(email)) {
       result.failed++; result.errors.push({ row: rowNo, error: `invalid email "${f.email}"` }); continue;
     }
@@ -106,8 +115,9 @@ export async function onRequestPost(context) {
            (name, phone, email, location, interest, message,
             address_street, address_city, address_state, address_zip,
             source_page, status, assigned_to, quoted_amount_cents,
-            utm_source, utm_medium, utm_campaign, utm_term, contact_id)
-         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19)
+            utm_source, utm_medium, utm_campaign, utm_term, contact_id, created_at, updated_at)
+         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,
+                 COALESCE(?20, datetime('now')), COALESCE(?20, datetime('now')))
          RETURNING id`
       ).bind(
         name, phone, email,
@@ -116,7 +126,7 @@ export async function onRequestPost(context) {
         (f.address_state || "").toUpperCase().slice(0, 2) || null, f.address_zip || null,
         f.source_page || source, status, f.assigned_to || null, toCents(raw.quoted_amount),
         f.utm_source || null, f.utm_medium || null, f.utm_campaign || null, f.utm_term || null,
-        contactId,
+        contactId, toSqlDate(f.created_at),
       ).first();
 
       result.imported++;

@@ -8,11 +8,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc79" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc80" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc79"></script>
+<script src="/crm/crm-app.js?v=ncc80"></script>
 <script>
 // Fields a CSV column can be mapped to. `first_name`/`last_name` are virtual —
 // the browser joins them into `name` before posting, because splitting a name
@@ -35,6 +35,7 @@ const FIELDS = [
   { key: "assigned_to",  label: "Assigned to" },
   { key: "quoted_amount",label: "Quoted amount ($)" },
   { key: "source_page",  label: "Source" },
+  { key: "created_at",   label: "Date received" },
   { key: "utm_source",   label: "UTM source" },
   { key: "utm_medium",   label: "UTM medium" },
   { key: "utm_campaign", label: "UTM campaign" },
@@ -59,15 +60,41 @@ const GUESS = {
   quotedamount:"quoted_amount", quote:"quoted_amount", amount:"quoted_amount", value:"quoted_amount", dealvalue:"quoted_amount", price:"quoted_amount",
   source:"source_page", leadsource:"source_page", origin:"source_page",
   utmsource:"utm_source", utmmedium:"utm_medium", utmcampaign:"utm_campaign", utmterm:"utm_term", campaign:"utm_campaign",
+  // Meta (Facebook/Instagram) Lead Ads export
+  fullname2:"name", phonenumber2:"phone", createdtime:"created_at", created:"created_at", date:"created_at",
+  submittedon:"created_at", timestamp:"created_at",
+  campaignname:"utm_campaign", adname:"utm_content", adsetname:"utm_term", platform:"utm_source",
+  formname:"", leadid:"", adid:"", adsetid:"", campaignid:"", formid:"", isorganic:"",
 };
 const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
 let CSV = null;      // { headers:[], rows:[[]] }
+let RAW = "";        // decoded file text, so the delimiter can be re-applied
 let MAP = [];        // field key per column index
 
 // RFC4180-ish parser: handles quoted fields, escaped "" quotes, embedded
 // commas/newlines, and CRLF. Written out rather than split(',') because real
 // exports contain addresses with commas in them.
+// Meta's "CSV" export is UTF-16 and tab-delimited despite the extension, so we
+// sniff the BOM for encoding and pick the delimiter by counting candidates in
+// the header line. DELIM is overridable in the UI if the guess is ever wrong.
+let DELIM = ",";
+function decodeBuffer(buf) {
+  const b = new Uint8Array(buf);
+  if (b[0] === 0xFF && b[1] === 0xFE) return new TextDecoder("utf-16le").decode(buf);
+  if (b[0] === 0xFE && b[1] === 0xFF) return new TextDecoder("utf-16be").decode(buf);
+  return new TextDecoder("utf-8").decode(buf);
+}
+function sniffDelim(text) {
+  const line = (text.split(/\r?\n/).find((l) => l.trim()) || "");
+  const counts = { ",": 0, "\t": 0, ";": 0, "|": 0 };
+  let q = false;
+  for (const ch of line) {
+    if (ch === '"') { q = !q; continue; }
+    if (!q && ch in counts) counts[ch]++;
+  }
+  return Object.keys(counts).reduce((a, b) => (counts[b] > counts[a] ? b : a), ",");
+}
 function parseCSV(text) {
   text = String(text).replace(/^﻿/, "");
   const rows = []; let row = [], cur = "", q = false, i = 0;
@@ -78,7 +105,7 @@ function parseCSV(text) {
       cur += c; i++; continue;
     }
     if (c === '"') { q = true; i++; continue; }
-    if (c === ",") { row.push(cur); cur = ""; i++; continue; }
+    if (c === DELIM) { row.push(cur); cur = ""; i++; continue; }
     if (c === "\r") { i++; continue; }
     if (c === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; i++; continue; }
     cur += c; i++;
@@ -116,14 +143,16 @@ function renderStep1() {
     </div>`;
   const drop = document.getElementById("drop"), file = document.getElementById("file");
   drop.addEventListener("click", () => file.click());
-  file.addEventListener("change", (e) => { const f = e.target.files[0]; if (f) f.text().then(loadText); });
+  file.addEventListener("change", (e) => { const f = e.target.files[0]; if (f) f.arrayBuffer().then((b) => loadText(decodeBuffer(b))); });
   ["dragenter","dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.style.borderColor = "var(--accent)"; }));
   ["dragleave","drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.style.borderColor = "var(--line)"; }));
-  drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) f.text().then(loadText); });
+  drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) f.arrayBuffer().then((b) => loadText(decodeBuffer(b))); });
 }
 
-function loadText(text) {
+function loadText(text, delim) {
+  DELIM = delim || sniffDelim(text);
   const rows = parseCSV(text);
+  RAW = text;
   if (rows.length < 2) { SSCrm.toast("Need a header row plus at least one data row", "error"); return; }
   CSV = { headers: rows[0].map((h) => String(h).trim()), rows: rows.slice(1) };
   MAP = CSV.headers.map((h) => GUESS[norm(h)] || "");
@@ -137,7 +166,7 @@ function renderStep2() {
   document.getElementById("page").innerHTML = `
     <div class="card">
       <div class="card-head"><h2>2 · Match your columns</h2>
-        <span class="muted" style="font-size:12px">${rows.length} row${rows.length === 1 ? "" : "s"} · ${headers.length} columns</span></div>
+        <span class="muted" style="font-size:12px">${rows.length} row${rows.length === 1 ? "" : "s"} · ${headers.length} columns · separator: <select onchange="loadText(RAW, this.value)" style="font-size:12px;padding:2px 4px">${[[",","comma"],["\t","tab"],[";","semicolon"],["|","pipe"]].map(([v,l]) => `<option value="${v}" ${v===DELIM?"selected":""}>${l}</option>`).join("")}</select></span></div>
       <p class="muted" style="font-size:12px;margin:0 0 12px">We guessed these from your headers — change anything that's wrong.
         <strong>Name</strong> (or First + Last) is required; everything else is optional.</p>
       <div class="tbl"><table>
@@ -205,7 +234,7 @@ function buildRows() {
       const v = String(r[i] ?? "").trim();
       if (field === "first_name") first = v;
       else if (field === "last_name") last = v;
-      else if (v !== "") o[field] = v;
+      else if (v !== "") o[field] = (field === "phone") ? v.replace(/^p:/i, "").trim() : v;
     });
     if (!o.name) { const j = [first, last].filter(Boolean).join(" ").trim(); if (j) o.name = j; }
     return o;

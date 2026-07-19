@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Templates · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc80"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc81"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc80"></script>
+<script src="/crm/crm-app.js?v=ncc81"></script>
 <script>
 const TABS = [
   { key: "email",      label: "Email" },
@@ -33,7 +33,7 @@ let editingKind = null;   // "email" or "document"
 // Email template kinds — the keys we drive from the lead/contact/project pages.
 // Keep in sync with the seed data in migration 0017.
 const EMAIL_KINDS = [
-  "lead_new", "consult_confirm", "proposal_followup", "contract_followup",
+  "lead_new", "lead_facebook", "consult_confirm", "proposal_followup", "contract_followup",
   "install_scheduled", "post_install_thanks", "review_request", "referral_credit", "touch_base",
 ];
 

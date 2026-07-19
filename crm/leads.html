@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc78" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc79" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc78"></script>
+<script src="/crm/crm-app.js?v=ncc79"></script>
 <script>
 // booked + installed are Job statuses, not Lead statuses — see crm-app.js
 // JOB_STATUSES_NAV for the parallel set under Jobs.
@@ -33,6 +33,7 @@ const STATUS_ORDER = ["new", "contacted", "replied", "consult", "proposal", "los
         <option value="">All statuses</option>
         ${STATUS_ORDER.map((s) => `<option value="${s}" ${activeStatus === s ? "selected" : ""}>${STATUS_LABELS[s]}</option>`).join("")}
       </select>
+      <a class="btn secondary" href="/crm/import-leads.html">⤓ Import CSV</a>
       <button class="btn primary" onclick="SSCrm.quickAddLead()">+ New lead</button>
     `,
     wide: true,

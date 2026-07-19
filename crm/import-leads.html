@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Import Leads · National Closet Company CRM</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc79" />
+  <link rel="icon" href="/img/favicon-nc.png" />
+</head>
+<body>
+<script src="/crm/crm-app.js?v=ncc79"></script>
+<script>
+// Fields a CSV column can be mapped to. `first_name`/`last_name` are virtual —
+// the browser joins them into `name` before posting, because splitting a name
+// column is the single most common shape of an exported contact list.
+const FIELDS = [
+  { key: "",             label: "— skip this column —" },
+  { key: "name",         label: "Name (full)" },
+  { key: "first_name",   label: "First name" },
+  { key: "last_name",    label: "Last name" },
+  { key: "phone",        label: "Phone" },
+  { key: "email",        label: "Email" },
+  { key: "address_street", label: "Address — street" },
+  { key: "address_city",   label: "Address — city" },
+  { key: "address_state",  label: "Address — state" },
+  { key: "address_zip",    label: "Address — ZIP" },
+  { key: "location",     label: "Location (free text)" },
+  { key: "interest",     label: "Interest / project type" },
+  { key: "message",      label: "Message / notes" },
+  { key: "status",       label: "Status" },
+  { key: "assigned_to",  label: "Assigned to" },
+  { key: "quoted_amount",label: "Quoted amount ($)" },
+  { key: "source_page",  label: "Source" },
+  { key: "utm_source",   label: "UTM source" },
+  { key: "utm_medium",   label: "UTM medium" },
+  { key: "utm_campaign", label: "UTM campaign" },
+  { key: "utm_term",     label: "UTM term" },
+];
+// Header text → field. Matched on a normalised (alphanumeric-only) header.
+const GUESS = {
+  name:"name", fullname:"name", customer:"name", customername:"name", client:"name", contact:"name", contactname:"name",
+  firstname:"first_name", first:"first_name", fname:"first_name", givenname:"first_name",
+  lastname:"last_name", last:"last_name", lname:"last_name", surname:"last_name", familyname:"last_name",
+  phone:"phone", phonenumber:"phone", mobile:"phone", cell:"phone", cellphone:"phone", telephone:"phone", tel:"phone", primaryphone:"phone",
+  email:"email", emailaddress:"email", mail:"email", primaryemail:"email",
+  address:"address_street", address1:"address_street", street:"address_street", streetaddress:"address_street", addressline1:"address_street",
+  city:"address_city", town:"address_city",
+  state:"address_state", province:"address_state", region:"address_state", st:"address_state",
+  zip:"address_zip", zipcode:"address_zip", postalcode:"address_zip", postcode:"address_zip",
+  location:"location", area:"location",
+  interest:"interest", projecttype:"interest", project:"interest", service:"interest", type:"interest",
+  message:"message", notes:"message", note:"message", comments:"message", comment:"message", details:"message",
+  status:"status", stage:"status", leadstatus:"status",
+  assignedto:"assigned_to", owner:"assigned_to", salesrep:"assigned_to", rep:"assigned_to",
+  quotedamount:"quoted_amount", quote:"quoted_amount", amount:"quoted_amount", value:"quoted_amount", dealvalue:"quoted_amount", price:"quoted_amount",
+  source:"source_page", leadsource:"source_page", origin:"source_page",
+  utmsource:"utm_source", utmmedium:"utm_medium", utmcampaign:"utm_campaign", utmterm:"utm_term", campaign:"utm_campaign",
+};
+const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+let CSV = null;      // { headers:[], rows:[[]] }
+let MAP = [];        // field key per column index
+
+// RFC4180-ish parser: handles quoted fields, escaped "" quotes, embedded
+// commas/newlines, and CRLF. Written out rather than split(',') because real
+// exports contain addresses with commas in them.
+function parseCSV(text) {
+  text = String(text).replace(/^﻿/, "");
+  const rows = []; let row = [], cur = "", q = false, i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i += 2; continue; } q = false; i++; continue; }
+      cur += c; i++; continue;
+    }
+    if (c === '"') { q = true; i++; continue; }
+    if (c === ",") { row.push(cur); cur = ""; i++; continue; }
+    if (c === "\r") { i++; continue; }
+    if (c === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; i++; continue; }
+    cur += c; i++;
+  }
+  if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter((r) => r.some((c) => String(c).trim() !== ""));
+}
+
+(async () => {
+  const user = await SSCrm.mount({
+    title: "Import leads",
+    subtitle: "Upload a CSV, match the columns, import",
+    actions: `<a class="btn ghost" href="/crm/leads.html">← All leads</a>`,
+    wide: true,
+  });
+  if (!user) return;
+  renderStep1();
+})();
+
+function renderStep1() {
+  document.getElementById("page").innerHTML = `
+    <div class="card">
+      <div class="card-head"><h2>1 · Choose your CSV</h2></div>
+      <div id="drop" style="border:2px dashed var(--line);border-radius:var(--r-sm);padding:34px;text-align:center;cursor:pointer;background:var(--bg-soft)">
+        <div style="font-weight:700;font-size:15px">Drop a .csv file here, or click to choose</div>
+        <div class="muted" style="font-size:12px;margin-top:6px">First row should be your column headers</div>
+        <input id="file" type="file" accept=".csv,text/csv" style="display:none"/>
+      </div>
+      <details style="margin-top:14px">
+        <summary style="cursor:pointer;font-size:13px;font-weight:600">…or paste CSV text</summary>
+        <textarea id="paste" rows="6" placeholder="name,email,phone&#10;Jane Doe,jane@example.com,6155550123"
+          style="width:100%;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:var(--r-sm);font:inherit;font-size:13px;font-family:ui-monospace,Menlo,monospace"></textarea>
+        <button class="btn secondary sm" style="margin-top:8px" onclick="loadText(document.getElementById('paste').value)">Use pasted text</button>
+      </details>
+    </div>`;
+  const drop = document.getElementById("drop"), file = document.getElementById("file");
+  drop.addEventListener("click", () => file.click());
+  file.addEventListener("change", (e) => { const f = e.target.files[0]; if (f) f.text().then(loadText); });
+  ["dragenter","dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.style.borderColor = "var(--accent)"; }));
+  ["dragleave","drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.style.borderColor = "var(--line)"; }));
+  drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) f.text().then(loadText); });
+}
+
+function loadText(text) {
+  const rows = parseCSV(text);
+  if (rows.length < 2) { SSCrm.toast("Need a header row plus at least one data row", "error"); return; }
+  CSV = { headers: rows[0].map((h) => String(h).trim()), rows: rows.slice(1) };
+  MAP = CSV.headers.map((h) => GUESS[norm(h)] || "");
+  renderStep2();
+}
+
+function renderStep2() {
+  const { headers, rows } = CSV;
+  const sample = rows.slice(0, 3);
+  const opt = (sel) => FIELDS.map((f) => `<option value="${f.key}" ${f.key === sel ? "selected" : ""}>${f.label}</option>`).join("");
+  document.getElementById("page").innerHTML = `
+    <div class="card">
+      <div class="card-head"><h2>2 · Match your columns</h2>
+        <span class="muted" style="font-size:12px">${rows.length} row${rows.length === 1 ? "" : "s"} · ${headers.length} columns</span></div>
+      <p class="muted" style="font-size:12px;margin:0 0 12px">We guessed these from your headers — change anything that's wrong.
+        <strong>Name</strong> (or First + Last) is required; everything else is optional.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>CSV column</th><th>Sample data</th><th style="width:230px">Import as</th></tr></thead>
+        <tbody>${headers.map((h, i) => `
+          <tr>
+            <td><strong>${SSCrm.esc(h || "(unnamed)")}</strong></td>
+            <td class="muted" style="font-size:12px">${sample.map((r) => SSCrm.esc(String(r[i] ?? "").slice(0, 28))).filter(Boolean).join(" · ") || "—"}</td>
+            <td><select data-col="${i}" onchange="MAP[${i}]=this.value;validate()" style="width:100%">${opt(MAP[i])}</select></td>
+          </tr>`).join("")}</tbody>
+      </table></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-head"><h2>3 · Options</h2></div>
+      <div class="form">
+        <div class="row">
+          <label><span>Status for imported leads</span>
+            <select id="o-status">${["new","contacted","replied","consult","proposal","lost"].map((s) => `<option value="${s}">${s[0].toUpperCase() + s.slice(1)}</option>`).join("")}</select></label>
+          <label><span>Source label</span><input id="o-source" value="csv-import" placeholder="csv-import"/></label>
+        </div>
+        <label><span>Skip duplicates already in the CRM</span>
+          <select id="o-dupe">
+            <option value="either">Yes — if email OR phone matches (recommended)</option>
+            <option value="email">Yes — match on email only</option>
+            <option value="phone">Yes — match on phone only</option>
+            <option value="none">No — import everything</option>
+          </select></label>
+      </div>
+      <div id="warn" style="margin-top:12px"></div>
+      <div class="form-actions" style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn ghost" onclick="renderStep1()">← Start over</button>
+        <button class="btn primary" id="go" onclick="runImport()">Import leads</button>
+      </div>
+    </div>
+    <div id="result" style="margin-top:16px"></div>`;
+  validate();
+}
+
+function validate() {
+  const has = (k) => MAP.includes(k);
+  const ok = has("name") || has("first_name") || has("last_name");
+  const w = document.getElementById("warn"); const go = document.getElementById("go");
+  if (!w) return;
+  if (!ok) {
+    w.innerHTML = `<div style="padding:10px 13px;border-radius:var(--r-sm);background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;font-size:13px">
+      Map a column to <strong>Name</strong> (or First / Last name) before importing.</div>`;
+    go.disabled = true; go.style.opacity = .5;
+  } else {
+    const dupes = MAP.filter(Boolean).filter((v, i, a) => a.indexOf(v) !== i && v !== "");
+    w.innerHTML = dupes.length
+      ? `<div style="padding:10px 13px;border-radius:var(--r-sm);background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:13px">
+           Two columns are mapped to the same field (${SSCrm.esc([...new Set(dupes)].join(", "))}) — the last one wins.</div>` : "";
+    go.disabled = false; go.style.opacity = 1;
+  }
+}
+
+// Build the payload rows from the mapping (joining first+last into name).
+function buildRows() {
+  return CSV.rows.map((r, idx) => {
+    const o = { __row: idx + 2 };   // +2 = header row + 1-indexed
+    let first = "", last = "";
+    MAP.forEach((field, i) => {
+      if (!field) return;
+      const v = String(r[i] ?? "").trim();
+      if (field === "first_name") first = v;
+      else if (field === "last_name") last = v;
+      else if (v !== "") o[field] = v;
+    });
+    if (!o.name) { const j = [first, last].filter(Boolean).join(" ").trim(); if (j) o.name = j; }
+    return o;
+  });
+}
+
+async function runImport() {
+  const rows = buildRows();
+  const options = {
+    status: document.getElementById("o-status").value,
+    source: document.getElementById("o-source").value.trim() || "csv-import",
+    skipDuplicates: document.getElementById("o-dupe").value,
+  };
+  const go = document.getElementById("go"); go.disabled = true; go.textContent = "Importing…";
+  const res = document.getElementById("result");
+  const total = { imported: 0, skipped: 0, failed: 0, errors: [] };
+  const CHUNK = 200;
+  try {
+    for (let i = 0; i < rows.length; i += CHUNK) {
+      const part = rows.slice(i, i + CHUNK);
+      res.innerHTML = `<div class="card"><p style="margin:0;font-size:14px">Importing ${Math.min(i + CHUNK, rows.length)} of ${rows.length}…</p></div>`;
+      const r = await SSCrm.fetchJSON("/api/leads/import", { method: "POST", body: JSON.stringify({ rows: part, options }) });
+      total.imported += r.imported || 0; total.skipped += r.skipped || 0; total.failed += r.failed || 0;
+      total.errors.push(...(r.errors || []));
+    }
+    const errHtml = total.errors.length
+      ? `<div style="margin-top:12px"><div style="font-weight:700;font-size:13px;margin-bottom:6px">Rows not imported</div>
+         <div class="tbl" style="max-height:240px;overflow:auto"><table><thead><tr><th style="width:90px">CSV row</th><th>Reason</th></tr></thead>
+         <tbody>${total.errors.slice(0, 50).map((e) => `<tr><td>${e.row}</td><td class="muted">${SSCrm.esc(e.error)}</td></tr>`).join("")}</tbody></table></div></div>` : "";
+    res.innerHTML = `<div class="card">
+      <div class="card-head"><h2>Import complete</h2></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        ${tile("Imported", total.imported, "#15803D")}
+        ${tile("Skipped (duplicates)", total.skipped, "#B45309")}
+        ${tile("Failed", total.failed, total.failed ? "#B91C1C" : "var(--ink-soft)")}
+      </div>${errHtml}
+      <div class="form-actions" style="margin-top:14px;display:flex;gap:8px">
+        <a class="btn primary" href="/crm/leads.html">View leads →</a>
+        <button class="btn ghost" onclick="renderStep1()">Import another file</button>
+      </div></div>`;
+    SSCrm.toast(`Imported ${total.imported} lead${total.imported === 1 ? "" : "s"}`, "success");
+  } catch (e) {
+    SSCrm.toast(e.message || "Import failed", "error");
+    res.innerHTML = `<div class="card"><p style="margin:0;color:#B91C1C;font-size:14px">Import failed: ${SSCrm.esc(e.message || "unknown")}</p>
+      <p class="muted" style="font-size:12px;margin-top:6px">Any rows imported before the failure were saved.</p></div>`;
+  } finally { go.disabled = false; go.textContent = "Import leads"; }
+}
+const tile = (label, n, color) => `<div style="flex:1;min-width:130px;background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;padding:12px 14px">
+  <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+  <div style="font-size:22px;font-weight:800;color:${color}">${n}</div></div>`;
+</script>
+</body>
+</html>

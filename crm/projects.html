@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Jobs · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc85"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc86"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc85"></script>
+<script src="/crm/crm-app.js?v=ncc86"></script>
 <script>
 // A project only counts as a "Job" once the contract is signed AND the deposit
 // is paid (status 'contracted'). Until then the deal stays a LEAD in the
@@ -25,19 +25,35 @@ function rowHtml(p) {
   const balance = total != null ? Math.max(0, total - (p.paid_cents || 0)) : null;
   const balanceCell = balance == null ? `<span class="muted">—</span>`
     : balance === 0 ? `<span style="color:#10B981;font-weight:600">Paid</span>` : SSCrm.fmtMoney(balance);
-  // Only the LATEST materials update — the current state of the job, not its
-  // whole history. Timestamps are 'YYYY-MM-DD HH:MM:SS', so they sort as strings.
-  const matSteps = [
-    { at: p.materials_ordered_at,  label: "Ordered",       color: "#2563EB" },
-    { at: p.materials_received_at, label: "Received",      color: "#15803D" },
-    { at: p.materials_missing_at,  label: "Missing parts", color: "#B45309" },
-    { at: p.materials_damaged_at,  label: "Damaged",       color: "#B91C1C" },
+  // Latest materials step = the job's current state. Timestamps are
+  // 'YYYY-MM-DD HH:MM:SS', so they order correctly as strings.
+  //
+  // Exception: Missing parts / Damaged are PROBLEMS, and a problem doesn't stop
+  // being true just because a later step got ticked. Those stay pinned until the
+  // box is unchecked, so a job with a supplier issue can't quietly look fine.
+  const pill = (label, color, at, extra = "") =>
+    `<span title="${label}${at ? " · " + SSCrm.fmtDate(at) : ""}${extra}" style="display:inline-block;font-size:10px;font-weight:700;`
+    + `line-height:1;padding:3px 6px;border-radius:999px;color:#fff;background:${color}">${label}</span>`;
+
+  const matAll = [
+    { at: p.materials_ordered_at,  label: "Ordered",       color: "#2563EB", problem: false },
+    { at: p.materials_received_at, label: "Received",      color: "#15803D", problem: false },
+    { at: p.materials_missing_at,  label: "Missing parts", color: "#B45309", problem: true  },
+    { at: p.materials_damaged_at,  label: "Damaged",       color: "#B91C1C", problem: true  },
   ].filter((m) => m.at);
-  matSteps.sort((a, b) => String(b.at).localeCompare(String(a.at)));
-  const latest = matSteps[0];
-  const matCell = latest
-    ? `<span title="${latest.label} · ${SSCrm.fmtDate(latest.at)}" style="display:inline-block;font-size:10px;font-weight:700;line-height:1;padding:3px 6px;border-radius:999px;color:#fff;background:${latest.color}">${latest.label}</span>`
-      + `<span class="muted" style="font-size:10px;margin-left:5px">${SSCrm.fmtDate(latest.at)}</span>`
+  matAll.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+
+  const latestMat = matAll[0];
+  // Any unresolved problem, newest first — shown even when it isn't the latest step.
+  const problems = matAll.filter((m) => m.problem);
+  const shown = latestMat
+    ? (latestMat.problem ? problems : [latestMat, ...problems])
+    : [];
+
+  const matCell = shown.length
+    ? shown.map((m, i) => pill(m.label, m.color, m.at, i > 0 ? " — still flagged" : ""))
+        .join(' ')
+      + `<span class="muted" style="font-size:10px;margin-left:5px">${SSCrm.fmtDate(shown[0].at)}</span>`
     : `<span class="muted">—</span>`;
   return `<tr class="clickable" onclick="location.href='/crm/project.html?id=${p.id}'">
     <td><strong>${SSCrm.esc(p.contact_name || "—")}</strong></td>

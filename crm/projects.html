@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Jobs · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc83"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc84"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc83"></script>
+<script src="/crm/crm-app.js?v=ncc84"></script>
 <script>
 // A project only counts as a "Job" once the contract is signed AND the deposit
 // is paid (status 'contracted'). Until then the deal stays a LEAD in the
@@ -30,6 +30,7 @@ function rowHtml(p) {
   const matCell = [
     matChip(p.materials_ordered_at, "Ordered", "#2563EB"),
     matChip(p.materials_received_at, "Received", "#15803D"),
+    matChip(p.materials_missing_at, "Missing parts", "#B45309"),
     matChip(p.materials_damaged_at, "Damaged", "#B91C1C"),
   ].filter(Boolean).join(" ") || `<span class="muted">—</span>`;
   return `<tr class="clickable" onclick="location.href='/crm/project.html?id=${p.id}'">

@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc84" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc85" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc84"></script>
+<script src="/crm/crm-app.js?v=ncc85"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -746,8 +746,8 @@ function renderProjectNotes(arr) {
     <li>
       <span class="activity__icon">📝</span>
       <div class="activity__body">
-        <div style="white-space:pre-wrap">${e(n.body)}</div>
-        <div class="activity__time">${e(n.author || "—")} · ${SSCrm.fmtDateTime(n.created_at)}
+        <div style="white-space:pre-wrap">${SSCrm.esc(n.body)}</div>
+        <div class="activity__time">${SSCrm.esc(n.author || "—")} · ${SSCrm.fmtDateTime(n.created_at)}
           <a href="#" onclick="deleteProjectNote(event, ${n.id})" style="margin-left:8px;color:#991B1B;font-size:11px">delete</a>
         </div>
       </div>

@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc81" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc82" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc81"></script>
+<script src="/crm/crm-app.js?v=ncc82"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -678,9 +678,25 @@ function renderOverview(s) {
 
         <!-- Job notes — extra details promised to the client (from the proposal) -->
         <div class="card" style="margin-top:14px">
-          <div class="card-head"><h3>Job notes</h3></div>
+          <div class="card-head"><h3>Job notes</h3><span class="muted" style="font-size:11px">shown to the customer</span></div>
           ${s.job_notes ? `<div style="font-size:13px;line-height:1.6;white-space:pre-wrap;color:var(--ink)">${e(s.job_notes)}</div>`
             : `<p class="muted" style="font-size:13px;margin:0">No job notes yet. Add them on the proposal.</p>`}
+        </div>
+
+        <!-- Internal notes — staff only. Deliberately styled apart from "Job
+             notes" above (amber rule + lock) so nobody confuses the private
+             running log with the promises printed on the customer's proposal. -->
+        <div class="card" style="margin-top:14px;border-left:3px solid #B45309">
+          <div class="card-head">
+            <h3>🔒 Internal notes</h3>
+            <span class="muted" style="font-size:11px">staff only · never shown to the customer${(s.notes||[]).length ? " · " + s.notes.length : ""}</span>
+          </div>
+          <div id="pnotes-list">${renderProjectNotes(s.notes || [])}</div>
+          <form onsubmit="addProjectNote(event)" style="display:grid;gap:8px;margin-top:10px">
+            <textarea id="pnote-body" rows="3" required placeholder="Call summary, install snags, gate code, material delays, what the customer asked for…"
+              style="width:100%;padding:10px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font:inherit;font-size:13px;resize:vertical"></textarea>
+            <div><button type="submit" class="btn primary sm">+ Add note</button></div>
+          </form>
         </div>
       </div>
 
@@ -720,6 +736,55 @@ async function composeFromOverview() {
 }
 
 // ───────── Materials status (ordered / received / damaged) ─────────
+// ───────── Internal notes (staff-only; never customer-facing) ─────────
+function renderProjectNotes(arr) {
+  if (!arr || !arr.length) {
+    return `<p class="muted" style="font-size:13px;margin:0;font-style:italic">No internal notes yet.</p>`;
+  }
+  return `<ul class="activity">${arr.map((n) => `
+    <li>
+      <span class="activity__icon">📝</span>
+      <div class="activity__body">
+        <div style="white-space:pre-wrap">${e(n.body)}</div>
+        <div class="activity__time">${e(n.author || "—")} · ${SSCrm.fmtDateTime(n.created_at)}
+          <a href="#" onclick="deleteProjectNote(event, ${n.id})" style="margin-left:8px;color:#991B1B;font-size:11px">delete</a>
+        </div>
+      </div>
+    </li>`).join("")}</ul>`;
+}
+
+async function addProjectNote(ev) {
+  ev.preventDefault();
+  const ta = document.getElementById("pnote-body");
+  const body = (ta.value || "").trim();
+  if (!body) return;
+  const btn = ev.target.querySelector('button[type="submit"]');
+  if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+  try {
+    const r = await SSCrm.fetchJSON(`/api/projects/${state.project.id}/notes`, {
+      method: "POST", body: JSON.stringify({ body }),
+    });
+    state.notes = r.notes;                       // keep local state in step
+    document.getElementById("pnotes-list").innerHTML = renderProjectNotes(state.notes);
+    ta.value = "";
+    SSCrm.toast("Note added", "success");
+  } catch (err) {
+    SSCrm.toast(err.message || "Could not save the note", "error");
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "+ Add note"; }
+  }
+}
+
+async function deleteProjectNote(ev, noteId) {
+  ev.preventDefault();
+  if (!confirm("Delete this internal note?")) return;
+  try {
+    const r = await SSCrm.fetchJSON(`/api/projects/${state.project.id}/notes?note_id=${noteId}`, { method: "DELETE" });
+    state.notes = r.notes;
+    document.getElementById("pnotes-list").innerHTML = renderProjectNotes(state.notes);
+  } catch (err) { SSCrm.toast(err.message || "Could not delete", "error"); }
+}
+
 function renderMaterialsCard(project) {
   const row = (key, label, color) => {
     const at = project[key + "_at"];

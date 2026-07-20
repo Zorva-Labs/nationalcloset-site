@@ -73,6 +73,13 @@ export async function onRequestGet(context) {
   const notedProposal = proposals.find((p) => p.status === "accepted" && p.job_notes) || proposals.find((p) => p.job_notes) || null;
   const jobNotes = notedProposal ? notedProposal.job_notes : null;
 
+  // Internal staff notes on this job (never customer-facing — distinct from
+  // job_notes above, which IS shown to the client on the proposal).
+  const projectNotes = (await context.env.DB.prepare(
+    `SELECT id, body, author, created_at FROM project_notes
+      WHERE project_id = ?1 ORDER BY datetime(created_at) DESC`
+  ).bind(id).all().catch(() => ({ results: [] }))).results || [];
+
   // Billing summary so the UI can say "paid in full" instead of leaning on the
   // deposit flag once the whole job has been collected.
   const billInfo = await getProjectBilling(context.env.DB, id).catch(() => null);
@@ -87,7 +94,7 @@ export async function onRequestGet(context) {
     paid_in_full: billTotal > 0 && billPaid >= billTotal,
   };
 
-  return json({ project, windows, estimates, proposals, contracts, appointments, lead, lead_notes: leadNotes, email_count: emailCount, drawings, job_notes: jobNotes, billing });
+  return json({ project, windows, estimates, proposals, contracts, appointments, lead, lead_notes: leadNotes, email_count: emailCount, drawings, job_notes: jobNotes, notes: projectNotes, billing });
 }
 
 export async function onRequestPatch(context) {

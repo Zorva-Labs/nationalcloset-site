@@ -61,7 +61,7 @@
 </div>
 <div class="sheet" id="sheet">Loading…</div>
 
-<script src="/crm/crm-app.js?v=ncc86"></script>
+<script src="/crm/crm-app.js?v=ncc87"></script>
 <script>
 const pid = parseInt(new URLSearchParams(location.search).get("id"), 10);
 const e = (s) => SSCrm.esc(s == null ? "" : String(s));
@@ -100,7 +100,8 @@ function toggleInternal() {
 function render(s, lines, tierTitle, k, TYPE) {
   const p = s.project, notes = s.notes || [];
   const mat = [["Ordered", p.materials_ordered_at], ["Received", p.materials_received_at],
-               ["Missing parts", p.materials_missing_at], ["Damaged", p.materials_damaged_at]];
+               ["Missing parts", p.materials_missing_at], ["Damaged", p.materials_damaged_at],
+               ["Installed", p.materials_installed_at]];
   document.getElementById("sheet").innerHTML = `
     <div class="hd">
       <div>

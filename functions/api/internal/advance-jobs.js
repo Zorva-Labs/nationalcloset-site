@@ -39,8 +39,14 @@ async function advance(context) {
   ).all()).results || [];
 
   for (const p of due) {
+    // Materials are on the wall as of the install date — stamp it here so the
+    // status can't drift from reality if nobody ticks a box.
     await DB.prepare(
-      `UPDATE projects SET status='installing', updated_at=datetime('now') WHERE id=?1`
+      `UPDATE projects
+          SET status='installing',
+              materials_installed_at = COALESCE(materials_installed_at, install_date || ' 12:00:00'),
+              updated_at=datetime('now')
+        WHERE id=?1`
     ).bind(p.id).run();
     await recordActivity(DB, {
       entityType: "project", entityId: p.id, action: "install-started",

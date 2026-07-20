@@ -110,7 +110,8 @@ export async function onRequestPatch(context) {
   // Materials tracking toggles: a checked box stamps the current time, unchecking
   // clears it. Keys are fixed (no user SQL), so the literal expression is safe.
   const stampCols = { materials_ordered: "materials_ordered_at", materials_received: "materials_received_at",
-                      materials_damaged: "materials_damaged_at", materials_missing: "materials_missing_at" };
+                      materials_damaged: "materials_damaged_at", materials_missing: "materials_missing_at",
+                      materials_installed: "materials_installed_at" };
   for (const [k, col] of Object.entries(stampCols)) {
     if (body[k] !== undefined) fields.push(`${col}=${body[k] ? "datetime('now')" : "NULL"}`);
   }
@@ -125,6 +126,14 @@ export async function onRequestPatch(context) {
     prevInstallDate = cur?.install_date || null;
   }
 
+  // Marking a job installing/completed means the materials went in — stamp it
+  // now rather than waiting for the nightly sweep. COALESCE keeps the first
+  // stamp if one already exists.
+  // ...unless the request also toggled the box explicitly, which already set
+  // this column above — assigning it twice in one UPDATE would be ambiguous.
+  if ((body.status === "installing" || body.status === "completed") && body.materials_installed === undefined) {
+    fields.push(`materials_installed_at = COALESCE(materials_installed_at, install_date || ' 12:00:00', datetime('now'))`);
+  }
   fields.push(`updated_at=datetime('now')`);
   binds.push(id);
   await context.env.DB.prepare(`UPDATE projects SET ${fields.join(", ")} WHERE id=?${binds.length}`).bind(...binds).run();

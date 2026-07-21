@@ -65,10 +65,11 @@
      needs editing, and it's stronger persuasion than a slot count: it makes
      the cost of waiting concrete rather than inventing a shortage.
 
-     The target month is computed from today + 7 weeks (conservative inside
-     the contracted 4-8 weeks) so the claim stays true in perpetuity and rolls
-     over the year end on its own. The week range itself is no longer stated —
-     only the resulting month, which is the part that actually persuades.
+     The target month is computed from today + 4 weeks. That matches the fast
+     end of the contracted 4-8 week window, and the two completed jobs ran 24
+     and 25 days from signing to install — so it is achievable, but it is the
+     optimistic end, not the safe one. Only the month is shown; it rolls over
+     the year end on its own and never needs maintenance.
 
      Optional override: set data-slots on the element to switch to real
      scarcity messaging ("3 spots left for July") when that genuinely applies.
@@ -93,7 +94,7 @@
           " spot" + (slots === 1 ? "" : "s") + " left for " + thisM + "</b>.";
     } else {
       // Default: build-time urgency. Never goes stale.
-      var target = new Date(now.getTime() + 49 * 86400000);   // +7 weeks
+      var target = new Date(now.getTime() + 28 * 86400000);   // +4 weeks
       out.innerHTML = "Custom closets are built to order &mdash; start your free design now " +
         "and be organized by <b>" + MONTHS[target.getMonth()] + "</b>.";
     }

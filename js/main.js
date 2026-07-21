@@ -66,8 +66,9 @@
      the cost of waiting concrete rather than inventing a shortage.
 
      The target month is computed from today + 7 weeks (conservative inside
-     the contracted 4-8), so the claim stays true in perpetuity and rolls over
-     the year end on its own.
+     the contracted 4-8 weeks) so the claim stays true in perpetuity and rolls
+     over the year end on its own. The week range itself is no longer stated —
+     only the resulting month, which is the part that actually persuades.
 
      Optional override: set data-slots on the element to switch to real
      scarcity messaging ("3 spots left for July") when that genuinely applies.
@@ -93,8 +94,8 @@
     } else {
       // Default: build-time urgency. Never goes stale.
       var target = new Date(now.getTime() + 49 * 86400000);   // +7 weeks
-      out.innerHTML = "Custom closets are built to order in <b>4&ndash;8 weeks</b> — " +
-        "start your free design now and be organized by <b>" + MONTHS[target.getMonth()] + "</b>.";
+      out.innerHTML = "Custom closets are built to order &mdash; start your free design now " +
+        "and be organized by <b>" + MONTHS[target.getMonth()] + "</b>.";
     }
     bar.classList.add("is-on");
   })();

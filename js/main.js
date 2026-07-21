@@ -58,39 +58,43 @@
   }
   captureAttribution();
 
-  /* ---------- Install capacity (honest scarcity) ----------
-     Real remaining install slots for the current month — NOT a fake countdown.
-     The month name is computed here so the claim can never go stale; only the
-     number is hand-set, in index.html:  <p class="capacity" data-slots="6">
+  /* ---------- Lead-time urgency (evergreen, zero maintenance) ----------
+     The honest constraint isn't scarcity — it's build time. Our contracts
+     promise 4-8 weeks for custom materials, and the two completed jobs ran
+     24 and 25 days from signing to install. That is always true, so it never
+     needs editing, and it's stronger persuasion than a slot count: it makes
+     the cost of waiting concrete rather than inventing a shortage.
 
-     Set data-slots each month:
-       6  -> "Only 6 install spots left for August — book your free design."
-       0  -> "August is fully booked — now scheduling September."
-       ""  (or remove the attribute) -> the bar hides itself entirely.
+     The target month is computed from today + 7 weeks (conservative inside
+     the contracted 4-8), so the claim stays true in perpetuity and rolls over
+     the year end on its own.
 
-     If it isn't maintained the bar disappears rather than making a claim that
-     has stopped being true. That matters more here than anywhere: the whole
-     brand rests on not inventing urgency. */
-  (function initCapacity() {
+     Optional override: set data-slots on the element to switch to real
+     scarcity messaging ("3 spots left for July") when that genuinely applies.
+     Leave it off and the evergreen version runs. */
+  (function initUrgency() {
     var bar = document.getElementById("capacity-bar");
     var out = document.getElementById("capacity-text");
     if (!bar || !out) return;
-    var raw = (bar.getAttribute("data-slots") || "").trim();
-    if (raw === "") return;                       // unset -> stay hidden
-    var slots = parseInt(raw, 10);
-    if (!isFinite(slots) || slots < 0) return;
 
     var MONTHS = ["January","February","March","April","May","June",
                   "July","August","September","October","November","December"];
+    var raw = (bar.getAttribute("data-slots") || "").trim();
+    var slots = raw === "" ? null : parseInt(raw, 10);
     var now = new Date();
-    var thisMonth = MONTHS[now.getMonth()];
-    var nextMonth = MONTHS[(now.getMonth() + 1) % 12];
 
-    if (slots === 0) {
-      out.innerHTML = "<b>" + thisMonth + " is fully booked.</b> Now scheduling " + nextMonth + " installs.";
+    if (slots !== null && isFinite(slots) && slots >= 0) {
+      // Manual scarcity override — only shown when a real number is set.
+      var thisM = MONTHS[now.getMonth()], nextM = MONTHS[(now.getMonth() + 1) % 12];
+      out.innerHTML = slots === 0
+        ? "<b>" + thisM + " is fully booked.</b> Now scheduling " + nextM + " installs."
+        : "We install a limited number of closets each month — <b>" + slots +
+          " spot" + (slots === 1 ? "" : "s") + " left for " + thisM + "</b>.";
     } else {
-      out.innerHTML = "We install a limited number of closets each month — <b>" +
-        slots + " spot" + (slots === 1 ? "" : "s") + " left for " + thisMonth + "</b>.";
+      // Default: build-time urgency. Never goes stale.
+      var target = new Date(now.getTime() + 49 * 86400000);   // +7 weeks
+      out.innerHTML = "Custom closets are built to order in <b>4&ndash;8 weeks</b> — " +
+        "start your free design now and be organized by <b>" + MONTHS[target.getMonth()] + "</b>.";
     }
     bar.classList.add("is-on");
   })();

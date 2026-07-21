@@ -58,6 +58,43 @@
   }
   captureAttribution();
 
+  /* ---------- Install capacity (honest scarcity) ----------
+     Real remaining install slots for the current month — NOT a fake countdown.
+     The month name is computed here so the claim can never go stale; only the
+     number is hand-set, in index.html:  <p class="capacity" data-slots="6">
+
+     Set data-slots each month:
+       6  -> "Only 6 install spots left for August — book your free design."
+       0  -> "August is fully booked — now scheduling September."
+       ""  (or remove the attribute) -> the bar hides itself entirely.
+
+     If it isn't maintained the bar disappears rather than making a claim that
+     has stopped being true. That matters more here than anywhere: the whole
+     brand rests on not inventing urgency. */
+  (function initCapacity() {
+    var bar = document.getElementById("capacity-bar");
+    var out = document.getElementById("capacity-text");
+    if (!bar || !out) return;
+    var raw = (bar.getAttribute("data-slots") || "").trim();
+    if (raw === "") return;                       // unset -> stay hidden
+    var slots = parseInt(raw, 10);
+    if (!isFinite(slots) || slots < 0) return;
+
+    var MONTHS = ["January","February","March","April","May","June",
+                  "July","August","September","October","November","December"];
+    var now = new Date();
+    var thisMonth = MONTHS[now.getMonth()];
+    var nextMonth = MONTHS[(now.getMonth() + 1) % 12];
+
+    if (slots === 0) {
+      out.innerHTML = "<b>" + thisMonth + " is fully booked.</b> Now scheduling " + nextMonth + " installs.";
+    } else {
+      out.innerHTML = "We install a limited number of closets each month — <b>" +
+        slots + " spot" + (slots === 1 ? "" : "s") + " left for " + thisMonth + "</b>.";
+    }
+    bar.classList.add("is-on");
+  })();
+
   // Map our GA4 event names to standard Meta Pixel events so Facebook gets
   // conversion activity to optimize toward (the pixel otherwise only fires PageView).
   var FB_EVENTS = { generate_lead: "Lead", contact: "Contact" };

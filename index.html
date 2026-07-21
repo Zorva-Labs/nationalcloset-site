@@ -263,6 +263,21 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
    flush under the h1 with a rule, rather than in a badge or a script face. */
 .no-sale { margin-top: 1rem; padding-left: 0.9rem; border-left: 3px solid var(--clay); font-size: clamp(1rem, 1.9vw, 1.15rem); font-weight: 600; color: var(--ink-soft); line-height: 1.45; }
 .no-sale strong { color: var(--ink); font-weight: 800; }
+/* Honest scarcity: real install capacity, not a fake countdown. The month is
+   computed at runtime (see CAPACITY in js/main.js) so it can never go stale —
+   only the slot count is hand-set, and the bar hides itself if it isn't. */
+.capacity { display: none; align-items: center; gap: .6rem; margin-top: 1rem; padding: .7rem 1rem;
+  background: var(--clay-wash); border: 1px solid #EBC7B7; border-left: 4px solid var(--clay);
+  border-radius: 10px; font-size: .95rem; font-weight: 600; color: var(--ink-soft); line-height: 1.4; }
+.capacity.is-on { display: flex; }
+.capacity .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--clay); flex: none;
+  box-shadow: 0 0 0 0 rgba(210,104,63,.6); animation: pulse 2.2s infinite; }
+.capacity b { color: var(--clay-deep); font-weight: 800; }
+/* Reassurance directly under the submit button, where hesitation happens. */
+.form-reassure { display: flex; flex-wrap: wrap; gap: .4rem 1rem; margin-top: .6rem;
+  font-size: .8rem; font-weight: 600; color: var(--muted); }
+.form-reassure span { display: inline-flex; align-items: center; gap: .35rem; }
+.form-reassure .tick { color: var(--clay-deep); font-weight: 800; }
 .hero__actions { display: flex; flex-wrap: wrap; gap: 0.8rem; opacity: 0; animation: fadeUp .8s var(--ease) .62s forwards; }
 .hero__proof { display: flex; flex-wrap: wrap; gap: 1.4rem 2rem; align-items: center; padding-top: 0.6rem; opacity: 0; animation: fadeUp .8s var(--ease) .74s forwards; }
 .hero__proof .stars { color: var(--clay); letter-spacing: 2px; }
@@ -957,7 +972,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
 <!-- ================= HERO ================= -->
 <section class="hero">
   <div class="hero__bg" aria-hidden="true">
-    <img src="/img/hero-closet.webp?v=ncc89" alt="Luxurious custom master walk-in closet with a center island, shoe wall and warm LED lighting by National Closet Company" width="1280" height="1280" fetchpriority="high" decoding="sync" />
+    <img src="/img/hero-closet.webp?v=ncc90" alt="Luxurious custom master walk-in closet with a center island, shoe wall and warm LED lighting by National Closet Company" width="1280" height="1280" fetchpriority="high" decoding="sync" />
   </div>
   <div class="wrap">
     <div class="hero__inner">
@@ -980,6 +995,9 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
           <a class="btn btn--primary" href="#consult">Get Your Free Design <span class="arr">→</span></a>
           <a class="btn btn--ghost" href="#services">Explore Services</a>
         </div>
+        <p class="capacity" id="capacity-bar" data-slots="6">
+          <span class="dot"></span><span id="capacity-text"></span>
+        </p>
         <p class="doodle-note" aria-hidden="true"><span class="doodle-arrow"><svg viewBox="0 0 80 60" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M72,52 C 36,50 13,38 14,9"/><path d="M5,22 L14,5 L26,16"/></svg></span> it's 100% free — no obligation!</p>
         <div class="hero__proof">
           <a href="https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE" target="_blank" rel="noopener" style="text-decoration:none;color:inherit" aria-label="See our reviews on Google"><span><span class="stars">★★★★★</span> <b class="u-circle">5.0</b> <span style="font-weight:600;font-size:.9rem">on Google</span></span></a>
@@ -990,7 +1008,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
         <div class="form-card">
           <form data-lead>
             <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden"><label>Company<input type="text" name="company" tabindex="-1" autocomplete="off" /></label></div>
-            <span class="hero__form-tag">⚡ Free · No obligation</span>
+            <span class="hero__form-tag">⚡ Free · No obligation · Monthly payments available</span>
             <h2 class="h3" style="margin:.3rem 0 1.1rem">Get your free design</h2>
             <div class="form-grid">
               <div class="field">
@@ -1027,7 +1045,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
                 <textarea id="h-msg" name="msg" rows="2" placeholder="I'd love to reorganize my master walk-in closet…"></textarea>
               </div>
               <button class="btn btn--primary btn--block" type="submit">Book My Free Consultation <span class="arr">→</span></button>
-              <p class="form-note">🔒 No spam — just your free design. Or call/text <a href="tel:+16292988241" style="color:var(--clay-deep);font-weight:700">629-298-8241</a>.</p>
+              <p class="form-note">🔒 No spam — just your free design. Or call/text <a href="tel:+16292988241" style="color:var(--clay-deep);font-weight:700">629-298-8241</a>.</p><div class="form-reassure"><span><i class="tick">✓</i> We reply within one business day</span><span><i class="tick">✓</i> No pressure, no obligation</span><span><i class="tick">✓</i> Monthly payments available</span></div>
             </div>
           </form>
           <div class="form-success" role="status" aria-live="polite">
@@ -1617,7 +1635,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
               <textarea id="msg" name="msg" placeholder="I'd love to reorganize my master walk-in closet…"></textarea>
             </div>
             <button class="btn btn--primary btn--block" type="submit">Book My Free Consultation <span class="arr">→</span></button>
-            <p class="form-note">🔒 Your details are private. No spam, ever — just your free design.</p>
+            <p class="form-note">🔒 Your details are private. No spam, ever — just your free design.</p><div class="form-reassure"><span><i class="tick">✓</i> We reply within one business day</span><span><i class="tick">✓</i> No pressure, no obligation</span><span><i class="tick">✓</i> Monthly payments available</span></div>
           </div>
         </form>
         <div class="form-success" role="status" aria-live="polite">
@@ -1748,6 +1766,6 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
   <a class="quote" href="#consult">✨ Free Design</a>
 </div>
 
-<script src="/js/main.js?v=ncc89" defer></script>
+<script src="/js/main.js?v=ncc90" defer></script>
 </body>
 </html>

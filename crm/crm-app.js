@@ -891,6 +891,9 @@ async function composeEmail({ contact, lead, project, defaultKind, parent } = {}
             </details>
             <label><span>Subject</span><input id="cm-subject" required/></label>
             <label><span>Message</span><textarea id="cm-body" rows="14" style="font-family:inherit;line-height:1.5"></textarea></label>
+            <label style="margin-bottom:4px"><span>Attachments <span class="muted" style="font-weight:400">· max ~15 MB total</span></span>
+              <input id="cm-files" type="file" multiple style="font-size:13px"/></label>
+            <div id="cm-filelist" style="display:flex;flex-direction:column;gap:4px;margin:0 0 8px"></div>
             <p class="muted" style="font-size:11px;margin:0">Variables shown as <code>{{first_name}}</code> stay literal in the preview, get filled in server-side on send. Unresolved variables stay literal so you can spot missing data before sending.</p>
           </div>
         </div>
@@ -905,6 +908,42 @@ async function composeEmail({ contact, lead, project, defaultKind, parent } = {}
     const tplSel = bg.querySelector("#cm-tpl");
     const subjI  = bg.querySelector("#cm-subject");
     const bodyI  = bg.querySelector("#cm-body");
+
+    // Attachments are read to base64 and sent inline in the JSON payload — they
+    // go straight to the email provider, so no R2/upload round-trip. Resend caps
+    // a message at ~40MB, but base64 inflates ~33% and we keep other JSON too,
+    // so we guard the raw total at 15MB to stay comfortably under.
+    const fileIn = bg.querySelector("#cm-files");
+    const fileListEl = bg.querySelector("#cm-filelist");
+    const MAX_TOTAL = 15 * 1024 * 1024;
+    let chosen = [];  // [{ file }]
+    function fmtSize(n) { return n < 1024 * 1024 ? Math.round(n / 1024) + " KB" : (n / 1048576).toFixed(1) + " MB"; }
+    function renderFiles() {
+      const total = chosen.reduce((s, c) => s + c.file.size, 0);
+      const over = total > MAX_TOTAL;
+      fileListEl.innerHTML = chosen.map((c, i) =>
+        `<div style="display:flex;align-items:center;gap:8px;font-size:12px;background:var(--bg-soft);padding:5px 9px;border-radius:var(--r-sm)">
+           <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📎 ${esc(c.file.name)}</span>
+           <span class="muted">${fmtSize(c.file.size)}</span>
+           <button type="button" data-rm="${i}" style="border:0;background:none;color:var(--ink-soft);cursor:pointer;font-size:15px;line-height:1">×</button>
+         </div>`).join("")
+        + (chosen.length ? `<div class="muted" style="font-size:11px;margin-top:2px;${over ? "color:#B91C1C;font-weight:600" : ""}">Total: ${fmtSize(total)}${over ? " — over the 15 MB limit, remove some files" : ""}</div>` : "");
+      fileListEl.querySelectorAll("[data-rm]").forEach((b) =>
+        b.onclick = () => { chosen.splice(parseInt(b.dataset.rm, 10), 1); renderFiles(); });
+    }
+    fileIn.addEventListener("change", () => {
+      for (const f of fileIn.files) chosen.push({ file: f });
+      fileIn.value = "";  // allow re-picking the same file after removing it
+      renderFiles();
+    });
+    function readB64(file) {
+      return new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result).split(",")[1]);  // strip data: prefix
+        r.onerror = () => rej(new Error("read failed"));
+        r.readAsDataURL(file);
+      });
+    }
     function loadTemplate(tplId) {
       const t = allTemplates.find((x) => String(x.id) === String(tplId));
       if (!t) return;
@@ -927,8 +966,22 @@ async function composeEmail({ contact, lead, project, defaultKind, parent } = {}
 
     bg.querySelector("[data-send]").onclick = async () => {
       const btn = bg.querySelector("[data-send]");
+      const total = chosen.reduce((s, c) => s + c.file.size, 0);
+      if (total > MAX_TOTAL) { toast("Attachments exceed 15 MB — remove some files.", "error"); return; }
       btn.disabled = true; btn.textContent = "Sending…";
+      let attachments = [];
+      try {
+        attachments = await Promise.all(chosen.map(async (c) => ({
+          filename: c.file.name,
+          content: await readB64(c.file),
+          content_type: c.file.type || "application/octet-stream",
+        })));
+      } catch (e) {
+        toast("Could not read an attachment — try again.", "error");
+        btn.disabled = false; btn.textContent = "Send →"; return;
+      }
       const payload = {
+        attachments: attachments.length ? attachments : undefined,
         contact_id: contact?.id || null,
         lead_id:    lead?.id    || null,
         project_id: project?.id || null,
@@ -1029,6 +1082,13 @@ function renderMessageRow(m) {
           ${m.error_message ? `<br/><strong style="color:var(--danger,#dc2626)">Error:</strong> <code>${esc(m.error_message)}</code>` : ""}
         </div>
         <pre class="email-row__pre">${esc(m.body_text || stripHtmlClient(m.body_html) || "(no body)")}</pre>
+        ${(() => {
+          const att = safeJSON(m.attachments_meta);
+          if (!Array.isArray(att) || !att.length) return "";
+          const kb = (n) => n < 1024 * 1024 ? Math.round(n / 1024) + " KB" : (n / 1048576).toFixed(1) + " MB";
+          return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${att.map((a) =>
+            `<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;background:var(--bg-soft);border:1px solid var(--line);padding:3px 9px;border-radius:100px">📎 ${esc(a.filename || "file")}<span class="muted">${a.bytes ? kb(a.bytes) : ""}</span></span>`).join("")}</div>`;
+        })()}
       </div>
     </li>`;
 }

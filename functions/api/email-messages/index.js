@@ -83,6 +83,23 @@ export async function onRequestPost(context) {
   const to = normalizeList(body.to);
   if (!to.length) return json({ error: "to required" }, 400);
 
+  // Attachments: base64 sent inline in the payload (no upload round-trip).
+  // Validate shape + a hard size ceiling so a bad client can't push a huge body
+  // past the provider limit. 15MB raw ≈ 20MB base64, comfortably under Resend's.
+  let attachments = [];
+  if (Array.isArray(body.attachments) && body.attachments.length) {
+    let rawBytes = 0;
+    for (const a of body.attachments) {
+      const filename = (a?.filename || "file").toString().slice(0, 200);
+      const content = (a?.content || "").toString();
+      if (!content) return json({ error: `attachment "${filename}" is empty` }, 400);
+      rawBytes += Math.floor(content.length * 0.75);  // base64 → raw byte estimate
+      attachments.push({ filename, content, content_type: (a?.content_type || "application/octet-stream").toString().slice(0, 120) });
+    }
+    if (attachments.length > 10) return json({ error: "too many attachments (max 10)" }, 400);
+    if (rawBytes > 15 * 1024 * 1024) return json({ error: "attachments exceed 15 MB" }, 413);
+  }
+
   // Load + render template if template_id passed. The admin can also pass
   // freeform subject/body_text/body_html which overrides the template.
   let subject = body.subject;
@@ -161,12 +178,12 @@ export async function onRequestPost(context) {
         message_id_header, in_reply_to, references_header, thread_key,
         from_name, from_addr, to_addrs, cc_addrs, bcc_addrs, reply_to,
         subject, body_text, body_html,
-        template_id, template_kind, author_user_id)
+        template_id, template_kind, author_user_id, attachments_meta)
      VALUES ('out', 'queued', ?1, ?2, ?3,
         ?4, ?5, ?6, ?7,
         ?8, ?9, ?10, ?11, ?12, ?13,
         ?14, ?15, ?16,
-        ?17, ?18, ?19) RETURNING id`
+        ?17, ?18, ?19, ?20) RETURNING id`
   ).bind(
     rowContactId, rowLeadId, rowProjectId,
     messageId, inReplyTo, references, threadKey,
@@ -177,6 +194,11 @@ export async function onRequestPost(context) {
     body.reply_to || null,
     subject, bodyText || null, bodyHtml || null,
     body.template_id || null, templateKind, auth.id,
+    // Store only metadata (name/type/size) — never the base64 bytes, which would
+    // bloat the row and the thread view for no benefit.
+    attachments.length ? JSON.stringify(attachments.map((a) => ({
+      filename: a.filename, content_type: a.content_type, bytes: Math.floor(a.content.length * 0.75),
+    }))) : null,
   ).first();
   const msgId = insert.id;
 
@@ -186,6 +208,7 @@ export async function onRequestPost(context) {
     text: bodyText, html: bodyHtml,
     replyTo: body.reply_to,
     messageId, inReplyTo, references,
+    attachments: attachments.length ? attachments : undefined,
   });
 
   // Update D1 row with the actual outcome

@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc102" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc103" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc102"></script>
+<script src="/crm/crm-app.js?v=ncc103"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -302,7 +302,6 @@ function switchTab(tab) {
   if (tab === "overview") {
     body.innerHTML = renderOverview(state);
     loadFinancials();
-    loadJobVendors();
   }
   else if (tab === "messages") {
     body.innerHTML = `<div id="email-timeline"></div>`;
@@ -657,11 +656,6 @@ function renderOverview(s) {
           <div id="fin-host" class="muted" style="font-size:13px">Loading…</div>
         </div>
 
-        <!-- Job vendors — manufacturer (materials) + installer (labor) -->
-        <div class="card" style="margin-top:14px">
-          <div class="card-head"><h3>Job vendors</h3></div>
-          <div id="jv-host" class="muted" style="font-size:13px">Loading…</div>
-        </div>
 
         <!-- Materials status — ordered / received / damaged tracking -->
         <div class="card" style="margin-top:14px">
@@ -1057,111 +1051,6 @@ async function resetFinancials() {
   } catch (err) { SSCrm.toast(err.message || "Reset failed", "error"); }
 }
 
-// ───────── Job vendors (manufacturer = materials, installer = labor) ─────────
-let jvData = null;
-const JV_CAT = { manufacturer: "Materials", installer: "Subcontractor" };
-
-async function loadJobVendors() {
-  const host = document.getElementById("jv-host");
-  if (!host || !state.project) return;
-  try {
-    jvData = await SSCrm.fetchJSON(`/api/projects/${state.project.id}/vendors`);
-    jvRender();
-  } catch (err) {
-    host.innerHTML = `<span class="muted">Couldn't load: ${SSCrm.esc(err.message)}</span>`;
-  }
-}
-
-function jvRender() {
-  const host = document.getElementById("jv-host");
-  if (!host || !jvData) return;
-  const completed = jvData.status === "completed";
-  const vendors = jvData.vendors || [];
-
-  host.innerHTML = jvData.roles.map((r) => {
-    const v = r.vendor;
-    const bill = r.bill;
-    const opts = `<option value="">Choose ${r.label.toLowerCase()}…</option>` + vendors.map((x) =>
-      `<option value="${x.id}">${SSCrm.esc(x.name)}${x.title ? " · " + SSCrm.esc(x.title) : ""}${x.company ? " · " + SSCrm.esc(x.company) : ""}${x.role ? " (" + SSCrm.esc(x.role) + ")" : ""}</option>`).join("");
-
-    // Bill status / action area
-    let billArea = "";
-    if (v) {
-      if (bill) {
-        const paid = bill.status === "paid";
-        billArea = `<div style="font-size:12px;margin-top:6px">
-          <span style="color:${paid ? "#15803D" : "#B45309"};font-weight:600">${paid ? "✓ Bill paid" : "● Bill logged"}</span>
-          <span class="muted"> · ${SSCrm.fmtMoney(bill.amount_cents)} · </span><a href="/crm/expenses.html">view in bills</a>
-        </div>`;
-      } else {
-        const note = r.role === "installer" && !completed
-          ? `<span class="muted" style="font-size:11px;display:block;margin-top:3px">Installer labor is payable after the job is completed.</span>`
-          : "";
-        billArea = `<div style="margin-top:6px">
-          <button class="btn secondary sm" onclick="jvCreateBill('${r.role}')">+ Create ${r.cost} bill · ${SSCrm.fmtMoney(r.cost_cents)}</button>${note}
-        </div>`;
-      }
-    }
-
-    return `<div style="padding:10px 0;${r.role === "installer" ? "border-top:1px solid var(--line-soft)" : ""}">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
-        <strong style="font-size:13px">${r.label}</strong>
-        <span class="muted" style="font-size:12px">${r.cost === "materials" ? "Materials" : "Labor"}: <strong style="color:var(--ink)">${SSCrm.fmtMoney(r.cost_cents)}</strong></span>
-      </div>
-      <p class="muted" style="font-size:11px;margin:2px 0 8px">${SSCrm.esc(r.blurb)}</p>
-      ${v ? `<div style="display:flex;align-items:center;gap:8px">
-          <a href="/crm/vendor.html?id=${v.id}" style="font-weight:600;font-size:13px;flex:1">${SSCrm.esc(v.name)}${v.company ? `<span class="muted" style="font-weight:400"> · ${SSCrm.esc(v.company)}</span>` : ""}</a>
-          <button class="btn ghost sm" onclick="jvClear('${r.role}')">Remove</button>
-        </div>${billArea}`
-        : `<div style="display:flex;gap:8px;align-items:center">
-          <select id="jv-sel-${r.role}" style="flex:1;font-size:13px;padding:6px 8px">${opts}</select>
-          <button class="btn primary sm" onclick="jvAssign('${r.role}')">Assign</button>
-        </div>${vendors.length ? "" : `<p class="muted" style="font-size:11px;margin:6px 0 0">No vendors yet — <a href="/crm/vendors.html">add one</a> first.</p>`}`}
-    </div>`;
-  }).join("");
-}
-
-async function jvAssign(role) {
-  const sel = document.getElementById(`jv-sel-${role}`);
-  const vendorId = sel && sel.value ? parseInt(sel.value, 10) : 0;
-  if (!vendorId) { SSCrm.toast("Pick a vendor", "error"); return; }
-  try {
-    await SSCrm.fetchJSON(`/api/projects/${state.project.id}/vendors`, { method: "POST", body: JSON.stringify({ vendor_id: vendorId, role }) });
-    SSCrm.toast("Vendor assigned", "success");
-    loadJobVendors();
-  } catch (e) { SSCrm.toast(e.message, "error"); }
-}
-
-async function jvClear(role) {
-  if (!(await SSCrm.confirmDialog(`Remove this ${role}? Any bill already logged to them stays.`))) return;
-  try {
-    await SSCrm.fetchJSON(`/api/projects/${state.project.id}/vendors?role=${role}`, { method: "DELETE" });
-    SSCrm.toast("Removed", "success");
-    loadJobVendors();
-  } catch (e) { SSCrm.toast(e.message, "error"); }
-}
-
-async function jvCreateBill(role) {
-  const r = (jvData.roles || []).find((x) => x.role === role);
-  if (!r || !r.vendor) return;
-  if (!r.cost_cents) { SSCrm.toast("No cost on this line yet — set the job price first.", "error"); return; }
-  const today = new Date().toISOString().slice(0, 10);
-  const body = {
-    vendor: r.vendor.name, vendor_id: r.vendor.id, project_id: state.project.id,
-    category: JV_CAT[role], amount_cents: r.cost_cents, bill_date: today,
-    description: `${r.label} — ${state.project.name}`,
-  };
-  if (!(await SSCrm.confirmDialog(`Create a ${r.cost} bill of ${SSCrm.fmtMoney(r.cost_cents)} payable to ${r.vendor.name}?`))) return;
-  try {
-    await SSCrm.fetchJSON("/api/expenses", { method: "POST", body: JSON.stringify(body) });
-    SSCrm.toast("Bill created — find it under Expenses / Bills", "success");
-    loadJobVendors();
-  } catch (e) { SSCrm.toast(e.message, "error"); }
-}
-
-// Two-step purge: show a count summary of every dependent that'll be wiped
-// (windows, proposals, contracts, emails, appointments, lead notes), require
-// the admin to type the job's name to confirm, then hit DELETE …?purge=1.
 async function purgeJob() {
   const { project, windows, proposals, contracts, appointments, lead, lead_notes, email_count } = state;
   const counts = {

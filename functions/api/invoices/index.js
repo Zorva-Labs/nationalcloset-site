@@ -1,7 +1,7 @@
 // GET  /api/invoices?project_id=… | ?lead_id=…   — list invoices (admin)
 // POST /api/invoices                              — create + send an invoice (admin, manual)
 import { requireAuth, json } from "../../_lib/auth.js";
-import { createInvoice } from "../../_lib/invoices.js";
+import { createInvoice, markInvoicePaid } from "../../_lib/invoices.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -52,6 +52,20 @@ export async function onRequestPost(context) {
       actor: { id: auth.id, name: auth.email },
     });
     if (result.skipped) return json({ error: result.reason || "skipped" }, 400);
+
+    // "Record a payment" with no invoice behind it: create the custom invoice
+    // (never emailed) and settle it in the same call, so money taken outside the
+    // normal milestones still lands in the ledger, the job balance and Reports.
+    // A standalone payments table would be invisible to everything that reads
+    // invoices, so this reuses the machinery instead of running beside it.
+    if (body.mark_paid && result.invoice) {
+      await markInvoicePaid(context.env, result.invoice, {
+        method: (body.method || "manual").toString().slice(0, 60),
+        paidAt: /^\d{4}-\d{2}-\d{2}$/.test(body.paid_at || "") ? `${body.paid_at} 12:00:00` : null,
+        sendReceipt: body.send_receipt === true,   // off unless explicitly asked
+      });
+      return json({ ok: true, invoice: result.invoice, paid: true });
+    }
     return json({ ok: true, invoice: result.invoice, deduped: !!result.deduped });
   } catch (e) {
     return json({ error: e.message || "Could not create invoice" }, 500);

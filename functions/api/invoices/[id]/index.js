@@ -111,10 +111,54 @@ export async function onRequestPost(context) {
     const sendReceipt = body.send_receipt !== false;
 
     if (priorPaid + amt >= total) {
-      // Covers the balance → settle in full (books deposit, sends receipt).
+      // Covers this invoice → settle it in full (books deposit, sends receipt).
       // markInvoicePaid logs the completing (remaining) amount in the ledger.
       await markInvoicePaid(context.env, inv, { method: paid_method, paidAt, sendReceipt });
-      return json({ ok: true, paid: true });
+
+      // Anything beyond THIS invoice cascades to the job's other open invoices,
+      // oldest first. Without this the surplus was silently dropped:
+      // amount_paid_cents is capped at the invoice's own amount, and the job
+      // balance is SUM(amount_paid_cents) — so recording $5,000 against a
+      // $2,500 milestone only moved the balance by $2,500.
+      let surplus = Math.max(0, priorPaid + amt - total);
+      const applied = [];
+      if (surplus > 0) {
+        const others = (await DB.prepare(
+          `SELECT id, number, amount_cents, amount_paid_cents FROM invoices
+            WHERE project_id = ?1 AND id <> ?2 AND status NOT IN ('paid','void')
+            ORDER BY datetime(created_at) ASC, id ASC`
+        ).bind(inv.project_id, id).all().catch(() => ({ results: [] }))).results || [];
+
+        for (const o of others) {
+          if (surplus <= 0) break;
+          const oRemaining = Math.max(0, (o.amount_cents || 0) - (o.amount_paid_cents || 0));
+          if (oRemaining <= 0) continue;
+          const put = Math.min(surplus, oRemaining);
+          const nowPaid = (o.amount_paid_cents || 0) + put;
+          const settles = nowPaid >= (o.amount_cents || 0);
+          await DB.prepare(
+            `INSERT INTO invoice_payments (invoice_id, amount_cents, method, note, paid_at)
+             VALUES (?1,?2,?3,?4, COALESCE(?5, datetime('now')))`
+          ).bind(o.id, put, label, ref || null, paidAt).run().catch(() => {});
+          await DB.prepare(
+            `UPDATE invoices SET amount_paid_cents=?1, paid_method=?2,
+               status = CASE WHEN ?3 = 1 THEN 'paid' ELSE status END,
+               paid_at = CASE WHEN ?3 = 1 THEN COALESCE(?4, datetime('now')) ELSE paid_at END,
+               updated_at=datetime('now') WHERE id=?5`
+          ).bind(nowPaid, paid_method, settles ? 1 : 0, paidAt, o.id).run().catch(() => {});
+          applied.push({ invoice_id: o.id, number: o.number, amount_cents: put, settled: settles });
+          surplus -= put;
+        }
+        if (applied.length) {
+          await recordActivity(DB, {
+            entityType: "project", entityId: inv.project_id, action: "payment-applied-across-invoices",
+            actorKind: "admin", actorId: auth.id, actorName: auth.email,
+            details: { from_invoice: inv.number, applied, unapplied_cents: surplus },
+          }).catch(() => {});
+        }
+      }
+      // surplus > 0 here means they paid more than the job's total outstanding.
+      return json({ ok: true, paid: true, applied, unapplied_cents: surplus });
     }
     // Partial payment → log it, bump amount paid, keep the invoice open.
     await DB.prepare(`INSERT INTO invoice_payments (invoice_id, amount_cents, method, note, paid_at) VALUES (?1,?2,?3,?4, COALESCE(?5, datetime('now')))`)

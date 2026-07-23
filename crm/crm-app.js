@@ -1165,7 +1165,7 @@ function recordPayment(doc, opts = {}) {
     function checkAmt() {
       const v = parseMoney(amtI.value);
       noteEl.textContent = v > remaining
-        ? `Over this invoice's ${fmtMoney(remaining)} balance — the extra is credited to the job.`
+        ? `Over this invoice's ${fmtMoney(remaining)} balance — the extra is applied to the job's other open invoices.`
         : "";
       noteEl.style.color = v > remaining ? "#B45309" : "";
     }
@@ -1186,7 +1186,10 @@ function recordPayment(doc, opts = {}) {
           paid_at: bg.querySelector("#rp-date").value,
           send_receipt: showReceipt ? bg.querySelector("#rp-receipt").checked : false,
         })});
-        toast(r.paid ? "Paid in full" : "Payment recorded", "success");
+        const extra = (r.applied || []).length
+          ? ` · also applied to ${r.applied.length} more invoice${r.applied.length === 1 ? "" : "s"}` : "";
+        const over = r.unapplied_cents > 0 ? ` · ${fmtMoney(r.unapplied_cents)} over the job total` : "";
+        toast((r.paid ? "Paid in full" : "Payment recorded") + extra + over, over ? "error" : "success");
         close(r);
       } catch (e) { toast(e.message || "Could not record payment", "error"); btn.disabled = false; btn.textContent = "Record payment"; }
     };

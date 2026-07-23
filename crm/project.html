@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc103" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc104" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc103"></script>
+<script src="/crm/crm-app.js?v=ncc104"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -356,6 +356,122 @@ async function jobRecordPayment(invId) {
   if (r) loadInvoices();
 }
 
+// Record money taken outside the normal 50/25/25 milestones — cash, check, a
+// card run in person, a Klarna payout. No invoice needs to exist first.
+// Routing: if the job has open invoices, the payment lands on the oldest one
+// and the server cascades any surplus down the rest (so a single $5,000 check
+// settles deposit + scheduling + part of the balance in one shot). If nothing
+// is open, a custom invoice is created (never emailed) and settled at once, so
+// the money still shows in the ledger, the job balance and Reports.
+async function jobRecordAnyPayment() {
+  const m = SSCrm.fmtMoney, e = SSCrm.esc;
+  const jobTotal = jobTotalCents();
+  const paidSoFar = (state.billing && state.billing.paid_cents) || 0;
+  const balance = jobTotal != null ? Math.max(0, jobTotal - paidSoFar) : 0;
+  const today = new Date().toISOString().slice(0, 10);
+
+  let invoices = [];
+  try { invoices = (await SSCrm.fetchJSON("/api/invoices?project_id=" + id)).invoices || []; } catch (err) {}
+  // Oldest still-owing invoice: the payment lands here and the server rolls any
+  // surplus down the rest. Null when the job has nothing outstanding billed.
+  const target = invoices
+    .filter((iv) => (iv.status === "open" || iv.status === "processing") && (iv.amount_cents || 0) > (iv.amount_paid_cents || 0))
+    .sort((a, b) => String(a.created_at || "").localeCompare(String(b.created_at || "")) || (a.id - b.id))[0];
+
+  const chips = [];
+  if (balance > 0) {
+    chips.push({ cents: balance, label: "Full balance · " + m(balance) });
+    const half = Math.round(balance / 2);
+    if (half > 0 && half !== balance) chips.push({ cents: half, label: "Half · " + m(half) });
+  }
+  if (target) {
+    const rem = (target.amount_cents || 0) - (target.amount_paid_cents || 0);
+    if (rem > 0 && !chips.some((c) => c.cents === rem)) chips.push({ cents: rem, label: `${target.number} · ${m(rem)}` });
+  }
+
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `
+    <div class="modal" style="max-width:460px">
+      <div class="modal-head">Record a payment</div>
+      <div class="modal-body">
+        <p class="muted" style="font-size:12px;margin:0 0 12px">
+          Balance due on this job: <strong style="color:var(--ink)">${balance > 0 ? m(balance) : "$0.00 — paid in full"}</strong>
+        </p>
+        <div class="form">
+          <label><span>Amount</span><input id="jp-amt" type="text" inputmode="decimal" value="${balance > 0 ? m(balance) : ""}" placeholder="0.00"/></label>
+          ${chips.length ? `<div id="jp-quick" style="display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 2px">
+            ${chips.map((c) => `<button type="button" class="btn ghost sm" data-amt="${c.cents}" style="font-size:12px;padding:4px 10px">${e(c.label)}</button>`).join("")}
+          </div>` : ""}
+          <div class="row">
+            <label><span>Method</span><select id="jp-method"><option>Check</option><option>Cash</option><option>Card</option><option>Bank transfer</option><option>Klarna</option><option>Other</option></select></label>
+            <label><span>Reference <span class="muted" style="font-weight:400">(check #, etc.)</span></span><input id="jp-ref" placeholder="optional"/></label>
+          </div>
+          <label><span>Date received</span><input id="jp-date" type="date" value="${today}"/></label>
+          <label><span>What it's for</span><input id="jp-desc" value="Payment received" placeholder="Payment received"/></label>
+          <label style="flex-direction:row;align-items:center;gap:8px;margin-top:2px"><input id="jp-receipt" type="checkbox" style="width:16px;height:16px"/> <span>Email the customer a receipt</span></label>
+        </div>
+        <p class="muted" style="font-size:11px;margin:10px 0 0;line-height:1.5">
+          ${target
+            ? `Applied to ${e(target.number)} first — anything above it rolls down to this job's other open invoices.`
+            : `No open invoices on this job, so this is logged on its own and counts toward the balance.`}
+        </p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" data-cancel>Cancel</button>
+        <button class="btn primary" data-save>Record payment</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  const close = () => bg.remove();
+  bg.querySelector("[data-cancel]").onclick = close;
+  bg.addEventListener("click", (ev) => { if (ev.target === bg) close(); });
+  const amtI = bg.querySelector("#jp-amt");
+  bg.querySelectorAll("#jp-quick [data-amt]").forEach((b) => {
+    b.onclick = () => { amtI.value = m(parseInt(b.dataset.amt, 10)); amtI.focus(); };
+  });
+  amtI.focus();
+
+  bg.querySelector("[data-save]").onclick = async () => {
+    const btn = bg.querySelector("[data-save]");
+    const amt = SSCrm.parseMoney(amtI.value);
+    if (!amt || amt <= 0) { SSCrm.toast("Enter a valid amount", "error"); return; }
+    const method = bg.querySelector("#jp-method").value;
+    const ref = bg.querySelector("#jp-ref").value.trim();
+    const paid_at = bg.querySelector("#jp-date").value;
+    const send_receipt = bg.querySelector("#jp-receipt").checked;
+    const desc = bg.querySelector("#jp-desc").value.trim() || "Payment received";
+    btn.disabled = true; btn.textContent = "Saving…";
+    try {
+      let msg;
+      if (target) {
+        const r = await SSCrm.fetchJSON(`/api/invoices/${target.id}`, { method: "POST", body: JSON.stringify({
+          action: "mark_paid", amount_cents: amt, method, reference: ref, paid_at, send_receipt,
+        })});
+        const extra = (r.applied || []).length ? ` · also applied to ${r.applied.length} more invoice${r.applied.length === 1 ? "" : "s"}` : "";
+        const over = r.unapplied_cents > 0 ? ` · ${m(r.unapplied_cents)} over the job total` : "";
+        msg = [(r.paid ? "Paid in full" : "Payment recorded") + extra + over, over ? "error" : "success"];
+      } else {
+        // Nothing outstanding is billed — create the invoice and settle it in
+        // the same call so the money lands in the ledger and Reports.
+        await SSCrm.fetchJSON("/api/invoices", { method: "POST", body: JSON.stringify({
+          project_id: id, type: "custom", amount_cents: amt, description: desc,
+          send: false, mark_paid: true, method: ref ? `${method} · ${ref}` : method, paid_at, send_receipt,
+        })});
+        msg = ["Payment recorded", "success"];
+      }
+      close();
+      SSCrm.toast(msg[0], msg[1]);
+      loadInvoices();
+      // Refresh the cached billing totals without re-rendering (and losing the tab).
+      SSCrm.fetchJSON("/api/projects/" + id).then((s) => { if (s && s.billing) state.billing = s.billing; }).catch(() => {});
+    } catch (err) {
+      SSCrm.toast(err.message || "Could not record payment", "error");
+      btn.disabled = false; btn.textContent = "Record payment";
+    }
+  };
+}
+
 // Job (contract) value, from the most authoritative contract on the project.
 function jobTotalCents() {
   const ks = (state?.contracts || []).slice();
@@ -389,7 +505,8 @@ function renderInvoices(host, invoices) {
       ${stat("Balance due", m(balanceDue), balanceDue > 0 ? "#B45309" : "#10B981")}
       ${(jobTotal && balanceDue === 0 && paidCents >= jobTotal) ? `<div style="background:#ECFDF5;color:#15803D;font-weight:700;font-size:13px;padding:6px 12px;border-radius:999px">✓ Paid in full</div>` : ""}
       <div style="flex:1;min-width:200px;text-align:right;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">
-        <button class="btn primary sm" onclick="createFullInvoice()">+ Full payment</button>
+        <button class="btn primary sm" onclick="jobRecordAnyPayment()">💵 Record a payment</button>
+        <button class="btn secondary sm" onclick="createFullInvoice()">+ Full payment</button>
         <button class="btn secondary sm" onclick="createInvoiceUI('deposit')">+ Deposit</button>
         <button class="btn secondary sm" onclick="createInvoiceUI('balance')">+ Balance</button>
         <button class="btn secondary sm" onclick="createInvoiceUI('custom')">+ Custom</button>

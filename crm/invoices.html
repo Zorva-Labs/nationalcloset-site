@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Invoices · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc103"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc104"/>
 <style>
   .inv-stats { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; }
   .inv-stat { flex: 1 1 160px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
@@ -20,12 +20,11 @@
   .tbl td.inv-act { text-align: right; white-space: nowrap; }
 </style></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc103"></script>
+<script src="/crm/crm-app.js?v=ncc104"></script>
 <script>
 (async () => {
   const user = await SSCrm.mount({
     title: "Invoices", subtitle: "Every invoice across all jobs", wide: true,
-    actions: `<button class="btn primary" onclick="recordLoosePayment()">＋ Record a payment</button>`,
   });
   if (!user) return;
   const page = document.getElementById("page");
@@ -124,77 +123,4 @@
   render();
 })();
 
-// ── Record a payment with no invoice behind it ───────────────────────────────
-// Money taken outside the normal 50/25/25 milestones (cash at the door, a check
-// for a small repair, a change order). Rather than a separate payments table —
-// which every report that reads `invoices` would silently miss — this creates a
-// one-line "custom" invoice, never emails it, and settles it in the same call.
-// The payment therefore lands in the ledger, the job balance and Reports like
-// any other.
-async function recordLoosePayment() {
-  const contact = await SSCrm.pickContact({ allowNew: true });
-  if (!contact) return;
-  const job = await SSCrm.pickJob(contact.id);
-  if (!job) return;
-
-  const today = new Date().toISOString().slice(0, 10);
-  const bg = document.createElement("div");
-  bg.className = "modal-bg";
-  bg.innerHTML = `
-    <div class="modal" style="max-width:460px">
-      <div class="modal-head">Record a payment · ${SSCrm.esc(contact.name)}</div>
-      <div class="modal-body">
-        <div class="form">
-          <p class="muted" style="font-size:12px;margin:0 0 4px">
-            For <strong>${SSCrm.esc(job.name || "this job")}</strong>. Creates a paid record on the job —
-            the customer is not emailed an invoice.</p>
-          <label><span>Amount</span><input id="lp-amt" type="text" inputmode="decimal" placeholder="$0.00" autofocus/></label>
-          <label><span>What was it for?</span><input id="lp-desc" placeholder="e.g. Cash on delivery, change order, repair call"/></label>
-          <div class="row">
-            <label><span>Method</span><select id="lp-method"><option>Cash</option><option>Check</option><option>Card</option><option>Bank transfer</option><option>Other</option></select></label>
-            <label><span>Reference <span class="muted" style="font-weight:400">(check #)</span></span><input id="lp-ref" placeholder="optional"/></label>
-          </div>
-          <label><span>Date received</span><input id="lp-date" type="date" value="${today}"/></label>
-          <label style="flex-direction:row;align-items:center;gap:8px;margin-top:2px">
-            <input id="lp-receipt" type="checkbox" style="width:16px;height:16px"/>
-            <span>Email the customer a receipt</span></label>
-        </div>
-      </div>
-      <div class="modal-foot">
-        <button class="btn ghost" data-cancel>Cancel</button>
-        <button class="btn primary" data-save>Record payment</button>
-      </div>
-    </div>`;
-  document.body.appendChild(bg);
-  const close = () => bg.remove();
-  bg.querySelector("[data-cancel]").onclick = close;
-  bg.addEventListener("click", (e) => { if (e.target === bg) close(); });
-  bg.querySelector("[data-save]").onclick = async () => {
-    const btn = bg.querySelector("[data-save]");
-    const amt = SSCrm.parseMoney(bg.querySelector("#lp-amt").value);
-    if (!amt || amt <= 0) { SSCrm.toast("Enter a valid amount", "error"); return; }
-    const label = bg.querySelector("#lp-method").value;
-    const ref = bg.querySelector("#lp-ref").value.trim();
-    btn.disabled = true; btn.textContent = "Saving…";
-    try {
-      await SSCrm.fetchJSON("/api/invoices", { method: "POST", body: JSON.stringify({
-        project_id: job.id,
-        type: "custom",
-        amount_cents: amt,
-        description: bg.querySelector("#lp-desc").value.trim() || "Payment received",
-        send: false,                 // never email an invoice for money already taken
-        mark_paid: true,
-        method: ref ? `${label} · ${ref}` : label,
-        paid_at: bg.querySelector("#lp-date").value,
-        send_receipt: bg.querySelector("#lp-receipt").checked,
-      })});
-      SSCrm.toast("Payment recorded", "success");
-      close();
-      location.reload();
-    } catch (e) {
-      SSCrm.toast(e.message || "Could not record payment", "error");
-      btn.disabled = false; btn.textContent = "Record payment";
-    }
-  };
-}
 </script></body></html>

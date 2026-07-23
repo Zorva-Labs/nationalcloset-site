@@ -1110,6 +1110,21 @@ function recordPayment(doc, opts = {}) {
   const dateLabel = opts.dateLabel || "Date received";
   const remaining = Math.max(0, (doc.amount_cents || 0) - (doc.amount_paid_cents || 0));
   const today = new Date().toISOString().slice(0, 10);
+
+  // One-tap amounts so an off-schedule payment doesn't need mental arithmetic.
+  // opts.jobBalanceCents (when the caller knows the whole-job figure) adds a
+  // "Full job balance" chip — the common case of a customer settling everything
+  // at once, which would otherwise mean adding up the remaining milestones.
+  const quickAmounts = [];
+  if (remaining > 0) {
+    quickAmounts.push({ cents: remaining, label: "This invoice · " + fmtMoney(remaining), title: "Remaining balance on this invoice" });
+    const half = Math.round(remaining / 2);
+    if (half > 0 && half !== remaining) quickAmounts.push({ cents: half, label: "Half · " + fmtMoney(half), title: "Half of this invoice's balance" });
+  }
+  const jobBal = opts.jobBalanceCents;
+  if (Number.isFinite(jobBal) && jobBal > 0 && jobBal !== remaining) {
+    quickAmounts.push({ cents: jobBal, label: "Full job balance · " + fmtMoney(jobBal), title: "Everything still owed on the whole job" });
+  }
   return new Promise((resolve) => {
     const bg = document.createElement("div");
     bg.className = "modal-bg";
@@ -1119,6 +1134,10 @@ function recordPayment(doc, opts = {}) {
         <div class="modal-body">
           <div class="form">
             <label><span>Amount</span><input id="rp-amt" type="text" value="${fmtMoney(remaining)}" inputmode="decimal"/></label>
+            <div id="rp-quick" style="display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 2px">
+              ${quickAmounts.map((q) => `<button type="button" class="btn ghost sm" data-amt="${q.cents}"
+                 style="font-size:12px;padding:4px 10px" title="${esc(q.title || "")}">${esc(q.label)}</button>`).join("")}
+            </div>
             <div class="row">
               <label><span>Method</span><select id="rp-method"><option>Check</option><option>Cash</option><option>Card</option><option>Bank transfer</option><option>Other</option></select></label>
               <label><span>Reference <span class="muted" style="font-weight:400">(check #, etc.)</span></span><input id="rp-ref" placeholder="optional"/></label>
@@ -1136,6 +1155,24 @@ function recordPayment(doc, opts = {}) {
     const close = (v) => { bg.remove(); resolve(v); };
     bg.querySelector("[data-cancel]").onclick = () => close(null);
     bg.addEventListener("click", (e) => { if (e.target === bg) close(null); });
+
+    // Quick-amount chips fill the field; the admin can still type any figure.
+    const amtI = bg.querySelector("#rp-amt");
+    const noteEl = document.createElement("p");
+    noteEl.className = "muted";
+    noteEl.style.cssText = "font-size:11px;margin:2px 0 0";
+    amtI.parentElement.appendChild(noteEl);
+    function checkAmt() {
+      const v = parseMoney(amtI.value);
+      noteEl.textContent = v > remaining
+        ? `Over this invoice's ${fmtMoney(remaining)} balance — the extra is credited to the job.`
+        : "";
+      noteEl.style.color = v > remaining ? "#B45309" : "";
+    }
+    bg.querySelectorAll("#rp-quick [data-amt]").forEach((b) => {
+      b.onclick = () => { amtI.value = fmtMoney(parseInt(b.dataset.amt, 10)); checkAmt(); amtI.focus(); };
+    });
+    amtI.addEventListener("input", checkAmt);
     bg.querySelector("[data-save]").onclick = async () => {
       const btn = bg.querySelector("[data-save]");
       const amt = parseMoney(bg.querySelector("#rp-amt").value);

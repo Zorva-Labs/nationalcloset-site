@@ -8,11 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc99" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc100" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc99"></script>
+<script src="/crm/crm-app.js?v=ncc100"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -347,7 +347,13 @@ async function loadInvoices() {
 async function jobRecordPayment(invId) {
   const inv = _jobInvoices.find((x) => x.id === invId);
   if (!inv) return;
-  const r = await SSCrm.recordPayment(inv);
+  // Pass the whole-job balance so the modal can offer a one-tap "Full job
+  // balance" — the common case of a customer settling everything at once
+  // instead of paying this milestone only.
+  const jobTotal = jobTotalCents();
+  const paid = (state.billing && state.billing.paid_cents) || 0;
+  const jobBalanceCents = jobTotal != null ? Math.max(0, jobTotal - paid) : undefined;
+  const r = await SSCrm.recordPayment(inv, { jobBalanceCents });
   if (r) loadInvoices();
 }
 

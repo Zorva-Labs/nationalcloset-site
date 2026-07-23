@@ -396,7 +396,13 @@ export async function markInvoicePaid(env, invoice, { method = "card", paymentIn
     const JOB = ["contracted", "scheduled_install", "installing", "completed"];
     if (proj && !JOB.includes(proj.status)) {
       await markProjectBooked(db, invoice.project_id, invoice.contract_id).catch((e) => console.error("[invoice/book]", String(e)));
-      await sendStageEmail(env, "contracted", invoice.project_id, { name: "deposit" }).catch((e) => console.error("[invoice/book-email]", String(e)));
+      // Respect the admin's "don't email the customer" choice. Booking the job
+      // is bookkeeping and always happens; the Booked email is customer-facing,
+      // so it has to honour the same suppression as the receipt below —
+      // otherwise unchecking the box still sends mail.
+      if (sendReceipt) {
+        await sendStageEmail(env, "contracted", invoice.project_id, { name: "deposit" }).catch((e) => console.error("[invoice/book-email]", String(e)));
+      }
     }
   }
 

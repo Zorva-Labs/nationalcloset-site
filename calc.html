@@ -120,11 +120,11 @@
       <label class="rate"><span>Materials ÷</span><input id="r-divisor" type="text" inputmode="decimal" value="2.0" autocomplete="off"/></label>
       <label class="rate"><span>Shipping</span><input id="r-shiprate" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Taxes</span><input id="r-taxrate" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
-      <label class="rate"><span>Labor</span><input id="r-laborrate" type="text" inputmode="decimal" value="15" autocomplete="off"/><i>%</i></label>
+      <label class="rate"><span>Labor</span><input id="r-laborrate" type="text" inputmode="decimal" value="10" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Mfr. discount</span><input id="r-matdisc" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Processing fee</span><input id="r-feerate" type="text" inputmode="decimal" value="3" autocomplete="off"/><i>%</i></label>
     </div>
-    <p class="hint">Defaults: materials = price ÷ 2.0, labor = 15% of price (min $350) and a 3% processing fee of net. Shipping, taxes &amp; the manufacturer discount default to 0 — set them as needed. The manufacturer discount comes off the materials cost; shipping = % of net materials; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the up-front payment; the processing fee comes out of profit.</p>
+    <p class="hint">Defaults: materials = price ÷ 2.0, labor = 10% of price (min $350) and a 3% processing fee of net. Shipping, taxes &amp; the manufacturer discount default to 0 — set them as needed. The manufacturer discount comes off the materials cost; shipping = % of net materials; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the up-front payment; the processing fee comes out of profit.</p>
 
     <label class="field" for="disc" style="margin-top:18px">Discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, comes out of profit</span></label>
     <div class="disc-wrap">
@@ -185,7 +185,7 @@
         <tr><td>Shipping <span class="pct" id="r-shiplbl">(5%)</span></td><td id="r-ship">$0</td></tr>
         <tr><td>Taxes <span class="pct" id="r-taxlbl">(0%)</span></td><td id="r-tax2">$0</td></tr>
         <tr class="muted"><td>= Hard costs <span class="pct">(deposit target)</span></td><td id="r-hard">$0</td></tr>
-        <tr><td>Labor <span class="pct" id="r-laborlbl">(15% of price · min $350, paid after install)</span></td><td id="r-labor">$0</td></tr>
+        <tr><td>Labor <span class="pct" id="r-laborlbl">(10% of price · min $350, paid after install)</span></td><td id="r-labor">$0</td></tr>
         <tr><td>Processing fee <span class="pct" id="r-feelbl">(3%)</span></td><td id="r-fee">$0</td></tr>
         <tr class="muted"><td>Total cost</td><td id="r-cost">$0</td></tr>
         <tr class="sep"><td>Gross quote</td><td id="r-gross">$0</td></tr>
@@ -199,7 +199,7 @@
 
 <script>
 (function () {
-  var DEF = { divisor: 2.0, ship: 0, tax: 0, labor: 15, matDisc: 0, fee: 3, disc: 0 };   // one honest price at 2.0 — no standing discount
+  var DEF = { divisor: 2.0, ship: 0, tax: 0, labor: 10, matDisc: 0, fee: 3, disc: 0 };   // one honest price at 2.0 — no standing discount
   var el = function (id) { return document.getElementById(id); };
   var gross = el("gross"), disc = el("disc");
 

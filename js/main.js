@@ -461,3 +461,37 @@
     } else { fp.classList.add("is-flying"); }
   } catch (e) { /* never break the page over a flourish */ }
 })();
+
+/* ---------- Engagement time (first-party, blocker-resistant) ----------
+   Measures how many seconds the visitor actively spends on this page (tab
+   visible) and reports it to our OWN /api/pv-time via sendBeacon when they
+   leave or background the tab. Same-origin, so ad blockers don't stop it the
+   way they stop google-analytics.com. Purely additive — never affects the page. */
+(function () {
+  try {
+    var path = location.pathname;
+    if (/^\/(crm|api)(\/|$)/.test(path)) return;   // never track admin/API
+    var activeMs = 0, last = Date.now(), visible = !document.hidden, sent = false;
+
+    function accrue() { if (visible) { var now = Date.now(); activeMs += now - last; last = now; } }
+    function send() {
+      accrue();
+      if (sent) return;
+      var secs = Math.round(activeMs / 1000);
+      if (secs < 1 || secs > 3600) return;
+      sent = true;
+      try {
+        var body = JSON.stringify({ p: path, s: secs });
+        if (navigator.sendBeacon) navigator.sendBeacon("/api/pv-time", body);
+        else fetch("/api/pv-time", { method: "POST", body: body, keepalive: true });
+      } catch (e) {}
+    }
+    document.addEventListener("visibilitychange", function () {
+      accrue();
+      if (document.hidden) { visible = false; send(); }   // backgrounding = leaving (mobile-safe)
+      else { visible = true; last = Date.now(); }
+    });
+    window.addEventListener("pagehide", send);
+    window.addEventListener("beforeunload", send);
+  } catch (e) { /* engagement tracking is best-effort */ }
+})();

@@ -17,7 +17,7 @@ export async function onRequestGet(context) {
 
   const q = (sql) => DB.prepare(sql).bind(since).all().catch(() => ({ results: [] }));
 
-  const [channelsR, pagesR, totalsR] = await Promise.all([
+  const [channelsR, pagesR, totalsR, engPageR, engAllR] = await Promise.all([
     q(`SELECT channel, COUNT(*) AS n FROM pageviews
         WHERE created_at >= datetime('now', ?1) AND is_entry = 1
         GROUP BY channel ORDER BY n DESC`),
@@ -26,14 +26,26 @@ export async function onRequestGet(context) {
         GROUP BY path ORDER BY n DESC LIMIT 15`),
     q(`SELECT COUNT(*) AS visits, SUM(is_entry) AS entries FROM pageviews
         WHERE created_at >= datetime('now', ?1)`),
+    // Avg engagement seconds per page (from the first-party beacon).
+    q(`SELECT path, ROUND(AVG(seconds)) AS avg_s, COUNT(*) AS samples FROM page_engagement
+        WHERE created_at >= datetime('now', ?1) GROUP BY path`),
+    q(`SELECT ROUND(AVG(seconds)) AS avg_s, COUNT(*) AS samples FROM page_engagement
+        WHERE created_at >= datetime('now', ?1)`),
   ]);
 
   const channels = channelsR.results || [];
   const pages = pagesR.results || [];
   const t = (totalsR.results || [])[0] || {};
+  const engByPath = {};
+  for (const r of (engPageR.results || [])) engByPath[r.path] = r.avg_s || 0;
+  const eng = (engAllR.results || [])[0] || {};
+
   return json({
     channels,
     pages,
+    engByPath,
+    avg_seconds: eng.avg_s || 0,
+    eng_samples: eng.samples || 0,
     visits: t.visits || 0,
     entries: t.entries || 0,
     days: span,

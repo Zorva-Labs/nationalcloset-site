@@ -114,22 +114,27 @@ function logPageview(context, url, country) {
     let refHost = "";
     const ref = req.headers.get("referer") || "";
     if (ref) { try { refHost = new URL(ref).hostname.replace(/^www\./, "").toLowerCase(); } catch (e) {} }
-    if (refHost && refHost === ourHost) return; // internal navigation, not an entry
 
+    // Every public pageview is logged (so we get true per-page traffic and a
+    // clean visitor count that already excludes /crm, bots and non-US). An
+    // "entry" is a session-starting hit — external/empty referrer or an ad
+    // click — versus internal navigation (referrer is our own host). Only
+    // entries carry an acquisition channel.
+    const isEntry = !(refHost && refHost === ourHost);
     const gclid = url.searchParams.get("gclid") || url.searchParams.get("wbraid") || url.searchParams.get("gbraid");
     const utmSource = url.searchParams.get("utm_source");
     const utmMedium = url.searchParams.get("utm_medium");
-    const channel = classifyChannel(utmSource, gclid, refHost);
+    const channel = isEntry ? classifyChannel(utmSource, gclid, refHost) : "Internal";
 
     const db = context.env && context.env.DB;
     if (!db) return;
     context.waitUntil(
       db.prepare(
-        "INSERT INTO pageviews (path, channel, referrer_host, utm_source, utm_medium, gclid, country) VALUES (?1,?2,?3,?4,?5,?6,?7)"
+        "INSERT INTO pageviews (path, channel, referrer_host, utm_source, utm_medium, gclid, country, is_entry) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)"
       ).bind(
         p.slice(0, 300), channel, refHost.slice(0, 120) || null,
         (utmSource || "").slice(0, 80) || null, (utmMedium || "").slice(0, 80) || null,
-        gclid ? 1 : 0, (country || "").slice(0, 4) || null
+        gclid ? 1 : 0, (country || "").slice(0, 4) || null, isEntry ? 1 : 0
       ).run().catch(() => {})
     );
   } catch (e) { /* never break the request over analytics */ }

@@ -76,10 +76,17 @@ export async function onRequest(context) {
   //    — allow rather than risk false blocks.
   const country = (request.cf && request.cf.country) || request.headers.get("cf-ipcountry") || "";
   if (!country || ALLOWED_COUNTRIES.has(country)) {
-    // Allowed visitor → log the entry's acquisition channel (blocker-proof,
-    // server-side). Side effect only; never blocks or breaks the response.
-    logPageview(context, url, country);
-    return next();
+    // Allowed visitor. Fetch the response first, then log the pageview ONLY if
+    // it's a real page (200 + HTML) — so bot probes to non-existent URLs
+    // (/contact, /wp-login, etc.) that 404 never pollute the traffic counts.
+    const res = await next();
+    try {
+      const ct = (res && res.headers.get("content-type")) || "";
+      if (res && res.status === 200 && ct.includes("text/html")) {
+        logPageview(context, url, country);
+      }
+    } catch (e) { /* never let logging affect the response */ }
+    return res;
   }
 
   // 4) Outside the US → blocked.

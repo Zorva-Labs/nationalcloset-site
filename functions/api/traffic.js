@@ -47,8 +47,9 @@ export async function onRequestGet(context) {
     }
   } } }`;
 
-  // Hourly over the last 7 days → aggregate into 24 local-hour buckets.
-  const hStart = isoDT(new Date(now.getTime() - 7 * DAY));
+  // Hourly over the last 3 days → aggregate into 24 local-hour buckets.
+  // (Cloudflare's free plan caps the hourly dataset at a 3-day range.)
+  const hStart = isoDT(new Date(now.getTime() - 3 * DAY));
   const hourlyQ = `query { viewer { zones(filter: {zoneTag: "${ZONE}"}) {
     httpRequests1hGroups(limit: 200, filter: {datetime_geq: "${hStart}", datetime_leq: "${isoDT(now)}"}, orderBy: [datetime_ASC]) {
       dimensions { datetime }

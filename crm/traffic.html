@@ -101,6 +101,10 @@
       </div>
       <div style="margin-top:8px">${rows}</div>
     </div>
+    <div class="card" id="channels-card" style="margin-bottom:16px">
+      <div class="card-head"><h2>Traffic channels · where visitors come from</h2><a class="more" href="/crm/leads.html">Lead sources →</a></div>
+      <div style="padding:18px;text-align:center;color:var(--ink-soft);font-size:13px">Loading channels…</div>
+    </div>
     <div class="dash" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div class="card">
         <div class="card-head"><h2>Traffic sources · by country</h2></div>
@@ -125,7 +129,51 @@
       Totals include automated bots, so treat them as an upper bound on human visitors.
     </p>
   `;
+
+  loadChannels();
 })();
+
+// Real acquisition channels from the server-side pageview log — starts empty
+// (logging began now) and fills in as visitors arrive. Blocker/GA-independent.
+async function loadChannels() {
+  const card = document.getElementById("channels-card");
+  if (!card) return;
+  const body = card.querySelector("div:last-child");
+  let data;
+  try { data = await SSCrm.fetchJSON("/api/traffic-channels?days=30"); }
+  catch (e) { body.innerHTML = `<div style="padding:18px;text-align:center;color:var(--ink-soft);font-size:13px">Couldn't load channels.</div>`; return; }
+  const channels = (data && data.channels) || [];
+  if (!channels.length) {
+    body.innerHTML = `<div style="padding:18px;text-align:center;color:var(--ink-soft);font-size:13px">No channel data yet — this starts collecting now and fills in as visitors arrive. Check back in a day or two.</div>`;
+    return;
+  }
+  const N = (n) => n.toLocaleString();
+  const total = channels.reduce((s, c) => s + c.n, 0) || 1;
+  const max = channels[0].n || 1;
+  const color = (name) => {
+    const k = name.toLowerCase();
+    if (k.includes("google ads")) return "#2563EB";
+    if (k.includes("google")) return "#15803D";
+    if (k.includes("facebook") || k.includes("insta")) return "#7C3AED";
+    if (k.includes("ai")) return "#0D9488";
+    if (k === "direct") return "#94A3B8";
+    return "var(--accent)";
+  };
+  body.outerHTML = `<div style="margin-top:6px">${channels.map((c) => `
+    <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-soft)">
+      <span style="min-width:150px;font-size:13px;color:var(--ink);font-weight:600">${SSCrm.esc(c.channel || "Unknown")}</span>
+      <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden">
+        <span style="display:block;height:100%;background:${color(c.channel || "")};width:${Math.round((c.n / max) * 100)}%"></span>
+      </span>
+      <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:40px;text-align:right">${N(c.n)}</span>
+      <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:40px;text-align:right;font-size:12px">${Math.round((c.n / total) * 100)}%</span>
+    </div>`).join("")}
+    <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">
+      Real acquisition channels for <strong>${N(total)}</strong> US visitor entries in the last 30 days — logged at the edge,
+      so it's immune to ad blockers and GA filters. This is your true "where did they come from" for <em>all</em> traffic
+      (not just the ones who filled out a form).
+    </p>`;
+}
 </script>
 </body>
 </html>

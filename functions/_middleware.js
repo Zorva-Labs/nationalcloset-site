@@ -1,4 +1,4 @@
-// Geo-gate: the public site is reachable only from the United States + Canada.
+// Geo-gate: the public site is reachable only from the United States.
 //
 // Always allowed regardless of country:
 //   - Search / AI crawlers (Google, Bing, OpenAI, Anthropic, Perplexity, …) by
@@ -8,9 +8,9 @@
 //     get blocked by geography (the CRM is auth-protected anyway).
 //
 // Everything else (marketing pages, customer portals, the public /api/public/*
-// endpoints) is blocked outside the US/CA with a 403.
+// endpoints) is blocked outside the US with a 403.
 
-const ALLOWED_COUNTRIES = new Set(["US", "CA"]);
+const ALLOWED_COUNTRIES = new Set(["US"]);
 
 // User-agent substrings (lowercase) for crawlers we always allow.
 const BOT_UA = [
@@ -75,9 +75,14 @@ export async function onRequest(context) {
   //    A missing value means we're not behind the CF edge (local dev / preview)
   //    — allow rather than risk false blocks.
   const country = (request.cf && request.cf.country) || request.headers.get("cf-ipcountry") || "";
-  if (!country || ALLOWED_COUNTRIES.has(country)) return next();
+  if (!country || ALLOWED_COUNTRIES.has(country)) {
+    // Allowed visitor → log the entry's acquisition channel (blocker-proof,
+    // server-side). Side effect only; never blocks or breaks the response.
+    logPageview(context, url, country);
+    return next();
+  }
 
-  // 4) Outside the US/CA → blocked.
+  // 4) Outside the US → blocked.
   return new Response(blockedPage(), {
     status: 403,
     headers: {
@@ -88,10 +93,77 @@ export async function onRequest(context) {
   });
 }
 
+// Record a public-page ENTRY with its acquisition channel, straight into D1.
+// Runs only for allowed (US) human visitors on real page navigations — bots
+// are already returned above, static assets bypass, and internal navigations
+// (referrer is our own host) are skipped so this counts entries, not clicks
+// around the site. Wrapped so a failure can never affect the response.
+function logPageview(context, url, country) {
+  try {
+    const req = context.request;
+    if (req.method !== "GET") return;
+    const p = url.pathname;
+    if (p.startsWith("/api/") || p.startsWith("/crm/")) return;
+
+    const dest = req.headers.get("sec-fetch-dest");
+    const accept = req.headers.get("accept") || "";
+    const isDoc = dest === "document" || (dest == null && accept.includes("text/html"));
+    if (!isDoc) return;
+
+    const ourHost = url.hostname.replace(/^www\./, "").toLowerCase();
+    let refHost = "";
+    const ref = req.headers.get("referer") || "";
+    if (ref) { try { refHost = new URL(ref).hostname.replace(/^www\./, "").toLowerCase(); } catch (e) {} }
+    if (refHost && refHost === ourHost) return; // internal navigation, not an entry
+
+    const gclid = url.searchParams.get("gclid") || url.searchParams.get("wbraid") || url.searchParams.get("gbraid");
+    const utmSource = url.searchParams.get("utm_source");
+    const utmMedium = url.searchParams.get("utm_medium");
+    const channel = classifyChannel(utmSource, gclid, refHost);
+
+    const db = context.env && context.env.DB;
+    if (!db) return;
+    context.waitUntil(
+      db.prepare(
+        "INSERT INTO pageviews (path, channel, referrer_host, utm_source, utm_medium, gclid, country) VALUES (?1,?2,?3,?4,?5,?6,?7)"
+      ).bind(
+        p.slice(0, 300), channel, refHost.slice(0, 120) || null,
+        (utmSource || "").slice(0, 80) || null, (utmMedium || "").slice(0, 80) || null,
+        gclid ? 1 : 0, (country || "").slice(0, 4) || null
+      ).run().catch(() => {})
+    );
+  } catch (e) { /* never break the request over analytics */ }
+}
+
+// Map an entry to a marketing channel, most-specific first.
+function classifyChannel(utmSource, gclid, refHost) {
+  if (gclid) return "Google Ads";
+  const s = (utmSource || "").toLowerCase();
+  if (s) {
+    if (s.includes("google")) return "Google Ads";
+    if (s.includes("face") || s === "fb" || s.includes("meta") || s.includes("insta") || s === "ig") return "Facebook/Instagram";
+    if (s.includes("bing")) return "Bing";
+    return utmSource;
+  }
+  const h = (refHost || "").toLowerCase();
+  if (!h) return "Direct";
+  if (h.includes("google")) return "Google (organic)";
+  if (h.includes("bing")) return "Bing";
+  if (h.includes("duckduckgo")) return "DuckDuckGo";
+  if (h.includes("yahoo")) return "Yahoo";
+  if (h.includes("facebook") || h.startsWith("fb.") || h.includes("instagram")) return "Facebook/Instagram";
+  if (h.includes("chatgpt") || h.includes("openai") || h.includes("perplexity") || h.includes("claude") || h.includes("gemini") || h.includes("copilot")) return "AI search";
+  if (h.includes("houzz")) return "Houzz";
+  if (h.includes("yelp")) return "Yelp";
+  if (h.includes("nextdoor")) return "Nextdoor";
+  if (h.includes("t.co") || h.includes("twitter") || h.includes("x.com")) return "X/Twitter";
+  return h; // any other referral host
+}
+
 function blockedPage() {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Available in the U.S. & Canada</title>
+<title>Available in the United States</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&display=swap" rel="stylesheet"/>
@@ -105,8 +177,8 @@ function blockedPage() {
 </style></head>
 <body><div class="card">
   <img src="/img/ncc-logo-nc.png" alt="National Closet Company"/>
-  <h1>We're available in the U.S. &amp; Canada</h1>
-  <p>National Closet Company serves homeowners across the United States and Canada. This site isn't available in your region.</p>
+  <h1>We're available in the United States</h1>
+  <p>National Closet Company serves homeowners across the United States. This site isn't available in your region.</p>
   <p>If you believe you're seeing this in error, reach us at <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> or <a href="tel:+16292988241">629-298-8241</a>.</p>
 </div></body></html>`;
 }

@@ -222,7 +222,7 @@ async function openAppt(id) {
           <button class="btn primary" data-edit>✎ Edit</button>
           ${(a.email && ["consultation", "measure"].includes((a.type || "").toLowerCase())) ? `<button class="btn secondary" data-confirm>✉ Send confirmation</button>` : ""}
           ${a.status !== "completed" ? `<button class="btn secondary" data-status="completed">Mark completed</button>` : ""}
-          ${a.status !== "cancelled" ? `<button class="btn danger" data-status="cancelled">Cancel</button>` : ""}
+          ${a.status !== "cancelled" ? `<button class="btn danger" data-status="cancelled">Cancel Consult</button>` : ""}
         </div>
       </div>`;
     bg.querySelector("[data-close]").onclick = () => bg.remove();

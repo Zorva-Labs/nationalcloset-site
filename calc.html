@@ -42,7 +42,12 @@
   .rate span{font-size:.82rem;font-weight:700;color:var(--ink-soft);white-space:nowrap}
   .rate input{flex:1;min-width:0;width:100%;border:0;outline:none;font-size:1.15rem;font-weight:800;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums;background:transparent}
   .rate i{font-style:normal;font-weight:700;color:var(--ink-mute)}
+  .rate .unit-btn{font-family:inherit;font-style:normal;font-weight:800;color:var(--ink-mute);cursor:pointer;background:var(--fog);border:0;border-radius:6px;width:28px;height:28px;flex:none;font-size:1rem}
+  .rate .unit-btn:hover{background:var(--clay-wash);color:var(--clay-deep)}
   @media(max-width:440px){.rates{grid-template-columns:1fr}}
+  .opts{display:flex;flex-direction:column;gap:12px;margin-top:16px;padding:14px;background:var(--fog);border-radius:12px}
+  .opt{display:flex;align-items:center;gap:10px;font-size:.95rem;font-weight:600;color:var(--ink);cursor:pointer}
+  .opt input{width:19px;height:19px;accent-color:var(--clay);cursor:pointer;flex:none}
   .btns{display:flex;gap:10px;margin-top:18px}
   .btns button{font-family:inherit;font-weight:800;font-size:1.05rem;border-radius:10px;border:2px solid var(--ink);cursor:pointer;padding:13px 0;transition:transform .06s,background .15s,color .15s}
   .btns button:active{transform:translateY(1px)}
@@ -118,13 +123,18 @@
     <label class="field" style="margin-top:18px">Rates <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· adjust the formula</span></label>
     <div class="rates">
       <label class="rate"><span>Materials ÷</span><input id="r-divisor" type="text" inputmode="decimal" value="2.0" autocomplete="off"/></label>
-      <label class="rate"><span>Shipping</span><input id="r-shiprate" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
+      <label class="rate"><span>Shipping</span><input id="r-shiprate" type="text" inputmode="decimal" value="0" autocomplete="off"/><button type="button" class="unit-btn" id="ship-unit" title="Toggle percent or dollar amount">%</button></label>
       <label class="rate"><span>Taxes</span><input id="r-taxrate" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Labor</span><input id="r-laborrate" type="text" inputmode="decimal" value="10" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Mfr. discount</span><input id="r-matdisc" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Processing fee</span><input id="r-feerate" type="text" inputmode="decimal" value="3" autocomplete="off"/><i>%</i></label>
     </div>
-    <p class="hint">Defaults: materials = price ÷ 2.0, labor = 10% of price (min $350) and a 3% processing fee of net. Shipping, taxes &amp; the manufacturer discount default to 0 — set them as needed. The manufacturer discount comes off the materials cost; shipping = % of net materials; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the up-front payment; the processing fee comes out of profit.</p>
+    <p class="hint">Defaults: materials = price ÷ 2.0, labor = 10% of price (min $350) and a 3% processing fee of net. Shipping, taxes &amp; the manufacturer discount default to 0 — set them as needed. The manufacturer discount comes off the materials cost; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the up-front payment; the processing fee comes out of profit. Tap the <b>%</b> next to Shipping to switch it to a flat <b>$</b> amount.</p>
+
+    <div class="opts">
+      <label class="opt"><input type="checkbox" id="self-install"/> I'm installing it — <b style="font-weight:800">no labor cost</b></label>
+      <label class="opt"><input type="checkbox" id="pay-full"/> Client pays in <b style="font-weight:800">full</b> — one payment, not 3</label>
+    </div>
 
     <label class="field" for="disc" style="margin-top:18px">Discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, comes out of profit</span></label>
     <div class="disc-wrap">
@@ -146,15 +156,15 @@
 
   <div id="out" hidden>
     <div class="deposit">
-      <div class="lbl">Minimum up front to quote</div>
+      <div class="lbl" id="d-lbl">Minimum up front to quote</div>
       <div class="big" id="d-min">$0</div>
       <div class="sub2" id="d-minpct">— of the job</div>
-      <div class="covers">At least 50% of the job — and always covers your <b id="d-mat">$0</b> in materials, shipping &amp; taxes. The rest bills 25% at scheduling, 25% on install day.</div>
+      <div class="covers" id="d-covers">At least 50% of the job — and always covers your <b id="d-mat">$0</b> in materials, shipping &amp; taxes. The rest bills 25% at scheduling, 25% on install day.</div>
     </div>
 
     <div id="note" class="note"></div>
 
-    <div class="split">
+    <div class="split" id="split">
       <div class="mini">
         <div class="mini-txt">
           <div class="l">1 · At signing</div>
@@ -223,6 +233,12 @@
   }
   var rDiv = el("r-divisor"), rShip = el("r-shiprate"), rTax = el("r-taxrate"), rLabor = el("r-laborrate"), rMatDisc = el("r-matdisc"), rFee = el("r-feerate");
 
+  // Shipping can be entered as a % of net materials OR a flat $ amount.
+  var shipMode = "pct", shipUnit = el("ship-unit");
+  function toggleShip() { shipMode = shipMode === "pct" ? "usd" : "pct"; shipUnit.textContent = shipMode === "pct" ? "%" : "$"; render(); }
+  shipUnit.addEventListener("click", toggleShip);
+  var cbSelfInstall = el("self-install"), cbPayFull = el("pay-full");
+
   // Read a rate input; fall back to the default on blank/invalid.
   function rate(inp, def, isDivisor) {
     var v = parseFloat((inp.value || "").replace(/[^0-9.]/g, ""));
@@ -232,11 +248,14 @@
   function rates() {
     return {
       divisor: rate(rDiv, DEF.divisor, true),
-      shipRate: rate(rShip, DEF.ship) / 100,
+      shipMode: shipMode,
+      shipRaw: rate(rShip, DEF.ship),                   // raw number entered
+      shipRate: rate(rShip, DEF.ship) / 100,            // as a fraction (% mode)
       taxRate: rate(rTax, DEF.tax) / 100,
       laborRate: rate(rLabor, DEF.labor) / 100,
       matDiscRate: rate(rMatDisc, DEF.matDisc) / 100,   // manufacturer discount on materials
       feeRate: rate(rFee, DEF.fee) / 100,               // payment-processing fee on net
+      selfInstall: cbSelfInstall.checked,               // you install it → no labor
     };
   }
 
@@ -252,10 +271,11 @@
     var matList = r.divisor > 0 ? Math.round(priceCents / r.divisor) : 0;    // divisor 0 → no materials
     var matDisc = Math.round(matList * r.matDiscRate);   // manufacturer discount (credit)
     var materials = matList - matDisc;                   // net materials cost we actually pay
-    // Shipping & taxes follow the net (post-discount) materials.
-    var shipping = Math.round(materials * r.shipRate);
+    // Shipping is either a flat $ amount or a % of net materials; taxes follow.
+    var shipping = r.shipMode === "usd" ? Math.round(r.shipRaw * 100) : Math.round(materials * r.shipRate);
     var taxes = Math.round((materials + shipping) * r.taxRate);
-    var labor = priceCents > 0 ? Math.max(Math.round(priceCents * r.laborRate), 35000) : 0; // min $350
+    // Labor = 10% of price (min $350) — unless you're installing it yourself.
+    var labor = (r.selfInstall || priceCents <= 0) ? 0 : Math.max(Math.round(priceCents * r.laborRate), 35000);
     var hard = materials + shipping + taxes;             // up-front hard costs (net of discount)
     return { matList: matList, matDisc: matDisc, materials: materials, shipping: shipping, tax: taxes, labor: labor, hard: hard, cost: hard + labor };
   }
@@ -283,26 +303,39 @@
     var totalCost = f.cost + fee;
     var profit = net - totalCost;
 
-    el("d-min").textContent = money(deposit);
-    el("d-minpct").textContent = pct(deposit, net) + " of the " + (discount > 0 ? "net " : "") + "job";
-    el("d-mat").textContent = money(f.hard);
-    // Payments 2 and 3 split what's left after the deposit evenly (25%/25% of
-    // the job when the deposit lands at the standard 50%).
-    var rest = Math.max(0, net - deposit);
-    var atScheduling = Math.round(rest / 2);
-    el("d-half").textContent = money(deposit);
-    el("d-sched").textContent = money(atScheduling);
-    el("d-bal").textContent = money(rest - atScheduling);
-
-    var note = el("note");
-    if (f.hard <= half) {
-      note.className = "note ok";
-      note.innerHTML = '<span class="ic">✓</span><div>The <b>50% up front</b> (' + money(half) + ') already covers your <b>' + money(f.hard) + '</b> in materials, shipping &amp; taxes, with ' + money(half - f.hard) + ' to spare. The rest bills 25% at scheduling and 25% on install day.</div>';
-      el("d-halfnote").textContent = "50% · covers hard costs ✓";
+    // Pay-in-full shows a single payment; otherwise the 50/25/25 schedule.
+    var payFull = cbPayFull.checked;
+    if (payFull) {
+      el("d-lbl").textContent = "Paid in full";
+      el("d-min").textContent = money(net);
+      el("d-minpct").textContent = "100% — one payment";
+      el("d-covers").innerHTML = "One payment of <b>" + money(net) + "</b> — covers materials, shipping, taxes" + (f.labor > 0 ? ", labor" : "") + " and your profit.";
+      el("split").hidden = true;
+      el("note").hidden = true;
     } else {
-      note.className = "note warn";
-      note.innerHTML = '<span class="ic">!</span><div>Hard costs (<b>' + money(f.hard) + '</b>) exceed 50%, so the up-front payment is bumped to <b>' + money(deposit) + '</b> (' + pct(deposit, net) + ') to cover them. The remaining ' + money(rest) + ' splits evenly between scheduling and install day.</div>';
-      el("d-halfnote").textContent = "raised to cover hard costs";
+      el("d-lbl").textContent = "Minimum up front to quote";
+      el("split").hidden = false;
+      el("note").hidden = false;
+      el("d-min").textContent = money(deposit);
+      el("d-minpct").textContent = pct(deposit, net) + " of the " + (discount > 0 ? "net " : "") + "job";
+      el("d-covers").innerHTML = 'At least 50% of the job — and always covers your <b>' + money(f.hard) + '</b> in materials, shipping &amp; taxes. The rest bills 25% at scheduling, 25% on install day.';
+      // Payments 2 and 3 split what's left after the deposit evenly.
+      var rest = Math.max(0, net - deposit);
+      var atScheduling = Math.round(rest / 2);
+      el("d-half").textContent = money(deposit);
+      el("d-sched").textContent = money(atScheduling);
+      el("d-bal").textContent = money(rest - atScheduling);
+
+      var note = el("note");
+      if (f.hard <= half) {
+        note.className = "note ok";
+        note.innerHTML = '<span class="ic">✓</span><div>The <b>50% up front</b> (' + money(half) + ') already covers your <b>' + money(f.hard) + '</b> in materials, shipping &amp; taxes, with ' + money(half - f.hard) + ' to spare. The rest bills 25% at scheduling and 25% on install day.</div>';
+        el("d-halfnote").textContent = "50% · covers hard costs ✓";
+      } else {
+        note.className = "note warn";
+        note.innerHTML = '<span class="ic">!</span><div>Hard costs (<b>' + money(f.hard) + '</b>) exceed 50%, so the up-front payment is bumped to <b>' + money(deposit) + '</b> (' + pct(deposit, net) + ') to cover them. The remaining ' + money(rest) + ' splits evenly between scheduling and install day.</div>';
+        el("d-halfnote").textContent = "raised to cover hard costs";
+      }
     }
 
     var pctStr = function (frac) { return "(" + (+(frac * 100).toFixed(4)) + "%)"; };
@@ -313,10 +346,12 @@
     el("r-hard").textContent = money(f.hard);
     el("r-matlbl").textContent = "(price ÷ " + (+r.divisor.toFixed(4)) + ")";
     el("r-matdisclbl").textContent = pctStr(r.matDiscRate);
-    el("r-shiplbl").textContent = pctStr(r.shipRate);
+    el("r-shiplbl").textContent = r.shipMode === "usd" ? "(flat amount)" : pctStr(r.shipRate);
     el("r-taxlbl").textContent = pctStr(r.taxRate);
-    el("r-laborlbl").textContent = "(" + (+(r.laborRate * 100).toFixed(4)) + "% of price · min $350, paid after install)";
+    el("r-laborlbl").textContent = r.selfInstall ? "(you're installing — no labor cost)" : "(" + (+(r.laborRate * 100).toFixed(4)) + "% of price · min $350, paid after install)";
     el("r-labor").textContent = money(f.labor);
+    rLabor.disabled = r.selfInstall;
+    rLabor.style.opacity = r.selfInstall ? ".4" : "";
     el("r-fee").textContent = money(fee);
     el("r-feelbl").textContent = pctStr(r.feeRate);
     el("r-cost").textContent = money(totalCost);
@@ -337,6 +372,7 @@
 
   var inputs = [gross, disc, rDiv, rShip, rTax, rLabor, rMatDisc, rFee];
   inputs.forEach(function (i) { i.addEventListener("input", render); });
+  [cbSelfInstall, cbPayFull].forEach(function (c) { c.addEventListener("change", render); });
 
   // = recomputes and scrolls the result into view (handy on mobile).
   el("eq").addEventListener("click", function () {
@@ -351,6 +387,8 @@
     disc.value = String(DEF.disc);
     rDiv.value = String(DEF.divisor); rShip.value = String(DEF.ship); rTax.value = String(DEF.tax);
     rLabor.value = String(DEF.labor); rMatDisc.value = String(DEF.matDisc); rFee.value = String(DEF.fee);
+    cbSelfInstall.checked = false; cbPayFull.checked = false;
+    if (shipMode !== "pct") { shipMode = "pct"; shipUnit.textContent = "%"; }
     window.setDiscMode("usd");   // no standing discount — also triggers a render
   }
   el("ac").addEventListener("click", function () {

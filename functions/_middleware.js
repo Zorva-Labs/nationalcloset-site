@@ -110,7 +110,8 @@ function logPageview(context, url, country) {
     const req = context.request;
     if (req.method !== "GET") return;
     const p = url.pathname;
-    if (p.startsWith("/api/") || p.startsWith("/crm/")) return;
+    // Never count admin/API or the internal /calc pricing tool as visitor traffic.
+    if (p.startsWith("/api/") || p.startsWith("/crm/") || p === "/calc" || p === "/calc.html") return;
 
     const dest = req.headers.get("sec-fetch-dest");
     const accept = req.headers.get("accept") || "";

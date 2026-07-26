@@ -146,7 +146,11 @@ function classifyChannel(utmSource, gclid, refHost) {
   const s = (utmSource || "").toLowerCase();
   if (s) {
     if (s.includes("google")) return "Google Ads";
-    if (s.includes("face") || s === "fb" || s.includes("meta") || s.includes("insta") || s === "ig") return "Facebook/Instagram";
+    // Facebook/Meta dynamic {{site_source_name}} placement codes.
+    if (s === "an") return "Facebook Audience Network";
+    if (s === "ig" || s.includes("insta")) return "Instagram";
+    if (s === "msg" || s.includes("messenger")) return "Messenger";
+    if (s === "fb" || s.includes("face") || s.includes("meta")) return "Facebook";
     if (s.includes("bing")) return "Bing";
     return utmSource;
   }

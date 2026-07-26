@@ -68,9 +68,14 @@
           ${renderDistribution(d.distribution)}
         </div>
 
-        <div class="card">
+        <div class="card" style="margin-bottom:16px">
           <div class="card-head"><h2>Lead sources · last 30 days</h2><a class="more" href="/crm/leads.html">All leads →</a></div>
           ${renderLeadSources(d.lead_sources)}
+        </div>
+
+        <div class="card" id="traffic-card">
+          <div class="card-head"><h2>Site traffic · last 7 days</h2><span class="more" style="cursor:default" title="Counted at Cloudflare's edge — immune to ad blockers, GA filters and reporting lag">via Cloudflare</span></div>
+          <div style="padding:20px;text-align:center;color:var(--ink-soft);font-size:13px">Loading traffic…</div>
         </div>
       </div>
 
@@ -83,7 +88,49 @@
       </div>
     </div>
   `;
+
+  loadTraffic();
 })();
+
+// True site traffic from Cloudflare's edge — loaded separately so a slow
+// external call never blocks the dashboard. Immune to blockers/GA filters.
+async function loadTraffic() {
+  const card = document.getElementById("traffic-card");
+  if (!card) return;
+  try {
+    const { days, error } = await SSCrm.fetchJSON("/api/traffic");
+    const body = card.querySelector("div:last-child");
+    if (error || !days || !days.length) {
+      body.innerHTML = `<div style="padding:20px;text-align:center;color:var(--ink-soft);font-size:13px">Traffic data unavailable.</div>`;
+      return;
+    }
+    body.outerHTML = renderTraffic(days);
+  } catch (e) {
+    const body = card.querySelector("div:last-child");
+    if (body) body.innerHTML = `<div style="padding:20px;text-align:center;color:var(--ink-soft);font-size:13px">Couldn't load traffic.</div>`;
+  }
+}
+
+function renderTraffic(days) {
+  const max = Math.max(...days.map((d) => d.pageViews), 1);
+  const totalPV = days.reduce((s, d) => s + d.pageViews, 0);
+  const totalU = days.reduce((s, d) => s + d.uniques, 0);
+  const fmtDay = (iso) => { const [y, m, dd] = iso.split("-"); return `${+m}/${+dd}`; };
+  return `<div style="display:flex;flex-direction:column;gap:6px">${days.map((d) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 0">
+      <span style="font-size:13px;color:var(--ink);min-width:44px">${fmtDay(d.date)}</span>
+      <span style="flex:1;height:6px;background:var(--bg-soft);border-radius:3px;overflow:hidden">
+        <span style="display:block;height:100%;background:var(--accent);width:${Math.round((d.pageViews / max) * 100)}%"></span>
+      </span>
+      <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:44px;text-align:right">${d.pageViews.toLocaleString()}</span>
+      <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:52px;text-align:right;font-size:12px">${d.uniques.toLocaleString()} uniq</span>
+    </div>`).join("")}
+    <div style="margin-top:6px;padding-top:8px;border-top:1px solid var(--line-soft);display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft)">
+      <span><b style="color:var(--ink)">${totalPV.toLocaleString()}</b> page views · <b style="color:var(--ink)">${totalU.toLocaleString()}</b> visitors</span>
+      <span>Includes bots · edge-counted</span>
+    </div>
+  </div>`;
+}
 
 function renderAttention(a) {
   const items = [];

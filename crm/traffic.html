@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Traffic · National Closet Company CRM</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc104" />
+  <link rel="icon" href="/img/favicon-nc.png" />
+</head>
+<body>
+<script src="/crm/crm-app.js?v=ncc105"></script>
+<script>
+(async () => {
+  const user = await SSCrm.mount({
+    title: "Traffic",
+    subtitle: "Real site traffic, counted at Cloudflare's edge",
+  });
+  if (!user) return;
+  const page = document.getElementById("page");
+  page.innerHTML = `<div class="card"><div style="padding:24px;text-align:center;color:var(--ink-soft);font-size:13px">Loading traffic…</div></div>`;
+
+  let data;
+  try {
+    data = await SSCrm.fetchJSON("/api/traffic?days=30");
+  } catch (e) {
+    page.innerHTML = `<div class="card"><div style="padding:24px;text-align:center;color:var(--ink-soft);font-size:13px">Couldn't load traffic data.</div></div>`;
+    return;
+  }
+  const days = (data && data.days) || [];
+  if (!days.length) {
+    page.innerHTML = `<div class="card"><div style="padding:24px;text-align:center;color:var(--ink-soft);font-size:13px">No traffic data available.</div></div>`;
+    return;
+  }
+
+  const max = Math.max(...days.map((d) => d.pageViews), 1);
+  const totalPV = days.reduce((s, d) => s + d.pageViews, 0);
+  const totalU = days.reduce((s, d) => s + d.uniques, 0);
+  const avgPV = Math.round(totalPV / days.length);
+  const fmtDay = (iso) => { const [y, m, dd] = iso.split("-"); return `${+m}/${+dd}`; };
+  const N = (n) => n.toLocaleString();
+
+  // Newest day first for the list.
+  const rows = days.slice().reverse().map((d) => `
+    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft)">
+      <span style="font-size:13px;color:var(--ink);min-width:52px;font-weight:600">${fmtDay(d.date)}</span>
+      <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden">
+        <span style="display:block;height:100%;background:var(--accent);width:${Math.round((d.pageViews / max) * 100)}%"></span>
+      </span>
+      <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:60px;text-align:right">${N(d.pageViews)}</span>
+      <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:74px;text-align:right;font-size:12px">${N(d.uniques)} visitors</span>
+    </div>`).join("");
+
+  const stat = (label, value) => `
+    <div style="flex:1;min-width:130px">
+      <div style="font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:700">${label}</div>
+      <div style="font-family:var(--display,inherit);font-size:1.6rem;font-weight:800;color:var(--ink);margin-top:2px">${value}</div>
+    </div>`;
+
+  // ── Traffic sources (by country) ──────────────────────────────────────────
+  // Cloudflare's free plan doesn't expose referrers, so the blocker-proof
+  // "source" we can show is geography. A US flag highlights real local traffic
+  // versus the international bot noise that inflates the raw totals.
+  const flag = (cc) => (cc && cc.length === 2 && /^[A-Z]{2}$/.test(cc))
+    ? String.fromCodePoint(...[...cc].map((c) => 0x1F1E6 + c.charCodeAt(0) - 65)) : "🏳️";
+  const countries = (data.countries || []);
+  const cMax = Math.max(...countries.map((c) => c.requests), 1);
+  const cTotal = countries.reduce((s, c) => s + c.requests, 0) || 1;
+  const sourcesRows = countries.map((c) => `
+    <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-soft)${c.code === 'US' ? ';background:var(--clay-wash,#FDF0EA)' : ''}">
+      <span style="min-width:120px;font-size:13px;color:var(--ink);font-weight:${c.code === 'US' ? '700' : '500'}">${flag(c.code)} ${c.code}${c.code === 'US' ? ' 🇺🇸 · local' : ''}</span>
+      <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden">
+        <span style="display:block;height:100%;background:${c.code === 'US' ? 'var(--accent)' : 'var(--ink-soft)'};width:${Math.round((c.requests / cMax) * 100)}%"></span>
+      </span>
+      <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:44px;text-align:right;font-size:12px">${Math.round((c.requests / cTotal) * 100)}%</span>
+    </div>`).join("");
+
+  // ── Traffic by hour of day (Central Time) ─────────────────────────────────
+  const hourly = (data.hourly || []);
+  const hMax = Math.max(...hourly.map((h) => h.pageViews), 1);
+  const hLabel = (h) => { const ap = h < 12 ? "a" : "p"; let hr = h % 12; if (hr === 0) hr = 12; return `${hr}${ap}`; };
+  const hourBars = hourly.map((h) => `
+    <div title="${hLabel(h.hour)} · ${N(h.pageViews)} views" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;min-width:0">
+      <span style="width:70%;background:var(--accent);border-radius:2px 2px 0 0;height:${Math.max(2, Math.round((h.pageViews / hMax) * 90))}px"></span>
+      ${h.hour % 3 === 0 ? `<span style="font-size:9px;color:var(--ink-soft);white-space:nowrap">${hLabel(h.hour)}</span>` : `<span style="font-size:9px">&nbsp;</span>`}
+    </div>`).join("");
+
+  page.innerHTML = `
+    <div class="card" style="display:flex;gap:22px;flex-wrap:wrap;margin-bottom:16px">
+      ${stat("Page views · 30d", N(totalPV))}
+      ${stat("Unique visitors · 30d", N(totalU))}
+      ${stat("Avg / day", N(avgPV))}
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">
+        <h2>Daily traffic · last 30 days</h2>
+        <span class="more" style="cursor:default" title="Cloudflare counts every request at the server, so this is immune to ad blockers, GA filters and reporting lag">via Cloudflare edge</span>
+      </div>
+      <div style="margin-top:8px">${rows}</div>
+    </div>
+    <div class="dash" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div class="card-head"><h2>Traffic sources · by country</h2></div>
+        <div style="margin-top:8px">${countries.length ? sourcesRows : `<div style="padding:16px;text-align:center;color:var(--ink-soft);font-size:13px">No country data.</div>`}</div>
+        <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">
+          Cloudflare's free plan doesn't expose referrers, so we show <strong>geography</strong> instead. A lot of non-US
+          traffic is automated bots — <strong>US (highlighted) is your real audience</strong>. For referral channels
+          (Google, Facebook, direct), see <a href="/crm/leads.html" class="inline">Lead sources</a>.
+        </p>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Traffic by hour · Central Time</h2></div>
+        <div style="display:flex;align-items:flex-end;gap:2px;height:110px;margin-top:12px;padding-top:8px">${hourBars}</div>
+        <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">
+          Page views by hour of day (Central Time), summed over the last 7 days — shows <strong>when people visit</strong>,
+          useful for timing ads and posts.
+        </p>
+      </div>
+    </div>
+    <p class="muted" style="font-size:12px;margin:16px 2px 0;line-height:1.5">
+      All figures are counted at Cloudflare's edge — <strong>immune to ad blockers, Google Analytics filters, and reporting lag</strong>.
+      Totals include automated bots, so treat them as an upper bound on human visitors.
+    </p>
+  `;
+})();
+</script>
+</body>
+</html>

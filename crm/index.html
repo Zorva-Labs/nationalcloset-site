@@ -63,9 +63,14 @@
           ${d.upcoming.length ? renderUpcoming(d.upcoming) : `<div style="padding:20px;text-align:center;color:var(--ink-soft);font-size:13px">No appointments in the next week. <a href="/crm/calendar.html">Add one →</a></div>`}
         </div>
 
-        <div class="card">
+        <div class="card" style="margin-bottom:16px">
           <div class="card-head"><h2>Pipeline at a glance</h2><a class="more" href="/crm/pipeline.html">Open board →</a></div>
           ${renderDistribution(d.distribution)}
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Lead sources · last 30 days</h2><a class="more" href="/crm/leads.html">All leads →</a></div>
+          ${renderLeadSources(d.lead_sources)}
         </div>
       </div>
 
@@ -124,6 +129,27 @@ function renderDistribution(dist) {
       </span>
       <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:24px;text-align:right">${map[s.key] || 0}</span>
     </div>`).join("")}</div>`;
+}
+
+// Where leads actually came from, straight from the CRM — accurate no matter
+// what GA or Google Ads report. Bars are relative to the top source.
+function renderLeadSources(sources) {
+  if (!sources || !sources.length) return `<div style="padding:20px;text-align:center;color:var(--ink-soft);font-size:13px">No leads in the last 30 days.</div>`;
+  const total = sources.reduce((s, x) => s + x.count, 0);
+  const max = sources[0].count || 1;
+  return `<div style="display:flex;flex-direction:column;gap:6px">${sources.map((s) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 0">
+      <span style="font-size:13px;color:var(--ink);min-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${SSCrm.esc(s.source)}">${SSCrm.esc(s.source)}</span>
+      <span style="flex:1;height:6px;background:var(--bg-soft);border-radius:3px;overflow:hidden">
+        <span style="display:block;height:100%;background:var(--accent);width:${Math.round((s.count / max) * 100)}%"></span>
+      </span>
+      <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:24px;text-align:right">${s.count}</span>
+    </div>`).join("")}
+    <div style="margin-top:6px;padding-top:8px;border-top:1px solid var(--line-soft);display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft)">
+      <span>${total} lead${total === 1 ? "" : "s"} · last 30 days</span>
+      <span>From each lead's captured source</span>
+    </div>
+  </div>`;
 }
 
 function renderActivity(list) {

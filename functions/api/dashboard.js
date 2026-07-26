@@ -44,6 +44,29 @@ export async function onRequestGet(context) {
     SELECT status, COUNT(*) AS n FROM projects GROUP BY status
   `).all()).results || [];
 
+  // Lead sources, last 30 days — computed straight from each lead's stored
+  // attribution, so it's accurate regardless of GA/Ads filters, blockers or
+  // reporting lag. The CRM is the source of truth. Same precedence as the
+  // leads-list "Source" column: UTM source → gclid (Google Ads) → referrer
+  // host → Direct (self-referrals collapse to Direct).
+  const srcRows = (await DB.prepare(
+    `SELECT utm_source, utm_medium, gclid, referrer FROM leads WHERE created_at >= datetime('now','-30 day')`
+  ).all()).results || [];
+  const srcCounts = {};
+  for (const r of srcRows) {
+    let label;
+    if (r.utm_source) label = r.utm_source + (r.utm_medium ? " / " + r.utm_medium : "");
+    else if (r.gclid) label = "Google Ads";
+    else if (r.referrer) {
+      try { label = new URL(r.referrer).hostname.replace(/^www\./, ""); } catch { label = "Referral"; }
+      if (label === "nationalclosetco.com") label = "Direct";
+    } else label = "Direct";
+    srcCounts[label] = (srcCounts[label] || 0) + 1;
+  }
+  const lead_sources = Object.entries(srcCounts)
+    .map(([source, count]) => ({ source, count }))
+    .sort((a, b) => b.count - a.count);
+
   // Needs-attention buckets
   const attention = await DB.prepare(`
     SELECT
@@ -63,6 +86,7 @@ export async function onRequestGet(context) {
     },
     month: monthRow,
     distribution: dist,
+    lead_sources,
     upcoming,
     activity,
     attention,

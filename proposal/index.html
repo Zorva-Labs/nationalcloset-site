@@ -202,7 +202,6 @@ function render(p, tiers, attachments) {
     <h1>Your custom closet <em>proposal</em>.</h1>
     ${p.intro ? `<p class="doc-intro">${esc(p.intro)}</p>` : ""}
     ${(!isAccepted && expDate) ? `<div class="expiry-bar"><span class="clock">⏳</span><span><b>This proposal expires ${expDate}.</b> Prices for materials, shipping, and labor can change from week to week, so we can only hold this pricing for ${EXPIRY_DAYS} days from the day it was sent. Accept before then to lock it in.</span></div>` : ""}
-    ${(!isAccepted && p.promo_note) ? `<div class="promo-bar"><span class="gift">🎁</span><span><span class="tag">Limited-time offer</span>${esc(p.promo_note)}</span></div>` : ""}
 
     <div class="opt-grid">${tiers.map((t, i) => `
       <div class="opt ${p.selected_tier === t.tier ? "is-picked" : ""}" data-tier="${esc(t.tier)}" ${isAccepted ? "" : `onclick="pickTier('${esc(t.tier)}')" role="button" tabindex="0"`}>

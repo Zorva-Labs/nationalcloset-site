@@ -99,24 +99,6 @@ function render() {
       <div class="form-actions" style="margin-top:8px"><button class="btn secondary sm" onclick="saveAll()">💾 Save</button></div>
     </div>
 
-    <div class="card" style="margin-top:16px">
-      <div class="card-head"><h2>Limited-time offer <span class="muted" style="font-weight:400;font-size:12px">· optional</span></h2></div>
-      <p class="muted" style="font-size:12px;margin:0 0 10px">
-        Shown as a highlighted banner on the customer's proposal. Leave it blank for no offer.
-        The free <strong>shoe / storage tower</strong> costs you ${usd(TOWER_COST_CENTS)}
-        but reads as a <strong>${usd(towerValueCents())} value</strong> at your ${PROP_RATES.divisor} markup —
-        the markup is the leverage, so it lands far bigger than the equivalent dollars off while costing a fraction of the margin.
-        Qualifies on projects of <strong>${usd(TOWER_MIN_CENTS)}+</strong> — at that size the tower is ~14% of profit; on a $2.5k job it would be ~29%.
-        <strong>Give it a deadline</strong> — a standing offer is just your price.
-      </p>
-      <textarea id="promo-note" rows="3" placeholder="e.g. Book by March 30th and we'll add a shoe tower or storage tower to your closet — free. A $935 value, on us. On projects of $5,000 or more." style="width:100%;border:1px solid var(--line-soft);padding:8px 10px;border-radius:var(--r-sm);font:inherit;font-size:13px;box-sizing:border-box">${SSCrm.esc(p.promo_note || "")}</textarea>
-      <div class="form-actions" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn ghost sm" type="button" onclick="fillPromo()">＋ Use the standard upgrade offer</button>
-        <button class="btn ghost sm" type="button" onclick="clearPromo()">Clear</button>
-        <button class="btn secondary sm" onclick="saveAll()">💾 Save</button>
-      </div>
-    </div>
-
     ${propRatesBar()}
 
     <!-- Tiers stacked vertically so each card has the full page width
@@ -433,17 +415,6 @@ function copyFromOption1(btn) {
   SSCrm.toast("Copied Option 1 and added a Wall Finishing line.", "success");
 }
 
-// The standard offer, dated to the proposal's own expiry so the upgrade
-// deadline and the quote deadline are the same day (no second clock to explain).
-function fillPromo() {
-  const el = document.getElementById("promo-note");
-  const until = state?.proposal?.valid_until;
-  const by = until ? SSCrm.fmtDay(until) : null;
-  el.value = `Book${by ? " by " + by : " this month"} and we'll add a shoe tower or storage tower to your closet — free. A ${usd(towerValueCents())} value, on us. On projects of ${usd(TOWER_MIN_CENTS)} or more.`;
-  el.focus();
-}
-function clearPromo() { const el = document.getElementById("promo-note"); el.value = ""; el.focus(); }
-
 async function saveAll() {
   const tiers = [...document.querySelectorAll("[data-tier-id]")].map((card) => ({
     id: parseInt(card.dataset.tierId, 10),
@@ -465,7 +436,6 @@ async function saveAll() {
     await SSCrm.fetchJSON("/api/proposals/" + id, { method: "PATCH", body: JSON.stringify({
       intro: document.getElementById("intro").value.trim(),
       job_notes: jn ? jn.value.trim() : "",
-      promo_note: (document.getElementById("promo-note")?.value || "").trim(),
       tiers,
     })});
     SSCrm.toast("Saved", "success");

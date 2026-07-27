@@ -135,9 +135,11 @@ function renderTraffic(days) {
 function renderAttention(a) {
   const items = [];
   if (a.untouched_leads) items.push({ label: `${a.untouched_leads} new lead${a.untouched_leads === 1 ? "" : "s"} need first contact`, href: "/crm/leads.html?status=new" });
-  if (a.awaiting_countersign) items.push({ label: `${a.awaiting_countersign} contract${a.awaiting_countersign === 1 ? "" : "s"} ready to counter-sign`, href: "/crm/contracts.html?status=signed_by_customer" });
+  if (a.draft_proposals) items.push({ label: `${a.draft_proposals} proposal${a.draft_proposals === 1 ? "" : "s"} drafted but not sent`, href: "/crm/proposals.html?status=draft" });
+  if (a.stale_proposals) items.push({ label: `${a.stale_proposals} sent proposal${a.stale_proposals === 1 ? "" : "s"} to follow up (5+ days)`, href: "/crm/proposals.html?status=sent" });
+  if (a.awaiting_countersign) items.push({ label: `${a.awaiting_countersign} signed contract${a.awaiting_countersign === 1 ? "" : "s"} awaiting deposit / counter-sign`, href: "/crm/contracts.html?status=signed_by_customer" });
+  if (a.overdue_invoices) items.push({ label: `${a.overdue_invoices} invoice${a.overdue_invoices === 1 ? "" : "s"} unpaid & overdue`, href: "/crm/invoices.html?status=open" });
   if (a.unviewed_estimates) items.push({ label: `${a.unviewed_estimates} estimate${a.unviewed_estimates === 1 ? "" : "s"} sent but never viewed (3+ days)`, href: "/crm/estimates.html?status=sent" });
-  if (a.stale_proposals) items.push({ label: `${a.stale_proposals} proposal${a.stale_proposals === 1 ? "" : "s"} stale (5+ days)`, href: "/crm/proposals.html?status=sent" });
   if (!items.length) return "";
   return `
     <div class="banner" style="margin-bottom:20px;background:linear-gradient(135deg,#FFFBEB,#FEF3C7);border-color:#FDE68A">

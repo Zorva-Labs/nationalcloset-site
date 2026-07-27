@@ -73,6 +73,8 @@ export async function onRequestGet(context) {
       (SELECT COUNT(*) FROM estimates WHERE status = 'sent' AND view_count = 0 AND sent_at < datetime('now', '-3 days')) AS unviewed_estimates,
       (SELECT COUNT(*) FROM contracts WHERE status = 'signed_by_customer') AS awaiting_countersign,
       (SELECT COUNT(*) FROM proposals WHERE status IN ('sent','viewed') AND sent_at < datetime('now', '-5 days')) AS stale_proposals,
+      (SELECT COUNT(*) FROM proposals WHERE status = 'draft' AND created_at < datetime('now', '-1 day')) AS draft_proposals,
+      (SELECT COUNT(*) FROM invoices WHERE status = 'open' AND ((due_date IS NOT NULL AND due_date < date('now')) OR (due_date IS NULL AND created_at < datetime('now', '-7 days')))) AS overdue_invoices,
       (SELECT COUNT(*) FROM leads WHERE status = 'new' AND created_at < datetime('now', '-1 day')) AS untouched_leads
   `).first();
 

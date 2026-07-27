@@ -98,6 +98,60 @@ export async function onRequestPost(context) {
     return json({ ok: true });
   }
 
+  // One-tap: the customer picked an option and wants to proceed. Select the
+  // tier, mark the proposal accepted using the name on file (the legal signature
+  // happens on the contract), then create the contract and hand back its token.
+  // No name typing here — that's the friction we're removing.
+  if (body.action === "continue") {
+    if (expired) return json({ error: "This proposal has expired. Please request an updated proposal." }, 410);
+    if (!["good", "better", "best"].includes(body.tier)) return json({ error: "Invalid tier" }, 400);
+    const t = await context.env.DB.prepare(`SELECT total_cents FROM proposal_tiers WHERE proposal_id=?1 AND tier=?2`).bind(p.id, body.tier).first();
+    await context.env.DB.prepare(
+      `UPDATE proposals SET selected_tier=?1, selected_total_cents=?2, status='accepted',
+         accepted_at=COALESCE(accepted_at, datetime('now')),
+         accepted_by_name=COALESCE(accepted_by_name, ?3), accepted_ip_hash=?4, updated_at=datetime('now')
+       WHERE id=?5`
+    ).bind(body.tier, t?.total_cents || 0, p.contact_name || "Customer", ipHash, p.id).run();
+    await syncLeadQuotedFromProposal(context.env.DB, p.id).catch(() => {});
+    await recordActivity(context.env.DB, {
+      entityType: "proposal", entityId: p.id, action: "accepted",
+      actorKind: "customer", actorName: p.contact_name || null,
+      details: { tier: body.tier, ip_hash: ipHash, via: "one-tap" },
+    });
+
+    // Reuse an existing unsigned contract only if it matches the selected tier's
+    // total (so a customer resuming lands on the same contract); if they switched
+    // options, void the old one and make a fresh one. Never pile up duplicates.
+    let contractToken = null;
+    const tierTotal = t?.total_cents || 0;
+    const existing = await context.env.DB.prepare(
+      `SELECT id, view_token, status, total_cents FROM contracts WHERE proposal_id=?1 ORDER BY id DESC LIMIT 1`
+    ).bind(p.id).first();
+    const isUnsigned = existing && !["signed_by_customer", "fully_executed", "void"].includes(existing.status);
+    if (isUnsigned && existing.total_cents === tierTotal) {
+      contractToken = existing.view_token;
+    } else {
+      if (isUnsigned) {
+        await context.env.DB.prepare(`UPDATE contracts SET status='void', updated_at=datetime('now') WHERE id=?1`).bind(existing.id).run().catch(() => {});
+      }
+      try {
+        const result = await createContractFromProposalTier(
+          context.env.DB,
+          { id: p.id, project_id: p.project_id, number: p.number, selected_tier: body.tier },
+          { kind: "customer", name: p.contact_name || "Customer" }
+        );
+        contractToken = result.view_token;
+      } catch (e) { console.error("continue auto-convert failed:", e); }
+    }
+
+    const invoiceWork = createInvoice(context.env, {
+      projectId: p.project_id, type: "deposit", proposalId: p.id, actor: { name: p.contact_name || "Customer" }, send: false,
+    }).catch((e) => console.error("[invoice/continue]", String(e)));
+    if (context.waitUntil) context.waitUntil(invoiceWork); else await invoiceWork;
+
+    return json({ ok: true, contract_token: contractToken });
+  }
+
   if (body.action === "accept") {
     if (!body.name) return json({ error: "Please type your name to accept." }, 400);
     if (!p.selected_tier) return json({ error: "Pick a tier first." }, 400);

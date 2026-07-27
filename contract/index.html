@@ -79,6 +79,9 @@
     .sign-box label span { display: block; font-size: 0.78rem; color: var(--color-ink-soft); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.12em; }
     .sign-box .sig-field { display: block; margin-bottom: 16px; }
     .sign-box .sig-field-label { display: block; font-size: 0.78rem; color: var(--color-ink-soft); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.12em; }
+    .typed-sig { border: 1.5px solid var(--color-line); border-radius: 10px; min-height: 92px; display: flex; align-items: center; padding: 8px 22px; background: #fffdfb; font-family: 'Segoe Script','Snell Roundhand','Brush Script MT','Apple Chancery',cursive; font-size: 2.5rem; line-height: 1.1; color: var(--color-ink); overflow: hidden; word-break: break-word; }
+    .typed-sig .ph { font-family: var(--font, system-ui, sans-serif); font-size: 0.92rem; color: var(--color-ink-soft); font-style: normal; }
+    @supports not (font: 1em cursive) { .typed-sig { font-style: italic; } }
     .sign-box input { width: 100%; padding: 10px 12px; border: 1px solid var(--color-line); font: inherit; font-size: 0.95rem; }
     .sig { background: #fff; border: 1px solid var(--color-line); }
     .sig canvas { display: block; width: 100%; height: 180px; cursor: crosshair; touch-action: none; background: linear-gradient(transparent calc(100% - 1px), var(--color-line) calc(100% - 1px)); }
@@ -202,20 +205,12 @@ function render(k, lines) {
     ` : `
       <div class="sign-box">
         <h2>Sign to book the job</h2>
-        <p style="font-size:0.92rem;color:var(--color-ink-soft);margin:0 0 22px">By typing your name and signing below, you accept the terms above and authorize National Closet Company to release your order to manufacturing.</p>
-        <label><span>Full legal name</span><input id="signer-name" autocomplete="name"/></label>
+        <p style="font-size:0.92rem;color:var(--color-ink-soft);margin:0 0 22px">Just type your full name below to sign. Your typed name is your legal electronic signature, and by signing you accept the terms above and authorize National Closet Company to release your order to manufacturing.</p>
+        <label><span>Full legal name</span><input id="signer-name" autocomplete="name" placeholder="Type your full name" oninput="previewSig()" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('signer-email').focus();}"/></label>
         <label><span>Email (for receipt)</span><input id="signer-email" type="email" autocomplete="email" value="${esc(k.contact_email)}"/></label>
-        <!-- Intentionally NOT a label wrapper: a label without a for attr
-             implicitly associates with the first form control inside it, so
-             clicking the canvas would dispatch a synthetic click on the
-             Clear button below, wiping every stroke on mouseup. Use a div
-             with a standalone span caption instead. -->
         <div class="sig-field">
-          <span class="sig-field-label">Draw your signature</span>
-          <div class="sig">
-            <canvas id="sig-pad" width="700" height="180"></canvas>
-            <div class="sig-bar"><span>Use mouse, finger, or stylus</span><button type="button" id="sig-clear">Clear</button></div>
-          </div>
+          <span class="sig-field-label">Your signature</span>
+          <div class="typed-sig" id="typed-sig"><span class="ph">Your signature appears here as you type your name</span></div>
         </div>
         <button class="sign-btn" id="sign-btn" onclick="sign()">Sign &amp; book the job</button>
       </div>
@@ -224,7 +219,7 @@ function render(k, lines) {
     <div class="doc-foot">National Closet Company · Custom Closets &amp; Closet Systems · Gallatin, TN · 629-298-8241 · hello@nationalclosetco.com · nationalclosetco.com</div>
   `;
 
-  if (!isSigned) wirePad();
+  if (!isSigned) previewSig();
 }
 
 let pickedSlot = null;
@@ -430,15 +425,34 @@ function wirePad() {
   document.getElementById("sig-clear").onclick = () => pad.clear();
 }
 
+// Render the typed name as a script-font "signature" image, so the customer
+// only has to type — no drawing — but the contract still stores a real
+// signature graphic for the record.
+function typedSigImage(name) {
+  var c = document.createElement("canvas"); c.width = 700; c.height = 180;
+  var x = c.getContext("2d");
+  x.fillStyle = "#ffffff"; x.fillRect(0, 0, 700, 180);
+  x.fillStyle = "#16140f";
+  x.font = "64px 'Segoe Script','Snell Roundhand','Brush Script MT','Apple Chancery',cursive";
+  x.textBaseline = "middle";
+  x.fillText(name, 26, 96);
+  return c.toDataURL("image/png");
+}
+function previewSig() {
+  var el = document.getElementById("typed-sig");
+  if (!el) return;
+  var name = (document.getElementById("signer-name").value || "").trim();
+  el.innerHTML = name ? esc(name) : '<span class="ph">Your signature appears here as you type your name</span>';
+}
+
 async function sign() {
   const name = document.getElementById("signer-name").value.trim();
   const email = document.getElementById("signer-email").value.trim();
-  if (!name) { alert("Please type your full legal name."); return; }
-  if (!pad || pad.isEmpty()) { alert("Please draw your signature."); return; }
+  if (!name) { document.getElementById("signer-name").focus(); alert("Please type your full legal name to sign."); return; }
   const btn = document.getElementById("sign-btn");
   btn.disabled = true; btn.textContent = "Signing…";
   try {
-    const res = await fetch("/api/public/contract/" + token, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sign", signer_name: name, signer_email: email, signature_image: pad.toDataURL() }) });
+    const res = await fetch("/api/public/contract/" + token, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "sign", signer_name: name, signer_email: email, signature_image: typedSigImage(name) }) });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Couldn't sign.");
     // Booked — the deposit invoice is the next step on screen. Send the

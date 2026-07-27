@@ -222,7 +222,7 @@ function render(p, tiers, attachments) {
           <div class="opt__sum-row" ${soft}><span>— or pay in full anytime</span><span>${money(t.total_cents)}</span></div>`;
           })()}
         </div>` : `<div class="opt__empty">Itemized details to follow.</div>`}
-        ${!isAccepted ? `<button class="btn opt-btn" type="button" onclick="event.stopPropagation();pickTier('${esc(t.tier)}')">${p.selected_tier === t.tier ? "✓ Selected" : (many ? "Choose this option" : "Select")}</button>` : ""}
+        ${!isAccepted ? `<button class="btn opt-btn" type="button" onclick="event.stopPropagation();continueToContract('${esc(t.tier)}')">${many ? "Choose this option →" : "Accept & sign →"}</button>` : ""}
       </div>`).join("")}
     </div>
 
@@ -261,15 +261,12 @@ function render(p, tiers, attachments) {
     ` : (p.selected_tier ? `
       <div class="accept">
         <h2>Ready to book it?</h2>
-        <p>Type your full name to accept this proposal — we'll prepare your contract to sign and reserve your install.</p>
-        <div class="accept__form">
-          <input id="accept-name" type="text" placeholder="Your full name" autocomplete="name" onkeydown="if(event.key==='Enter')accept()"/>
-          <button class="btn accept-btn" type="button" onclick="accept()">Accept &amp; book →</button>
-        </div>
+        <p>Continue to your contract to sign and reserve your install. No drawing required — just type your name.</p>
+        <button class="btn accept-btn" type="button" onclick="continueToContract('${esc(p.selected_tier)}')" style="min-height:56px;font-size:1.1rem;padding:16px 34px">Accept &amp; sign your contract →</button>
       </div>` : `
       <div class="accept accept--soft">
         <h2>${many ? "Choose an option above to continue" : "Select your proposal above to continue"}</h2>
-        <p>Or call/text us at <a href="tel:+16292988241">629-298-8241</a> with any questions.</p>
+        <p>Pick your option and you'll go straight to your contract to sign — quick and easy. Questions? Call or text <a href="tel:+16292988241">629-298-8241</a>.</p>
       </div>`)}
 
     <div class="doc-foot">
@@ -277,6 +274,25 @@ function render(p, tiers, attachments) {
       <a href="tel:+16292988241">629-298-8241</a> · <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> · <a href="https://nationalclosetco.com">nationalclosetco.com</a>
     </div>
   `;
+}
+
+// One-tap: select the option AND create + open the contract. The customer types
+// their name (their signature) on the contract — no name entry here.
+async function continueToContract(tier) {
+  try {
+    const res = await fetch("/api/public/proposal/" + token, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "continue", tier }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Could not continue. Please call or text 629-298-8241.");
+    if (data.contract_token) {
+      document.getElementById("root").innerHTML = `
+        <div style="text-align:center;padding:90px 20px">
+          <div style="font-family:var(--font);font-weight:800;font-size:2.2rem;letter-spacing:-0.03em;color:var(--clay);margin-bottom:12px">Opening your contract…</div>
+          <p style="color:var(--ink-soft);font-size:1.1rem;margin-bottom:26px">Just type your name to sign — it takes a minute.</p>
+          <div class="spin"></div>
+        </div>`;
+      location.href = "/contract/?t=" + encodeURIComponent(data.contract_token) + "&from=proposal";
+    } else { await load(); }
+  } catch (e) { alert(e.message); }
 }
 
 async function pickTier(tier) {

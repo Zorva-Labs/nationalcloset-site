@@ -153,6 +153,7 @@
               <p>Hand your check to your Project Manager, and we'll mark this invoice paid as soon as it's received. Questions? Call or text <a href="tel:+16292988241">629-298-8241</a>.</p>
             </div>
             <form id="pay-form">
+              <p style="font-size:13px;font-weight:700;color:var(--ink);margin:0 0 10px">Pay by bank transfer or card</p>
               <div id="payment-element"></div>
               <button class="btn" id="pay-btn" type="submit">Pay ${money(base)}</button>
               <div class="msg" id="msg"></div>
@@ -170,10 +171,12 @@
         variables: { colorPrimary: "#D2683F", fontFamily: "Montserrat, system-ui, sans-serif", borderRadius: "10px", colorText: "#16140F" },
       };
       elements = stripe.elements({ clientSecret: data.client_secret, appearance });
-      // Offer every payment method enabled in the Stripe Dashboard, including
-      // Apple Pay / Google Pay / Link wallets. The amount charged is the balance
-      // due for every method.
-      const paymentElement = elements.create("payment");
+      // Offer every payment method enabled in the Stripe Dashboard, but list
+      // BANK TRANSFER (ACH) first as the preferred option, then card, then the
+      // wallets. (ACH must be enabled in the Stripe Dashboard to appear.)
+      const paymentElement = elements.create("payment", {
+        paymentMethodOrder: ["us_bank_account", "card", "cashapp", "klarna", "link"],
+      });
       paymentElement.mount("#payment-element");
       // "Pay by check" toggle — hides the online payment flow and shows the
       // check instructions (the office marks the invoice paid once received).

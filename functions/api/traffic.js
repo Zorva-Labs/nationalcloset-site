@@ -27,6 +27,7 @@ export async function onRequestGet(context) {
   if (!env.CF_ANALYTICS_EMAIL || !env.CF_ANALYTICS_KEY) return json({ days: [], error: "not_configured" });
 
   const url = new URL(context.request.url);
+  const today = url.searchParams.get("today") === "1";
   let span = parseInt(url.searchParams.get("days") || "7", 10);
   if (!Number.isFinite(span) || span < 1) span = 7;
   span = Math.min(span, 30);
@@ -35,7 +36,7 @@ export async function onRequestGet(context) {
   const now = new Date();
   const iso = (d) => d.toISOString().slice(0, 10);
   const isoDT = (d) => d.toISOString().slice(0, 19) + "Z";
-  const start = iso(new Date(now.getTime() - span * DAY));
+  const start = today ? iso(now) : iso(new Date(now.getTime() - span * DAY));
   const end = iso(now);
 
   // Daily volume + per-country requests (summed across the range for sources).
@@ -47,9 +48,9 @@ export async function onRequestGet(context) {
     }
   } } }`;
 
-  // Hourly over the last 3 days → aggregate into 24 local-hour buckets.
-  // (Cloudflare's free plan caps the hourly dataset at a 3-day range.)
-  const hStart = isoDT(new Date(now.getTime() - 3 * DAY));
+  // Hourly → aggregate into 24 local-hour buckets. Today only in today-mode,
+  // else the last 3 days (Cloudflare's free plan caps this dataset at 3 days).
+  const hStart = today ? (iso(now) + "T00:00:00Z") : isoDT(new Date(now.getTime() - 3 * DAY));
   const hourlyQ = `query { viewer { zones(filter: {zoneTag: "${ZONE}"}) {
     httpRequests1hGroups(limit: 200, filter: {datetime_geq: "${hStart}", datetime_leq: "${isoDT(now)}"}, orderBy: [datetime_ASC]) {
       dimensions { datetime }

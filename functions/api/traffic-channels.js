@@ -9,28 +9,31 @@ import { requireAuth, json } from "../_lib/auth.js";
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const url = new URL(context.request.url);
+  const today = url.searchParams.get("today") === "1";
   let span = parseInt(url.searchParams.get("days") || "30", 10);
   if (!Number.isFinite(span) || span < 1) span = 30;
   span = Math.min(span, 90);
-  const since = `-${span} days`;
   const DB = context.env.DB;
 
-  const q = (sql) => DB.prepare(sql).bind(since).all().catch(() => ({ results: [] }));
+  // Today = since local midnight (date('now')); otherwise a rolling N-day window.
+  const TF = today ? "created_at >= date('now')" : "created_at >= datetime('now', ?1)";
+  const binds = today ? [] : [`-${span} days`];
+  const q = (sql) => { const st = DB.prepare(sql); return (binds.length ? st.bind(...binds) : st).all().catch(() => ({ results: [] })); };
 
   const [channelsR, pagesR, totalsR, engPageR, engAllR] = await Promise.all([
     q(`SELECT channel, COUNT(*) AS n FROM pageviews
-        WHERE created_at >= datetime('now', ?1) AND is_entry = 1
+        WHERE ${TF} AND is_entry = 1
         GROUP BY channel ORDER BY n DESC`),
     q(`SELECT path, COUNT(*) AS n FROM pageviews
-        WHERE created_at >= datetime('now', ?1)
+        WHERE ${TF}
         GROUP BY path ORDER BY n DESC LIMIT 15`),
     q(`SELECT COUNT(*) AS visits, SUM(is_entry) AS entries FROM pageviews
-        WHERE created_at >= datetime('now', ?1)`),
+        WHERE ${TF}`),
     // Avg engagement seconds per page (from the first-party beacon).
     q(`SELECT path, ROUND(AVG(seconds)) AS avg_s, COUNT(*) AS samples FROM page_engagement
-        WHERE created_at >= datetime('now', ?1) GROUP BY path`),
+        WHERE ${TF} GROUP BY path`),
     q(`SELECT ROUND(AVG(seconds)) AS avg_s, COUNT(*) AS samples FROM page_engagement
-        WHERE created_at >= datetime('now', ?1)`),
+        WHERE ${TF}`),
   ]);
 
   const channels = channelsR.results || [];

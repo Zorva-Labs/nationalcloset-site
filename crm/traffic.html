@@ -8,144 +8,31 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc104" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc105" />
   <link rel="icon" href="/img/favicon-nc.png" />
+  <style>
+    .tf-tog{display:inline-flex;border:2px solid var(--line-soft,#e6e3dd);border-radius:999px;overflow:hidden;background:#fff}
+    .tf-tog button{font-family:inherit;font-size:.85rem;font-weight:700;padding:7px 20px;border:0;background:transparent;color:var(--ink-soft);cursor:pointer}
+    .tf-tog button.on{background:var(--accent);color:#fff}
+  </style>
 </head>
 <body>
 <script src="/crm/crm-app.js?v=ncc105"></script>
 <script>
-(async () => {
-  const user = await SSCrm.mount({
-    title: "Traffic",
-    subtitle: "Real site traffic, counted at Cloudflare's edge",
-  });
-  if (!user) return;
-  const page = document.getElementById("page");
-  page.innerHTML = `<div class="card"><div style="padding:24px;text-align:center;color:var(--ink-soft);font-size:13px">Loading traffic…</div></div>`;
-
-  let data;
-  try {
-    data = await SSCrm.fetchJSON("/api/traffic?days=30");
-  } catch (e) {
-    page.innerHTML = `<div class="card"><div style="padding:24px;text-align:center;color:var(--ink-soft);font-size:13px">Couldn't load traffic data.</div></div>`;
-    return;
-  }
-  const days = (data && data.days) || [];
-  if (!days.length) {
-    page.innerHTML = `<div class="card"><div style="padding:24px;text-align:center;color:var(--ink-soft);font-size:13px">No traffic data available.</div></div>`;
-    return;
-  }
-
-  const max = Math.max(...days.map((d) => d.pageViews), 1);
-  const totalPV = days.reduce((s, d) => s + d.pageViews, 0);
-  const totalU = days.reduce((s, d) => s + d.uniques, 0);
-  const avgPV = Math.round(totalPV / days.length);
-  const fmtDay = (iso) => { const [y, m, dd] = iso.split("-"); return `${+m}/${+dd}`; };
-  const N = (n) => n.toLocaleString();
-
-  // Newest day first for the list. Only today shows by default; the rest open
-  // on demand so the page stays compact.
-  const dayRow = (d, isToday) => `
-    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft)">
-      <span style="font-size:13px;color:var(--ink);min-width:52px;font-weight:600">${fmtDay(d.date)}${isToday ? " <span style='font-weight:500;color:var(--ink-soft);font-size:11px'>today</span>" : ""}</span>
-      <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden">
-        <span style="display:block;height:100%;background:var(--accent);width:${Math.round((d.pageViews / max) * 100)}%"></span>
-      </span>
-      <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:60px;text-align:right">${N(d.pageViews)}</span>
-      <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:74px;text-align:right;font-size:12px">${N(d.uniques)} visitors</span>
-    </div>`;
-  const ordered = days.slice().reverse();          // newest → oldest
-  const todayRow = ordered.length ? dayRow(ordered[0], true) : "";
-  const restRows = ordered.slice(1).map((d) => dayRow(d, false)).join("");
-  const rows = todayRow + (restRows
-    ? `<details style="margin-top:4px"><summary style="cursor:pointer;color:var(--clay-deep);font-weight:600;font-size:13px;padding:10px 0 4px;list-style:none">▸ Show previous ${ordered.length - 1} days</summary>${restRows}</details>`
-    : "");
-
-  const stat = (label, value) => `
-    <div style="flex:1;min-width:130px">
-      <div style="font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:700">${label}</div>
-      <div style="font-family:var(--display,inherit);font-size:1.6rem;font-weight:800;color:var(--ink);margin-top:2px">${value}</div>
-    </div>`;
-
-  // ── Traffic sources (by country) ──────────────────────────────────────────
-  // Cloudflare's free plan doesn't expose referrers, so the blocker-proof
-  // "source" we can show is geography. A US flag highlights real local traffic
-  // versus the international bot noise that inflates the raw totals.
-  const flag = (cc) => (cc && cc.length === 2 && /^[A-Z]{2}$/.test(cc))
-    ? String.fromCodePoint(...[...cc].map((c) => 0x1F1E6 + c.charCodeAt(0) - 65)) : "🏳️";
-  const countries = (data.countries || []);
-  const cMax = Math.max(...countries.map((c) => c.requests), 1);
-  const cTotal = countries.reduce((s, c) => s + c.requests, 0) || 1;
-  const sourcesRows = collapse(countries.map((c) => `
-    <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-soft)${c.code === 'US' ? ';background:var(--clay-wash,#FDF0EA)' : ''}">
-      <span style="min-width:120px;font-size:13px;color:var(--ink);font-weight:${c.code === 'US' ? '700' : '500'}">${flag(c.code)} ${c.code}${c.code === 'US' ? ' 🇺🇸 · local' : ''}</span>
-      <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden">
-        <span style="display:block;height:100%;background:${c.code === 'US' ? 'var(--accent)' : 'var(--ink-soft)'};width:${Math.round((c.requests / cMax) * 100)}%"></span>
-      </span>
-      <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:44px;text-align:right;font-size:12px">${Math.round((c.requests / cTotal) * 100)}%</span>
-    </div>`), "countries");
-
-  // ── Traffic by hour of day (Central Time) ─────────────────────────────────
-  const hourly = (data.hourly || []);
-  const hMax = Math.max(...hourly.map((h) => h.pageViews), 1);
-  const hLabel = (h) => { const ap = h < 12 ? "a" : "p"; let hr = h % 12; if (hr === 0) hr = 12; return `${hr}${ap}`; };
-  const hourBars = hourly.map((h) => `
-    <div title="${hLabel(h.hour)} · ${N(h.pageViews)} views" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;min-width:0">
-      <span style="width:70%;background:var(--accent);border-radius:2px 2px 0 0;height:${Math.max(2, Math.round((h.pageViews / hMax) * 90))}px"></span>
-      ${h.hour % 3 === 0 ? `<span style="font-size:9px;color:var(--ink-soft);white-space:nowrap">${hLabel(h.hour)}</span>` : `<span style="font-size:9px">&nbsp;</span>`}
-    </div>`).join("");
-
-  page.innerHTML = `
-    <div class="card" style="display:flex;gap:22px;flex-wrap:wrap;margin-bottom:16px">
-      ${stat("Page views · 30d", N(totalPV))}
-      ${stat("Unique visitors · 30d", N(totalU))}
-      ${stat("Avg / day", N(avgPV))}
-    </div>
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-head">
-        <h2>Daily traffic · last 30 days</h2>
-        <span class="more" style="cursor:default" title="Cloudflare counts every request at the server, so this is immune to ad blockers, GA filters and reporting lag">via Cloudflare edge</span>
-      </div>
-      <div style="margin-top:8px">${rows}</div>
-    </div>
-    <div class="card" id="channels-card" style="margin-bottom:16px">
-      <div class="card-head"><h2>Traffic channels · where visitors come from</h2><a class="more" href="/crm/leads.html">Lead sources →</a></div>
-      <div style="padding:18px;text-align:center;color:var(--ink-soft);font-size:13px">Loading channels…</div>
-    </div>
-    <div class="card" id="pages-card" style="margin-bottom:16px">
-      <div class="card-head"><h2>Traffic by page · most visited</h2><span class="more" style="cursor:default" title="Real visitor pageviews, excluding your CRM, bots and non-US traffic">excludes /crm &amp; bots</span></div>
-      <div style="padding:18px;text-align:center;color:var(--ink-soft);font-size:13px">Loading pages…</div>
-    </div>
-    <div class="dash" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div class="card">
-        <div class="card-head"><h2>Traffic sources · by country</h2></div>
-        <div style="margin-top:8px">${countries.length ? sourcesRows : `<div style="padding:16px;text-align:center;color:var(--ink-soft);font-size:13px">No country data.</div>`}</div>
-        <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">
-          Cloudflare's free plan doesn't expose referrers, so we show <strong>geography</strong> instead. A lot of non-US
-          traffic is automated bots — <strong>US (highlighted) is your real audience</strong>. For referral channels
-          (Google, Facebook, direct), see <a href="/crm/leads.html" class="inline">Lead sources</a>.
-        </p>
-      </div>
-      <div class="card">
-        <div class="card-head"><h2>Traffic by hour · Central Time</h2></div>
-        <div style="display:flex;align-items:flex-end;gap:2px;height:110px;margin-top:12px;padding-top:8px">${hourBars}</div>
-        <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">
-          Page views by hour of day (Central Time), summed over the last 3 days — shows <strong>when people visit</strong>,
-          useful for timing ads and posts.
-        </p>
-      </div>
-    </div>
-    <p class="muted" style="font-size:12px;margin:16px 2px 0;line-height:1.5">
-      All figures are counted at Cloudflare's edge — <strong>immune to ad blockers, Google Analytics filters, and reporting lag</strong>.
-      Totals include automated bots, so treat them as an upper bound on human visitors.
-    </p>
-  `;
-
-  loadOwnedTraffic();
-})();
-
-// Show the top row and tuck the rest behind a "Show all N" dropdown — same
-// compact pattern as the daily-traffic list. `rows` is an array of row HTML.
+// ── shared helpers ──────────────────────────────────────────────────────────
+const el = (id) => document.getElementById(id);
+const N = (n) => (n || 0).toLocaleString();
+const fmtDay = (iso) => { const p = String(iso).split("-"); return `${+p[1]}/${+p[2]}`; };
+const fmtDur = (s) => { s = Math.round(s || 0); if (!s) return "—"; const m = Math.floor(s / 60), r = s % 60; return m ? (m + "m" + (r ? " " + r + "s" : "")) : (r + "s"); };
+const flag = (cc) => (cc && cc.length === 2 && /^[A-Z]{2}$/.test(cc))
+  ? String.fromCodePoint(...[...cc].map((c) => 0x1F1E6 + c.charCodeAt(0) - 65)) : "🏳️";
+const box = (m) => `<div style="padding:18px;text-align:center;color:var(--ink-soft);font-size:13px">${m}</div>`;
+const statHTML = (label, value) => `
+  <div style="flex:1;min-width:130px">
+    <div style="font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:700">${label}</div>
+    <div style="font-family:var(--display,inherit);font-size:1.6rem;font-weight:800;color:var(--ink);margin-top:2px">${value}</div>
+  </div>`;
+// Top row visible; the rest tuck behind a "Show all N" dropdown.
 function collapse(rows, noun) {
   if (!rows || !rows.length) return "";
   const rest = rows.slice(1).join("");
@@ -154,29 +41,142 @@ function collapse(rows, noun) {
     : "");
 }
 
-// Real visitor analytics from the server-side pageview log — channels + per-page
-// traffic. Starts empty (logging began now) and fills in as visitors arrive.
-// Blocker-proof, GA-independent, and already excludes /crm, bots and non-US.
-async function loadOwnedTraffic() {
-  const chCard = document.getElementById("channels-card");
-  const pgCard = document.getElementById("pages-card");
-  const chBody = chCard && chCard.querySelector("div:last-child");
-  const pgBody = pgCard && pgCard.querySelector("div:last-child");
-  const N = (n) => (n || 0).toLocaleString();
+let mode = "today"; // "today" | "all"
 
-  let data;
-  try { data = await SSCrm.fetchJSON("/api/traffic-channels?days=30"); }
-  catch (e) {
-    if (chBody) chBody.innerHTML = err("Couldn't load channels.");
-    if (pgBody) pgBody.innerHTML = err("Couldn't load pages.");
+(async () => {
+  const user = await SSCrm.mount({ title: "Traffic", subtitle: "Real site traffic, counted at Cloudflare's edge" });
+  if (!user) return;
+
+  el("page").innerHTML = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+      <div class="tf-tog">
+        <button type="button" id="tg-today" class="on">Today</button>
+        <button type="button" id="tg-all">All time</button>
+      </div>
+    </div>
+    <div id="tf-stats" class="card" style="display:flex;gap:22px;flex-wrap:wrap;margin-bottom:16px"></div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head"><h2 id="tf-daily-h">Daily traffic</h2><span class="more" style="cursor:default" title="Cloudflare counts every request at the server — immune to ad blockers, GA filters and reporting lag">via Cloudflare edge</span></div>
+      <div id="tf-daily" style="margin-top:8px"></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head"><h2>Traffic channels · where visitors come from</h2><a class="more" href="/crm/leads.html">Lead sources →</a></div>
+      <div id="tf-channels" style="margin-top:6px"></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head"><h2>Traffic by page · most visited</h2><span class="more" style="cursor:default" title="Real visitor pageviews, excluding your CRM, bots and non-US traffic">excludes /crm &amp; bots</span></div>
+      <div id="tf-pages" style="margin-top:6px"></div>
+    </div>
+    <div class="dash" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div class="card-head"><h2>Traffic sources · by country</h2></div>
+        <div id="tf-country" style="margin-top:8px"></div>
+        <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">Cloudflare's free plan doesn't expose referrers, so we show <strong>geography</strong>. Much non-US traffic is automated bots — <strong>US (highlighted) is your real audience</strong>. For channels, see <a href="/crm/leads.html" class="inline">Lead sources</a>.</p>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2 id="tf-hourly-h">Traffic by hour · Central Time</h2></div>
+        <div id="tf-hourly" style="min-height:120px"></div>
+        <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">Page views by hour of day (Central Time) — shows <strong>when people visit</strong>, useful for timing ads and posts.</p>
+      </div>
+    </div>
+    <p class="muted" style="font-size:12px;margin:16px 2px 0;line-height:1.5">Counted at Cloudflare's edge and a first-party log — <strong>immune to ad blockers, GA filters and reporting lag</strong>. Edge totals include bots (upper bound); channels, pages &amp; time exclude bots, /crm and non-US.</p>
+  `;
+  el("tg-today").onclick = () => setMode("today");
+  el("tg-all").onclick = () => setMode("all");
+  refresh();
+})();
+
+function setMode(m) {
+  if (m === mode) return;
+  mode = m;
+  el("tg-today").classList.toggle("on", m === "today");
+  el("tg-all").classList.toggle("on", m === "all");
+  refresh();
+}
+
+async function refresh() {
+  const qs = mode === "today" ? "today=1" : "days=30";
+  const label = mode === "today" ? "today" : "last 30 days";
+  ["tf-stats", "tf-daily", "tf-channels", "tf-pages", "tf-country", "tf-hourly"].forEach((id) => { const e = el(id); if (e) e.innerHTML = box("Loading…"); });
+  let edge, owned;
+  try {
+    [edge, owned] = await Promise.all([
+      SSCrm.fetchJSON("/api/traffic?" + qs),
+      SSCrm.fetchJSON("/api/traffic-channels?" + qs),
+    ]);
+  } catch (e) {
+    el("tf-stats").innerHTML = box("Couldn't load traffic.");
     return;
   }
-  const empty = `No data yet — logging started just now and fills in as visitors arrive. Check back in a day or two.`;
+  renderEdge(edge, label);
+  renderOwned(owned, label);
+}
 
-  // ── Channels ──
-  const channels = (data.channels || []);
-  const chTotal = channels.reduce((s, c) => s + c.n, 0) || 1;
-  const chMax = channels[0] ? channels[0].n : 1;
+// Cloudflare edge data → stats, daily list, country, hourly.
+function renderEdge(data, label) {
+  const days = (data && data.days) || [];
+  el("tf-daily-h").textContent = "Daily traffic · " + label;
+  el("tf-hourly-h").textContent = "Traffic by hour · Central Time" + (label === "today" ? " · today" : "");
+
+  if (!days.length) {
+    el("tf-stats").innerHTML = statHTML("Page views · " + label, "0") + statHTML("Unique visitors · " + label, "0");
+    el("tf-daily").innerHTML = box("No traffic recorded " + (label === "today" ? "today yet" : "in this range") + ".");
+  } else {
+    const max = Math.max(...days.map((d) => d.pageViews), 1);
+    const totalPV = days.reduce((s, d) => s + d.pageViews, 0);
+    const totalU = days.reduce((s, d) => s + d.uniques, 0);
+    let stats = statHTML("Page views · " + label, N(totalPV)) + statHTML("Unique visitors · " + label, N(totalU));
+    if (label !== "today") stats += statHTML("Avg / day", N(Math.round(totalPV / days.length)));
+    el("tf-stats").innerHTML = stats;
+
+    const ordered = days.slice().reverse();
+    const dayRow = (d, isFirst) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft)">
+        <span style="font-size:13px;color:var(--ink);min-width:52px;font-weight:600">${fmtDay(d.date)}${isFirst ? " <span style='font-weight:500;color:var(--ink-soft);font-size:11px'>today</span>" : ""}</span>
+        <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden"><span style="display:block;height:100%;background:var(--accent);width:${Math.round((d.pageViews / max) * 100)}%"></span></span>
+        <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:60px;text-align:right">${N(d.pageViews)}</span>
+        <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:74px;text-align:right;font-size:12px">${N(d.uniques)} visitors</span>
+      </div>`;
+    const rowsArr = ordered.map((d, i) => dayRow(d, i === 0));
+    const rest = rowsArr.slice(1).join("");
+    el("tf-daily").innerHTML = rowsArr[0] + (rest
+      ? `<details style="margin-top:4px"><summary style="cursor:pointer;color:var(--clay-deep);font-weight:600;font-size:13px;padding:10px 0 4px;list-style:none">▸ Show previous ${rowsArr.length - 1} days</summary>${rest}</details>`
+      : "");
+  }
+
+  // Country
+  const countries = (data && data.countries) || [];
+  if (!countries.length) { el("tf-country").innerHTML = box("No country data " + (label === "today" ? "today yet" : "") + "."); }
+  else {
+    const cMax = Math.max(...countries.map((c) => c.requests), 1);
+    const cTotal = countries.reduce((s, c) => s + c.requests, 0) || 1;
+    el("tf-country").innerHTML = collapse(countries.map((c) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-soft)${c.code === 'US' ? ';background:var(--clay-wash,#FDF0EA)' : ''}">
+        <span style="min-width:120px;font-size:13px;color:var(--ink);font-weight:${c.code === 'US' ? '700' : '500'}">${flag(c.code)} ${c.code}${c.code === 'US' ? ' 🇺🇸 · local' : ''}</span>
+        <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden"><span style="display:block;height:100%;background:${c.code === 'US' ? 'var(--accent)' : 'var(--ink-soft)'};width:${Math.round((c.requests / cMax) * 100)}%"></span></span>
+        <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:44px;text-align:right;font-size:12px">${Math.round((c.requests / cTotal) * 100)}%</span>
+      </div>`), "countries");
+  }
+
+  // Hourly
+  const hourly = (data && data.hourly) || [];
+  const hasHours = hourly.some((h) => h.pageViews > 0);
+  if (!hasHours) { el("tf-hourly").innerHTML = box("No hourly data " + (label === "today" ? "today yet" : "") + "."); }
+  else {
+    const hMax = Math.max(...hourly.map((h) => h.pageViews), 1);
+    const hLabel = (h) => { const ap = h < 12 ? "a" : "p"; let hr = h % 12; if (hr === 0) hr = 12; return `${hr}${ap}`; };
+    el("tf-hourly").innerHTML = `<div style="display:flex;align-items:flex-end;gap:2px;height:110px;margin-top:12px;padding-top:8px">${hourly.map((h) => `
+      <div title="${hLabel(h.hour)} · ${N(h.pageViews)} views" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;min-width:0">
+        <span style="width:70%;background:var(--accent);border-radius:2px 2px 0 0;height:${Math.max(2, Math.round((h.pageViews / hMax) * 90))}px"></span>
+        ${h.hour % 3 === 0 ? `<span style="font-size:9px;color:var(--ink-soft);white-space:nowrap">${hLabel(h.hour)}</span>` : `<span style="font-size:9px">&nbsp;</span>`}
+      </div>`).join("")}</div>`;
+  }
+}
+
+// Server-side first-party log → channels + per-page traffic (with avg time).
+function renderOwned(data, label) {
+  const channels = (data && data.channels) || [];
+  const empty = "No visitors logged " + (label === "today" ? "today yet" : "in this range") + " — the first-party log fills in as visitors arrive.";
   const color = (name) => {
     const k = (name || "").toLowerCase();
     if (k.includes("google ads")) return "#2563EB";
@@ -186,37 +186,40 @@ async function loadOwnedTraffic() {
     if (k === "direct") return "#94A3B8";
     return "var(--accent)";
   };
-  if (chBody) chBody.outerHTML = !channels.length ? emptyBox(empty) : `<div style="margin-top:6px">${collapse(channels.map((c) => `
-    <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-soft)">
-      <span style="min-width:150px;font-size:13px;color:var(--ink);font-weight:600">${SSCrm.esc(c.channel || "Unknown")}</span>
-      <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden"><span style="display:block;height:100%;background:${color(c.channel)};width:${Math.round((c.n / chMax) * 100)}%"></span></span>
-      <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:40px;text-align:right">${N(c.n)}</span>
-      <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:40px;text-align:right;font-size:12px">${Math.round((c.n / chTotal) * 100)}%</span>
-    </div>`), "channels")}
-    <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">Acquisition channel for <strong>${N(data.entries)}</strong> visitor entries in the last 30 days — the true "where did they come from" for <em>all</em> visitors, not just those who filled out a form.</p></div>`;
+  if (!channels.length) { el("tf-channels").innerHTML = box(empty); }
+  else {
+    const chTotal = channels.reduce((s, c) => s + c.n, 0) || 1;
+    const chMax = channels[0] ? channels[0].n : 1;
+    el("tf-channels").innerHTML = collapse(channels.map((c) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-soft)">
+        <span style="min-width:150px;font-size:13px;color:var(--ink);font-weight:600">${SSCrm.esc(c.channel || "Unknown")}</span>
+        <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden"><span style="display:block;height:100%;background:${color(c.channel)};width:${Math.round((c.n / chMax) * 100)}%"></span></span>
+        <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:40px;text-align:right">${N(c.n)}</span>
+        <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:40px;text-align:right;font-size:12px">${Math.round((c.n / chTotal) * 100)}%</span>
+      </div>`), "channels") +
+      `<p class="muted" style="font-size:12px;margin:12px 0 0">Acquisition channel for <strong>${N(data.entries)}</strong> visitor entries ${label} — where <em>all</em> visitors came from, not just those who filled out a form.</p>`;
+  }
 
-  // ── Traffic by page (with avg time on page) ──
-  const fmtDur = (s) => { s = Math.round(s || 0); if (!s) return "—"; const m = Math.floor(s / 60), r = s % 60; return m ? (m + "m" + (r ? " " + r + "s" : "")) : (r + "s"); };
-  const engByPath = data.engByPath || {};
-  const pages = (data.pages || []);
-  const pgMax = pages[0] ? pages[0].n : 1;
-  const pretty = (p) => p === "/" ? "/ (home)" : p;
-  if (pgBody) pgBody.outerHTML = !pages.length ? emptyBox(empty) : `<div style="margin-top:6px">
-    <div style="display:flex;align-items:center;gap:12px;padding:0 0 4px;font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;font-weight:700">
-      <span style="min-width:180px;max-width:180px">Page</span><span style="flex:1"></span>
-      <span style="min-width:44px;text-align:right">Views</span><span style="min-width:64px;text-align:right">Avg time</span>
-    </div>
-    ${collapse(pages.map((pg) => `
-    <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-soft)">
-      <span style="min-width:180px;max-width:180px;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${SSCrm.esc(pg.path)}">${SSCrm.esc(pretty(pg.path))}</span>
-      <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden"><span style="display:block;height:100%;background:var(--accent);width:${Math.round((pg.n / pgMax) * 100)}%"></span></span>
-      <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:44px;text-align:right">${N(pg.n)}</span>
-      <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:64px;text-align:right;font-size:12px" title="Average active time on this page">${fmtDur(engByPath[pg.path])}</span>
-    </div>`), "pages")}
-    <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">Pageviews per page over the last 30 days — <strong>real US visitors, excluding your CRM and bots</strong>. Total: <strong>${N(data.visits)}</strong> pageviews · site-wide avg time on page: <strong>${data.eng_samples ? fmtDur(data.avg_seconds) : "collecting…"}</strong>. <em>Avg time is how long visitors actually stay — measured first-party, so ad blockers don't hide it.</em></p></div>`;
-
-  function err(m){ return `<div style="padding:18px;text-align:center;color:var(--ink-soft);font-size:13px">${m}</div>`; }
-  function emptyBox(m){ return `<div style="padding:18px;text-align:center;color:var(--ink-soft);font-size:13px">${m}</div>`; }
+  const engByPath = (data && data.engByPath) || {};
+  const pages = (data && data.pages) || [];
+  if (!pages.length) { el("tf-pages").innerHTML = box(empty); }
+  else {
+    const pgMax = pages[0] ? pages[0].n : 1;
+    const pretty = (p) => p === "/" ? "/ (home)" : p;
+    el("tf-pages").innerHTML =
+      `<div style="display:flex;align-items:center;gap:12px;padding:0 0 4px;font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;font-weight:700">
+        <span style="min-width:180px;max-width:180px">Page</span><span style="flex:1"></span>
+        <span style="min-width:44px;text-align:right">Views</span><span style="min-width:64px;text-align:right">Avg time</span>
+      </div>` +
+      collapse(pages.map((pg) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-soft)">
+        <span style="min-width:180px;max-width:180px;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${SSCrm.esc(pg.path)}">${SSCrm.esc(pretty(pg.path))}</span>
+        <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden"><span style="display:block;height:100%;background:var(--accent);width:${Math.round((pg.n / pgMax) * 100)}%"></span></span>
+        <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:44px;text-align:right">${N(pg.n)}</span>
+        <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:64px;text-align:right;font-size:12px" title="Average active time on this page">${fmtDur(engByPath[pg.path])}</span>
+      </div>`), "pages") +
+      `<p class="muted" style="font-size:12px;margin:12px 0 0">Pageviews per page ${label} — <strong>real US visitors, excluding CRM and bots</strong>. Total: <strong>${N(data.visits)}</strong> · site-wide avg time on page: <strong>${data.eng_samples ? fmtDur(data.avg_seconds) : "collecting…"}</strong>.</p>`;
+  }
 }
 </script>
 </body>

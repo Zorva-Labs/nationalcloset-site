@@ -165,21 +165,21 @@
     <div id="note" class="note"></div>
 
     <div class="split" id="split">
-      <div class="mini">
+      <div class="mini" id="m1">
         <div class="mini-txt">
-          <div class="l">1 · At signing</div>
+          <div class="l" id="m1-l">1 · At signing</div>
           <div class="m" id="d-halfnote">50% (or hard costs)</div>
         </div>
         <div class="v" id="d-half">$0</div>
       </div>
-      <div class="mini">
+      <div class="mini" id="m2">
         <div class="mini-txt">
           <div class="l">2 · At scheduling</div>
           <div class="m">25% — materials in</div>
         </div>
         <div class="v" id="d-sched">$0</div>
       </div>
-      <div class="mini">
+      <div class="mini" id="m3">
         <div class="mini-txt">
           <div class="l">3 · Day of install</div>
           <div class="m">25% — covers labor + profit</div>
@@ -190,19 +190,19 @@
 
     <div class="card">
       <table class="rows">
+        <tr><td>Closet quote</td><td id="r-gross">$0</td></tr>
+        <tr class="disc-row" id="r-discrow" hidden><td>Discount <span class="pct" id="r-disclbl"></span></td><td id="r-discamt">$0</td></tr>
+        <tr><td>+ Shipping <span class="pct" id="r-shiplbl">(5%)</span></td><td id="r-ship">$0</td></tr>
+        <tr><td>+ Taxes <span class="pct" id="r-taxlbl">(0%)</span></td><td id="r-tax2">$0</td></tr>
+        <tr class="grand"><td>Client pays</td><td id="r-clienttotal">$0</td></tr>
+        <tr class="sep muted"><td>Your costs &amp; profit</td><td></td></tr>
         <tr><td>Materials <span class="pct" id="r-matlbl">(price ÷ 2.0)</span></td><td id="r-mat">$0</td></tr>
         <tr class="disc-row"><td>Mfr. discount <span class="pct" id="r-matdisclbl">(20%)</span></td><td id="r-matdiscamt">$0</td></tr>
-        <tr><td>Shipping <span class="pct" id="r-shiplbl">(5%)</span></td><td id="r-ship">$0</td></tr>
-        <tr><td>Taxes <span class="pct" id="r-taxlbl">(0%)</span></td><td id="r-tax2">$0</td></tr>
-        <tr class="muted"><td>= Hard costs <span class="pct">(deposit target)</span></td><td id="r-hard">$0</td></tr>
         <tr><td>Labor <span class="pct" id="r-laborlbl">(10% of price · min $350, paid after install)</span></td><td id="r-labor">$0</td></tr>
         <tr><td>Processing fee <span class="pct" id="r-feelbl">(3%)</span></td><td id="r-fee">$0</td></tr>
-        <tr class="muted"><td>Total cost</td><td id="r-cost">$0</td></tr>
-        <tr class="sep"><td>Gross quote</td><td id="r-gross">$0</td></tr>
-        <tr class="disc-row" id="r-discrow" hidden><td>Discount <span class="pct" id="r-disclbl"></span></td><td id="r-discamt">$0</td></tr>
-        <tr class="muted" id="r-netrow" hidden><td>Net — client pays</td><td id="r-net">$0</td></tr>
         <tr class="grand"><td>Profit <span class="pct" id="r-margin"></span></td><td id="r-profit">$0</td></tr>
       </table>
+      <p class="hint" style="margin-top:10px">Shipping &amp; taxes are added on top of the quote — the client pays them, so they pass through and don't affect your profit. Profit = closet quote − materials − labor − processing fee.</p>
     </div>
   </div>
 </div>
@@ -271,13 +271,11 @@
     var matList = r.divisor > 0 ? Math.round(priceCents / r.divisor) : 0;    // divisor 0 → no materials
     var matDisc = Math.round(matList * r.matDiscRate);   // manufacturer discount (credit)
     var materials = matList - matDisc;                   // net materials cost we actually pay
-    // Shipping is either a flat $ amount or a % of net materials; taxes follow.
-    var shipping = r.shipMode === "usd" ? Math.round(r.shipRaw * 100) : Math.round(materials * r.shipRate);
-    var taxes = Math.round((materials + shipping) * r.taxRate);
+    // Shipping is a client-facing add-on: a flat $ amount or a % of the quote.
+    var shipping = r.shipMode === "usd" ? Math.round(r.shipRaw * 100) : Math.round(priceCents * r.shipRate);
     // Labor = 10% of price (min $350) — unless you're installing it yourself.
     var labor = (r.selfInstall || priceCents <= 0) ? 0 : Math.max(Math.round(priceCents * r.laborRate), 35000);
-    var hard = materials + shipping + taxes;             // up-front hard costs (net of discount)
-    return { matList: matList, matDisc: matDisc, materials: materials, shipping: shipping, tax: taxes, labor: labor, hard: hard, cost: hard + labor };
+    return { matList: matList, matDisc: matDisc, materials: materials, shipping: shipping, labor: labor };
   }
 
   function render() {
@@ -285,87 +283,95 @@
     var dollars = parseFloat(raw);
     var out = el("out");
     if (!raw || isNaN(dollars) || dollars <= 0) { out.hidden = true; return; }
-    var price = Math.round(dollars * 100);                 // gross = all-inclusive cost basis
+    var price = Math.round(dollars * 100);                 // the closet quote (profit basis)
 
-    // Discount comes out of profit only. Client pays NET = gross − discount.
-    // Entered as either a dollar amount or a % of the gross; either way it
-    // resolves to cents here and can never exceed the price.
-    var discount = discCents(price);
-    var net = price - discount;
+    var discount = discCents(price);                       // off the quote, out of profit
+    var netQuote = price - discount;                       // closet portion the client pays
 
     var r = rates();
     var f = calc(price, r);
-    var half = Math.round(net * 0.5);
-    // Deposit = at least 50% of the net, but never less than the hard costs
-    // (materials + shipping + taxes). Capped at net.
-    var deposit = Math.min(net, Math.max(half, f.hard));
-    var fee = Math.round(net * r.feeRate);       // payment-processing fee, out of profit
-    var totalCost = f.cost + fee;
-    var profit = net - totalCost;
 
-    // Pay-in-full shows a single payment; otherwise the 50/25/25 schedule.
+    // Shipping & taxes are ADD-ONS the client pays on top of the quote. They
+    // pass through (client pays them, you pay them out), so they don't touch
+    // profit. Taxes apply to the closet portion + shipping.
+    var shipping = f.shipping;
+    var taxes = Math.round((netQuote + shipping) * r.taxRate);
+    var clientTotal = netQuote + shipping + taxes;         // final cost to the client
+
+    var fee = Math.round(clientTotal * r.feeRate);         // processing fee on the full charge
+    var profit = netQuote - f.materials - f.labor - fee;   // shipping/taxes wash out
+
+    // Deposit is based on the client's total. Never less than the hard costs
+    // you actually outlay/owe up front (materials + shipping + taxes).
+    var hard = f.materials + shipping + taxes;
+    var half = Math.round(clientTotal * 0.5);
+    var deposit = Math.min(clientTotal, Math.max(half, hard));
+
+    // ── Payment schedule ──
     var payFull = cbPayFull.checked;
     if (payFull) {
       el("d-lbl").textContent = "Paid in full";
-      el("d-min").textContent = money(net);
+      el("d-min").textContent = money(clientTotal);
       el("d-minpct").textContent = "100% — one payment";
-      el("d-covers").innerHTML = "One payment of <b>" + money(net) + "</b> — covers materials, shipping, taxes" + (f.labor > 0 ? ", labor" : "") + " and your profit.";
-      el("split").hidden = true;
-      el("note").hidden = true;
-    } else {
-      el("d-lbl").textContent = "Minimum up front to quote";
-      el("split").hidden = false;
+      el("d-covers").innerHTML = "The client pays the full <b>" + money(clientTotal) + "</b> in one payment — the closet quote" + (shipping > 0 ? ", shipping" : "") + (taxes > 0 ? ", taxes" : "") + " and everything, up front.";
       el("note").hidden = false;
+      el("note").className = "note ok";
+      el("note").innerHTML = '<span class="ic">✓</span><div><b>Paid in full:</b> the client pays the entire <b>' + money(clientTotal) + '</b> in a single payment at signing — no scheduling or install-day balance.</div>';
+      // Collapse the 3-payment split to one "Paid in full" box.
+      el("m2").hidden = true; el("m3").hidden = true;
+      el("m1-l").textContent = "Paid in full";
+      el("d-halfnote").textContent = "one payment · 100%";
+      el("d-half").textContent = money(clientTotal);
+    } else {
+      el("m2").hidden = false; el("m3").hidden = false;
+      el("m1-l").textContent = "1 · At signing";
+      el("note").hidden = false;
+      el("d-lbl").textContent = "Minimum up front to quote";
       el("d-min").textContent = money(deposit);
-      el("d-minpct").textContent = pct(deposit, net) + " of the " + (discount > 0 ? "net " : "") + "job";
-      el("d-covers").innerHTML = 'At least 50% of the job — and always covers your <b>' + money(f.hard) + '</b> in materials, shipping &amp; taxes. The rest bills 25% at scheduling, 25% on install day.';
-      // Payments 2 and 3 split what's left after the deposit evenly.
-      var rest = Math.max(0, net - deposit);
+      el("d-minpct").textContent = pct(deposit, clientTotal) + " of the client total";
+      el("d-covers").innerHTML = 'At least 50% of the total — and always covers your <b>' + money(hard) + '</b> in materials, shipping &amp; taxes. The rest bills 25% at scheduling, 25% on install day.';
+      var rest = Math.max(0, clientTotal - deposit);
       var atScheduling = Math.round(rest / 2);
       el("d-half").textContent = money(deposit);
       el("d-sched").textContent = money(atScheduling);
       el("d-bal").textContent = money(rest - atScheduling);
 
       var note = el("note");
-      if (f.hard <= half) {
+      if (hard <= half) {
         note.className = "note ok";
-        note.innerHTML = '<span class="ic">✓</span><div>The <b>50% up front</b> (' + money(half) + ') already covers your <b>' + money(f.hard) + '</b> in materials, shipping &amp; taxes, with ' + money(half - f.hard) + ' to spare. The rest bills 25% at scheduling and 25% on install day.</div>';
+        note.innerHTML = '<span class="ic">✓</span><div>The <b>50% up front</b> (' + money(half) + ') already covers your <b>' + money(hard) + '</b> in materials, shipping &amp; taxes, with ' + money(half - hard) + ' to spare. The rest bills 25% at scheduling and 25% on install day.</div>';
         el("d-halfnote").textContent = "50% · covers hard costs ✓";
       } else {
         note.className = "note warn";
-        note.innerHTML = '<span class="ic">!</span><div>Hard costs (<b>' + money(f.hard) + '</b>) exceed 50%, so the up-front payment is bumped to <b>' + money(deposit) + '</b> (' + pct(deposit, net) + ') to cover them. The remaining ' + money(rest) + ' splits evenly between scheduling and install day.</div>';
+        note.innerHTML = '<span class="ic">!</span><div>Hard costs (<b>' + money(hard) + '</b>) exceed 50%, so the up-front payment is bumped to <b>' + money(deposit) + '</b> (' + pct(deposit, clientTotal) + ') to cover them. The remaining ' + money(rest) + ' splits evenly between scheduling and install day.</div>';
         el("d-halfnote").textContent = "raised to cover hard costs";
       }
     }
 
+    // ── Breakdown ──
     var pctStr = function (frac) { return "(" + (+(frac * 100).toFixed(4)) + "%)"; };
-    el("r-mat").textContent = money(f.matList);
-    el("r-matdiscamt").textContent = "−" + money(f.matDisc);
-    el("r-ship").textContent = money(f.shipping);
-    el("r-tax2").textContent = money(f.tax);
-    el("r-hard").textContent = money(f.hard);
-    el("r-matlbl").textContent = "(price ÷ " + (+r.divisor.toFixed(4)) + ")";
-    el("r-matdisclbl").textContent = pctStr(r.matDiscRate);
-    el("r-shiplbl").textContent = r.shipMode === "usd" ? "(flat amount)" : pctStr(r.shipRate);
+    var showDisc = discount > 0;
+    el("r-gross").textContent = money(price);
+    el("r-discrow").hidden = !showDisc;
+    el("r-discamt").textContent = "−" + money(discount);
+    el("r-disclbl").textContent = price > 0 ? "(" + pct(discount, price) + " off)" : "";
+    el("r-ship").textContent = money(shipping);
+    el("r-shiplbl").textContent = r.shipMode === "usd" ? "(flat)" : pctStr(r.shipRate);
+    el("r-tax2").textContent = money(taxes);
     el("r-taxlbl").textContent = pctStr(r.taxRate);
+    el("r-clienttotal").textContent = money(clientTotal);
+    el("r-mat").textContent = money(f.matList);
+    el("r-matlbl").textContent = "(price ÷ " + (+r.divisor.toFixed(4)) + ")";
+    el("r-matdiscamt").textContent = "−" + money(f.matDisc);
+    el("r-matdisclbl").textContent = pctStr(r.matDiscRate);
     el("r-laborlbl").textContent = r.selfInstall ? "(you're installing — no labor cost)" : "(" + (+(r.laborRate * 100).toFixed(4)) + "% of price · min $350, paid after install)";
     el("r-labor").textContent = money(f.labor);
     rLabor.disabled = r.selfInstall;
     rLabor.style.opacity = r.selfInstall ? ".4" : "";
     el("r-fee").textContent = money(fee);
     el("r-feelbl").textContent = pctStr(r.feeRate);
-    el("r-cost").textContent = money(totalCost);
-    el("r-gross").textContent = money(price);
-    var showDisc = discount > 0;
-    el("r-discrow").hidden = !showDisc;
-    el("r-netrow").hidden = !showDisc;
-    el("r-discamt").textContent = "−" + money(discount);
-    // In % mode show what the percentage actually came to; in $ mode show the
-    // effective % off, so the two readings are always comparable.
-    el("r-disclbl").textContent = price > 0 ? "(" + pct(discount, price) + " off)" : "";
-    el("r-net").textContent = money(net);
     el("r-profit").textContent = money(profit);
-    el("r-margin").textContent = "· " + pct(profit, net) + " margin" + (showDisc ? " on net" : "");
+    el("r-margin").textContent = "· " + pct(profit, netQuote) + " margin";
 
     out.hidden = false;
   }

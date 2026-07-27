@@ -25,7 +25,16 @@ export async function onRequestGet(context) {
   }
   const safe = { ...k };
   delete safe.author_user_id;
-  return json({ contract: safe, lines });
+  // Resume: if the contract is signed but the deposit isn't paid, hand back the
+  // deposit invoice token so a returning customer can pick up at payment.
+  let invoiceToken = null;
+  if (["signed_by_customer", "fully_executed"].includes(k.status) && (k.deposit_cents || 0) > 0) {
+    const inv = await context.env.DB.prepare(
+      `SELECT view_token FROM invoices WHERE project_id=?1 AND status NOT IN ('paid','void') ORDER BY id ASC LIMIT 1`
+    ).bind(k.project_id).first();
+    invoiceToken = inv?.view_token || null;
+  }
+  return json({ contract: safe, lines, invoice_token: invoiceToken });
 }
 
 export async function onRequestPost(context) {

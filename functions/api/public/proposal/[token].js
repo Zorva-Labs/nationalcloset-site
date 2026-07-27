@@ -38,8 +38,18 @@ export async function onRequestGet(context) {
   await trackView(context.env.DB, "proposals", p.id);
   const expired = isExpired(p);
   if (p.status === "sent" && !expired) await context.env.DB.prepare(`UPDATE proposals SET status='viewed' WHERE id=?1`).bind(p.id).run();
+  // Resume: if this proposal is already accepted and its contract is still
+  // awaiting signature, hand back the contract token so the customer lands on
+  // the contract instead of a dead-end "we'll send it shortly" note.
+  let contractToken = null;
+  if (p.status === "accepted") {
+    const kc = await context.env.DB.prepare(
+      `SELECT view_token, status FROM contracts WHERE proposal_id=?1 AND status NOT IN ('void') ORDER BY id DESC LIMIT 1`
+    ).bind(p.id).first();
+    if (kc && !["signed_by_customer", "fully_executed"].includes(kc.status)) contractToken = kc.view_token;
+  }
   const safe = { ...p, expired }; delete safe.notes_internal; delete safe.author_user_id;
-  return json({ proposal: safe, tiers, comments, attachments });
+  return json({ proposal: safe, tiers, comments, attachments, contract_token: contractToken });
 }
 
 export async function onRequestPost(context) {

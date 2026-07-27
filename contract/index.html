@@ -140,6 +140,7 @@ async function load() {
     const data = await (await fetch("/api/public/contract/" + token)).json();
     if (data.error) throw new Error(data.error);
     contract = data.contract;
+    window.__payInv = data.invoice_token || null;   // resume: pay-deposit link when signed but unpaid
     render(data.contract, data.lines);
   } catch (e) { document.getElementById("root").innerHTML = `<p style="color:#B85450;text-align:center;padding:40px">${esc(e.message)}</p>`; }
 }
@@ -198,9 +199,10 @@ function render(k, lines) {
       </div>
     ` : isSigned ? `
       <div class="signed-box" style="background:var(--color-brass);color:var(--color-ink)">
-        <h2 style="color:var(--color-ink)">Thank you — signed!</h2>
-        <p style="color:var(--color-ink);opacity:0.8">We've received your signature. The contract is fully executed — we'll release your order shortly.</p>
-        <button onclick="window.print()" class="no-print" style="margin-top:18px;padding:12px 22px;background:var(--color-ink);color:var(--color-bg);border:0;font:inherit;font-family:var(--font-mono);font-size:0.78rem;letter-spacing:0.18em;text-transform:uppercase;cursor:pointer">🖨 Print / Save PDF</button>
+        <h2 style="color:var(--color-ink)">Thank you — you're almost done!</h2>
+        <p style="color:var(--color-ink);opacity:0.85">We've received your signature.${(window.__payInv && (k.deposit_cents||0) > 0) ? ` One last step — pay your deposit to release your order to the manufacturer.` : ` We'll release your order shortly.`}</p>
+        ${(window.__payInv && (k.deposit_cents||0) > 0) ? `<a href="/invoice/?t=${encodeURIComponent(window.__payInv)}" class="no-print" style="display:block;margin-top:16px;padding:18px 24px;background:var(--color-ink);color:#fff;border-radius:10px;font-weight:800;font-size:1.12rem;text-decoration:none;text-align:center">Pay your ${money(k.deposit_cents)} deposit now →</a>` : ""}
+        <button onclick="window.print()" class="no-print" style="margin-top:12px;padding:12px 22px;background:transparent;color:var(--color-ink);border:1.5px solid var(--color-ink);font:inherit;font-weight:700;font-size:0.82rem;border-radius:8px;cursor:pointer">🖨 Print / Save PDF</button>
       </div>
     ` : `
       <div class="sign-box">

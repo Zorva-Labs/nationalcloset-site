@@ -118,6 +118,7 @@ async function load() {
     const data = await (await fetch("/api/public/proposal/" + token)).json();
     if (data.error) throw new Error(data.error);
     proposal = data.proposal;
+    window.__contractToken = data.contract_token || null;   // resume: jump to the awaiting-signature contract
     render(data.proposal, data.tiers, data.attachments || []);
   } catch (e) { document.getElementById("root").innerHTML = `<p class="err">${esc(e.message)}</p>`; }
 }
@@ -254,9 +255,10 @@ function render(p, tiers, attachments) {
       </div>` : ""}
 
     ${isAccepted ? `
-      <div class="status">
-        <h2>Accepted — thank you!</h2>
-        <p>We'll send your contract over shortly to sign and book the job. Questions? Call or text <a href="tel:+16292988241">629-298-8241</a>.</p>
+      <div class="accept">
+        <h2>Accepted — one step left</h2>
+        <p>${window.__contractToken ? "Sign your contract to book the job and reserve your install — it only takes a minute." : "We'll send your contract over shortly to sign and book the job."} Questions? Call or text <a href="tel:+16292988241">629-298-8241</a>.</p>
+        ${window.__contractToken ? `<a class="btn accept-btn" href="/contract/?t=${encodeURIComponent(window.__contractToken)}" style="min-height:56px;font-size:1.1rem;padding:16px 34px;text-decoration:none;display:inline-block">Go to your contract to sign →</a>` : ""}
       </div>
     ` : (p.selected_tier ? `
       <div class="accept">

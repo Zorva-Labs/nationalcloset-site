@@ -19,6 +19,9 @@
 <body>
 <script src="/crm/crm-app.js?v=ncc105"></script>
 <script>
+// Wrapped in an IIFE so nothing leaks to the global scope — inline scripts
+// share globals with crm-app.js, which already defines fmtDay() etc.
+(function () {
 // ── shared helpers ──────────────────────────────────────────────────────────
 const el = (id) => document.getElementById(id);
 const N = (n) => (n || 0).toLocaleString();
@@ -221,6 +224,7 @@ function renderOwned(data, label) {
       `<p class="muted" style="font-size:12px;margin:12px 0 0">Pageviews per page ${label} — <strong>real US visitors, excluding CRM and bots</strong>. Total: <strong>${N(data.visits)}</strong> · site-wide avg time on page: <strong>${data.eng_samples ? fmtDur(data.avg_seconds) : "collecting…"}</strong>.</p>`;
   }
 }
+})();
 </script>
 </body>
 </html>

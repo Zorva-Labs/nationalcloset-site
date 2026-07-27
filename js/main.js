@@ -471,17 +471,19 @@
   try {
     var path = location.pathname;
     if (/^\/(crm|api)(\/|$)/.test(path)) return;   // never track admin/API
-    var activeMs = 0, last = Date.now(), visible = !document.hidden, sent = false;
+    // One id per pageview: we report the RUNNING total on every hide/unload and
+    // the server keeps the MAX, so an early tab-switch can't lock in a tiny time.
+    var pvid = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    var activeMs = 0, last = Date.now(), visible = !document.hidden, lastSent = 0;
 
     function accrue() { if (visible) { var now = Date.now(); activeMs += now - last; last = now; } }
     function send() {
       accrue();
-      if (sent) return;
       var secs = Math.round(activeMs / 1000);
-      if (secs < 1 || secs > 3600) return;
-      sent = true;
+      if (secs < 1 || secs > 3600 || secs <= lastSent) return;   // only send growth
+      lastSent = secs;
       try {
-        var body = JSON.stringify({ p: path, s: secs });
+        var body = JSON.stringify({ p: path, s: secs, id: pvid });
         if (navigator.sendBeacon) navigator.sendBeacon("/api/pv-time", body);
         else fetch("/api/pv-time", { method: "POST", body: body, keepalive: true });
       } catch (e) {}

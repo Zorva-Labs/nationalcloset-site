@@ -76,14 +76,14 @@
   const countries = (data.countries || []);
   const cMax = Math.max(...countries.map((c) => c.requests), 1);
   const cTotal = countries.reduce((s, c) => s + c.requests, 0) || 1;
-  const sourcesRows = countries.map((c) => `
+  const sourcesRows = collapse(countries.map((c) => `
     <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-soft)${c.code === 'US' ? ';background:var(--clay-wash,#FDF0EA)' : ''}">
       <span style="min-width:120px;font-size:13px;color:var(--ink);font-weight:${c.code === 'US' ? '700' : '500'}">${flag(c.code)} ${c.code}${c.code === 'US' ? ' 🇺🇸 · local' : ''}</span>
       <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden">
         <span style="display:block;height:100%;background:${c.code === 'US' ? 'var(--accent)' : 'var(--ink-soft)'};width:${Math.round((c.requests / cMax) * 100)}%"></span>
       </span>
       <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:44px;text-align:right;font-size:12px">${Math.round((c.requests / cTotal) * 100)}%</span>
-    </div>`).join("");
+    </div>`), "countries");
 
   // ── Traffic by hour of day (Central Time) ─────────────────────────────────
   const hourly = (data.hourly || []);
@@ -144,6 +144,16 @@
   loadOwnedTraffic();
 })();
 
+// Show the top row and tuck the rest behind a "Show all N" dropdown — same
+// compact pattern as the daily-traffic list. `rows` is an array of row HTML.
+function collapse(rows, noun) {
+  if (!rows || !rows.length) return "";
+  const rest = rows.slice(1).join("");
+  return rows[0] + (rest
+    ? `<details style="margin-top:2px"><summary style="cursor:pointer;color:var(--clay-deep);font-weight:600;font-size:12px;padding:9px 0 3px;list-style:none">▸ Show all ${rows.length} ${noun}</summary>${rest}</details>`
+    : "");
+}
+
 // Real visitor analytics from the server-side pageview log — channels + per-page
 // traffic. Starts empty (logging began now) and fills in as visitors arrive.
 // Blocker-proof, GA-independent, and already excludes /crm, bots and non-US.
@@ -176,13 +186,13 @@ async function loadOwnedTraffic() {
     if (k === "direct") return "#94A3B8";
     return "var(--accent)";
   };
-  if (chBody) chBody.outerHTML = !channels.length ? emptyBox(empty) : `<div style="margin-top:6px">${channels.map((c) => `
+  if (chBody) chBody.outerHTML = !channels.length ? emptyBox(empty) : `<div style="margin-top:6px">${collapse(channels.map((c) => `
     <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-soft)">
       <span style="min-width:150px;font-size:13px;color:var(--ink);font-weight:600">${SSCrm.esc(c.channel || "Unknown")}</span>
       <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden"><span style="display:block;height:100%;background:${color(c.channel)};width:${Math.round((c.n / chMax) * 100)}%"></span></span>
       <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:40px;text-align:right">${N(c.n)}</span>
       <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:40px;text-align:right;font-size:12px">${Math.round((c.n / chTotal) * 100)}%</span>
-    </div>`).join("")}
+    </div>`), "channels")}
     <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">Acquisition channel for <strong>${N(data.entries)}</strong> visitor entries in the last 30 days — the true "where did they come from" for <em>all</em> visitors, not just those who filled out a form.</p></div>`;
 
   // ── Traffic by page (with avg time on page) ──
@@ -196,13 +206,13 @@ async function loadOwnedTraffic() {
       <span style="min-width:180px;max-width:180px">Page</span><span style="flex:1"></span>
       <span style="min-width:44px;text-align:right">Views</span><span style="min-width:64px;text-align:right">Avg time</span>
     </div>
-    ${pages.map((pg) => `
+    ${collapse(pages.map((pg) => `
     <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-soft)">
       <span style="min-width:180px;max-width:180px;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${SSCrm.esc(pg.path)}">${SSCrm.esc(pretty(pg.path))}</span>
       <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden"><span style="display:block;height:100%;background:var(--accent);width:${Math.round((pg.n / pgMax) * 100)}%"></span></span>
       <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:44px;text-align:right">${N(pg.n)}</span>
       <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:64px;text-align:right;font-size:12px" title="Average active time on this page">${fmtDur(engByPath[pg.path])}</span>
-    </div>`).join("")}
+    </div>`), "pages")}
     <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">Pageviews per page over the last 30 days — <strong>real US visitors, excluding your CRM and bots</strong>. Total: <strong>${N(data.visits)}</strong> pageviews · site-wide avg time on page: <strong>${data.eng_samples ? fmtDur(data.avg_seconds) : "collecting…"}</strong>. <em>Avg time is how long visitors actually stay — measured first-party, so ad blockers don't hide it.</em></p></div>`;
 
   function err(m){ return `<div style="padding:18px;text-align:center;color:var(--ink-soft);font-size:13px">${m}</div>`; }

@@ -42,7 +42,7 @@ const DEFAULT_REPLY = "hello@nationalclosetco.com";
 //   attachments       — [{ filename, content (b64), content_type }]
 export async function sendEmail(env, {
   to, cc, bcc, subject, html, text, replyTo, attachments,
-  messageId, inReplyTo, references, from,
+  messageId, inReplyTo, references, from, listUnsubscribe,
 }) {
   if (!env.RESEND_API_KEY) {
     console.warn("[email] RESEND_API_KEY missing — skipping send");
@@ -61,9 +61,13 @@ export async function sendEmail(env, {
   const headers = { "Message-ID": mid };
   if (inReplyTo)  headers["In-Reply-To"] = inReplyTo;
   if (references) headers["References"] = references;
-  // List-Unsubscribe signals a legitimate sender to Gmail/Yahoo and helps inbox
-  // placement (mailto form — no suppression logic, just the signal/courtesy).
-  headers["List-Unsubscribe"] = "<mailto:hello@nationalclosetco.com?subject=Unsubscribe>";
+  // List-Unsubscribe ONLY on genuine bulk/broadcast sends (opt-in). On 1:1
+  // transactional mail (proposals, contracts, invoices) it makes Gmail/Outlook
+  // render the "mailing list / unsubscribe" UI and treat a personal message as
+  // bulk — wrong, and it slightly hurts transactional inbox placement. Default off.
+  if (listUnsubscribe) {
+    headers["List-Unsubscribe"] = "<mailto:hello@nationalclosetco.com?subject=Unsubscribe>";
+  }
 
   const payload = {
     from: fromHeader,

@@ -80,6 +80,14 @@ export async function onRequestGet(context) {
       .sort((a, b) => b.requests - a.requests)
       .slice(0, 10);
 
+    // US-vs-blocked split: the site is US-only, so US = allowed real audience and
+    // everything else = non-US requests that hit a 403 block page (overwhelmingly
+    // datacenter bots). Lets the Traffic page show "real traffic" vs "blocked" plainly.
+    let totalReq = 0;
+    for (const k in cAgg) totalReq += cAgg[k];
+    const usReq = cAgg["US"] || 0;
+    const edge_split = { us: usReq, blocked: totalReq - usReq, total: totalReq };
+
     // Hour-of-day buckets (Central Time), pageViews summed across 7 days.
     const hours = new Array(24).fill(0);
     for (const g of hourlyRes?.data?.viewer?.zones?.[0]?.httpRequests1hGroups || []) {
@@ -90,7 +98,7 @@ export async function onRequestGet(context) {
     }
     const hourly = hours.map((pageViews, hour) => ({ hour, pageViews }));
 
-    return json({ days, countries, hourly, tz: "America/Chicago" });
+    return json({ days, countries, edge_split, hourly, tz: "America/Chicago" });
   } catch (e) {
     return json({ days: [], error: "fetch_failed" });
   }

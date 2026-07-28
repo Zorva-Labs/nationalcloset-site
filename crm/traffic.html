@@ -72,9 +72,9 @@ let mode = "today"; // "today" | "all"
     </div>
     <div class="dash" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div class="card">
-        <div class="card-head"><h2>Traffic sources · by country</h2></div>
+        <div class="card-head"><h2>Edge requests · US vs blocked</h2></div>
         <div id="tf-country" style="margin-top:8px"></div>
-        <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">Cloudflare's free plan doesn't expose referrers, so we show <strong>geography</strong>. Much non-US traffic is automated bots — <strong>US (highlighted) is your real audience</strong>. For channels, see <a href="/crm/leads.html" class="inline">Lead sources</a>.</p>
+        <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">The site is <strong>US-only</strong>. <strong>US</strong> = your real audience; <strong>Blocked</strong> = non-US requests turned away with a 403 (overwhelmingly datacenter bots that keep retrying). Expand for the country breakdown. For channels, see <a href="/crm/leads.html" class="inline">Lead sources</a>.</p>
       </div>
       <div class="card">
         <div class="card-head"><h2 id="tf-hourly-h">Traffic by hour · Central Time</h2></div>
@@ -147,18 +147,31 @@ function renderEdge(data, label) {
       : "");
   }
 
-  // Country
+  // US vs blocked — two headline bars, with the per-country breakdown on demand.
+  const split = (data && data.edge_split) || null;
   const countries = (data && data.countries) || [];
-  if (!countries.length) { el("tf-country").innerHTML = box("No country data " + (label === "today" ? "today yet" : "") + "."); }
+  if (!split || !split.total) { el("tf-country").innerHTML = box("No edge data " + (label === "today" ? "today yet" : "") + "."); }
   else {
+    const total = split.total || 1;
+    const usPct = Math.round((split.us / total) * 100);
+    const blPct = Math.round((split.blocked / total) * 100);
+    const bar = (name, sub, n, pct, col) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line-soft)">
+        <span style="min-width:150px;font-size:13px;color:var(--ink);font-weight:700">${name} <span style="color:var(--ink-soft);font-weight:500;font-size:12px">${sub}</span></span>
+        <span style="flex:1;height:10px;background:var(--bg-soft);border-radius:5px;overflow:hidden"><span style="display:block;height:100%;background:${col};width:${pct}%"></span></span>
+        <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:92px;text-align:right;font-size:12px">${N(n)} · ${pct}%</span>
+      </div>`;
     const cMax = Math.max(...countries.map((c) => c.requests), 1);
-    const cTotal = countries.reduce((s, c) => s + c.requests, 0) || 1;
-    el("tf-country").innerHTML = collapse(countries.map((c) => `
-      <div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--line-soft)${c.code === 'US' ? ';background:var(--clay-wash,#FDF0EA)' : ''}">
-        <span style="min-width:120px;font-size:13px;color:var(--ink);font-weight:${c.code === 'US' ? '700' : '500'}">${flag(c.code)} ${c.code}${c.code === 'US' ? ' 🇺🇸 · local' : ''}</span>
+    const detail = countries.map((c) => `
+      <div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--line-soft)${c.code === 'US' ? ';background:var(--clay-wash,#FDF0EA)' : ''}">
+        <span style="min-width:120px;font-size:13px;color:var(--ink);font-weight:${c.code === 'US' ? '700' : '500'}">${flag(c.code)} ${c.code}${c.code === 'US' ? ' 🇺🇸 · local' : ' · blocked'}</span>
         <span style="flex:1;height:8px;background:var(--bg-soft);border-radius:4px;overflow:hidden"><span style="display:block;height:100%;background:${c.code === 'US' ? 'var(--accent)' : 'var(--ink-soft)'};width:${Math.round((c.requests / cMax) * 100)}%"></span></span>
-        <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:44px;text-align:right;font-size:12px">${Math.round((c.requests / cTotal) * 100)}%</span>
-      </div>`), "countries");
+        <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:44px;text-align:right;font-size:12px">${Math.round((c.requests / total) * 100)}%</span>
+      </div>`).join("");
+    el("tf-country").innerHTML =
+      bar("🇺🇸 US visitors", "· allowed", split.us, usPct, "var(--accent)") +
+      bar("🚫 Blocked", "· non-US, 403'd", split.blocked, blPct, "var(--ink-soft)") +
+      `<details style="margin-top:8px"><summary style="cursor:pointer;color:var(--clay-deep);font-weight:600;font-size:13px;padding:10px 0 4px;list-style:none">▸ By country</summary>${detail}</details>`;
   }
 
   // Hourly

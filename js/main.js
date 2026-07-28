@@ -3,7 +3,7 @@
   "use strict";
 
   /* ---------- Conversion tracking (GA4 live; Google Ads AW- staged) ----------
-     GA4 (G-1ENFVDVJLN) is already loaded in each page's <head>, so track()
+     GA4 (G-EWFCJ3F5FG) is already loaded in each page's <head>, so track()
      fires the standard GA4 conversion events immediately. To also fire DIRECT
      Google Ads conversions (account 896-812-2786), fill in GADS_ID and the
      per-action labels below — the AW tag then activates automatically. Leave

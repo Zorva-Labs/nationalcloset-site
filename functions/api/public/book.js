@@ -131,8 +131,10 @@ export async function onRequestPost(context) {
     }],
   });
 
-  // Notify the team
+  // Notify the team. Internal alert delivered to hello@ — send it from a DISTINCT
+  // address (not hello@) so it isn't self-addressed (from == to), which receivers junk.
   await sendEmail(context.env, {
+    from: "National Closet Co. Bookings <notifications@nationalclosetco.com>",
     to: env?.STAFF_EMAIL || "hello@nationalclosetco.com",
     subject: `New booking · ${body.name} · ${fmtPretty(startAt)}`,
     html: brandedEmail({

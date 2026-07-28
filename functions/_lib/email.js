@@ -175,7 +175,8 @@ export function brandedEmail({ title, preheader, body, ctaLabel, ctaUrl, footer,
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>${escapeHtml(title)}</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+  /* No remote @import — a web-font pull is a minor spam signal and mail clients
+     strip it anyway. The Helvetica/Arial fallback stack renders identically clean. */
   body { margin:0; padding:0; background:${BRAND.bg}; font-family:'Montserrat','Helvetica Neue',Arial,sans-serif; color:${BRAND.ink}; -webkit-font-smoothing:antialiased; }
   .wrap { max-width:600px; margin:0 auto; padding:32px 20px; }
   .logo-wrap { text-align:center; padding:8px 0 22px; }

@@ -3,7 +3,12 @@
 // The Resend API key is read from the encrypted project secret env.RESEND_API_KEY (never in source).
 
 const TO = "hello@nationalclosetco.com";
-const FROM = "National Closet Co. Website <hello@nationalclosetco.com>";
+// Internal alert delivered to hello@. It must NOT be sent *from* hello@ — a
+// self-addressed message (from == to) is reliably spam-foldered by the receiving
+// server. notifications@ is the standard sender for all internal-to-self alerts
+// (customer-facing mail uses the warmed hello@). Reply-To is set to the lead below
+// so hitting Reply still answers the customer directly.
+const FROM = "National Closet Co. Website <notifications@nationalclosetco.com>";
 
 const esc = (s) =>
   String(s == null ? "" : s)

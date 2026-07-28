@@ -112,6 +112,10 @@ function logPageview(context, url, country) {
     const p = url.pathname;
     // Never count admin/API or the internal /calc pricing tool as visitor traffic.
     if (p.startsWith("/api/") || p.startsWith("/crm/") || p === "/calc" || p === "/calc.html") return;
+    // CRM / transactional document pages (invoice, proposal, contract, estimate)
+    // are reached only by existing leads & customers via emailed token links —
+    // that's not site traffic, so never count them.
+    if (/^\/(invoice|proposal|contract|estimate)(\/|$)/.test(p)) return;
 
     const dest = req.headers.get("sec-fetch-dest");
     const accept = req.headers.get("accept") || "";

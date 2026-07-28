@@ -30,9 +30,9 @@ const fmtDur = (s) => { s = Math.round(s || 0); if (!s) return "—"; const m = 
 const flag = (cc) => (cc && cc.length === 2 && /^[A-Z]{2}$/.test(cc))
   ? String.fromCodePoint(...[...cc].map((c) => 0x1F1E6 + c.charCodeAt(0) - 65)) : "🏳️";
 const box = (m) => `<div style="padding:18px;text-align:center;color:var(--ink-soft);font-size:13px">${m}</div>`;
-const statHTML = (label, value) => `
+const statHTML = (label, value, hint) => `
   <div style="flex:1;min-width:130px">
-    <div style="font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:700">${label}</div>
+    <div style="font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:700">${label}${hint ? ` <span title="${hint.replace(/"/g, "&quot;")}" style="cursor:help;color:var(--clay-deep);font-weight:700">&#9432;</span>` : ""}</div>
     <div style="font-family:var(--display,inherit);font-size:1.6rem;font-weight:800;color:var(--ink);margin-top:2px">${value}</div>
   </div>`;
 // Top row visible; the rest tuck behind a "Show all N" dropdown.
@@ -128,8 +128,10 @@ function renderEdge(data, label) {
     const max = Math.max(...days.map((d) => d.pageViews), 1);
     const totalPV = days.reduce((s, d) => s + d.pageViews, 0);
     const totalU = days.reduce((s, d) => s + d.uniques, 0);
-    let stats = statHTML("Page views · " + label, N(totalPV)) + statHTML("Unique visitors · " + label, N(totalU));
+    const pvHint = "Served HTML pages counted at Cloudflare's edge. Includes search/AI crawlers and your /crm admin pages, but EXCLUDES blocked non-US bots (they never load a page). This is an upper bound, not a pure human count — see Sources & Traffic-by-page below for real US visitors.";
+    let stats = statHTML("Page views · " + label, N(totalPV), pvHint) + statHTML("Unique visitors · " + label, N(totalU), pvHint);
     if (label !== "today") stats += statHTML("Avg / day", N(Math.round(totalPV / days.length)));
+    stats += `<div style="flex-basis:100%;font-size:11.5px;color:var(--ink-soft);line-height:1.5;margin-top:2px">Edge totals include search crawlers &amp; <code>/crm</code> and exclude blocked bots — an <strong>upper bound</strong>. The <strong>Sources</strong> &amp; <strong>Traffic by page</strong> sections below are your real US visitors (bots, /crm and non-US removed).</div>`;
     el("tf-stats").innerHTML = stats;
 
     const ordered = days.slice().reverse();

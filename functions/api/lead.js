@@ -2,6 +2,8 @@
 // Receives contact-form submissions and emails the lead to hello@nationalclosetco.com via Resend.
 // The Resend API key is read from the encrypted project secret env.RESEND_API_KEY (never in source).
 
+import { spamReason } from "../_lib/spam.js";
+
 const TO = "hello@nationalclosetco.com";
 // Internal alert delivered to hello@. It must NOT be sent *from* hello@ — a
 // self-addressed message (from == to) is reliably spam-foldered by the receiving
@@ -37,8 +39,10 @@ export async function onRequestPost({ request, env }) {
     return json({ ok: false, error: "bad_request" }, 400);
   }
 
-  // Honeypot — silently accept bots
-  if ((data.company || "").toString().trim() !== "") return json({ ok: true });
+  // Spam gate — honeypot + links + SEO/marketing pitches. Silently accept bots
+  // (return ok so they don't retry) so no spam email is ever sent.
+  const spam = spamReason(data);
+  if (spam) { console.warn("[lead.js] dropped spam submission:", spam); return json({ ok: true }); }
 
   const name = (data.name || "").toString().trim();
   const phone = (data.phone || "").toString().trim();

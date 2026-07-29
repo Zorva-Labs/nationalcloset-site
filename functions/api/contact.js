@@ -7,6 +7,7 @@ import { sendEmail, brandedEmail, makeMessageId } from "../_lib/email.js";
 import { upsertContact } from "../_lib/db.js";
 import { genToken } from "../_lib/tokens.js";
 import { logOutboundEmail } from "../_lib/email-log.js";
+import { spamReason } from "../_lib/spam.js";
 
 const TO_ADDRESS = "hello@nationalclosetco.com";
 
@@ -41,6 +42,15 @@ export async function onRequestPost({ request, env }) {
   const interest = (data.interest || "").toString().trim();
   const message = (data.message || "").toString().trim();
   const source = (data.source || "unknown").toString().trim().slice(0, 32);
+
+  // Spam gate — drop bots (filled honeypot, links, SEO/marketing pitches) BEFORE
+  // we save or email anything. Return ok so the bot thinks it succeeded and
+  // doesn't retry; a real closet lead never trips these signals.
+  const spam = spamReason(data);
+  if (spam) {
+    console.warn("[contact.js] dropped spam submission:", spam);
+    return json({ ok: true });
+  }
 
   if (!name || !phone || !email) {
     return json({ error: "Name, phone, and email are required." }, 400);

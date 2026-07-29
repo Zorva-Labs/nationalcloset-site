@@ -187,9 +187,11 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .brand__mark img { height: 40px; width: auto; display: block; }
 .brand:hover .brand__mark { transform: scale(1.06) rotate(-1deg); }
 /* Subtitle sized in em (scales with the wordmark) + tracking tuned so
-   "Custom Closets & Systems" matches the width of "National Closet Co."
-   in every location the lockup appears (header, footer, etc.). */
-.brand small { display: block; font-family: var(--body); font-weight: 600; font-size: 0.53em; letter-spacing: 0.118em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+   "Custom Closets & Pantries" matches the width of "National Closet Co."
+   in every location the lockup appears (header, footer, etc.). Font-size
+   nudged 0.53em -> 0.515em when "Systems" (7ch) became "Pantries" (8ch),
+   so the one-character-wider word still lines up under the wordmark. */
+.brand small { display: block; font-family: var(--body); font-weight: 600; font-size: 0.515em; letter-spacing: 0.118em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
 
 .nav__links { display: none; align-items: center; gap: 0.35rem; }
 .nav__link { font-weight: 600; font-size: 0.93rem; padding: 0.55rem 0.7rem; border-radius: var(--radius); color: var(--ink-soft); position: relative; transition: color .2s; }
@@ -477,7 +479,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .footer__logo img { height: 44px; width: auto; flex: none; display: block; transition: transform .4s var(--ease); }
 .footer__logo:hover { color: #fff; }
 .footer__logo:hover img { transform: scale(1.06) rotate(-1deg); }
-.footer__logo small { display: block; font-family: var(--body); font-weight: 600; font-size: 0.53em; letter-spacing: 0.118em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-top: 5px; }
+.footer__logo small { display: block; font-family: var(--body); font-weight: 600; font-size: 0.515em; letter-spacing: 0.118em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-top: 5px; }
 .footer__cols { display: grid; gap: 2rem; grid-template-columns: repeat(2, 1fr); }
 .footer__col h4 { color: #fff; font-family: var(--body); font-size: 0.78rem; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 0.9rem; font-weight: 700; }
 .footer__col a, .footer__col li { display: block; padding: 0.28rem 0; font-size: 0.95rem; }
@@ -929,7 +931,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
   </div>
   <div class="nav__inner">
     <a href="#top" class="brand" aria-label="National Closet Company — home">
-      <span class="brand__mark"><img src="/img/ncc-logo-nc.png" alt="National Closet Company NC monogram logo" width="62" height="38" /></span><span>National Closet Co.<small>Custom Closets &amp; Systems</small></span>
+      <span class="brand__mark"><img src="/img/ncc-logo-nc.png" alt="National Closet Company NC monogram logo" width="62" height="38" /></span><span>National Closet Co.<small>Custom Closets &amp; Pantries</small></span>
     </a>
 
     <nav class="nav__links" aria-label="Primary">
@@ -1705,7 +1707,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
       <div class="footer__brand">
         <a href="#top" class="footer__logo" aria-label="National Closet Company — home">
           <img src="/img/favicon-nc.png" alt="National Closet Company NC monogram logo" width="64" height="39" />
-          <span>National Closet Co.<small>Custom Closets &amp; Systems</small></span>
+          <span>National Closet Co.<small>Custom Closets &amp; Pantries</small></span>
         </a>
         <p style="max-width:36ch">Beautiful custom-designed closets at a price normal families can afford — designed, built and installed around the way you live.</p>
         <div class="footer__contact" style="margin-top:1.2rem">

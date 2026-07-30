@@ -656,10 +656,27 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 .modal-bg { position: fixed; inset: 0; background: rgba(15,23,42,.5); display: flex; align-items: center; justify-content: center; z-index: 300; padding: 20px; }
-.modal { background: var(--bg); border-radius: var(--r); max-width: 480px; width: 100%; box-shadow: var(--shadow-lg); }
-.modal-head { padding: 18px 22px; border-bottom: 1px solid var(--line); font-size: 15px; font-weight: 600; }
-.modal-body { padding: 20px 22px; }
-.modal-foot { padding: 14px 22px; border-top: 1px solid var(--line-soft); display: flex; justify-content: flex-end; gap: 8px; }
+/* Column layout + a viewport-capped height so a tall modal (e.g. the message
+   composer with a template picker) can never overflow off the top/bottom of the
+   screen. The body scrolls; the header and footer stay pinned so the template
+   picker and the Send button are ALWAYS reachable — critical on mobile.
+   100dvh (dynamic viewport height) accounts for mobile browser chrome. */
+.modal { background: var(--bg); border-radius: var(--r); max-width: 480px; width: 100%; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; max-height: calc(100dvh - 40px); }
+.modal-head { padding: 18px 22px; border-bottom: 1px solid var(--line); font-size: 15px; font-weight: 600; flex: none; }
+.modal-body { padding: 20px 22px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1 1 auto; min-height: 0; }
+.modal-foot { padding: 14px 22px; border-top: 1px solid var(--line-soft); display: flex; justify-content: flex-end; gap: 8px; flex: none; }
+
+/* Mobile: dock the modal as a full-width bottom sheet with comfortable tap
+   targets. Header/footer stay pinned (footer sits just above the thumb), the
+   body scrolls, and it uses the dynamic viewport so nothing is clipped. */
+@media (max-width: 640px) {
+  .modal-bg { align-items: flex-end; padding: 0; }
+  .modal { max-width: none; width: 100%; max-height: 94dvh; border-radius: 16px 16px 0 0; }
+  .modal-head { padding: 16px 18px; position: relative; }
+  .modal-body { padding: 16px 18px; }
+  .modal-foot { padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); gap: 10px; }
+  .modal-foot .btn { flex: 1 1 auto; min-height: 46px; font-size: 15px; }
+}
 
 /* Login (carry over) */
 .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: var(--bg-alt); }

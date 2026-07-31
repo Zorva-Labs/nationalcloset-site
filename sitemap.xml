@@ -207,4 +207,10 @@
   <url><loc>https://nationalclosetco.com/custom-closets-green-hills</loc><lastmod>2026-05-31</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://nationalclosetco.com/custom-closets-hermitage</loc><lastmod>2026-05-31</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://nationalclosetco.com/custom-closets-old-hickory</loc><lastmod>2026-05-31</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url>
+    <loc>https://nationalclosetco.com/warranty</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
 </urlset>

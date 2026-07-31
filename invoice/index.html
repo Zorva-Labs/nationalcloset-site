@@ -96,6 +96,16 @@
         <p>Thanks! Your payment for invoice <strong>${esc(inv.number)}</strong> is processing and will confirm shortly. You'll get a receipt by email once it clears.</p>
       </div></div>`;
     }
+    function microdepositState(url) {
+      url = url || "";
+      root.innerHTML = `<div class="card"><div class="state">
+        <div class="ic">🏦</div>
+        <h2>Almost done — verify your bank</h2>
+        <p>Because you entered your account and routing number, your bank needs to confirm it's really you before the payment goes through.</p>
+        <p>In <strong>1–2 business days</strong> you'll see a <strong>small deposit (about $0.01)</strong> from <strong>STRIPE</strong> in your account, with a <strong>6-digit code</strong> in the description. Come back and enter that code to finish${url ? ` — <a href="${esc(url)}" style="color:var(--clay,#D2683F);font-weight:700">verify your bank here</a>` : ""}.</p>
+        <p style="color:#6c665b;font-size:.92rem;margin-top:14px">We'll email your receipt once it clears. Questions? Call or text <a href="tel:+16292988241" style="color:var(--clay,#D2683F)">629-298-8241</a>.</p>
+      </div></div>`;
+    }
     function voidState(inv) {
       root.innerHTML = `<div class="card"><div class="state void">
         <div class="ic">—</div>
@@ -118,6 +128,7 @@
 
       if (data.paid) return paidState(data.invoice);
       if (data.processing) return processingState(data.invoice);
+      if (data.microdeposit) return microdepositState(data.verify_url);
       if (data.voided) return voidState(data.invoice);
 
       const inv = data.invoice;
@@ -237,8 +248,14 @@
         }
         if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing")) {
           paidState({ number: inv.number, amount_cents: payAmount });
+        } else if (paymentIntent && paymentIntent.status === "requires_action" &&
+                   paymentIntent.next_action && paymentIntent.next_action.type === "verify_with_microdeposits") {
+          // Manually-entered bank account — Stripe must verify it via micro-deposits.
+          // Show a clear "you're almost done" state instead of a cryptic status code.
+          var vurl = ""; try { vurl = paymentIntent.next_action.verify_with_microdeposits.hosted_verification_url; } catch (e) {}
+          microdepositState(vurl);
         } else {
-          msg.textContent = "Payment status: " + (paymentIntent ? paymentIntent.status : "unknown");
+          msg.textContent = "We couldn't confirm the payment (" + (paymentIntent ? paymentIntent.status : "unknown") + "). Please try again or call/text 629-298-8241.";
           btn.disabled = false; btn.textContent = `Pay ${money(payAmount)}`;
         }
       });

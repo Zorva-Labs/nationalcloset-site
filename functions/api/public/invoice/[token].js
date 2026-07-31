@@ -102,6 +102,16 @@ export async function onRequestGet(context) {
         await markInvoiceProcessing(context.env, inv, { method, paymentIntentId: pi.id }).catch(() => {});
         return json({ processing: true, invoice: publicView({ ...inv, status: "processing" }, project) });
       }
+      // Manually-entered bank account awaiting micro-deposit verification — the
+      // customer isn't done yet, but must NOT start a new payment (that would
+      // orphan the pending verification). Send them back to the verify state.
+      if (pi && pi.status === "requires_action" && pi.next_action?.type === "verify_with_microdeposits") {
+        return json({
+          microdeposit: true,
+          verify_url: pi.next_action.verify_with_microdeposits.hosted_verification_url || null,
+          invoice: publicView(inv, project),
+        });
+      }
       // Recreate stale intents: canceled, or legacy explicit-method-list intents.
       if (pi && (pi.status === "canceled" || !piAcceptable(pi))) pi = null;
       // Otherwise reset to the current balance (in case a partial in-person

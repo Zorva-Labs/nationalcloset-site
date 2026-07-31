@@ -42,14 +42,16 @@ export async function onRequestGet(context) {
   // awaiting signature, hand back the contract token so the customer lands on
   // the contract instead of a dead-end "we'll send it shortly" note.
   let contractToken = null;
+  let contractLocked = false;   // true once the contract is signed — options can no longer be switched online
   if (p.status === "accepted") {
     const kc = await context.env.DB.prepare(
       `SELECT view_token, status FROM contracts WHERE proposal_id=?1 AND status NOT IN ('void') ORDER BY id DESC LIMIT 1`
     ).bind(p.id).first();
-    if (kc && !["signed_by_customer", "fully_executed"].includes(kc.status)) contractToken = kc.view_token;
+    if (kc && ["signed_by_customer", "fully_executed"].includes(kc.status)) contractLocked = true;
+    else if (kc) contractToken = kc.view_token;
   }
   const safe = { ...p, expired }; delete safe.notes_internal; delete safe.author_user_id;
-  return json({ proposal: safe, tiers, comments, attachments, contract_token: contractToken });
+  return json({ proposal: safe, tiers, comments, attachments, contract_token: contractToken, contract_locked: contractLocked });
 }
 
 export async function onRequestPost(context) {
@@ -116,6 +118,13 @@ export async function onRequestPost(context) {
   if (body.action === "continue") {
     if (expired) return json({ error: "This proposal has expired. Please request an updated proposal." }, 410);
     if (!["good", "better", "best"].includes(body.tier)) return json({ error: "Invalid tier" }, 400);
+    // A customer can freely switch options right up until they sign; once the
+    // contract is signed we don't let them swap online (it would orphan a signed
+    // agreement) — point them to us instead.
+    const signed = await context.env.DB.prepare(
+      `SELECT id FROM contracts WHERE proposal_id=?1 AND status IN ('signed_by_customer','fully_executed') ORDER BY id DESC LIMIT 1`
+    ).bind(p.id).first();
+    if (signed) return json({ error: "Your contract is already signed. Call or text 629-298-8241 and we'll update your order." }, 409);
     const t = await context.env.DB.prepare(`SELECT total_cents FROM proposal_tiers WHERE proposal_id=?1 AND tier=?2`).bind(p.id, body.tier).first();
     await context.env.DB.prepare(
       `UPDATE proposals SET selected_tier=?1, selected_total_cents=?2, status='accepted',

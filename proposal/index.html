@@ -66,6 +66,10 @@
     .opt:hover .opt-btn{background:#000}
     .opt.is-picked .opt-btn{background:var(--clay)}
     .opt.is-picked .opt-btn:hover{background:var(--clay-deep)}
+    /* "Switch to this option" on a non-selected card once accepted — a lighter,
+       secondary look so the selected option's "Continue" stays the primary CTA. */
+    .opt-btn--alt{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+    .opt:hover .opt-btn--alt{background:var(--fog);color:var(--ink)}
     .accept{background:var(--ink);color:var(--paper);padding:36px clamp(22px,4vw,40px);border-radius:14px;margin-top:36px;text-align:center}
     .accept h2{font-family:var(--font);font-weight:800;font-size:clamp(1.5rem,3vw,2rem);letter-spacing:-0.02em;color:#fff;margin:0 0 8px}
     .accept p{color:#cbc6bc;margin:0 0 22px;max-width:52ch;margin-left:auto;margin-right:auto}
@@ -119,6 +123,7 @@ async function load() {
     if (data.error) throw new Error(data.error);
     proposal = data.proposal;
     window.__contractToken = data.contract_token || null;   // resume: jump to the awaiting-signature contract
+    window.__contractLocked = !!data.contract_locked;       // true once signed — options can no longer be switched
     render(data.proposal, data.tiers, data.attachments || []);
   } catch (e) { document.getElementById("root").innerHTML = `<p class="err">${esc(e.message)}</p>`; }
 }
@@ -185,6 +190,9 @@ function render(p, tiers, attachments) {
   attachments = attachments || [];
   if (isExpired(p)) { renderExpired(p); return; }
   const isAccepted = p.status === "accepted";
+  // A customer can keep switching options until the contract is actually signed.
+  // "locked" is only true once signed — then the options freeze.
+  const locked = isAccepted && !!window.__contractLocked;
   const many = (tiers || []).length > 1;
   // Never claim "no discount" on a quote that has one: a discount shows up as
   // the gap between an option's pre-discount subtotal and what the client pays.
@@ -223,7 +231,10 @@ function render(p, tiers, attachments) {
           <div class="opt__sum-row" ${soft}><span>— or pay in full anytime</span><span>${money(t.total_cents)}</span></div>`;
           })()}
         </div>` : `<div class="opt__empty">Itemized details to follow.</div>`}
-        ${!isAccepted ? `<button class="btn opt-btn" type="button" onclick="event.stopPropagation();continueToContract('${esc(t.tier)}')">${many ? "Choose this option →" : "Accept & sign →"}</button>` : ""}
+        ${!locked ? `<button class="btn opt-btn${isAccepted && p.selected_tier !== t.tier ? " opt-btn--alt" : ""}" type="button" onclick="event.stopPropagation();continueToContract('${esc(t.tier)}')">${
+          !isAccepted ? (many ? "Choose this option →" : "Accept & sign →")
+          : (p.selected_tier === t.tier ? "Continue to your contract →" : "Switch to this option →")
+        }</button>` : ""}
       </div>`).join("")}
     </div>
 
@@ -254,13 +265,18 @@ function render(p, tiers, attachments) {
         <div style="color:var(--ink-soft);font-size:.97rem;line-height:1.6;white-space:pre-wrap">${esc(p.job_notes)}</div>
       </div>` : ""}
 
-    ${isAccepted ? `
+    ${isAccepted ? (locked ? `
+      <div class="accept">
+        <h2>You're all set — your contract is signed.</h2>
+        <p>Thanks! Your order is locked in and we'll be in touch to schedule your install. Need to change your option or anything else? Just call or text <a href="tel:+16292988241">629-298-8241</a>.</p>
+      </div>
+    ` : `
       <div class="accept">
         <h2>Accepted — one step left</h2>
-        <p>${window.__contractToken ? "Sign your contract to book the job and reserve your install — it only takes a minute." : "We'll send your contract over shortly to sign and book the job."} Questions? Call or text <a href="tel:+16292988241">629-298-8241</a>.</p>
+        <p>${window.__contractToken ? "Sign your contract to book the job and reserve your install — it only takes a minute." : "We'll send your contract over shortly to sign and book the job."} <strong>Changed your mind?</strong> Choose a different option above — nothing is final until you sign. Questions? Call or text <a href="tel:+16292988241">629-298-8241</a>.</p>
         ${window.__contractToken ? `<a class="btn accept-btn" href="/contract/?t=${encodeURIComponent(window.__contractToken)}" style="min-height:56px;font-size:1.1rem;padding:16px 34px;text-decoration:none;display:inline-block">Go to your contract to sign →</a>` : ""}
       </div>
-    ` : (p.selected_tier ? `
+    `) : (p.selected_tier ? `
       <div class="accept">
         <h2>Ready to book it?</h2>
         <p>Continue to your contract to sign and reserve your install. No drawing required — just type your name.</p>

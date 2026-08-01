@@ -1040,7 +1040,7 @@ function finRender() {
       ${finRow("discount", "Discount <span class='muted' style='font-size:11px'>· from proposal · $ or %</span>", { pctable: true })}
       <tr><td style="padding:4px 0;color:var(--ink-soft)">Net to client</td><td style="text-align:right;color:var(--ink-soft);font-weight:600" id="fin-net">${SSCrm.fmtMoney(netCents)}</td></tr>
       <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
-      ${finRow("materials", `Materials <span class='muted' style='font-size:11px'>· price ÷ ${finRateInp("fin-rate-divisor", finRateVal("materials_divisor", FIN_DEF.divisor))}</span>`)}
+      ${finRow("materials", `Materials <span class='muted' style='font-size:11px'>· price ÷ ${finRateInp("fin-rate-divisor", finRateVal("materials_divisor", FIN_DEF.divisor))}</span> <label style='font-size:11px;color:var(--ink-soft);cursor:pointer;margin-left:6px;white-space:nowrap'><input type='checkbox' id='fin-matdisc' ${finState.materials_discount ? "checked" : ""} onchange='finRecalc()'/> −3% mfr.</label>`)}
       ${finRow("shipping", `Shipping <span class='muted' style='font-size:11px'>· ${finRateInp("fin-rate-ship", finPctStr(finFracVal("shipping_rate", FIN_DEF.shipRate)))}% of materials</span>`)}
       ${finRow("tax", `Taxes <span class='muted' style='font-size:11px'>· ${finRateInp("fin-rate-tax", finPctStr(finFracVal("tax_rate", FIN_DEF.taxRate)))}% of (materials + shipping)</span>`)}
       ${finRow("labor", `Labor <span class='muted' style='font-size:11px'>· ${finRateInp("fin-rate-labor", finPctStr(finFracVal("labor_rate", FIN_DEF.laborRate)))}% of price, min $350</span>`)}
@@ -1100,7 +1100,10 @@ function finRecalc() {
   // Materials: auto = price ÷ divisor. Shipping: auto = shipRate of effective
   // materials. Taxes: auto = taxRate of (materials + shipping). Labor: auto =
   // laborRate of gross (min $350) — all from the editable rate inputs.
-  if (document.getElementById("fin-materials-auto").checked) document.getElementById("fin-materials").value = finDollars(calc.materials);
+  // Manufacturer 3% materials discount applies to the auto/formula materials only.
+  const matDiscOn = !!(document.getElementById("fin-matdisc") && document.getElementById("fin-matdisc").checked);
+  const autoMaterials = matDiscOn ? Math.round(calc.materials * 0.97) : calc.materials;
+  if (document.getElementById("fin-materials-auto").checked) document.getElementById("fin-materials").value = finDollars(autoMaterials);
   const matCents = finToCents(document.getElementById("fin-materials").value);
   const shipCents = document.getElementById("fin-shipping-auto").checked ? Math.round(matCents * rates.shipRate) : finToCents(document.getElementById("fin-shipping").value);
   if (document.getElementById("fin-shipping-auto").checked) document.getElementById("fin-shipping").value = finDollars(shipCents);
@@ -1151,6 +1154,7 @@ async function saveFinancials() {
   const feeAuto = document.getElementById("fin-fee-auto") ? document.getElementById("fin-fee-auto").checked : true;
   body.fee_auto = feeAuto;
   if (!feeAuto) body.fee_cents = finToCents(document.getElementById("fin-fee").value);
+  body.materials_discount = !!(document.getElementById("fin-matdisc") && document.getElementById("fin-matdisc").checked);
   try {
     const r = await SSCrm.fetchJSON(`/api/projects/${state.project.id}/financials`, { method: "PUT", body: JSON.stringify(body) });
     finState = r.financials;

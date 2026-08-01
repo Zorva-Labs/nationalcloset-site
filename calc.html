@@ -127,13 +127,14 @@
       <label class="rate"><span>Taxes</span><input id="r-taxrate" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Labor</span><input id="r-laborrate" type="text" inputmode="decimal" value="10" autocomplete="off"/><i>%</i></label>
       <label class="rate"><span>Mfr. discount</span><input id="r-matdisc" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
-      <label class="rate"><span>Processing fee</span><input id="r-feerate" type="text" inputmode="decimal" value="3" autocomplete="off"/><i>%</i></label>
+      <label class="rate"><span>Processing fee</span><input id="r-feerate" type="text" inputmode="decimal" value="0" autocomplete="off"/><i>%</i></label>
     </div>
-    <p class="hint">Defaults: materials = price ÷ 2.0, labor = 10% of price (min $350) and a 3% processing fee of net. Shipping, taxes &amp; the manufacturer discount default to 0 — set them as needed. The manufacturer discount comes off the materials cost; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the up-front payment; the processing fee comes out of profit. Tap the <b>%</b> next to Shipping to switch it to a flat <b>$</b> amount.</p>
+    <p class="hint">Defaults: materials = price ÷ 2.0 and labor = 10% of price (min $350). Shipping, taxes, the manufacturer discount and the processing fee all default to 0 — set them as needed (tick the 3% mfr. box below to knock 3% off materials). The manufacturer discount comes off the materials cost; taxes = % of (net materials + shipping). Net materials, shipping &amp; taxes are covered by the up-front payment; the processing fee comes out of profit. Tap the <b>%</b> next to Shipping to switch it to a flat <b>$</b> amount.</p>
 
     <div class="opts">
       <label class="opt"><input type="checkbox" id="self-install"/> I'm installing it — <b style="font-weight:800">no labor cost</b></label>
       <label class="opt"><input type="checkbox" id="pay-full"/> Client pays in <b style="font-weight:800">full</b> — one payment, not 3</label>
+      <label class="opt"><input type="checkbox" id="matdisc-3"/> <b style="font-weight:800">3% mfr. discount</b> off materials</label>
     </div>
 
     <label class="field" for="disc" style="margin-top:18px">Discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, comes out of profit</span></label>
@@ -209,7 +210,7 @@
 
 <script>
 (function () {
-  var DEF = { divisor: 2.0, ship: 0, tax: 0, labor: 10, matDisc: 0, fee: 3, disc: 0 };   // one honest price at 2.0 — no standing discount
+  var DEF = { divisor: 2.0, ship: 0, tax: 0, labor: 10, matDisc: 0, fee: 0, disc: 0 };   // one honest price at 2.0 — no standing discount, no default processing fee
   var el = function (id) { return document.getElementById(id); };
   var gross = el("gross"), disc = el("disc");
 
@@ -379,6 +380,10 @@
   var inputs = [gross, disc, rDiv, rShip, rTax, rLabor, rMatDisc, rFee];
   inputs.forEach(function (i) { i.addEventListener("input", render); });
   [cbSelfInstall, cbPayFull].forEach(function (c) { c.addEventListener("change", render); });
+  // The 3% mfr. checkbox is a one-click shortcut for the Mfr. discount field.
+  var cbMatDisc = el("matdisc-3");
+  cbMatDisc.addEventListener("change", function () { rMatDisc.value = cbMatDisc.checked ? "3" : "0"; render(); });
+  rMatDisc.addEventListener("input", function () { cbMatDisc.checked = (parseFloat(rMatDisc.value) === 3); });
 
   // = recomputes and scrolls the result into view (handy on mobile).
   el("eq").addEventListener("click", function () {
@@ -393,7 +398,7 @@
     disc.value = String(DEF.disc);
     rDiv.value = String(DEF.divisor); rShip.value = String(DEF.ship); rTax.value = String(DEF.tax);
     rLabor.value = String(DEF.labor); rMatDisc.value = String(DEF.matDisc); rFee.value = String(DEF.fee);
-    cbSelfInstall.checked = false; cbPayFull.checked = false;
+    cbSelfInstall.checked = false; cbPayFull.checked = false; cbMatDisc.checked = false;
     if (shipMode !== "pct") { shipMode = "pct"; shipUnit.textContent = "%"; }
     window.setDiscMode("usd");   // no standing discount — also triggers a render
   }

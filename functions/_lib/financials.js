@@ -15,6 +15,7 @@ export const TAX_RATE = 0;             // taxes default 0% (set per job)
 export const LABOR_RATE = 0.10;        // installation labor = 10% of the gross job price (the only non-zero default)
 export const MIN_LABOR_CENTS = 35000;  // …but never less than $350
 export const FEE_RATE = 0;             // payment-processing fee default 0% (editable per job; actual Stripe fees still apply when recorded)
+export const MATERIALS_DISCOUNT_RATE = 0.03;  // manufacturer discount applied to the materials cost when a job opts in (checkbox)
 
 // The formula rates are adjustable per job (stored on job_financials).
 // A stored value overrides the default; NULL/absent falls back to the default.
@@ -109,7 +110,13 @@ export function resolveFinancials(defaultGrossCents, defaultDiscountCents, row) 
   // flows through) at the per-job rates. Labor, when on auto, is laborRate of
   // the gross job price (NOT of materials).
   const over = (key, auto) => row && row[auto] === 0 && row[key] != null;
-  const materials = over("materials_cents", "materials_auto") ? row.materials_cents : f.materials;
+  // Manufacturer discount: 3% off the FORMULA materials cost when opted in.
+  // Only applied on the auto path — a manual materials override is taken exactly
+  // as typed (so re-saving can never compound the discount).
+  const materialsDiscount = !!(row && row.materials_discount);
+  const materialsManual = over("materials_cents", "materials_auto");
+  const materials = materialsManual ? row.materials_cents
+    : (materialsDiscount ? Math.round(f.materials * (1 - MATERIALS_DISCOUNT_RATE)) : f.materials);
   const shipping  = over("shipping_cents", "shipping_auto") ? row.shipping_cents : Math.round(materials * rates.shipRate);
   const tax       = over("tax_cents", "tax_auto") ? row.tax_cents : Math.round((materials + shipping) * rates.taxRate);
   const labor     = over("labor_cents", "labor_auto") ? row.labor_cents : f.labor;
@@ -130,6 +137,7 @@ export function resolveFinancials(defaultGrossCents, defaultDiscountCents, row) 
     price_auto: row ? (row.price_auto !== 0) : true,
     discount_auto: row ? (row.discount_auto !== 0) : true,
     materials_auto: row ? (row.materials_auto !== 0) : true,
+    materials_discount: materialsDiscount,   // 3% manufacturer discount applied to materials
     shipping_auto: row ? (row.shipping_auto !== 0) : true,
     tax_auto: row ? (row.tax_auto !== 0) : true,
     labor_auto: row ? (row.labor_auto !== 0) : true,

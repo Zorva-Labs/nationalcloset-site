@@ -1,27 +1,19 @@
-// Resend HTTP transport for transactional mail.
+// Transactional mail transport. Primary path is the Gmail API (Google
+// Workspace, hello@nationalclosetco.com) via a service account with
+// domain-wide delegation — see _lib/google-auth.js. Workers can't do reliable
+// SMTP, so we build a raw RFC 822 MIME message and POST it to Gmail.
 //
-// Why Resend: iCloud was rejecting Purelymail-relayed mail with 554 5.7.1
-// (HM08 = sender reputation rejection on a brand-new domain). Even with SPF +
-// DKIM + DMARC=reject all correctly set, iCloud's filters wouldn't trust a
-// 2-day-old domain on Purelymail's shared IP pool. Resend has established
-// IP reputation that iCloud and Gmail accept reliably. Their free tier is
-// 3,000/mo + 100/day which covers a single-operator service business easily.
+// CUTOVER FALLBACK (temporary): if Google isn't configured yet, or a Gmail send
+// fails, we fall back to the legacy Resend HTTP API so mail never stops during
+// the migration. Once Gmail is verified end-to-end, delete the Resend branch,
+// the RESEND_* env usage, and the fallback secrets.
 //
-// Inbound mail still goes through Purelymail (we poll IMAP from
-// _lib/email-sync.js for replies). Resend is outbound-only.
-//
-// Env vars (Cloudflare Pages secrets — set via `wrangler pages secret put`):
-//   RESEND_API_KEY     — re_xxx (send-only or full-access; we only need send)
-//   MAIL_FROM          — optional; defaults to "National Closet Company <hello@nationalclosetco.com>"
-//                        Must use an address on a domain verified in Resend.
-//   MAIL_DEFAULT_REPLY — optional; defaults to "hello@nationalclosetco.com"
-//
-// History:
-//   - Originally used Purelymail REST API (went 404).
-//   - Then Purelymail SMTP via cloudflare:sockets (worked but iCloud rejected
-//     for sender reputation since the domain was 2 days old).
-//   - Now Resend HTTP API (POST /emails) with nationalclosetco.com verified on
-//     their side. Established IP reputation = deliverable to iCloud.
+// Env vars (Cloudflare Pages secrets):
+//   GOOGLE_SA_EMAIL / GOOGLE_SA_PRIVATE_KEY / GOOGLE_WORKSPACE_USER  (primary)
+//   MAIL_FROM          — optional From override (default hello@nationalclosetco.com)
+//   MAIL_DEFAULT_REPLY — optional Reply-To (default hello@nationalclosetco.com)
+//   RESEND_API_KEY     — legacy fallback only; remove after cutover
+import { getGoogleAccessToken, googleConfigured, impersonationUser, base64url } from "./google-auth.js";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const DEFAULT_FROM = "National Closet Company <hello@nationalclosetco.com>";
@@ -34,78 +26,171 @@ const DEFAULT_REPLY = "hello@nationalclosetco.com";
 // Options:
 //   to, cc, bcc       — string or array of recipients (each may be "Name <a@x>")
 //   subject, html, text
-//   replyTo           — defaults to env.MAIL_DEFAULT_REPLY → PURELYMAIL_USER
+//   replyTo           — defaults to env.MAIL_DEFAULT_REPLY
 //   messageId         — pass a pre-generated <id@host> to override (else random)
 //   inReplyTo         — parent Message-ID, sets In-Reply-To + References headers
 //   references        — full References chain (whitespace separated)
 //   from              — full From header (defaults to MAIL_FROM env)
 //   attachments       — [{ filename, content (b64), content_type }]
-export async function sendEmail(env, {
-  to, cc, bcc, subject, html, text, replyTo, attachments,
-  messageId, inReplyTo, references, from, listUnsubscribe,
-}) {
-  if (!env.RESEND_API_KEY) {
-    console.warn("[email] RESEND_API_KEY missing — skipping send");
-    return { skipped: true, reason: "no_api_key" };
-  }
+export async function sendEmail(env, opts) {
+  const { to, cc, bcc } = opts;
   const toList  = Array.isArray(to)  ? to  : (to ? [to] : []);
   const ccList  = Array.isArray(cc)  ? cc  : (cc ? [cc] : []);
   const bccList = Array.isArray(bcc) ? bcc : (bcc ? [bcc] : []);
   if (toList.length === 0) return { skipped: true, reason: "no_recipients" };
-  const reply = replyTo || env.MAIL_DEFAULT_REPLY || DEFAULT_REPLY;
-  const fromHeader = from || env.MAIL_FROM || DEFAULT_FROM;
-  const mid = messageId || makeMessageId();
 
-  // Resend wants headers via a structured "headers" object so we can preserve
-  // threading via In-Reply-To / References / Message-ID.
-  const headers = { "Message-ID": mid };
-  if (inReplyTo)  headers["In-Reply-To"] = inReplyTo;
-  if (references) headers["References"] = references;
-  // List-Unsubscribe ONLY on genuine bulk/broadcast sends (opt-in). On 1:1
-  // transactional mail (proposals, contracts, invoices) it makes Gmail/Outlook
-  // render the "mailing list / unsubscribe" UI and treat a personal message as
-  // bulk — wrong, and it slightly hurts transactional inbox placement. Default off.
-  if (listUnsubscribe) {
-    headers["List-Unsubscribe"] = "<mailto:hello@nationalclosetco.com?subject=Unsubscribe>";
+  const msg = {
+    to: toList, cc: ccList, bcc: bccList,
+    subject: opts.subject,
+    html: opts.html,
+    text: opts.text || (opts.html ? htmlToText(opts.html) : ""),
+    reply: opts.replyTo || env.MAIL_DEFAULT_REPLY || DEFAULT_REPLY,
+    from: opts.from || env.MAIL_FROM || DEFAULT_FROM,
+    messageId: opts.messageId || makeMessageId(),
+    inReplyTo: opts.inReplyTo,
+    references: opts.references,
+    listUnsubscribe: opts.listUnsubscribe,
+    attachments: opts.attachments,
+  };
+
+  // Primary: Gmail API.
+  if (googleConfigured(env)) {
+    const r = await sendViaGmail(env, msg);
+    if (!r.skipped) return r;
+    if (!env.RESEND_API_KEY) return r;            // no fallback available
+    console.warn("[email] Gmail send failed, falling back to Resend:", r.error);
   }
+  // Fallback: Resend (legacy — remove after cutover).
+  if (env.RESEND_API_KEY) return sendViaResend(env, msg);
 
+  console.warn("[email] no mail transport configured — skipping send");
+  return { skipped: true, reason: "no_transport", messageId: msg.messageId };
+}
+
+// ── Gmail API transport ─────────────────────────────────────────────
+async function sendViaGmail(env, m) {
+  const raw = buildMime(m);
+  const rawB64 = base64url(new TextEncoder().encode(raw));
+  try {
+    const token = await getGoogleAccessToken(env, impersonationUser(env));
+    // "me" resolves to the impersonated mailbox; From may be a verified send-as
+    // alias (e.g. notifications@) on that mailbox.
+    const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ raw: rawB64 }),
+    });
+    const body = await res.text().catch(() => "");
+    let json; try { json = JSON.parse(body); } catch { json = { raw: body.slice(0, 240) }; }
+    if (!res.ok) {
+      console.error("[email] Gmail send failed:", res.status, body.slice(0, 240));
+      return { skipped: true, status: res.status, error: json?.error?.message || ("gmail_http_" + res.status), json, messageId: m.messageId };
+    }
+    return { status: res.status, json, messageId: m.messageId, gmailId: json?.id };
+  } catch (e) {
+    console.error("[email] Gmail send threw:", e?.message || e);
+    return { skipped: true, error: e?.message || "gmail_failed", messageId: m.messageId };
+  }
+}
+
+// ── Resend transport (legacy fallback — remove after cutover) ────────
+async function sendViaResend(env, m) {
+  const headers = { "Message-ID": m.messageId };
+  if (m.inReplyTo)  headers["In-Reply-To"] = m.inReplyTo;
+  if (m.references) headers["References"] = m.references;
+  if (m.listUnsubscribe) headers["List-Unsubscribe"] = "<mailto:hello@nationalclosetco.com?subject=Unsubscribe>";
   const payload = {
-    from: fromHeader,
-    to:  toList.map(extractAddr),
-    subject,
-    html: html || undefined,
-    text: text || (html ? htmlToText(html) : undefined),
-    reply_to: reply,
+    from: m.from,
+    to: m.to.map(extractAddr),
+    subject: m.subject,
+    html: m.html || undefined,
+    text: m.text || undefined,
+    reply_to: m.reply,
     headers,
   };
-  if (ccList.length)  payload.cc  = ccList.map(extractAddr);
-  if (bccList.length) payload.bcc = bccList.map(extractAddr);
-  if (attachments && attachments.length) {
-    // Resend attachment schema: { filename, content (base64) | path }
-    payload.attachments = attachments;
-  }
-
+  if (m.cc.length)  payload.cc  = m.cc.map(extractAddr);
+  if (m.bcc.length) payload.bcc = m.bcc.map(extractAddr);
+  if (m.attachments && m.attachments.length) payload.attachments = m.attachments;
   try {
     const res = await fetch(RESEND_ENDPOINT, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${env.RESEND_API_KEY}` },
       body: JSON.stringify(payload),
     });
     const raw = await res.text().catch(() => "");
-    let json;
-    try { json = JSON.parse(raw); } catch { json = { raw: raw.slice(0, 240) }; }
+    let json; try { json = JSON.parse(raw); } catch { json = { raw: raw.slice(0, 240) }; }
     if (!res.ok) {
       console.error("[email] Resend send failed:", res.status, raw.slice(0, 240));
-      return { skipped: true, status: res.status, error: json?.message || ("resend_http_" + res.status), json, messageId: mid };
+      return { skipped: true, status: res.status, error: json?.message || ("resend_http_" + res.status), json, messageId: m.messageId };
     }
-    return { status: res.status, json, messageId: mid, resendId: json?.id };
+    return { status: res.status, json, messageId: m.messageId, resendId: json?.id };
   } catch (e) {
-    console.error("[email] fetch threw:", e?.message || e);
-    return { skipped: true, error: e?.message || "fetch_failed", messageId: mid };
+    console.error("[email] Resend fetch threw:", e?.message || e);
+    return { skipped: true, error: e?.message || "fetch_failed", messageId: m.messageId };
   }
+}
+
+// ── RFC 822 MIME builder (for the Gmail raw send) ────────────────────
+function buildMime(m) {
+  const boundaryAlt = "alt_" + crypto.randomUUID();
+  const H = [];
+  H.push(`From: ${fmtAddr(m.from)}`);
+  H.push(`To: ${m.to.map(fmtAddr).join(", ")}`);
+  if (m.cc.length)  H.push(`Cc: ${m.cc.map(fmtAddr).join(", ")}`);
+  if (m.bcc.length) H.push(`Bcc: ${m.bcc.map(fmtAddr).join(", ")}`);
+  if (m.reply)      H.push(`Reply-To: ${fmtAddr(m.reply)}`);
+  H.push(`Subject: ${encodeHeaderWord(m.subject || "")}`);
+  H.push(`Message-ID: ${m.messageId}`);
+  if (m.inReplyTo)  H.push(`In-Reply-To: ${m.inReplyTo}`);
+  if (m.references) H.push(`References: ${m.references}`);
+  if (m.listUnsubscribe) H.push("List-Unsubscribe: <mailto:hello@nationalclosetco.com?subject=Unsubscribe>");
+  H.push("MIME-Version: 1.0");
+
+  const alt =
+    `--${boundaryAlt}\r\nContent-Type: text/plain; charset="UTF-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n${b64Body(m.text || "")}\r\n` +
+    `--${boundaryAlt}\r\nContent-Type: text/html; charset="UTF-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n${b64Body(m.html || "")}\r\n` +
+    `--${boundaryAlt}--`;
+
+  if (m.attachments && m.attachments.length) {
+    const boundaryMix = "mix_" + crypto.randomUUID();
+    let out = H.join("\r\n") + `\r\nContent-Type: multipart/mixed; boundary="${boundaryMix}"\r\n\r\n`;
+    out += `--${boundaryMix}\r\nContent-Type: multipart/alternative; boundary="${boundaryAlt}"\r\n\r\n${alt}\r\n`;
+    for (const a of m.attachments) {
+      const ct = a.content_type || "application/octet-stream";
+      const name = (a.filename || "attachment").replace(/["\r\n]/g, "");
+      const content = String(a.content || "").replace(/\s+/g, "").replace(/(.{76})/g, "$1\r\n");
+      out += `--${boundaryMix}\r\nContent-Type: ${ct}; name="${name}"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="${name}"\r\n\r\n${content}\r\n`;
+    }
+    out += `--${boundaryMix}--`;
+    return out;
+  }
+  return H.join("\r\n") + `\r\nContent-Type: multipart/alternative; boundary="${boundaryAlt}"\r\n\r\n${alt}`;
+}
+
+// UTF-8 base64 of a body string, wrapped at 76 cols per MIME.
+function b64Body(str) {
+  const bytes = new TextEncoder().encode(String(str));
+  let bin = ""; for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/(.{76})/g, "$1\r\n");
+}
+
+// Format one address header value, MIME-encoding a non-ASCII display name and
+// quoting names with specials. Keeps the <addr> intact.
+function fmtAddr(s) {
+  const mm = String(s || "").match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+  if (mm) { const name = mm[1].replace(/^"|"$/g, ""); return name ? `${encodeHeaderWord(name, true)} <${mm[2]}>` : mm[2]; }
+  return String(s || "").trim();
+}
+
+// RFC 2047 encoded-word for non-ASCII header text; quote if it has specials.
+function encodeHeaderWord(v, isName) {
+  const s = String(v || "");
+  if (/^[\x00-\x7F]*$/.test(s)) {
+    return isName && /[",<>()@:;.\\[\]]/.test(s) ? `"${s.replace(/([\\"])/g, "\\$1")}"` : s;
+  }
+  const bytes = new TextEncoder().encode(s);
+  let bin = ""; for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return `=?UTF-8?B?${btoa(bin)}?=`;
 }
 
 // Generate an RFC 5322 Message-ID — exported so callers can pre-generate one

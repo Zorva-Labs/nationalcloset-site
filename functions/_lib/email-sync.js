@@ -1,15 +1,146 @@
-// IMAP sync: fetch new inbound messages from Purelymail, parse, match to
-// contacts/leads/projects by sender email, insert into email_messages.
+// Inbound mail sync: fetch new messages, parse, match to contacts/leads/
+// projects by sender email, insert into email_messages.
 //
-// Called from the cron-trigger endpoint (/api/internal/email-sync). Idempotent:
-// tracks last seen UID in email_sync_state so re-runs only process new mail.
+// Primary transport is the Gmail API (Google Workspace) — since MX points to
+// Google, replies now land there. runEmailSync() dispatches to Gmail when the
+// service account is configured, and falls back to the legacy Purelymail IMAP
+// poll during cutover. Called from /api/internal/email-sync (cron). Idempotent.
+//
+// State (email_sync_state, mailbox='INBOX'): the Gmail path repurposes the
+// uid_next column as "last processed Gmail internalDate (ms epoch)" and pins
+// uid_validity=1; the IMAP path uses uid_validity/uid_next as IMAP UIDs.
 
 import { ImapClient } from "./imap.js";
+import { getGoogleAccessToken, googleConfigured, impersonationUser } from "./google-auth.js";
 import { deriveThreadKey } from "./email-vars.js";
 import { recordActivity } from "./db.js";
 import { bumpLeadStatusForward } from "./lifecycle.js";
 
 const MAILBOX = "INBOX";
+
+// Dispatcher: Gmail API when configured, else legacy IMAP fallback.
+export async function runEmailSync(env, opts = {}) {
+  if (googleConfigured(env)) return runGmailSync(env, opts);
+  return runImapSync(env, opts);
+}
+
+// ── Gmail API inbound sync ──────────────────────────────────────────
+export async function runGmailSync(env, { maxPerRun = 50, mailbox = MAILBOX } = {}) {
+  const { DB } = env;
+  const user = impersonationUser(env);
+  let token;
+  try { token = await getGoogleAccessToken(env, user); }
+  catch (e) { return { skipped: true, reason: "auth_failed", error: e?.message || String(e) }; }
+  const auth = { Authorization: `Bearer ${token}` };
+  const api = (path) => `https://gmail.googleapis.com/gmail/v1/users/me/${path}`;
+
+  const state = await DB.prepare(`SELECT * FROM email_sync_state WHERE mailbox=?1`).bind(mailbox).first();
+
+  // First run for the Gmail cursor: set the watermark to "now" so we ingest
+  // from-now-on rather than backfilling the whole mailbox. (uid_validity=2
+  // marks the row as Gmail-cursor so a leftover IMAP row gets reset once.)
+  if (!state || state.uid_validity !== 2) {
+    const nowMs = Date.now();
+    if (state) {
+      await DB.prepare(`UPDATE email_sync_state SET uid_validity=2, uid_next=?1, last_run_at=datetime('now'), last_result='init-gmail' WHERE mailbox=?2`).bind(nowMs, mailbox).run().catch(() => {});
+    } else {
+      await DB.prepare(`INSERT INTO email_sync_state (mailbox, uid_validity, uid_next, last_run_at, last_result) VALUES (?1, 2, ?2, datetime('now'), 'init-gmail')`).bind(mailbox, nowMs).run().catch(() => {});
+    }
+    return { ok: true, firstRun: true, cursor: nowMs };
+  }
+
+  const lastInternal = Number(state.uid_next || 0);
+  const afterSec = Math.max(0, Math.floor(lastInternal / 1000));
+  const q = encodeURIComponent(`in:inbox -in:chats after:${afterSec}`);
+
+  let ids = [];
+  try {
+    const res = await fetch(api(`messages?q=${q}&maxResults=${maxPerRun}`), { headers: auth });
+    const json = await res.json();
+    if (!res.ok) return { skipped: true, reason: "list_failed", error: json?.error?.message || res.status };
+    ids = (json.messages || []).map((x) => x.id);
+  } catch (e) { return { skipped: true, reason: "list_failed", error: e?.message || String(e) }; }
+
+  let processed = 0, matched = 0, skipped = 0, highWater = lastInternal;
+  const errors = [];
+  const authDomain = (user.split("@")[1] || "nationalclosetco.com").toLowerCase();
+  ids.reverse(); // Gmail returns newest-first; process oldest-first for a monotonic watermark
+
+  for (const gid of ids) {
+    try {
+      const gRes = await fetch(api(`messages/${gid}?format=RAW`), { headers: auth });
+      const g = await gRes.json();
+      if (!gRes.ok) { errors.push({ gid, error: g?.error?.message || gRes.status }); continue; }
+      const internal = Number(g.internalDate || 0);
+      if (internal && internal <= lastInternal) { skipped++; continue; } // second-granular after: overlap
+
+      const parsed = parseRfc822(decodeGmailRaw(g.raw || ""));
+      const fromAddr = parsed.fromAddr?.toLowerCase() || "";
+      // Skip our own outbound (any @our-domain sender in the inbox is Sent re-ingest / bounces).
+      if (fromAddr && (fromAddr === user.toLowerCase() || fromAddr.endsWith("@" + authDomain))) {
+        skipped++; highWater = Math.max(highWater, internal); continue;
+      }
+      if (parsed.messageId) {
+        const dup = await DB.prepare(`SELECT id FROM email_messages WHERE message_id_header=?1 LIMIT 1`).bind(parsed.messageId).first();
+        if (dup) { skipped++; highWater = Math.max(highWater, internal); continue; }
+      }
+      const resolved = await resolveSenderAttribution(DB, fromAddr, parsed);
+      await DB.prepare(
+        `INSERT INTO email_messages
+           (direction, status, contact_id, lead_id, project_id,
+            message_id_header, in_reply_to, references_header, thread_key,
+            from_name, from_addr, to_addrs, cc_addrs,
+            reply_to, subject, body_text, body_html,
+            raw_headers, received_at)
+         VALUES ('in', 'received', ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, datetime('now'))`
+      ).bind(
+        resolved.contact_id, resolved.lead_id, resolved.project_id,
+        parsed.messageId || null, parsed.inReplyTo || null, parsed.references || null,
+        deriveThreadKey(parsed.subject, fromAddr),
+        parsed.fromName || null, fromAddr || "",
+        JSON.stringify(parsed.toAddrs || []),
+        parsed.ccAddrs?.length ? JSON.stringify(parsed.ccAddrs) : null,
+        parsed.replyTo || null, parsed.subject || "",
+        parsed.bodyText || null, parsed.bodyHtml || null,
+        parsed.rawHeaders.slice(0, 8000),
+      ).run();
+
+      if (resolved.contact_id || resolved.lead_id || resolved.project_id) {
+        await recordActivity(DB, {
+          entityType: resolved.lead_id ? "lead" : resolved.project_id ? "project" : "contact",
+          entityId: resolved.lead_id || resolved.project_id || resolved.contact_id,
+          action: "email-received",
+          actorKind: "customer", actorName: parsed.fromName || fromAddr,
+          details: { subject: parsed.subject, message_id: parsed.messageId },
+        });
+        matched++;
+        if (resolved.lead_id) {
+          await bumpLeadStatusForward(DB, resolved.lead_id, "replied", { actor: { kind: "customer", name: parsed.fromName || fromAddr } }).catch(() => {});
+        }
+      }
+      processed++; highWater = Math.max(highWater, internal);
+    } catch (e) {
+      errors.push({ gid, error: e?.message || String(e) });
+    }
+  }
+
+  await DB.prepare(
+    `UPDATE email_sync_state SET uid_validity=2, uid_next=?1, last_run_at=datetime('now'),
+       last_result=?2, fetched_count=COALESCE(fetched_count,0)+?3 WHERE mailbox=?4`
+  ).bind(highWater, errors.length ? `partial: ${errors.length} errors` : "ok", processed, mailbox).run().catch(() => {});
+
+  return { ok: true, transport: "gmail", processed, matched, skipped, errors: errors.length ? errors.slice(0, 5) : undefined };
+}
+
+// Decode Gmail's base64url raw message into an RFC822 string (UTF-8).
+function decodeGmailRaw(b64url) {
+  let b64 = String(b64url).replace(/-/g, "+").replace(/_/g, "/");
+  b64 += "=".repeat((4 - (b64.length % 4)) % 4);
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+}
 
 export async function runImapSync(env, { mailbox = MAILBOX, maxPerRun = 50 } = {}) {
   const { DB } = env;

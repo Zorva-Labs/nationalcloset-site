@@ -13,7 +13,7 @@
 // is dead simple and runs on whatever schedule the admin wants.
 
 import { requireAuth, json } from "../../_lib/auth.js";
-import { runImapSync } from "../../_lib/email-sync.js";
+import { runEmailSync } from "../../_lib/email-sync.js";
 
 async function authenticate(context) {
   // Bearer token (for cron services) — check this first to avoid a DB round-trip
@@ -35,7 +35,7 @@ export async function onRequestPost(context) {
   if (!auth.ok) return json({ error: "unauthorized" }, 401);
 
   try {
-    const result = await runImapSync(context.env, { maxPerRun: 50 });
+    const result = await runEmailSync(context.env, { maxPerRun: 50 });
     return json({ ...result, actor: auth.actor });
   } catch (e) {
     console.error("[email-sync] failed:", e?.message || e);

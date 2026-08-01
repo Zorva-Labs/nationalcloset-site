@@ -1052,7 +1052,7 @@ function finRender() {
       <tr><td style="padding:6px 0">Wall expense <span class='muted' style='font-size:11px'>· what it costs us</span></td><td style="text-align:right;white-space:nowrap"><span style="color:var(--ink-soft)">$</span><input id="fin-wall-expense" value="${finDollars(f.wall_expense_cents)}" oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right"/></td></tr>
       <tr><td style="padding:2px 0;color:var(--ink-soft);font-size:11px">Wall profit <span class="muted">· overage to us</span></td><td style="text-align:right;color:var(--ink-soft);font-size:11px" id="fin-wall-profit">${SSCrm.fmtMoney((f.wall_total_cents||0)-(f.wall_expense_cents||0))}</td></tr>
       <tr>
-        <td style="padding:6px 0">Processing fee <span class='muted' style='font-size:11px'>· ${f.fee_auto === false ? "manual" : (f.processing_fee_is_actual ? "actual (card / Klarna / ACH)" : `${finRateInp("fin-rate-fee", finPctStr(finFracVal("fee_rate", FIN_DEF.feeRate)))}% of net, est.`)}</span></td>
+        <td style="padding:6px 0">Processing fee <span class='muted' style='font-size:11px'>· ${f.fee_auto === false ? "manual" : (f.processing_fee_is_actual ? "actual (card / Klarna / ACH)" : `${finRateInp("fin-rate-fee", finPctStr(finFracVal("fee_rate", FIN_DEF.feeRate)))}% of total charged, est.`)}</span></td>
         <td style="text-align:right;white-space:nowrap">
           <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-fee-auto" ${f.fee_auto === false ? "" : "checked"} onchange="finToggle('fee')"/> auto</label>
           <span style="color:var(--ink-soft)">$</span>
@@ -1119,24 +1119,25 @@ function finRecalc() {
   const laborCents = document.getElementById("fin-labor-auto").checked ? (price > 0 ? Math.max(Math.round(price * rates.laborRate), 35000) : 0) : finToCents(document.getElementById("fin-labor").value);
   if (document.getElementById("fin-labor-auto").checked) document.getElementById("fin-labor").value = finDollars(laborCents);
   const net = price - discount;
+  // Wall repair/paint add-on: read first so the processing fee can be figured on
+  // the full amount charged (closet net + wall total).
+  const wallTotal = finToCents((document.getElementById("fin-wall-total") || {}).value || 0);
+  const wallExpense = finToCents((document.getElementById("fin-wall-expense") || {}).value || 0);
+  const grandTotal = net + wallTotal;       // the total the client is charged
+  const wpEl = document.getElementById("fin-wall-profit"); if (wpEl) wpEl.textContent = SSCrm.fmtMoney(wallTotal - wallExpense);
   // Processing fee: manual dollar override when "auto" is off; otherwise the
-  // actual Stripe fee if collected, else the estimate (feeRate × net).
+  // actual Stripe fee if collected, else the estimate (feeRate × the total charged).
   const feeAutoEl = document.getElementById("fin-fee-auto");
   const feeAuto = feeAutoEl ? feeAutoEl.checked : true;
   let feeCents;
   if (feeAuto) {
-    feeCents = finState.processing_fee_is_actual ? (finState.processing_fee_cents || 0) : Math.round(net * rates.feeRate);
+    feeCents = finState.processing_fee_is_actual ? (finState.processing_fee_cents || 0) : Math.round(grandTotal * rates.feeRate);
     const feeEl = document.getElementById("fin-fee"); if (feeEl) feeEl.value = finDollars(feeCents);
   } else {
     feeCents = finToCents(document.getElementById("fin-fee").value);
   }
   const closetSum = matCents + shipCents + taxCents + laborCents + finToCents(document.getElementById("fin-misc").value) + feeCents;
-  // Wall repair/paint add-on: total (revenue) − expense (cost) = overage to us.
-  const wallTotal = finToCents((document.getElementById("fin-wall-total") || {}).value || 0);
-  const wallExpense = finToCents((document.getElementById("fin-wall-expense") || {}).value || 0);
-  const wpEl = document.getElementById("fin-wall-profit"); if (wpEl) wpEl.textContent = SSCrm.fmtMoney(wallTotal - wallExpense);
-  const grandTotal = net + wallTotal;       // client pays closet net + wall total
-  const sumAll = closetSum + wallExpense;   // closet expenses + wall expense
+  const sumAll = closetSum + wallExpense;   // closet expenses (incl. fee) + wall expense
   document.getElementById("fin-net").textContent = SSCrm.fmtMoney(net);   // closet net — shows the discount
   const gtRow = document.getElementById("fin-grandtotal-row");
   if (gtRow) gtRow.style.display = (wallTotal > 0 || wallExpense > 0) ? "" : "none";

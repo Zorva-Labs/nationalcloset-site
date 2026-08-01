@@ -7,6 +7,7 @@ import { sendEmail, brandedEmail, escapeHtml } from "../../../_lib/email.js";
 import { markProjectBooked } from "../../../_lib/lifecycle.js";
 import { sendStageEmail } from "../../../_lib/stage-emails.js";
 import { createInvoice } from "../../../_lib/invoices.js";
+import { sendSignedContractCopyToClient } from "../../../_lib/contract-emails.js";
 
 const SITE_URL = "https://nationalclosetco.com";
 
@@ -122,6 +123,13 @@ export async function onRequestPost(context) {
     await markProjectBooked(context.env.DB, k.project_id, k.id);
     await sendStageEmail(context.env, "contracted", k.project_id, { name: body.signer_name });
   }
+
+  // Email the customer their signed copy (summary + full scope/terms + view link).
+  // Best-effort and logged to the CRM conversation thread.
+  const signedAtLabel = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  await sendSignedContractCopyToClient(context.env, k, {
+    lines, signerName: body.signer_name, signerEmail: body.signer_email, signedAtLabel, docHash,
+  }).catch((e) => console.error("[contract/client-copy]", String(e)));
 
   // Notify the team
   await sendEmail(context.env, {

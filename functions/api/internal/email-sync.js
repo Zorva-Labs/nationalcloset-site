@@ -1,4 +1,4 @@
-// Manual / cron-scheduled IMAP poll endpoint.
+// Manual / cron-scheduled inbound mail sync endpoint (Gmail API).
 //
 // Auth: Bearer token matching env.CRON_SECRET (or admin session — admin can
 // trigger an out-of-cycle sync from the CRM UI).

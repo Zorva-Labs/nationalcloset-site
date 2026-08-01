@@ -1,16 +1,12 @@
-// Inbound mail sync: fetch new messages, parse, match to contacts/leads/
-// projects by sender email, insert into email_messages.
+// Inbound mail sync: fetch new messages from the Gmail API (Google Workspace),
+// parse, match to contacts/leads/projects by sender email, insert into
+// email_messages. Since MX points to Google, replies land in the hello@
+// mailbox. Called from /api/internal/email-sync (cron). Idempotent.
 //
-// Primary transport is the Gmail API (Google Workspace) — since MX points to
-// Google, replies now land there. runEmailSync() dispatches to Gmail when the
-// service account is configured, and falls back to the legacy Purelymail IMAP
-// poll during cutover. Called from /api/internal/email-sync (cron). Idempotent.
-//
-// State (email_sync_state, mailbox='INBOX'): the Gmail path repurposes the
-// uid_next column as "last processed Gmail internalDate (ms epoch)" and pins
-// uid_validity=1; the IMAP path uses uid_validity/uid_next as IMAP UIDs.
+// State (email_sync_state, mailbox='INBOX'): uid_next holds the last processed
+// Gmail internalDate (ms epoch); uid_validity is pinned to 2 to mark the row as
+// a Gmail cursor.
 
-import { ImapClient } from "./imap.js";
 import { getGoogleAccessToken, googleConfigured, impersonationUser } from "./google-auth.js";
 import { deriveThreadKey } from "./email-vars.js";
 import { recordActivity } from "./db.js";
@@ -18,10 +14,10 @@ import { bumpLeadStatusForward } from "./lifecycle.js";
 
 const MAILBOX = "INBOX";
 
-// Dispatcher: Gmail API when configured, else legacy IMAP fallback.
+// Entry point — Gmail API inbound sync.
 export async function runEmailSync(env, opts = {}) {
-  if (googleConfigured(env)) return runGmailSync(env, opts);
-  return runImapSync(env, opts);
+  if (!googleConfigured(env)) return { skipped: true, reason: "no_transport" };
+  return runGmailSync(env, opts);
 }
 
 // ── Gmail API inbound sync ──────────────────────────────────────────
@@ -140,179 +136,6 @@ function decodeGmailRaw(b64url) {
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
-}
-
-export async function runImapSync(env, { mailbox = MAILBOX, maxPerRun = 50 } = {}) {
-  const { DB } = env;
-  if (!env.PURELYMAIL_USER || !env.PURELYMAIL_PASSWORD) {
-    return { skipped: true, reason: "no_creds" };
-  }
-
-  // Load the state row — { uid_validity, uid_next }
-  const state = await DB.prepare(`SELECT * FROM email_sync_state WHERE mailbox=?1`).bind(mailbox).first();
-  const lastUidValidity = state?.uid_validity || 0;
-  const lastUidSeen     = state?.uid_next     || 0;
-
-  const client = new ImapClient({
-    host: env.IMAP_HOST || "imap.purelymail.com",
-    port: parseInt(env.IMAP_PORT || "993", 10),
-    user: env.PURELYMAIL_USER,
-    password: env.PURELYMAIL_PASSWORD,
-  });
-
-  let info = null;
-  let processed = 0;
-  let matched = 0;
-  let skipped = 0;
-  let highWatermark = lastUidSeen;
-  const errors = [];
-  // Socket-level failures (notably Cloudflare's "Stream was cancelled") leave
-  // the connection unusable — we must stop reading and reconnect next run.
-  const FATAL_SOCKET = /cancell?ed|socket closed|closed unexpectedly|connection (lost|reset|closed)|aborted|broken pipe|timeout|timed out/i;
-  const startedAt = Date.now();
-  const DEADLINE_MS = 22000;
-
-  try {
-    await client.connect();
-    await client.login();
-    info = await client.selectMailbox(mailbox);
-
-    // If UIDVALIDITY changed (rare — happens if mailbox was rebuilt), reset
-    // our cursor to whatever is currently in the mailbox. We don't backfill
-    // historical messages; we want the inbox-from-now-on behavior.
-    let startUid = lastUidSeen + 1;
-    if (info.uidValidity !== lastUidValidity) {
-      // First run OR mailbox reset — start fresh from current UIDNEXT
-      // (this is "everything from now on", not "everything ever")
-      startUid = Math.max(1, info.uidNext);
-    }
-
-    // Fetch new UIDs
-    const uids = await client.searchUidsFrom(startUid);
-    for (const uid of uids.slice(0, maxPerRun)) {
-      if (Date.now() - startedAt > DEADLINE_MS) break;  // leave time to persist state + logout
-      try {
-        const fetched = await client.fetchRaw(uid);
-        if (!fetched?.raw) { skipped++; continue; }
-        const parsed = parseRfc822(fetched.raw);
-        // Skip messages we sent ourselves. Catches:
-        // 1. From exactly matches the auth'd mailbox (hello@nationalclosetco.com)
-        // 2. From is on our own domain (anything @nationalclosetco.com).
-        // Outbound mail to customers can never legitimately come back FROM
-        // our own domain, so any @nationalclosetco.com sender in the inbox is
-        // necessarily our own Sent folder being re-ingested. Resend's
-        // bounce-tracking address (anything @send.nationalclosetco.com) is
-        // caught by the same domain suffix match.
-        const fromAddr = parsed.fromAddr?.toLowerCase() || "";
-        const authUser = (env.PURELYMAIL_USER || "").toLowerCase();
-        const authDomain = authUser.split("@")[1] || "nationalclosetco.com";
-        if (fromAddr && (fromAddr === authUser || fromAddr.endsWith("@" + authDomain))) {
-          skipped++; highWatermark = Math.max(highWatermark, uid); continue;
-        }
-        // Skip if we already have this Message-ID
-        if (parsed.messageId) {
-          const dup = await DB.prepare(`SELECT id FROM email_messages WHERE message_id_header=?1 LIMIT 1`).bind(parsed.messageId).first();
-          if (dup) { skipped++; highWatermark = Math.max(highWatermark, uid); continue; }
-        }
-        // Resolve the contact/lead/project by sender email
-        const resolved = await resolveSenderAttribution(DB, fromAddr, parsed);
-
-        await DB.prepare(
-          `INSERT INTO email_messages
-             (direction, status, contact_id, lead_id, project_id,
-              message_id_header, in_reply_to, references_header, thread_key,
-              from_name, from_addr, to_addrs, cc_addrs,
-              reply_to, subject, body_text, body_html,
-              raw_headers, received_at)
-           VALUES ('in', 'received', ?1, ?2, ?3,
-              ?4, ?5, ?6, ?7,
-              ?8, ?9, ?10, ?11,
-              ?12, ?13, ?14, ?15,
-              ?16, datetime('now'))`
-        ).bind(
-          resolved.contact_id, resolved.lead_id, resolved.project_id,
-          parsed.messageId || null, parsed.inReplyTo || null,
-          parsed.references || null,
-          deriveThreadKey(parsed.subject, fromAddr),
-          parsed.fromName || null, fromAddr || "",
-          JSON.stringify(parsed.toAddrs || []),
-          parsed.ccAddrs?.length ? JSON.stringify(parsed.ccAddrs) : null,
-          parsed.replyTo || null,
-          parsed.subject || "",
-          parsed.bodyText || null, parsed.bodyHtml || null,
-          parsed.rawHeaders.slice(0, 8000),
-        ).run();
-
-        // Activity log entry on the matched entity
-        if (resolved.contact_id || resolved.lead_id || resolved.project_id) {
-          await recordActivity(DB, {
-            entityType: resolved.lead_id ? "lead" : resolved.project_id ? "project" : "contact",
-            entityId: resolved.lead_id || resolved.project_id || resolved.contact_id,
-            action: "email-received",
-            actorKind: "customer", actorName: parsed.fromName || fromAddr,
-            details: { subject: parsed.subject, message_id: parsed.messageId },
-          });
-          matched++;
-          // A lead writing back is a real reply — move them forward to "replied"
-          // (forward-only; a lead already at consult/proposal/booked stays put).
-          if (resolved.lead_id) {
-            await bumpLeadStatusForward(DB, resolved.lead_id, "replied", { actor: { kind: "customer", name: parsed.fromName || fromAddr } }).catch(() => {});
-          }
-        }
-
-        // NOTE: intentionally do NOT mark the message \Seen. The sync tracks
-        // its position via the UID high-watermark (uid_next in
-        // email_sync_state), so flagging messages read is unnecessary — and
-        // doing so made every inbound email show up already-read in the
-        // Purelymail inbox, causing real messages to be missed. Leave the
-        // \Seen flag untouched so the human inbox still shows them as unread.
-        processed++;
-        highWatermark = Math.max(highWatermark, uid);
-      } catch (e) {
-        const msg = e?.message || String(e);
-        errors.push({ uid, error: msg });
-        // Advance the cursor PAST this message so a poison/oversized email can't
-        // block the entire queue forever (the original bug — a single bad UID
-        // stalled all mail behind it indefinitely). If the socket itself died,
-        // stop this run; the next cron run reconnects fresh and resumes here.
-        highWatermark = Math.max(highWatermark, uid);
-        if (FATAL_SOCKET.test(msg)) break;
-      }
-    }
-
-    // Persist new state
-    await DB.prepare(
-      `UPDATE email_sync_state SET uid_validity=?1, uid_next=?2,
-         last_run_at=datetime('now'), last_result=?3, fetched_count=COALESCE(fetched_count,0)+?4
-       WHERE mailbox=?5`
-    ).bind(
-      info.uidValidity,
-      highWatermark,
-      errors.length ? `partial: ${errors.length} errors` : "ok",
-      processed,
-      mailbox,
-    ).run();
-  } catch (e) {
-    // Persist whatever progress we made so a mid-run failure doesn't reprocess
-    // — or get permanently stuck on — the same UID next time.
-    await DB.prepare(
-      `UPDATE email_sync_state SET uid_validity=COALESCE(?1, uid_validity), uid_next=?2,
-         last_run_at=datetime('now'), last_result=?3 WHERE mailbox=?4`
-    ).bind(info?.uidValidity || null, highWatermark, ("err: " + (e?.message || String(e))).slice(0, 200), mailbox)
-     .run().catch(() => {});
-    throw e;
-  } finally {
-    try { await client.logout(); } catch (_) {}
-  }
-
-  return {
-    ok: true,
-    mailbox,
-    exists: info?.exists,
-    uid_next: info?.uidNext,
-    processed, matched, skipped,
-    errors: errors.length ? errors.slice(0, 5) : undefined,
-  };
 }
 
 // ────────────────────────────────────────────────────────────────────

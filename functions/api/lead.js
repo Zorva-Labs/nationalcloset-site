@@ -1,16 +1,15 @@
 // Cloudflare Pages Function — POST /api/lead
-// Receives contact-form submissions and emails the lead to hello@nationalclosetco.com via Resend.
-// The Resend API key is read from the encrypted project secret env.RESEND_API_KEY (never in source).
+// Receives contact-form submissions and emails the lead to hello@nationalclosetco.com
+// via the shared sendEmail() wrapper (Gmail API — Google Workspace).
 
 import { spamReason } from "../_lib/spam.js";
+import { sendEmail } from "../_lib/email.js";
 
 const TO = "hello@nationalclosetco.com";
-// Internal alert delivered to hello@. It must NOT be sent *from* hello@ — a
-// self-addressed message (from == to) is reliably spam-foldered by the receiving
-// server. notifications@ is the standard sender for all internal-to-self alerts
-// (customer-facing mail uses the warmed hello@). Reply-To is set to the lead below
-// so hitting Reply still answers the customer directly.
-const FROM = "National Closet Co. Website <notifications@nationalclosetco.com>";
+// Internal alert delivered to hello@, sent as hello@ via the Gmail API — an
+// authenticated self-send, so Gmail delivers it to the inbox normally. Reply-To
+// is set to the lead below so hitting Reply answers the customer directly.
+const FROM = "National Closet Co. Website <hello@nationalclosetco.com>";
 
 const esc = (s) =>
   String(s == null ? "" : s)
@@ -24,8 +23,6 @@ const json = (obj, status = 200) =>
   });
 
 export async function onRequestPost({ request, env }) {
-  if (!env.RESEND_API_KEY) return json({ ok: false, error: "not_configured" }, 500);
-
   // Parse JSON or form-encoded body
   let data = {};
   try {
@@ -85,27 +82,17 @@ export async function onRequestPost({ request, env }) {
     `New website lead — National Closet Company\n\n` +
     rows.map(([k, v]) => `${k}: ${v}`).join("\n");
 
-  const payload = {
+  const res = await sendEmail(env, {
     from: FROM,
-    to: [TO],
+    to: TO,
     subject: `New website lead — ${name}${project ? " · " + project : ""}`,
     html,
     text,
-  };
-  if (email) payload.reply_to = email;
-
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    replyTo: email || undefined,
   });
 
-  if (!res.ok) {
-    const detail = await res.text();
-    return json({ ok: false, error: "send_failed", detail }, 502);
+  if (res?.skipped || res?.error) {
+    return json({ ok: false, error: "send_failed", detail: res?.error || res?.reason || "unknown" }, 502);
   }
   return json({ ok: true });
 }

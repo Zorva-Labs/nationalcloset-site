@@ -187,7 +187,7 @@ export async function onRequestPost(context) {
   ).bind(
     rowContactId, rowLeadId, rowProjectId,
     messageId, inReplyTo, references, threadKey,
-    "National Closet Company", context.env.PURELYMAIL_USER || "hello@nationalclosetco.com",
+    "National Closet Company", context.env.MAIL_DEFAULT_REPLY || "hello@nationalclosetco.com",
     JSON.stringify(to),
     body.cc ? JSON.stringify(normalizeList(body.cc)) : null,
     body.bcc ? JSON.stringify(normalizeList(body.bcc)) : null,

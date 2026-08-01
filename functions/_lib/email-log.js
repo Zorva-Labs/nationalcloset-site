@@ -34,7 +34,7 @@ export async function logOutboundEmail(env, {
     }
     const toList = Array.isArray(to) ? to : [to].filter(Boolean);
     const threadKey = deriveThreadKey(subject, firstAddr(toList));
-    const fromAddr = env.PURELYMAIL_USER || env.MAIL_DEFAULT_REPLY || "hello@nationalclosetco.com";
+    const fromAddr = env.MAIL_DEFAULT_REPLY || "hello@nationalclosetco.com";
     const r = await db.prepare(
       `INSERT INTO email_messages
          (direction, status, contact_id, lead_id, project_id,

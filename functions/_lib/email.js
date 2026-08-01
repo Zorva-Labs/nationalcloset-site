@@ -1,21 +1,15 @@
-// Transactional mail transport. Primary path is the Gmail API (Google
-// Workspace, hello@nationalclosetco.com) via a service account with
-// domain-wide delegation — see _lib/google-auth.js. Workers can't do reliable
-// SMTP, so we build a raw RFC 822 MIME message and POST it to Gmail.
-//
-// CUTOVER FALLBACK (temporary): if Google isn't configured yet, or a Gmail send
-// fails, we fall back to the legacy Resend HTTP API so mail never stops during
-// the migration. Once Gmail is verified end-to-end, delete the Resend branch,
-// the RESEND_* env usage, and the fallback secrets.
+// Transactional mail transport — Gmail API (Google Workspace,
+// hello@nationalclosetco.com) via a service account with domain-wide
+// delegation (see _lib/google-auth.js). Workers can't do reliable SMTP, so we
+// build a raw RFC 822 MIME message and POST it to Gmail. Everything the CRM
+// sends — customer mail and internal staff alerts alike — goes out as hello@.
 //
 // Env vars (Cloudflare Pages secrets):
-//   GOOGLE_SA_EMAIL / GOOGLE_SA_PRIVATE_KEY / GOOGLE_WORKSPACE_USER  (primary)
+//   GOOGLE_SA_EMAIL / GOOGLE_SA_PRIVATE_KEY / GOOGLE_WORKSPACE_USER
 //   MAIL_FROM          — optional From override (default hello@nationalclosetco.com)
 //   MAIL_DEFAULT_REPLY — optional Reply-To (default hello@nationalclosetco.com)
-//   RESEND_API_KEY     — legacy fallback only; remove after cutover
 import { getGoogleAccessToken, googleConfigured, impersonationUser, base64url } from "./google-auth.js";
 
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const DEFAULT_FROM = "National Closet Company <hello@nationalclosetco.com>";
 const DEFAULT_REPLY = "hello@nationalclosetco.com";
 
@@ -39,6 +33,11 @@ export async function sendEmail(env, opts) {
   const bccList = Array.isArray(bcc) ? bcc : (bcc ? [bcc] : []);
   if (toList.length === 0) return { skipped: true, reason: "no_recipients" };
 
+  if (!googleConfigured(env)) {
+    console.warn("[email] Google Workspace not configured — skipping send");
+    return { skipped: true, reason: "no_transport", messageId: opts.messageId || makeMessageId() };
+  }
+
   const msg = {
     to: toList, cc: ccList, bcc: bccList,
     subject: opts.subject,
@@ -52,19 +51,7 @@ export async function sendEmail(env, opts) {
     listUnsubscribe: opts.listUnsubscribe,
     attachments: opts.attachments,
   };
-
-  // Primary: Gmail API.
-  if (googleConfigured(env)) {
-    const r = await sendViaGmail(env, msg);
-    if (!r.skipped) return r;
-    if (!env.RESEND_API_KEY) return r;            // no fallback available
-    console.warn("[email] Gmail send failed, falling back to Resend:", r.error);
-  }
-  // Fallback: Resend (legacy — remove after cutover).
-  if (env.RESEND_API_KEY) return sendViaResend(env, msg);
-
-  console.warn("[email] no mail transport configured — skipping send");
-  return { skipped: true, reason: "no_transport", messageId: msg.messageId };
+  return sendViaGmail(env, msg);
 }
 
 // ── Gmail API transport ─────────────────────────────────────────────
@@ -73,8 +60,7 @@ async function sendViaGmail(env, m) {
   const rawB64 = base64url(new TextEncoder().encode(raw));
   try {
     const token = await getGoogleAccessToken(env, impersonationUser(env));
-    // "me" resolves to the impersonated mailbox; From may be a verified send-as
-    // alias (e.g. notifications@) on that mailbox.
+    // "me" resolves to the impersonated mailbox (hello@), which is also the From.
     const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -90,43 +76,6 @@ async function sendViaGmail(env, m) {
   } catch (e) {
     console.error("[email] Gmail send threw:", e?.message || e);
     return { skipped: true, error: e?.message || "gmail_failed", messageId: m.messageId };
-  }
-}
-
-// ── Resend transport (legacy fallback — remove after cutover) ────────
-async function sendViaResend(env, m) {
-  const headers = { "Message-ID": m.messageId };
-  if (m.inReplyTo)  headers["In-Reply-To"] = m.inReplyTo;
-  if (m.references) headers["References"] = m.references;
-  if (m.listUnsubscribe) headers["List-Unsubscribe"] = "<mailto:hello@nationalclosetco.com?subject=Unsubscribe>";
-  const payload = {
-    from: m.from,
-    to: m.to.map(extractAddr),
-    subject: m.subject,
-    html: m.html || undefined,
-    text: m.text || undefined,
-    reply_to: m.reply,
-    headers,
-  };
-  if (m.cc.length)  payload.cc  = m.cc.map(extractAddr);
-  if (m.bcc.length) payload.bcc = m.bcc.map(extractAddr);
-  if (m.attachments && m.attachments.length) payload.attachments = m.attachments;
-  try {
-    const res = await fetch(RESEND_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${env.RESEND_API_KEY}` },
-      body: JSON.stringify(payload),
-    });
-    const raw = await res.text().catch(() => "");
-    let json; try { json = JSON.parse(raw); } catch { json = { raw: raw.slice(0, 240) }; }
-    if (!res.ok) {
-      console.error("[email] Resend send failed:", res.status, raw.slice(0, 240));
-      return { skipped: true, status: res.status, error: json?.message || ("resend_http_" + res.status), json, messageId: m.messageId };
-    }
-    return { status: res.status, json, messageId: m.messageId, resendId: json?.id };
-  } catch (e) {
-    console.error("[email] Resend fetch threw:", e?.message || e);
-    return { skipped: true, error: e?.message || "fetch_failed", messageId: m.messageId };
   }
 }
 
@@ -202,12 +151,6 @@ export function makeMessageId(domain = "nationalclosetco.com") {
 // ────────────────────────────────────────────────────────────────────
 // Helpers
 // ────────────────────────────────────────────────────────────────────
-
-// Extract the bare addr-spec from either "Name <addr@x>" or "addr@x"
-function extractAddr(s) {
-  const m = String(s || "").match(/<([^>]+)>/);
-  return (m ? m[1] : s).trim();
-}
 
 // Build a readable plain-text alternative from the branded HTML. A real
 // text/plain part (not a single stripped line) improves spam scores and

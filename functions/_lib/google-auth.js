@@ -11,8 +11,9 @@
 //      authorize the service account's Client ID for these scopes:
 //        https://www.googleapis.com/auth/gmail.send
 //        https://www.googleapis.com/auth/gmail.readonly
-//   3. In the hello@ mailbox, add notifications@nationalclosetco.com as a
-//      verified "Send mail as" alias (so we can send From: notifications@).
+//
+// All CRM mail (customer + internal) sends as hello@, so no send-as alias is
+// needed — the impersonated mailbox is always the authenticated From.
 //
 // Secrets (wrangler pages secret put --project-name=nationalcloset):
 //   GOOGLE_SA_EMAIL        — svc-acct email (…@….iam.gserviceaccount.com)

@@ -57,10 +57,10 @@ async function notifyStaffPayment(env, { invoice, project, kind, method, amountC
   });
   const text = `${M.word}: ${amt} ${typeLbl} (${ml}) — ${who}, ${invoice.number}.`;
   const messageId = makeMessageId();
-  // Internal staff alert (to == hello@). Send from a DISTINCT address so it is not
-  // self-addressed (from == to), which receivers reliably junk. All internal-to-self
-  // notifications use notifications@; customer-facing mail uses the warmed hello@.
-  const res = await sendEmail(env, { from: "National Closet Co. · Payments <notifications@nationalclosetco.com>", to, subject, html, text, messageId }).catch(() => null);
+  // Internal staff alert (to == hello@), sent as hello@ via the Gmail API. This is
+  // an authenticated self-send (not an external relay spoofing our domain), so
+  // Gmail delivers it to the inbox normally — no separate sender address needed.
+  const res = await sendEmail(env, { from: "National Closet Co. · Payments <hello@nationalclosetco.com>", to, subject, html, text, messageId }).catch(() => null);
   await logOutboundEmail(env, {
     to, subject, html, text, messageId,
     projectId: invoice.project_id, contactId: project?.contact_id || null,

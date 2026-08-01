@@ -1,6 +1,6 @@
 // POST /api/contact — receives the consultation form, saves the lead to D1,
-// and emails the admin via the shared sendEmail() wrapper (Resend HTTP API;
-// see _lib/email.js for env vars). DB save is the source of truth — a mail
+// and emails the admin via the shared sendEmail() wrapper (Gmail API — Google
+// Workspace; see _lib/email.js). DB save is the source of truth — a mail
 // failure logs but never blocks the customer response.
 
 import { sendEmail, brandedEmail, makeMessageId } from "../_lib/email.js";
@@ -13,8 +13,8 @@ const TO_ADDRESS = "hello@nationalclosetco.com";
 
 export async function onRequestPost({ request, env }) {
   // NOTE on mail delivery: we keep mail send best-effort. The lead is ALWAYS
-  // saved to D1 first — that's the source of truth for the CRM. If Purelymail
-  // (or any future provider) fails, we still confirm receipt to the customer
+  // saved to D1 first — that's the source of truth for the CRM. If the mail
+  // provider fails, we still confirm receipt to the customer
   // so the front-end never shows a "network error" on a successfully captured
   // lead. Admin sees the failure in Pages function logs and via the CRM.
   let data;
@@ -184,7 +184,7 @@ https://nationalclosetco.com/crm/
     console.error("contact.js: env.DB is not configured");
   }
 
-  // 2) Fire-and-forget mail send via Resend. sendEmail never throws — a mail
+  // 2) Fire-and-forget mail send via Gmail. sendEmail never throws — a mail
   // failure just logs to the Pages function console. The customer is told
   // their lead was captured (it was) regardless of email delivery.
   // We set Reply-To to the customer's email so hitting "Reply" in the admin
@@ -193,7 +193,7 @@ https://nationalclosetco.com/crm/
   // not a self-addressed message (from == to), which receivers commonly junk.
   // Reply-To stays the customer so hitting Reply answers the lead directly.
   await sendEmail(env, {
-    from: "National Closet Co. Website <notifications@nationalclosetco.com>",
+    from: "National Closet Co. Website <hello@nationalclosetco.com>",
     to: TO_ADDRESS,
     replyTo: email,
     subject,

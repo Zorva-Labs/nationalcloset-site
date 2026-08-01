@@ -88,8 +88,8 @@ export async function onRequestPost(context) {
       ctaUrl: adminUrl,
       signature: false,
     });
-    // Internal alert to hello@ — send from notifications@ so it isn't self-addressed (junked).
-    await sendEmail(context.env, { from: "National Closet Co. <notifications@nationalclosetco.com>", to: staff, subject: `Updated proposal requested — ${p.number}`, html }).catch(() => {});
+    // Internal alert to hello@ — sent as hello@ via Gmail (authenticated self-send).
+    await sendEmail(context.env, { from: "National Closet Co. <hello@nationalclosetco.com>", to: staff, subject: `Updated proposal requested — ${p.number}`, html }).catch(() => {});
     return json({ ok: true });
   }
   if (expired && (body.action === "select_tier" || body.action === "accept")) {

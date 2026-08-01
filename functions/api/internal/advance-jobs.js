@@ -4,7 +4,7 @@
 // picks an install_date. This endpoint promotes any such job to 'installing'
 // once its install_date has arrived, so the pipeline moves on its own without
 // anyone clicking. The cron worker (nationalcloset-email-cron) calls this on
-// the same schedule it polls IMAP.
+// the same schedule it syncs inbound mail.
 //
 // Auth: Bearer token matching env.CRON_SECRET, OR an admin session cookie
 // (so the admin can trigger a manual sweep from the CRM if needed).

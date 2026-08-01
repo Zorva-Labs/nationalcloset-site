@@ -1,8 +1,8 @@
 // GET   /api/invoices/[id]            — invoice + line items + contact/project (admin)
 // PATCH /api/invoices/[id]            — edit description/type/notes/due_date + line items
-// POST  /api/invoices/[id]  { action: "resend" | "void" | "mark_paid" }  (admin)
+// POST  /api/invoices/[id]  { action: "resend" | "resend_bank_verification" | "void" | "mark_paid" }  (admin)
 import { requireAuth, json } from "../../../_lib/auth.js";
-import { sendInvoiceEmail, markInvoicePaid, sendPaymentReceipt } from "../../../_lib/invoices.js";
+import { sendInvoiceEmail, markInvoicePaid, sendPaymentReceipt, sendBankVerificationEmail } from "../../../_lib/invoices.js";
 import { recordActivity } from "../../../_lib/db.js";
 
 export async function onRequestGet(context) {
@@ -81,6 +81,26 @@ export async function onRequestPost(context) {
     if (inv.status === "void") return json({ error: "Invoice is void" }, 400);
     const r = await sendInvoiceEmail(context.env, inv);
     return json({ ok: !!r.ok, ...(r.skipped ? { skipped: r.reason } : {}) });
+  }
+  if (action === "resend_bank_verification") {
+    if (inv.status === "void") return json({ error: "Invoice is void" }, 400);
+    if (inv.status === "paid") return json({ error: "Invoice is already paid" }, 400);
+    const r = await sendBankVerificationEmail(context.env, inv);
+    if (r.skipped) {
+      const msgs = {
+        no_payment: "No bank payment has been started on this invoice yet.",
+        no_email: "This customer has no email address on file.",
+        stripe_error: "Couldn't reach Stripe to fetch the verification link. Try again.",
+        not_pending_verification: "This payment isn't waiting on micro-deposit verification — the customer may have already confirmed, or paid another way.",
+        no_verify_url: "Stripe didn't return a verification link for this payment.",
+      };
+      return json({ error: msgs[r.reason] || "Couldn't send the verification email." }, 400);
+    }
+    await recordActivity(context.env.DB, {
+      entityType: "project", entityId: inv.project_id, action: "invoice-bank-verification-resent",
+      actorKind: "admin", actorId: auth.id, actorName: auth.email, details: { invoice_id: id, number: inv.number },
+    }).catch(() => {});
+    return json({ ok: !!r.ok });
   }
   if (action === "void") {
     await context.env.DB.prepare(`UPDATE invoices SET status='void', updated_at=datetime('now') WHERE id=?1`).bind(id).run();

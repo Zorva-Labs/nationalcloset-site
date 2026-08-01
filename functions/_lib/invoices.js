@@ -4,6 +4,7 @@
 // the public pay page; here we just create the invoice record + notify.
 import { genToken, nextSequence, formatDocNumber } from "./tokens.js";
 import { sendEmail, makeMessageId, brandedEmail } from "./email.js";
+import { retrievePaymentIntent } from "./stripe.js";
 import { logOutboundEmail } from "./email-log.js";
 import { recordActivity } from "./db.js";
 import { markProjectBooked } from "./lifecycle.js";
@@ -352,6 +353,64 @@ export async function sendPaymentReceipt(env, invoice, { amountCents, method = "
     to, subject, html, text, messageId,
     projectId: invoice.project_id, contactId: project.contact_id, leadId: project.lead_id || null,
     templateKind: "invoice_receipt", status: failed ? "failed" : "sent",
+  }).catch(() => {});
+  return { ok: !failed };
+}
+
+// Resend the ACH micro-deposit bank-verification link. When a customer pays by
+// a manually-entered US bank account, Stripe holds the PaymentIntent in
+// requires_action / verify_with_microdeposits until they confirm two small
+// (<$1) deposits. Stripe has no API to "resend" its own verification email, but
+// the hosted_verification_url stays valid — so we fetch it live and email it.
+// Returns { skipped, reason } when the invoice isn't actually awaiting
+// verification, so the caller can show a clear message.
+export async function sendBankVerificationEmail(env, invoice, project) {
+  const db = env.DB;
+  if (!invoice.stripe_payment_intent_id) return { skipped: true, reason: "no_payment" };
+  if (!project) {
+    project = await db.prepare(
+      `SELECT p.*, c.name AS contact_name, c.email AS contact_email FROM projects p JOIN contacts c ON c.id=p.contact_id WHERE p.id=?1`
+    ).bind(invoice.project_id).first();
+  }
+  if (!project?.contact_email) return { skipped: true, reason: "no_email" };
+
+  const pi = await retrievePaymentIntent(env, invoice.stripe_payment_intent_id).catch(() => null);
+  if (!pi) return { skipped: true, reason: "stripe_error" };
+  const na = pi.next_action || {};
+  if (pi.status !== "requires_action" || na.type !== "verify_with_microdeposits") {
+    return { skipped: true, reason: "not_pending_verification", status: pi.status };
+  }
+  const verifyUrl = na.verify_with_microdeposits?.hosted_verification_url;
+  if (!verifyUrl) return { skipped: true, reason: "no_verify_url" };
+
+  const first = (project.contact_name || "there").split(" ")[0];
+  const subject = `Confirm your bank to finish your payment (${invoice.number})`;
+  const html = brandedEmail({
+    title: "One quick step to finish your payment",
+    body: `
+      <p>Hi ${first},</p>
+      <p>Thanks for choosing to pay invoice <strong>${invoice.number}</strong> (${money(invoice.amount_cents)}) by bank transfer (ACH). To verify your bank account, our payment processor (Stripe) sent <strong>two small deposits</strong> — each under $1.00 — to your account. They usually arrive within <strong>1–2 business days</strong>.</p>
+      <p>Once you see them, click the button below and enter the two amounts to confirm your bank and complete your payment:</p>
+      <p style="font-size:13px;color:#6B6457">On your bank statement the deposits may appear from <strong>STRIPE</strong> or <strong>&ldquo;ACCTVERIFY&rdquo;</strong>. If the button doesn't work, paste this link into your browser:<br><a href="${verifyUrl}" style="color:#C0552B;word-break:break-all">${verifyUrl}</a></p>
+    `,
+    ctaLabel: "Confirm my bank",
+    ctaUrl: verifyUrl,
+  });
+  const text = `Hi ${first},\n\n`
+    + `To finish paying invoice ${invoice.number} (${money(invoice.amount_cents)}) by bank transfer, confirm the two small deposits (each under $1.00) Stripe sent to your account. They usually arrive within 1-2 business days.\n\n`
+    + `Confirm your bank here: ${verifyUrl}\n\n`
+    + `On your statement the deposits may show as STRIPE or "ACCTVERIFY".\n\n`
+    + `Questions? Reply to this email or call/text 629-298-8241.\nNational Closet Company`;
+  const messageId = makeMessageId();
+  const to = project.contact_name ? `${project.contact_name} <${project.contact_email}>` : project.contact_email;
+  const res = await sendEmail(env, { to, subject, html, text, messageId });
+  const failed = res?.skipped || res?.error || (res?.status && res.status >= 400);
+  await logOutboundEmail(env, {
+    to, subject, html, text, messageId,
+    projectId: invoice.project_id, contactId: project.contact_id, leadId: project.lead_id || null,
+    templateKind: "invoice_bank_verification", status: failed ? "failed" : "sent",
+    errorCode: failed ? (res?.reason || "send_error") : null,
+    errorMessage: failed ? (res?.error || "send_failed").toString().slice(0, 240) : null,
   }).catch(() => {});
   return { ok: !failed };
 }

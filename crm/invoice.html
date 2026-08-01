@@ -123,6 +123,7 @@ function render() {
         : `<button class="btn secondary" onclick="editing=true;render()">✏️ Edit</button>`)}
       <button class="btn secondary" onclick="window.print()">🖨️ Print / PDF</button>
       ${locked ? "" : `<button class="btn ghost" onclick="resend()">✉️ Send</button>`}
+      ${locked || !iv.stripe_payment_intent_id ? "" : `<button class="btn ghost" onclick="resendBankVerify()" title="Resend the ACH micro-deposit verification link (only works while a bank payment is awaiting verification)">🏦 Resend bank verification</button>`}
       <button class="btn ghost" onclick="copyLink('${e(payUrl)}')">Copy pay link</button>
       ${locked ? "" : `<button class="btn ghost" onclick="recordPayment()">💵 Record payment</button><button class="btn ghost" onclick="voidInv()">Void</button>`}
     </div>
@@ -232,6 +233,15 @@ async function save() {
 async function resend() {
   try { await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "resend" }) }); SSCrm.toast("Invoice emailed", "success"); }
   catch (err) { SSCrm.toast(err.message || "Could not send", "error"); }
+}
+// Resend the ACH micro-deposit bank-verification link. Only succeeds while the
+// bank payment is genuinely awaiting verification; otherwise the API returns a
+// clear message (already confirmed, paid another way, etc.).
+async function resendBankVerify() {
+  try {
+    await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "resend_bank_verification" }) });
+    SSCrm.toast("Bank-verification email sent", "success");
+  } catch (err) { SSCrm.toast(err.message || "Could not send verification email", "error"); }
 }
 // Record a payment collected in person (cash, check, card on a reader, Venmo…).
 function recordPayment() {

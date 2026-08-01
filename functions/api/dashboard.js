@@ -20,7 +20,7 @@ export async function onRequestGet(context) {
   // This-month booked (fully_executed contracts created this month)
   const monthRow = await DB.prepare(`
     SELECT
-      (SELECT COUNT(*) FROM leads WHERE created_at >= ?1) AS leads_this_month,
+      (SELECT COUNT(*) FROM leads WHERE created_at >= ?1 AND status != 'lost') AS leads_this_month,
       (SELECT COUNT(*) FROM contracts WHERE counter_signed_at >= ?1) AS booked_this_month,
       (SELECT COALESCE(SUM(total_cents), 0) FROM contracts WHERE counter_signed_at >= ?1) AS booked_revenue_this_month
   `).bind(monthStart + "T00:00:00").first();

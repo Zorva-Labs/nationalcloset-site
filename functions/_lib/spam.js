@@ -1,33 +1,24 @@
 // Shared spam heuristics for the public lead forms (/api/contact, /api/lead).
 //
-// Tuned for a LOCAL custom-closet business: a genuine consultation request is a
-// homeowner describing a closet/pantry/garage. Real leads essentially never
-// contain a URL, HTML/BBCode, or SEO/marketing vocabulary — so those are very
-// high-precision spam signals with almost no false positives.
+// DELIBERATELY MINIMAL. A silently-dropped submission is invisible — the visitor
+// is told "received" but nothing saves and no email is sent — so a false
+// positive here is a LOST CUSTOMER. We therefore only drop on signals a real
+// homeowner physically cannot or essentially never triggers:
+//   1. the hidden honeypot field (a bot filled a field no human can see),
+//   2. pasted HTML / BBCode / markdown LINK markup (<a href>, [url], ](http…),
+//   3. a "name" that is literally a URL.
 //
-// spamReason(data) returns a short reason string when the submission looks like
-// spam (callers should silently accept — return { ok: true } — so bots don't
-// retry and no notification email is sent), or null when it looks legitimate.
+// Everything else now passes: keywords, a mentioned website or email, even a
+// link in the message. Obvious junk that slips through can be marked "lost" in
+// the CRM in two seconds — a far better trade than ever dropping a real client.
+//
+// spamReason(data) returns a short reason string for a drop, or null otherwise.
 
-// High-precision only — phrases a homeowner describing a closet would never use,
-// but form-spam bots constantly do. (Ambiguous business-y phrases like "your
-// website" are intentionally excluded so a real customer who mentions the site
-// is never dropped; links + these keywords are enough.)
-const SPAM_PHRASES = [
-  "seo", "backlink", "back link", "guest post", "guest blog", "link building",
-  "rank your website", "ranking on google", "first page of google",
-  "page one of google", "top of google search", "website traffic",
-  "domain authority", "affordable seo", "cheap seo", "digital marketing agency",
-  "marketing agency", "lead generation service", "b2b leads", "cold email",
-  "crypto", "bitcoin", "forex", "casino", "viagra", "cialis", "payday loan",
-  "escort", "telegram", "whatsapp me", "ai automation agency",
-  "chatgpt integration", "n8n workflow",
-];
-
-// Any URL-ish token: http(s)://, www., or a bare domain with a common TLD.
-const LINK_RE = /(https?:\/\/|www\.[a-z0-9-]|\b[a-z0-9-]{2,}\.(com|net|org|ru|io|xyz|info|biz|top|online|site|shop|club|link|store|cn|de|uk)\b)/i;
-// HTML anchors / BBCode / markdown link syntax that bots paste.
-const MARKUP_RE = /(<a\s|<\/a>|\[url|\[\/url\]|\[link|href\s*=|\]\(http)/i;
+// HTML anchors / BBCode / markdown link syntax — pasted by bots, never by a real
+// homeowner filling out a closet inquiry.
+const MARKUP_RE = /(<a\s|<\/a>|\[url|\[\/url\]|\[link|href\s*=|\]\(https?:)/i;
+// A name that is literally a URL (http(s):// or www.) — never a real person.
+const NAME_URL_RE = /(https?:\/\/|www\.[a-z0-9-])/i;
 
 export function spamReason(data) {
   const g = (k) => (data && data[k] != null ? String(data[k]) : "");
@@ -36,22 +27,13 @@ export function spamReason(data) {
   if (g("company").trim() !== "") return "honeypot";
 
   const name = g("name");
-  const email = g("email");
   const message = g("message") || g("msg");
-  const blob = `${name} ${message}`.toLowerCase();
 
-  // 2) Links — the #1 signature of contact-form spam. A real closet lead never
-  //    puts a URL in their name or message.
-  if (LINK_RE.test(name) || LINK_RE.test(message)) return "link";
+  // 2) Pasted link markup — bots only.
   if (MARKUP_RE.test(`${name} ${message}`)) return "markup";
 
-  // 3) SEO / marketing / scam vocabulary.
-  for (const p of SPAM_PHRASES) if (blob.includes(p)) return "phrase:" + p;
-
-  // 4) Structural tells: a "name" that is actually an email/URL, or a message
-  //    stuffed with links.
-  if (/^\S+@\S+$/.test(name.trim())) return "name_is_email";
-  if ((message.match(/https?:\/\//gi) || []).length >= 1) return "message_url";
+  // 3) A "name" that is literally a URL.
+  if (NAME_URL_RE.test(name)) return "name_url";
 
   return null;
 }

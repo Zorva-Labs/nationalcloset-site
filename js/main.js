@@ -518,4 +518,34 @@
     window.addEventListener("pagehide", send);
     window.addEventListener("beforeunload", send);
   } catch (e) { /* engagement tracking is best-effort */ }
+
+  /* ---------- Homepage: auto-fill "Latest from the blog" from the blog index ----------
+     The Closet Cases page (/closet-cases) lists every post newest-first and gets a
+     card for each new post, so we pull its first three cards into the homepage grid.
+     Publishing a post updates the homepage automatically. The static cards already in
+     the grid are the SEO/no-JS fallback if the fetch fails. */
+  try {
+    var latestGrid = document.getElementById("latest-posts");
+    if (latestGrid) {
+      fetch("/closet-cases", { credentials: "omit" })
+        .then(function (r) { return r.ok ? r.text() : null; })
+        .then(function (html) {
+          if (!html) return;
+          var doc = new DOMParser().parseFromString(html, "text/html");
+          var cards = doc.querySelectorAll(".post-grid .post-card");
+          if (cards.length < 3) return;
+          var frag = document.createDocumentFragment();
+          for (var i = 0; i < 3; i++) {
+            var c = cards[i].cloneNode(true);
+            c.setAttribute("data-reveal", "");
+            if (i > 0) c.setAttribute("data-delay", String(i)); else c.removeAttribute("data-delay");
+            c.classList.add("in");   // observer only watches nodes present at load; keep injected cards visible
+            frag.appendChild(c);
+          }
+          latestGrid.innerHTML = "";
+          latestGrid.appendChild(frag);
+        })
+        .catch(function () { /* keep the static fallback cards */ });
+    }
+  } catch (e) { /* best-effort progressive enhancement */ }
 })();

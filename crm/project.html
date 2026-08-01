@@ -1026,7 +1026,9 @@ function finRender() {
   const f = finState;
   const host = document.getElementById("fin-host");
   if (!host) return;
-  const netCents = f.net_cents != null ? f.net_cents : (f.price_cents - (f.discount_cents || 0));
+  const netCents = f.net_cents != null ? f.net_cents : (f.price_cents - (f.discount_cents || 0));   // grand total (closet net + wall)
+  const closetNetCents = f.closet_net_cents != null ? f.closet_net_cents : (f.price_cents - (f.discount_cents || 0));
+  const hasWall = (f.wall_total_cents || 0) > 0 || (f.wall_expense_cents || 0) > 0;
   host.innerHTML = `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <tr>
@@ -1038,7 +1040,7 @@ function finRender() {
         </td>
       </tr>
       ${finRow("discount", "Discount <span class='muted' style='font-size:11px'>· from proposal · $ or %</span>", { pctable: true })}
-      <tr><td style="padding:4px 0;color:var(--ink-soft)">Net to client</td><td style="text-align:right;color:var(--ink-soft);font-weight:600" id="fin-net">${SSCrm.fmtMoney(netCents)}</td></tr>
+      <tr><td style="padding:4px 0;color:var(--ink-soft)">Net to client <span class="muted" style="font-size:11px">· closet, after discount</span></td><td style="text-align:right;color:var(--ink-soft);font-weight:600" id="fin-net">${SSCrm.fmtMoney(closetNetCents)}</td></tr>
       <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
       ${finRow("materials", `Materials <span class='muted' style='font-size:11px'>· price ÷ ${finRateInp("fin-rate-divisor", finRateVal("materials_divisor", FIN_DEF.divisor))}</span> <label style='font-size:11px;color:var(--ink-soft);cursor:pointer;margin-left:6px;white-space:nowrap'><input type='checkbox' id='fin-matdisc' ${finState.materials_discount ? "checked" : ""} onchange='finRecalc()'/> −3% mfr.</label>`)}
       ${finRow("shipping", `Shipping <span class='muted' style='font-size:11px'>· ${finRateInp("fin-rate-ship", finPctStr(finFracVal("shipping_rate", FIN_DEF.shipRate)))}% of materials</span>`)}
@@ -1057,6 +1059,7 @@ function finRender() {
           <input id="fin-fee" value="${finDollars(f.processing_fee_cents)}" ${f.fee_auto === false ? "" : "readonly"} oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right;color:#B45309;${f.fee_auto === false ? "" : "background:var(--bg-soft)"}"/>
         </td>
       </tr>
+      <tr id="fin-grandtotal-row" style="display:${hasWall ? "" : "none"}"><td style="padding:4px 0;font-weight:600">Client pays <span class="muted" style="font-size:11px">· closet + wall</span></td><td style="text-align:right;font-weight:600" id="fin-grandtotal">${SSCrm.fmtMoney(netCents)}</td></tr>
       <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
       <tr><td style="padding:4px 0">Total expenses</td><td style="text-align:right" id="fin-expenses">${SSCrm.fmtMoney(f.expenses_cents)}</td></tr>
       <tr style="font-weight:700"><td style="padding:4px 0">Profit</td><td style="text-align:right" id="fin-profit">${SSCrm.fmtMoney(f.profit_cents)}</td></tr>
@@ -1132,12 +1135,15 @@ function finRecalc() {
   const wallTotal = finToCents((document.getElementById("fin-wall-total") || {}).value || 0);
   const wallExpense = finToCents((document.getElementById("fin-wall-expense") || {}).value || 0);
   const wpEl = document.getElementById("fin-wall-profit"); if (wpEl) wpEl.textContent = SSCrm.fmtMoney(wallTotal - wallExpense);
-  const netAll = net + wallTotal;          // client pays closet net + wall total
-  const sumAll = closetSum + wallExpense;  // closet expenses + wall expense
-  document.getElementById("fin-net").textContent = SSCrm.fmtMoney(netAll);
+  const grandTotal = net + wallTotal;       // client pays closet net + wall total
+  const sumAll = closetSum + wallExpense;   // closet expenses + wall expense
+  document.getElementById("fin-net").textContent = SSCrm.fmtMoney(net);   // closet net — shows the discount
+  const gtRow = document.getElementById("fin-grandtotal-row");
+  if (gtRow) gtRow.style.display = (wallTotal > 0 || wallExpense > 0) ? "" : "none";
+  const gtEl = document.getElementById("fin-grandtotal"); if (gtEl) gtEl.textContent = SSCrm.fmtMoney(grandTotal);
   document.getElementById("fin-expenses").textContent = SSCrm.fmtMoney(sumAll);
-  document.getElementById("fin-profit").textContent = SSCrm.fmtMoney(netAll - sumAll);
-  document.getElementById("fin-margin").textContent = (netAll ? Math.round(((netAll - sumAll) / netAll) * 100) : 0) + "%";
+  document.getElementById("fin-profit").textContent = SSCrm.fmtMoney(grandTotal - sumAll);
+  document.getElementById("fin-margin").textContent = (grandTotal ? Math.round(((grandTotal - sumAll) / grandTotal) * 100) : 0) + "%";
 }
 
 async function saveFinancials() {

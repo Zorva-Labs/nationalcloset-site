@@ -14,7 +14,7 @@ export const SHIPPING_RATE = 0;        // shipping default 0% (set per job)
 export const TAX_RATE = 0;             // taxes default 0% (set per job)
 export const LABOR_RATE = 0.10;        // installation labor = 10% of the gross job price (the only non-zero default)
 export const MIN_LABOR_CENTS = 35000;  // …but never less than $350
-export const FEE_RATE = 0.03;          // payment-processing fee = 3% of net (default; editable per job)
+export const FEE_RATE = 0;             // payment-processing fee default 0% (editable per job; actual Stripe fees still apply when recorded)
 
 // The formula rates are adjustable per job (stored on job_financials).
 // A stored value overrides the default; NULL/absent falls back to the default.

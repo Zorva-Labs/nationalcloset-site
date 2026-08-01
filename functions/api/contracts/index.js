@@ -38,7 +38,7 @@ const TERMS_BY_TYPE = {
 <p>If a customer-supplied product is damaged or defective when unboxed, National Closet Company will document the damage and assist with the return claim, but is not responsible for replacement or refund. The retailer's return policy applies.</p>
 
 <h3>Payment</h3>
-<p>No deposit is required for install-only service. Payment in full is due upon completion of installation. We accept check, cash, ACH, Venmo, and Cash App. Card payments incur a 3% convenience fee.</p>
+<p>No deposit is required for install-only service. Payment in full is due upon completion of installation. We accept card, bank transfer (ACH), digital wallets and Klarna online, plus check, cash, Venmo and Cash App in person, with no added processing fee.</p>
 
 <h3>Workmanship Warranty</h3>
 <p>Our installation work is warranted for <strong>ninety (90) days</strong> against defects in workmanship. If a bracket pulls out, a headrail loses its level, or a motor we programmed loses its limits within 90 days of install, we will return and correct the issue at no charge. This warranty does <em>not</em> cover the product itself, which is governed by its original manufacturer warranty (please retain the retailer's documentation).</p>

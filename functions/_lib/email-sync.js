@@ -1,7 +1,9 @@
-// Inbound mail sync: fetch new messages from the Gmail API (Google Workspace),
-// parse, match to contacts/leads/projects by sender email, insert into
-// email_messages. Since MX points to Google, replies land in the hello@
-// mailbox. Called from /api/internal/email-sync (cron). Idempotent.
+// Two-way mail sync via the Gmail API (Google Workspace). Reads both the Inbox
+// (client → us) and the Sent folder (us → client), parses, matches to
+// contacts/leads/projects, and inserts into email_messages. The Sent scan
+// captures staff replies typed directly in Gmail (CRM-composed mail carries an
+// X-NCC-Origin:crm header and is skipped — it's already logged at send time).
+// Called from /api/internal/email-sync (cron). Idempotent.
 //
 // State (email_sync_state, mailbox='INBOX'): uid_next holds the last processed
 // Gmail internalDate (ms epoch); uid_validity is pinned to 2 to mark the row as
@@ -47,7 +49,10 @@ export async function runGmailSync(env, { maxPerRun = 50, mailbox = MAILBOX } = 
 
   const lastInternal = Number(state.uid_next || 0);
   const afterSec = Math.max(0, Math.floor(lastInternal / 1000));
-  const q = encodeURIComponent(`in:inbox -in:chats after:${afterSec}`);
+  // Inbox (client → us) AND Sent (us → client). The Sent scan captures staff
+  // replies typed directly in Gmail; CRM-generated mail carries an
+  // X-NCC-Origin:crm header and is skipped here (already logged at send time).
+  const q = encodeURIComponent(`{in:inbox in:sent} -in:chats after:${afterSec}`);
 
   let ids = [];
   try {
@@ -60,6 +65,7 @@ export async function runGmailSync(env, { maxPerRun = 50, mailbox = MAILBOX } = 
   let processed = 0, matched = 0, skipped = 0, highWater = lastInternal;
   const errors = [];
   const authDomain = (user.split("@")[1] || "nationalclosetco.com").toLowerCase();
+  const isOurs = (a) => !!a && a.toLowerCase().endsWith("@" + authDomain);
   ids.reverse(); // Gmail returns newest-first; process oldest-first for a monotonic watermark
 
   for (const gid of ids) {
@@ -72,14 +78,56 @@ export async function runGmailSync(env, { maxPerRun = 50, mailbox = MAILBOX } = 
 
       const parsed = parseRfc822(decodeGmailRaw(g.raw || ""));
       const fromAddr = parsed.fromAddr?.toLowerCase() || "";
-      // Skip our own outbound (any @our-domain sender in the inbox is Sent re-ingest / bounces).
-      if (fromAddr && (fromAddr === user.toLowerCase() || fromAddr.endsWith("@" + authDomain))) {
-        skipped++; highWater = Math.max(highWater, internal); continue;
-      }
+
+      // Dedup by Message-ID (covers both directions, incl. CRM sends whose
+      // Message-ID Gmail preserved in the Sent copy).
       if (parsed.messageId) {
         const dup = await DB.prepare(`SELECT id FROM email_messages WHERE message_id_header=?1 LIMIT 1`).bind(parsed.messageId).first();
         if (dup) { skipped++; highWater = Math.max(highWater, internal); continue; }
       }
+
+      // OUTBOUND: sent from our mailbox (Sent folder). Log staff replies typed
+      // directly in Gmail; skip CRM-generated mail and internal self-notes.
+      if (isOurs(fromAddr)) {
+        const crmOrigin = (parsed.headers["x-ncc-origin"] || "").toString().toLowerCase() === "crm";
+        const recips = [...(parsed.toAddrs || []), ...(parsed.ccAddrs || [])].filter((a) => a && !isOurs(a));
+        if (crmOrigin || recips.length === 0) { skipped++; highWater = Math.max(highWater, internal); continue; }
+        const clientAddr = recips[0].toLowerCase();
+        const resolved = await resolveSenderAttribution(DB, clientAddr, parsed);
+        await DB.prepare(
+          `INSERT INTO email_messages
+             (direction, status, contact_id, lead_id, project_id,
+              message_id_header, in_reply_to, references_header, thread_key,
+              from_name, from_addr, to_addrs, cc_addrs,
+              reply_to, subject, body_text, body_html,
+              raw_headers, received_at)
+           VALUES ('out', 'sent', ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, datetime('now'))`
+        ).bind(
+          resolved.contact_id, resolved.lead_id, resolved.project_id,
+          parsed.messageId || null, parsed.inReplyTo || null, parsed.references || null,
+          deriveThreadKey(parsed.subject, clientAddr),
+          parsed.fromName || "National Closet Company", fromAddr || user,
+          JSON.stringify(parsed.toAddrs || []),
+          parsed.ccAddrs?.length ? JSON.stringify(parsed.ccAddrs) : null,
+          parsed.replyTo || null, parsed.subject || "",
+          parsed.bodyText || null, parsed.bodyHtml || null,
+          parsed.rawHeaders.slice(0, 8000),
+        ).run();
+        if (resolved.contact_id || resolved.lead_id || resolved.project_id) {
+          await recordActivity(DB, {
+            entityType: resolved.lead_id ? "lead" : resolved.project_id ? "project" : "contact",
+            entityId: resolved.lead_id || resolved.project_id || resolved.contact_id,
+            action: "email-sent",
+            actorKind: "admin", actorName: "National Closet Company",
+            details: { subject: parsed.subject, message_id: parsed.messageId, to: clientAddr, via: "gmail-direct" },
+          }).catch(() => {});
+          matched++;
+        }
+        processed++; highWater = Math.max(highWater, internal);
+        continue;
+      }
+
+      // INBOUND: from the client.
       const resolved = await resolveSenderAttribution(DB, fromAddr, parsed);
       await DB.prepare(
         `INSERT INTO email_messages

@@ -93,6 +93,9 @@ function buildMime(m) {
   if (m.inReplyTo)  H.push(`In-Reply-To: ${m.inReplyTo}`);
   if (m.references) H.push(`References: ${m.references}`);
   if (m.listUnsubscribe) H.push("List-Unsubscribe: <mailto:hello@nationalclosetco.com?subject=Unsubscribe>");
+  // Marks CRM-generated mail so the Sent-folder sync skips it (already logged at
+  // send time) and only captures replies typed directly in Gmail.
+  H.push("X-NCC-Origin: crm");
   H.push("MIME-Version: 1.0");
 
   const alt =

@@ -107,6 +107,27 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
   // inclusive (shipping, tax and installation), so the contract lines already
   // reconcile to the contract total.
 
+  // Option 2 (wallprep): split the accepted amount so the job screen prices the
+  // CLOSET on the ÷divisor formula and the WALL FINISHING as its own line.
+  // Option 2 = Option 1's closet lines + the wall-finishing line, so the wall
+  // amount is (Option 2 subtotal − Option 1 subtotal) and the closet is Option 1's
+  // subtotal — description-independent, robust to renamed wall lines. Writing it
+  // onto job_financials (price override = closet, wall_total = wall) keeps the
+  // card, jobs list, reports and P&L all consistent from one source.
+  if (contractType === "wallprep") {
+    const good = await db.prepare(`SELECT subtotal_cents FROM proposal_tiers WHERE proposal_id=?1 AND tier='good'`).bind(proposal.id).first().catch(() => null);
+    const option2Sub = tier.subtotal_cents || totalCents || 0;
+    const closetCents = (good && good.subtotal_cents != null) ? good.subtotal_cents : option2Sub;
+    const wallCents = Math.max(0, option2Sub - closetCents);
+    if (wallCents > 0) {
+      await db.prepare(
+        `INSERT INTO job_financials (project_id, price_cents, price_auto, wall_total_cents, updated_at)
+         VALUES (?1, ?2, 0, ?3, datetime('now'))
+         ON CONFLICT(project_id) DO UPDATE SET price_cents=?2, price_auto=0, wall_total_cents=?3, updated_at=datetime('now')`
+      ).bind(proposal.project_id, closetCents, wallCents).run().catch(() => {});
+    }
+  }
+
   // Advance the project status — accepting a proposal moves the job into "proposed"
   await db.prepare(`UPDATE projects SET status='proposed', updated_at=datetime('now') WHERE id=?1`).bind(proposal.project_id).run();
 

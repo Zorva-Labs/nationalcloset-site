@@ -107,23 +107,28 @@ export async function onRequestPut(context) {
   const feeManual = (body.fee_auto === false);
   const feeCol = { v: feeManual ? cents(body.fee_cents) : null, a: feeManual ? 0 : 1 };
   const matDisc = body.materials_discount ? 1 : 0;   // 3% manufacturer discount on materials
+  const wallTotal   = Math.max(0, cents(body.wall_total_cents));    // wall repair/paint revenue
+  const wallExpense = Math.max(0, cents(body.wall_expense_cents));  // wall repair/paint cost
 
   await context.env.DB.prepare(
     `INSERT INTO job_financials
        (project_id, price_cents, discount_pct, materials_cents, shipping_cents, tax_cents, labor_cents, misc_cents,
         discount_cents, price_auto, discount_auto, materials_auto, shipping_auto, tax_auto, labor_auto, notes,
-        materials_divisor, shipping_rate, tax_rate, labor_rate, fee_rate, fee_cents, fee_auto, materials_discount, updated_at)
-     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24, datetime('now'))
+        materials_divisor, shipping_rate, tax_rate, labor_rate, fee_rate, fee_cents, fee_auto, materials_discount,
+        wall_total_cents, wall_expense_cents, updated_at)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25,?26, datetime('now'))
      ON CONFLICT(project_id) DO UPDATE SET
        price_cents=?2, discount_pct=?3, materials_cents=?4, shipping_cents=?5, tax_cents=?6, labor_cents=?7,
        misc_cents=?8, discount_cents=?9, price_auto=?10, discount_auto=?11, materials_auto=?12, shipping_auto=?13,
        tax_auto=?14, labor_auto=?15, notes=?16,
        materials_divisor=?17, shipping_rate=?18, tax_rate=?19, labor_rate=?20, fee_rate=?21,
-       fee_cents=?22, fee_auto=?23, materials_discount=?24, updated_at=datetime('now')`
+       fee_cents=?22, fee_auto=?23, materials_discount=?24,
+       wall_total_cents=?25, wall_expense_cents=?26, updated_at=datetime('now')`
   ).bind(
     id, price, 0, m.v, s.v, t.v, l.v, misc, discount,
     priceOverride ? 0 : 1, discountOverride ? 0 : 1, m.a, s.a, t.a, l.a, (body.notes || null),
     rates.divisor, rates.shipRate, rates.taxRate, rates.laborRate, rates.feeRate, feeCol.v, feeCol.a, matDisc,
+    wallTotal, wallExpense,
   ).run();
 
   const row = await context.env.DB.prepare(`SELECT * FROM job_financials WHERE project_id=?1`).bind(id).first();

@@ -1045,6 +1045,10 @@ function finRender() {
       ${finRow("tax", `Taxes <span class='muted' style='font-size:11px'>· ${finRateInp("fin-rate-tax", finPctStr(finFracVal("tax_rate", FIN_DEF.taxRate)))}% of (materials + shipping)</span>`)}
       ${finRow("labor", `Labor <span class='muted' style='font-size:11px'>· ${finRateInp("fin-rate-labor", finPctStr(finFracVal("labor_rate", FIN_DEF.laborRate)))}% of price, min $350</span>`)}
       <tr><td style="padding:6px 0">Misc</td><td style="text-align:right;white-space:nowrap"><span style="color:var(--ink-soft)">$</span><input id="fin-misc" value="${finDollars(f.misc_cents)}" oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right"/></td></tr>
+      <tr><td colspan="2" style="padding:9px 0 2px"><span class="muted" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Wall repair / paint · Option 2</span></td></tr>
+      <tr><td style="padding:6px 0">Wall total <span class='muted' style='font-size:11px'>· what we charge</span></td><td style="text-align:right;white-space:nowrap"><span style="color:var(--ink-soft)">$</span><input id="fin-wall-total" value="${finDollars(f.wall_total_cents)}" oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right"/></td></tr>
+      <tr><td style="padding:6px 0">Wall expense <span class='muted' style='font-size:11px'>· what it costs us</span></td><td style="text-align:right;white-space:nowrap"><span style="color:var(--ink-soft)">$</span><input id="fin-wall-expense" value="${finDollars(f.wall_expense_cents)}" oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right"/></td></tr>
+      <tr><td style="padding:2px 0;color:var(--ink-soft);font-size:11px">Wall profit <span class="muted">· overage to us</span></td><td style="text-align:right;color:var(--ink-soft);font-size:11px" id="fin-wall-profit">${SSCrm.fmtMoney((f.wall_total_cents||0)-(f.wall_expense_cents||0))}</td></tr>
       <tr>
         <td style="padding:6px 0">Processing fee <span class='muted' style='font-size:11px'>· ${f.fee_auto === false ? "manual" : (f.processing_fee_is_actual ? "actual (card / Klarna / ACH)" : `${finRateInp("fin-rate-fee", finPctStr(finFracVal("fee_rate", FIN_DEF.feeRate)))}% of net, est.`)}</span></td>
         <td style="text-align:right;white-space:nowrap">
@@ -1123,11 +1127,17 @@ function finRecalc() {
   } else {
     feeCents = finToCents(document.getElementById("fin-fee").value);
   }
-  const sum = matCents + shipCents + taxCents + laborCents + finToCents(document.getElementById("fin-misc").value) + feeCents;
-  document.getElementById("fin-net").textContent = SSCrm.fmtMoney(net);
-  document.getElementById("fin-expenses").textContent = SSCrm.fmtMoney(sum);
-  document.getElementById("fin-profit").textContent = SSCrm.fmtMoney(net - sum);
-  document.getElementById("fin-margin").textContent = (net ? Math.round(((net - sum) / net) * 100) : 0) + "%";
+  const closetSum = matCents + shipCents + taxCents + laborCents + finToCents(document.getElementById("fin-misc").value) + feeCents;
+  // Wall repair/paint add-on: total (revenue) − expense (cost) = overage to us.
+  const wallTotal = finToCents((document.getElementById("fin-wall-total") || {}).value || 0);
+  const wallExpense = finToCents((document.getElementById("fin-wall-expense") || {}).value || 0);
+  const wpEl = document.getElementById("fin-wall-profit"); if (wpEl) wpEl.textContent = SSCrm.fmtMoney(wallTotal - wallExpense);
+  const netAll = net + wallTotal;          // client pays closet net + wall total
+  const sumAll = closetSum + wallExpense;  // closet expenses + wall expense
+  document.getElementById("fin-net").textContent = SSCrm.fmtMoney(netAll);
+  document.getElementById("fin-expenses").textContent = SSCrm.fmtMoney(sumAll);
+  document.getElementById("fin-profit").textContent = SSCrm.fmtMoney(netAll - sumAll);
+  document.getElementById("fin-margin").textContent = (netAll ? Math.round(((netAll - sumAll) / netAll) * 100) : 0) + "%";
 }
 
 async function saveFinancials() {
@@ -1155,6 +1165,8 @@ async function saveFinancials() {
   body.fee_auto = feeAuto;
   if (!feeAuto) body.fee_cents = finToCents(document.getElementById("fin-fee").value);
   body.materials_discount = !!(document.getElementById("fin-matdisc") && document.getElementById("fin-matdisc").checked);
+  body.wall_total_cents = finToCents((document.getElementById("fin-wall-total") || {}).value || 0);
+  body.wall_expense_cents = finToCents((document.getElementById("fin-wall-expense") || {}).value || 0);
   try {
     const r = await SSCrm.fetchJSON(`/api/projects/${state.project.id}/financials`, { method: "PUT", body: JSON.stringify(body) });
     finState = r.financials;

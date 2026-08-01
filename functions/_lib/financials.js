@@ -125,13 +125,24 @@ export function resolveFinancials(defaultGrossCents, defaultDiscountCents, row) 
   const discountOverridden = row && row.discount_auto === 0 && row.discount_cents != null;
   const discount  = Math.max(0, discountOverridden ? row.discount_cents : (defaultDiscountCents || 0));
 
-  const expenses = materials + shipping + tax + labor + misc;
-  const net = gross - discount;
+  // Wall repair / paint add-on (Option 2). A separate line with its own total
+  // (revenue) and expense (cost); the overage is straight profit. The closet
+  // formula above is untouched — the wall never runs through the ÷divisor math.
+  const wallTotal   = Math.max(0, (row && row.wall_total_cents)   || 0);
+  const wallExpense = Math.max(0, (row && row.wall_expense_cents) || 0);
+  const wallProfit  = wallTotal - wallExpense;
+
+  const closetExpenses = materials + shipping + tax + labor + misc;
+  const expenses = closetExpenses + wallExpense;
+  const closetNet = gross - discount;
+  const net = closetNet + wallTotal;   // client pays the closet net + the wall total
   return {
-    price_cents: gross,        // gross / cost basis
+    price_cents: gross,        // closet gross / cost basis
     discount_cents: discount,  // dollar discount, out of profit
-    net_cents: net,            // what the client pays
+    net_cents: net,            // what the client pays (closet + wall)
+    closet_net_cents: closetNet,
     materials_cents: materials, shipping_cents: shipping, tax_cents: tax, labor_cents: labor, misc_cents: misc,
+    wall_total_cents: wallTotal, wall_expense_cents: wallExpense, wall_profit_cents: wallProfit,
     expenses_cents: expenses,
     profit_cents: net - expenses,
     price_auto: row ? (row.price_auto !== 0) : true,

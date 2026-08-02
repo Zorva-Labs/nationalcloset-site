@@ -81,7 +81,7 @@
 
 /* ---------- Reset ---------- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; scroll-padding-top: var(--nav-h); }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; scroll-padding-top: var(--nav-h); overflow-x: hidden; overflow-x: clip; max-width: 100%; }
 body {
   font-family: var(--body);
   background: var(--white);
@@ -370,6 +370,11 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .gal:hover .gal__cap { transform: translateY(0); opacity: 1; }
 .gal--tall { grid-row: span 2; aspect-ratio: auto; }
 .gal--wide { grid-column: span 2; aspect-ratio: 2/1; }
+@media (max-width: 640px) {
+  .gallery { grid-template-columns: 1fr 1fr; }
+  .gal--wide { grid-column: auto; aspect-ratio: 1/1; }
+  .gal--tall { grid-row: auto; aspect-ratio: 1/1; }
+}
 
 /* ---------- Before / after slider ---------- */
 .ba-feature { max-width: 560px; margin: 0 auto 2.6rem; }

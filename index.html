@@ -356,7 +356,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .step p { color: var(--muted); max-width: 56ch; }
 
 /* ---------- Gallery ---------- */
-.gallery { display: grid; gap: 0.9rem; grid-template-columns: 1fr 1fr; }
+.gallery { display: grid; gap: 0.9rem; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; grid-auto-flow: dense; }
 .gal {
   position: relative; overflow: hidden; border-radius: var(--radius); background: var(--fog-2);
   aspect-ratio: 1/1;

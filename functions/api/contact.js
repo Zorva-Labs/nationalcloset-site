@@ -232,11 +232,13 @@ https://nationalclosetco.com/crm/
     }
   }
 
-  // 3) Surface the outcome. DB failure is the only reason we'd refuse the lead
-  // (because then it's truly lost). Mail failure is invisible to the customer.
-  if (!dbOk && env.DB) {
+  // 3) Surface the outcome. A lead that didn't save is truly lost, so we NEVER
+  // pretend success — including when the D1 binding is missing entirely (env.DB
+  // absent). Silently returning success on an unsaved lead once cost real leads,
+  // so any non-save is a hard error that tells the customer to call.
+  if (!dbOk) {
     return json(
-      { error: "We had trouble saving your request. Please call us at 629-298-8241.", detail: dbError || "db_unavailable" },
+      { error: "We had trouble saving your request. Please call us at 629-298-8241.", detail: dbError || (env.DB ? "db_unavailable" : "db_unbound") },
       503
     );
   }

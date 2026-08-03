@@ -23,9 +23,6 @@ const NAME_URL_RE = /(https?:\/\/|www\.[a-z0-9-])/i;
 export function spamReason(data) {
   const g = (k) => (data && data[k] != null ? String(data[k]) : "");
 
-  // 1) Honeypot — a hidden field a human never sees. If it's filled, it's a bot.
-  if (g("company").trim() !== "") return "honeypot";
-
   const name = g("name");
   const message = g("message") || g("msg");
 

@@ -320,7 +320,6 @@
         email: (fd.get("email") || "").toString(),
         interest: (fd.get("project") || "").toString(),
         message: (fd.get("msg") || "").toString(),
-        company: (fd.get("company") || "").toString(), // honeypot
         source: "website" + (location.pathname === "/" ? "" : location.pathname)
       };
       // Carry the ad click through with the lead. The server can't read any of
@@ -329,7 +328,6 @@
       ["gclid", "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "landing_page", "referrer"].forEach(function (k) {
         if (attr[k]) payload[k] = attr[k];
       });
-      if (payload.company) { done(); return; } // bot — accept silently
       function postLead() {
         return fetch("/api/contact", {
           method: "POST",

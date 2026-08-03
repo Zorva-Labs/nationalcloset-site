@@ -1001,16 +1001,19 @@ function finRender() {
   finUnitMode.fee = feeManual ? "usd" : "pct";  // stored as a flat $ (manual) or a % (auto)
   const feePctVal = f.fee_rate != null ? +(((f.fee_rate) * 100).toFixed(4)) : 3;
   const feeVal = feeManual ? finDollars(f.processing_fee_cents) : String(feePctVal);
+  // Gross = the sum of the charged breakdown. Seed Materials charged from the
+  // proposal/gross when nothing is itemized yet, so a fresh job still shows the
+  // full amount and the section reconciles to Net client.
+  if (!((f.materials_charged_cents || 0) + (f.accessories_charged_cents || 0) + (f.wall_charged_cents || 0)))
+    f.materials_charged_cents = f.price_cents || 0;
   const sect = (t) => `<tr><td colspan="2" style="padding:10px 0 3px"><div style="border-top:1px solid var(--line);margin-bottom:${t ? "6px" : "0"}"></div>${t ? `<span class="muted" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">${t}</span>` : ""}</td></tr>`;
   const calcRow = (label, id, val, o) => `<tr${o && o.bold ? ' style="font-weight:700"' : ""}><td style="padding:4px 0${o && o.muted ? ";color:var(--ink-soft);font-size:11px" : ""}">${label}</td><td style="text-align:right${o && o.muted ? ";color:var(--ink-soft);font-size:11px" : ""}" id="${id}">${val}</td></tr>`;
   host.innerHTML = `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <tr>
-        <td style="padding:6px 0"><strong>Gross amount</strong> <span class="muted" style="font-size:11px">· all-inclusive · pre-discount</span></td>
-        <td style="text-align:right;white-space:nowrap">
-          <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-price-auto" ${f.price_auto ? "checked" : ""} onchange="finToggle('price')"/> auto</label>
-          <span style="color:var(--ink-soft)">$</span>
-          <input id="fin-price" value="${finDollars(f.price_cents)}" ${f.price_auto ? "readonly" : ""} oninput="finRecalc()" inputmode="decimal" style="width:104px;text-align:right;font-weight:600;${f.price_auto ? "background:var(--bg-soft);color:var(--ink-soft)" : ""}"/>
+        <td style="padding:6px 0"><strong>Gross amount</strong> <span class="muted" style="font-size:11px">· all-inclusive · sum of charged</span></td>
+        <td style="text-align:right;white-space:nowrap"><span style="color:var(--ink-soft)">$</span>
+          <input id="fin-price" value="${finDollars(f.price_cents)}" readonly inputmode="decimal" style="width:104px;text-align:right;font-weight:700;background:var(--bg-soft);color:var(--ink)"/>
         </td>
       </tr>
       ${finExpRow("materials_charged", "Materials charged <span class='muted' style='font-size:11px'>· of gross</span>")}
@@ -1066,14 +1069,14 @@ function finRender() {
       <button class="btn primary sm" onclick="saveFinancials()">Save</button>
       <button class="btn ghost sm" onclick="resetFinancials()">Reset</button>
     </div>
-    <p class="muted" style="font-size:11px;margin:8px 0 0"><strong>Gross amount</strong> is the all-inclusive price; the three <em>charged</em> lines break it down for reference (they don't change the total). Enter each <strong>expense</strong> as a dollar amount — only <strong>install</strong> is calculated (10% of gross, min $350). <strong>Manufacturer discount</strong> comes off materials. <strong>Processing fee</strong> is a % of the total or a flat $. Feeds Reports → P&amp;L.</p>`;
+    <p class="muted" style="font-size:11px;margin:8px 0 0"><strong>Gross amount</strong> is the sum of the three <em>charged</em> lines (materials + accessories + wall); Net client = gross − discount. Enter each <strong>expense</strong> as a dollar amount — only <strong>install</strong> is calculated (10% of gross, min $350). <strong>Manufacturer discount</strong> comes off materials. <strong>Processing fee</strong> is a % of the total or a flat $. Feeds Reports → P&amp;L.</p>`;
   finRecalc();
 }
 
 function finReadPrice() {
-  return document.getElementById("fin-price-auto").checked
-    ? (finState.default_price_cents || 0)
-    : finToCents(document.getElementById("fin-price").value);
+  // Gross = sum of the charged breakdown lines.
+  const g = (id) => finToCents((document.getElementById(id) || {}).value || 0);
+  return g("fin-materials_charged") + g("fin-accessories_charged") + g("fin-wall_charged");
 }
 
 function finToggle(key) {
@@ -1086,8 +1089,8 @@ function finToggle(key) {
 }
 
 function finRecalc() {
-  const price = finReadPrice();
-  if (document.getElementById("fin-price-auto").checked) document.getElementById("fin-price").value = finDollars(price);
+  const price = finReadPrice();                 // gross = sum of charged lines
+  document.getElementById("fin-price").value = finDollars(price);
   // Discount (auto = the proposal's $ discount) comes out of profit.
   const discAutoOn = document.getElementById("fin-discount-auto").checked;
   if (discAutoOn) { finUnitMode.discount = "usd"; document.getElementById("fin-discount").value = finDollars(finState.default_discount_cents || 0); }
@@ -1128,9 +1131,9 @@ function finRecalc() {
 
 async function saveFinancials() {
   const g = (id) => finToCents((document.getElementById(id) || {}).value || 0);
-  const priceAuto = document.getElementById("fin-price-auto").checked;
   const body = {
-    price_auto: priceAuto,
+    price_auto: false,           // gross is the calculated sum of the charged lines
+    price_cents: finReadPrice(),
     materials_auto: false, shipping_auto: false, tax_auto: false,
     // revenue breakdown (informational)
     materials_charged_cents: g("fin-materials_charged"),
@@ -1145,7 +1148,6 @@ async function saveFinancials() {
     tax_cents: g("fin-tax"),
     misc_cents: g("fin-misc"),
   };
-  if (!priceAuto) body.price_cents = finToCents(document.getElementById("fin-price").value);
   const discAuto = document.getElementById("fin-discount-auto").checked;
   body.discount_auto = discAuto;
   if (!discAuto) body.discount_cents = finUnitCents("discount", finReadPrice(), true);

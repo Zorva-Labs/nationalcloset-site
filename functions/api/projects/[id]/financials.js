@@ -99,9 +99,14 @@ export async function onRequestPut(context) {
   const materials   = cents(body.materials_cents);
   const shipping    = cents(body.shipping_cents);
   const tax         = cents(body.tax_cents);
-  const accessories = cents(body.accessories_cents);   // NEW — separate from materials & wall
+  const accessories = cents(body.accessories_cents);   // separate from materials & wall
   const misc        = cents(body.misc_cents);
   const wallExpense = cents(body.wall_expense_cents);   // wall repair — a plain expense
+  const mfrDiscount = cents(body.manufacturer_discount_cents);   // reduces the materials expense
+  // Revenue breakdown of the all-inclusive gross (informational).
+  const materialsCharged   = cents(body.materials_charged_cents);
+  const accessoriesCharged = cents(body.accessories_charged_cents);
+  const wallCharged        = cents(body.wall_charged_cents);
   const laborManual = body.labor_auto === false;
   const labor       = laborManual ? cents(body.labor_cents) : f.labor;
   // Processing fee: a flat $ amount (fee_auto=false → fee_cents) or a % of the
@@ -114,20 +119,23 @@ export async function onRequestPut(context) {
        (project_id, price_cents, discount_pct, materials_cents, shipping_cents, tax_cents, labor_cents, misc_cents,
         discount_cents, price_auto, discount_auto, materials_auto, shipping_auto, tax_auto, labor_auto, notes,
         materials_divisor, shipping_rate, tax_rate, labor_rate, fee_rate, fee_cents, fee_auto, materials_discount,
-        wall_total_cents, wall_expense_cents, accessories_cents, updated_at)
-     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25,?26,?27, datetime('now'))
+        wall_total_cents, wall_expense_cents, accessories_cents,
+        materials_charged_cents, accessories_charged_cents, wall_charged_cents, manufacturer_discount_cents, updated_at)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25,?26,?27,?28,?29,?30,?31, datetime('now'))
      ON CONFLICT(project_id) DO UPDATE SET
        price_cents=?2, discount_pct=?3, materials_cents=?4, shipping_cents=?5, tax_cents=?6, labor_cents=?7,
        misc_cents=?8, discount_cents=?9, price_auto=?10, discount_auto=?11, materials_auto=?12, shipping_auto=?13,
        tax_auto=?14, labor_auto=?15, notes=?16,
        materials_divisor=?17, shipping_rate=?18, tax_rate=?19, labor_rate=?20, fee_rate=?21,
        fee_cents=?22, fee_auto=?23, materials_discount=?24,
-       wall_total_cents=?25, wall_expense_cents=?26, accessories_cents=?27, updated_at=datetime('now')`
+       wall_total_cents=?25, wall_expense_cents=?26, accessories_cents=?27,
+       materials_charged_cents=?28, accessories_charged_cents=?29, wall_charged_cents=?30, manufacturer_discount_cents=?31, updated_at=datetime('now')`
   ).bind(
     id, price, 0, materials, shipping, tax, labor, misc, discount,
     priceOverride ? 0 : 1, discountOverride ? 0 : 1, 0, 0, 0, laborManual ? 0 : 1, (body.notes || null),
     rates.divisor, rates.shipRate, rates.taxRate, rates.laborRate, rates.feeRate, feeCol.v, feeCol.a, 0,
     0, wallExpense, accessories,
+    materialsCharged, accessoriesCharged, wallCharged, mfrDiscount,
   ).run();
 
   const row = await context.env.DB.prepare(`SELECT * FROM job_financials WHERE project_id=?1`).bind(id).first();

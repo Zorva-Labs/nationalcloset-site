@@ -108,10 +108,19 @@ export function resolveFinancials(defaultGrossCents, defaultDiscountCents, row) 
   const rates = ratesFrom(row);
   const f = computeBreakdown(gross, rates);   // labor only
 
-  // Manual expense line items — taken exactly as stored, default $0. Only labor
-  // auto-derives (10% of gross, min $350) unless it was overridden by hand.
   const val = (k) => (row && Number.isFinite(row[k]) ? Math.max(0, row[k]) : 0);
+
+  // Revenue breakdown of the all-inclusive gross — informational only (does NOT
+  // add to what the client pays). Net to client = gross − discount.
+  const materialsCharged   = val("materials_charged_cents");
+  const accessoriesCharged = val("accessories_charged_cents");
+  const wallCharged        = val("wall_charged_cents");
+
+  // Manual expense line items — taken exactly as stored, default $0. Only install
+  // labor auto-derives (10% of gross, min $350).
   const materials   = val("materials_cents");
+  const mfrDiscount = val("manufacturer_discount_cents");     // reduces the materials expense only
+  const materialsNet = Math.max(0, materials - mfrDiscount);
   const shipping    = val("shipping_cents");
   const tax         = val("tax_cents");
   const accessories = val("accessories_cents");
@@ -124,13 +133,17 @@ export function resolveFinancials(defaultGrossCents, defaultDiscountCents, row) 
   const discount  = Math.max(0, discountOverridden ? row.discount_cents : (defaultDiscountCents || 0));
 
   const net = gross - discount;   // gross is all-inclusive; the discount comes out of profit
-  const expenses = materials + shipping + tax + accessories + wall + misc + labor;
+  const expenses = materialsNet + shipping + tax + accessories + wall + misc + labor;
   return {
     price_cents: gross,        // gross / cost basis (all-inclusive)
     discount_cents: discount,  // dollar discount, out of profit
     net_cents: net,            // what the client pays
     closet_net_cents: net,
-    materials_cents: materials, shipping_cents: shipping, tax_cents: tax,
+    // Revenue breakdown (informational).
+    materials_charged_cents: materialsCharged, accessories_charged_cents: accessoriesCharged, wall_charged_cents: wallCharged,
+    // Expenses.
+    materials_cents: materials, manufacturer_discount_cents: mfrDiscount, materials_net_cents: materialsNet,
+    shipping_cents: shipping, tax_cents: tax,
     accessories_cents: accessories, misc_cents: misc, labor_cents: labor,
     wall_expense_cents: wall,
     // Back-compat: wall is now a plain expense (no separate revenue line).

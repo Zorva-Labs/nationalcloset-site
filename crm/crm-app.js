@@ -255,7 +255,7 @@ async function loadLeadCounts() {
       const key = el.dataset.statusCount;
       if (key === "_total") return;
       const n = c[key] || 0;
-      total += n;
+      if (key !== "lost") total += n; // lost leads aren't part of the active total
       if (n > 0) { el.textContent = n; el.classList.add("is-visible"); }
     });
     const totalEl = document.querySelector('[data-status-count="_total"]');

@@ -6,8 +6,8 @@
 //   3. taxes     = taxRate of (materials+shipping)  (default 0%)
 //   4. labor     = 15% of the gross job price, min $350   (installation)
 //   5. profit    = net − (materials + shipping + taxes + labor + misc + fee)
-// The deposit covers the up-front hard costs (materials + shipping + taxes) and
-// is never less than 50% of the net.
+// The deposit covers the up-front hard costs (materials + shipping + taxes) plus
+// the payment-processing fee on the deposit, and is never less than 50% of net.
 
 export const MATERIALS_DIVISOR = 2.0;  // materials cost = job total ÷ 2.0 (default). One honest price — no list-then-discount.
 export const SHIPPING_RATE = 0;        // shipping default 0% (set per job)
@@ -15,6 +15,7 @@ export const TAX_RATE = 0;             // taxes default 0% (set per job)
 export const LABOR_RATE = 0.10;        // installation labor = 10% of the gross job price (the only non-zero default)
 export const MIN_LABOR_CENTS = 35000;  // …but never less than $350
 export const FEE_RATE = 0;             // payment-processing fee default 0% (editable per job; actual Stripe fees still apply when recorded)
+export const DEPOSIT_FEE_RATE = 0.03;  // processing-fee buffer built into the deposit floor so it still covers hard costs after card fees (~3%)
 export const MATERIALS_DISCOUNT_RATE = 0.03;  // manufacturer discount applied to the materials cost when a job opts in (checkbox)
 
 // The formula rates are adjustable per job (stored on job_financials).
@@ -82,7 +83,9 @@ export function computeBreakdown(priceCents, rates) {
 // The deposit collected up front. Two rules, whichever is larger:
 //   • at least 50% of what the client pays (net), and
 //   • never less than the up-front hard costs — materials + shipping + taxes
-//     (figured from the gross), so the deposit always covers them.
+//     (figured from the gross) — GROSSED UP so that, after payment-processing
+//     fees are skimmed off the deposit, the money that lands still covers those
+//     hard costs. This is what guarantees the deposit pays for materials + fees.
 // Capped at the net so it can't exceed the total. Pass netCents when it differs
 // from the gross (a discount); otherwise net defaults to the gross.
 export function depositForTotal(priceCents, netCents, rates) {
@@ -91,7 +94,12 @@ export function depositForTotal(priceCents, netCents, rates) {
   if (net <= 0) return 0;
   const b = computeBreakdown(gross, rates);
   const hardCosts = b.materials + b.shipping + b.tax;
-  return Math.min(net, Math.max(Math.round(net * 0.5), hardCosts));
+  // Gross up the hard-cost floor by the processing-fee rate so the deposit, net
+  // of card fees, still covers materials + shipping + taxes. Use the job's own
+  // fee rate when set, otherwise the default card buffer.
+  const feeRate = (rates && Number.isFinite(rates.feeRate) && rates.feeRate > 0) ? rates.feeRate : DEPOSIT_FEE_RATE;
+  const hardCostsWithFee = feeRate < 1 ? Math.ceil(hardCosts / (1 - feeRate)) : hardCosts;
+  return Math.min(net, Math.max(Math.round(net * 0.5), hardCostsWithFee));
 }
 
 // Merge a stored job_financials row (manual overrides) over the formula

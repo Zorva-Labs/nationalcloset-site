@@ -953,7 +953,7 @@ async function loadFinancials() {
 // A $/% segmented toggle for fields that can be entered either way (the
 // discount). Whatever is typed resolves to cents — the percentage is an entry
 // convenience, not a stored rate.
-const finUnitMode = { discount: "usd", fee: "usd" };
+const finUnitMode = { discount: "usd", fee: "usd", manufacturer_discount: "usd" };
 const finUnitBtn = (on) => `padding:1px 6px;border:1px solid var(--line);font:inherit;font-size:11px;font-weight:700;line-height:16px;cursor:pointer;background:${on ? "var(--ink)" : "#fff"};color:${on ? "#fff" : "var(--ink-soft)"}`;
 function finUnitTog(key, disabled) {
   const m = finUnitMode[key];
@@ -997,6 +997,7 @@ function finRender() {
   if (!host) return;
   const feeManual = f.fee_auto === false;
   finUnitMode.discount = "usd";                 // the stored discount is always a $ figure
+  finUnitMode.manufacturer_discount = "usd";    // stored as a $ figure (% is an entry convenience)
   finUnitMode.fee = feeManual ? "usd" : "pct";  // stored as a flat $ (manual) or a % (auto)
   const feePctVal = f.fee_rate != null ? +(((f.fee_rate) * 100).toFixed(4)) : 3;
   const feeVal = feeManual ? finDollars(f.processing_fee_cents) : String(feePctVal);
@@ -1027,7 +1028,14 @@ function finRender() {
       ${calcRow('Net client <span class="muted" style="font-size:11px">· after discount</span>', "fin-net", SSCrm.fmtMoney(f.net_cents))}
       ${sect("Expenses")}
       ${finExpRow("materials", "Materials expense")}
-      ${finExpRow("manufacturer_discount", "Manufacturer discount <span class='muted' style='font-size:11px'>· − off materials</span>")}
+      <tr>
+        <td style="padding:6px 0">Manufacturer discount <span class='muted' style='font-size:11px'>· − off materials</span></td>
+        <td style="text-align:right;white-space:nowrap">
+          ${finUnitTog("manufacturer_discount")}
+          <input id="fin-manufacturer_discount" value="${finDollars(f.manufacturer_discount_cents)}" oninput="finRecalc()" inputmode="decimal" style="width:104px;text-align:right"/>
+          <div id="fin-manufacturer_discount-eq" class="muted" style="font-size:10px;margin-top:2px;height:12px"></div>
+        </td>
+      </tr>
       ${finExpRow("accessories", "Accessories expense")}
       <tr>
         <td style="padding:6px 0">Install expense <span class='muted' style='font-size:11px'>· 10% of gross, min $350</span></td>
@@ -1092,9 +1100,15 @@ function finRecalc() {
   document.getElementById("fin-net").textContent = SSCrm.fmtMoney(net);
   // Manual expense lines.
   const g = (id) => finToCents((document.getElementById(id) || {}).value || 0);
-  const materials = g("fin-materials"), mfr = g("fin-manufacturer_discount"),
+  const materials = g("fin-materials"),
         shipping = g("fin-shipping"), tax = g("fin-tax"),
         wall = g("fin-wall_expense"), accessories = g("fin-accessories"), misc = g("fin-misc");
+  // Manufacturer discount ($ or % of materials) reduces the materials expense.
+  const mfr = finUnitCents("manufacturer_discount", materials, true);
+  const mfrEq = document.getElementById("fin-manufacturer_discount-eq");
+  if (mfrEq) mfrEq.textContent = mfr > 0 && materials > 0
+    ? (finUnitMode.manufacturer_discount === "pct" ? "= " + SSCrm.fmtMoney(mfr) : "= " + Math.round((mfr / materials) * 100) + "% of materials")
+    : "";
   const materialsNet = Math.max(0, materials - mfr);   // mfr discount reduces materials only
   // Install expense: auto 10% of gross (min $350), overridable.
   const installAuto = document.getElementById("fin-labor-auto").checked;
@@ -1124,7 +1138,7 @@ async function saveFinancials() {
     wall_charged_cents: g("fin-wall_charged"),
     // expenses
     materials_cents: g("fin-materials"),
-    manufacturer_discount_cents: g("fin-manufacturer_discount"),
+    manufacturer_discount_cents: finUnitCents("manufacturer_discount", g("fin-materials"), true),
     accessories_cents: g("fin-accessories"),
     wall_expense_cents: g("fin-wall_expense"),
     shipping_cents: g("fin-shipping"),

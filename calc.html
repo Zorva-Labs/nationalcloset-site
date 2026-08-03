@@ -135,7 +135,7 @@
     <label class="field" style="margin-top:18px">Expenses <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· $ each · default 0</span></label>
     <div class="rates">
       <label class="rate"><span>Materials</span><i>$</i><input id="e-materials" type="text" inputmode="decimal" value="0" autocomplete="off"/></label>
-      <label class="rate"><span>Mfr. disc.</span><i>−$</i><input id="e-mfr" type="text" inputmode="decimal" value="0" autocomplete="off"/></label>
+      <label class="rate"><span>Mfr. disc.</span><i>−</i><input id="e-mfr" type="text" inputmode="decimal" value="0" autocomplete="off"/><button type="button" class="unit-btn" id="mfr-unit" title="Toggle percent or dollar amount">$</button></label>
       <label class="rate"><span>Accessories</span><i>$</i><input id="e-acc" type="text" inputmode="decimal" value="0" autocomplete="off"/></label>
       <label class="rate"><span>Wall repair</span><i>$</i><input id="e-wall" type="text" inputmode="decimal" value="0" autocomplete="off"/></label>
       <label class="rate"><span>Shipping</span><i>$</i><input id="e-ship" type="text" inputmode="decimal" value="0" autocomplete="off"/></label>
@@ -256,6 +256,13 @@
     feeUnit.textContent = feeMode === "pct" ? "%" : "$";
     render();
   });
+  // Manufacturer discount: a flat $ or a % of the materials expense.
+  var mfrMode = "usd", mfrUnit = el("mfr-unit");
+  mfrUnit.addEventListener("click", function () {
+    mfrMode = mfrMode === "usd" ? "pct" : "usd";
+    mfrUnit.textContent = mfrMode === "usd" ? "$" : "%";
+    render();
+  });
 
   function money(c) { return "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function pct(part, whole) { return whole ? Math.round((part / whole) * 100) + "%" : "0%"; }
@@ -278,8 +285,11 @@
     eInstall.style.opacity = cbSelfInstall.checked ? ".4" : "";
     if (autoInstall || cbSelfInstall.checked) eInstall.value = (install / 100).toFixed(2);
 
-    var materials = cents(eMat), mfr = cents(eMfr), acc = cents(eAcc), wall = cents(eWall),
+    var materials = cents(eMat), acc = cents(eAcc), wall = cents(eWall),
         ship = cents(eShip), tax = cents(eTax), misc = cents(eMisc);
+    // Manufacturer discount: flat $ or % of the materials expense; capped at it.
+    var mfr = mfrMode === "pct" ? Math.round(materials * (num(eMfr) / 100)) : cents(eMfr);
+    mfr = Math.min(mfr, materials);
     var materialsNet = Math.max(0, materials - mfr);   // mfr discount reduces materials
 
     // Processing fee: % of net, or a flat $.
@@ -374,6 +384,7 @@
     eFee.value = String(FEE_DEF);
     cbInstallAuto.checked = true; cbSelfInstall.checked = false; cbPayFull.checked = false;
     if (feeMode !== "pct") { feeMode = "pct"; feeUnit.textContent = "%"; }
+    if (mfrMode !== "usd") { mfrMode = "usd"; mfrUnit.textContent = "$"; }
     window.setDiscMode("usd");
   }
   el("ac").addEventListener("click", function () { gross.value = ""; resetDefaults(); gross.focus(); });

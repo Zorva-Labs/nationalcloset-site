@@ -934,37 +934,9 @@ async function toggleMaterial(key, checked) {
 let finState = null;
 const finDollars = (cents) => (Math.max(0, cents || 0) / 100).toFixed(2);
 const finToCents = (v) => Math.max(0, Math.round((parseFloat(v) || 0) * 100));
-// Default formula rates (mirror functions/_lib/financials.js). Each is editable
-// per job — the inputs in the line labels feed these.
-const FIN_DEF = { divisor: 2.0, shipRate: 0, taxRate: 0, laborRate: 0.10, feeRate: 0.03 };  // materials ÷2.0, labor 10%, processing fee 3%; shipping/taxes 0
-const finPctStr = (frac) => String(+(((frac || 0) * 100).toFixed(4)));  // 0.0975 → "9.75"
-// Pull a saved rate off finState (falls back to the default).
-const finRateVal = (key, def) => { const v = finState && finState[key]; return (Number.isFinite(v) && v > 0) ? v : def; };
-const finFracVal = (key, def) => { const v = finState && finState[key]; return (Number.isFinite(v) && v >= 0) ? v : def; };
-// A small inline editable rate input embedded in a line label.
-const finRateInp = (id, val) => `<input id="${id}" value="${val}" oninput="finRecalc()" inputmode="decimal" title="Editable rate" style="width:48px;text-align:right;padding:1px 5px;font-size:11px;font-weight:600;color:var(--ink);border:1px solid var(--line-strong);border-radius:4px;background:#fff"/>`;
-
-// Read the four editable rate inputs; fall back to defaults on blank/invalid.
-function finReadRates() {
-  const num = (id) => parseFloat((document.getElementById(id) || {}).value);
-  const div = num("fin-rate-divisor"), sh = num("fin-rate-ship"), tx = num("fin-rate-tax"), lb = num("fin-rate-labor"), fe = num("fin-rate-fee");
-  return {
-    divisor:   (isFinite(div) && div > 0) ? div : FIN_DEF.divisor,
-    shipRate:  (isFinite(sh) && sh >= 0) ? sh / 100 : FIN_DEF.shipRate,
-    taxRate:   (isFinite(tx) && tx >= 0) ? tx / 100 : FIN_DEF.taxRate,
-    laborRate: (isFinite(lb) && lb >= 0) ? lb / 100 : FIN_DEF.laborRate,
-    feeRate:   (isFinite(fe) && fe >= 0) ? fe / 100 : FIN_DEF.feeRate,
-  };
-}
-
-function finCalc(priceCents, rates) {
-  const r = rates || FIN_DEF;
-  const materials = r.divisor > 0 ? Math.round(priceCents / r.divisor) : 0;  // divisor 0 → no materials
-  const shipping = Math.round(materials * r.shipRate);
-  const tax = Math.round((materials + shipping) * r.taxRate);
-  const labor = priceCents > 0 ? Math.max(Math.round(priceCents * r.laborRate), 35000) : 0; // min $350
-  return { materials, shipping, tax, labor };
-}
+// Only install labor auto-computes (10% of gross, min $350). The processing fee
+// can be a % of the total or a flat $. Every other line is entered by hand.
+const FIN_LABOR_RATE = 0.10, FIN_MIN_LABOR = 35000, FIN_FEE_RATE_DEF = 0.03;
 
 async function loadFinancials() {
   const host = document.getElementById("fin-host");
@@ -981,7 +953,7 @@ async function loadFinancials() {
 // A $/% segmented toggle for fields that can be entered either way (the
 // discount). Whatever is typed resolves to cents — the percentage is an entry
 // convenience, not a stored rate.
-const finUnitMode = { discount: "usd" };
+const finUnitMode = { discount: "usd", fee: "usd" };
 const finUnitBtn = (on) => `padding:1px 6px;border:1px solid var(--line);font:inherit;font-size:11px;font-weight:700;line-height:16px;cursor:pointer;background:${on ? "var(--ink)" : "#fff"};color:${on ? "#fff" : "var(--ink-soft)"}`;
 function finUnitTog(key, disabled) {
   const m = finUnitMode[key];
@@ -1000,25 +972,22 @@ function finUnitToggle(key, mode) {
   document.getElementById(`fin-${key}-pct`).setAttribute("style", finUnitBtn(finUnitMode[key] === "pct") + ";border-left:0;border-radius:0 5px 5px 0");
   finRecalc();
 }
-// Resolve a $-or-% field to cents against `base`; never exceeds the base.
-function finUnitCents(key, base) {
+// Resolve a $-or-% field to cents against `base`. capToBase clamps to the base
+// (used for the discount, which can't exceed the price).
+function finUnitCents(key, base, capToBase) {
   const el = document.getElementById(`fin-${key}`);
   const v = parseFloat(String(el?.value || "").replace(/[^0-9.]/g, "")) || 0;
   if (v <= 0) return 0;
-  const cents = finUnitMode[key] === "pct" ? Math.round(base * Math.min(v, 100) / 100) : Math.round(v * 100);
-  return Math.min(Math.max(0, cents), Math.max(0, base || 0));
+  const cents = finUnitMode[key] === "pct" ? Math.round(base * v / 100) : Math.round(v * 100);
+  return capToBase ? Math.min(Math.max(0, cents), Math.max(0, base || 0)) : Math.max(0, cents);
 }
 
-function finRow(key, label, opts) {
-  const auto = finState[key + "_auto"];
-  const unit = opts?.pctable ? finUnitTog(key, auto) : `<span style="color:var(--ink-soft)">$</span>`;
+// A plain manual $ expense line (default $0).
+function finExpRow(key, label) {
   return `<tr>
     <td style="padding:6px 0">${label}</td>
-    <td style="text-align:right;white-space:nowrap">
-      <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-${key}-auto" ${auto ? "checked" : ""} onchange="finToggle('${key}')"/> auto</label>
-      ${unit}
-      <input id="fin-${key}" value="${finDollars(finState[key + "_cents"])}" ${auto ? "readonly" : ""} oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right;${auto ? "background:var(--bg-soft);color:var(--ink-soft)" : ""}"/>
-      ${opts?.pctable ? `<div id="fin-${key}-eq" class="muted" style="font-size:10px;margin-top:2px;height:12px"></div>` : ""}
+    <td style="text-align:right;white-space:nowrap"><span style="color:var(--ink-soft)">$</span>
+      <input id="fin-${key}" value="${finDollars(finState[key + "_cents"])}" oninput="finRecalc()" inputmode="decimal" style="width:104px;text-align:right"/>
     </td></tr>`;
 }
 
@@ -1026,50 +995,65 @@ function finRender() {
   const f = finState;
   const host = document.getElementById("fin-host");
   if (!host) return;
-  const netCents = f.net_cents != null ? f.net_cents : (f.price_cents - (f.discount_cents || 0));   // grand total (closet net + wall)
-  const closetNetCents = f.closet_net_cents != null ? f.closet_net_cents : (f.price_cents - (f.discount_cents || 0));
-  const hasWall = (f.wall_total_cents || 0) > 0 || (f.wall_expense_cents || 0) > 0;
+  const feeManual = f.fee_auto === false;
+  finUnitMode.discount = "usd";                 // the stored discount is always a $ figure
+  finUnitMode.fee = feeManual ? "usd" : "pct";  // stored as a flat $ (manual) or a % (auto)
+  const feePctVal = f.fee_rate != null ? +(((f.fee_rate) * 100).toFixed(4)) : 3;
+  const feeVal = feeManual ? finDollars(f.processing_fee_cents) : String(feePctVal);
   host.innerHTML = `
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <tr>
-        <td style="padding:6px 0"><strong>Quoted price</strong> <span class="muted" style="font-size:11px">· all-inclusive · pre-discount</span></td>
+        <td style="padding:6px 0"><strong>Gross proposal</strong> <span class="muted" style="font-size:11px">· all-inclusive · pre-discount</span></td>
         <td style="text-align:right;white-space:nowrap">
           <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-price-auto" ${f.price_auto ? "checked" : ""} onchange="finToggle('price')"/> auto</label>
           <span style="color:var(--ink-soft)">$</span>
-          <input id="fin-price" value="${finDollars(f.price_cents)}" ${f.price_auto ? "readonly" : ""} oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right;font-weight:600;${f.price_auto ? "background:var(--bg-soft);color:var(--ink-soft)" : ""}"/>
+          <input id="fin-price" value="${finDollars(f.price_cents)}" ${f.price_auto ? "readonly" : ""} oninput="finRecalc()" inputmode="decimal" style="width:104px;text-align:right;font-weight:600;${f.price_auto ? "background:var(--bg-soft);color:var(--ink-soft)" : ""}"/>
         </td>
       </tr>
-      ${finRow("discount", "Discount <span class='muted' style='font-size:11px'>· from proposal · $ or %</span>", { pctable: true })}
-      <tr><td style="padding:4px 0;color:var(--ink-soft)">Net to client <span class="muted" style="font-size:11px">· closet, after discount</span></td><td style="text-align:right;color:var(--ink-soft);font-weight:600" id="fin-net">${SSCrm.fmtMoney(closetNetCents)}</td></tr>
-      <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
-      ${finRow("materials", `Materials <span class='muted' style='font-size:11px'>· price ÷ ${finRateInp("fin-rate-divisor", finRateVal("materials_divisor", FIN_DEF.divisor))}</span> <label style='font-size:11px;color:var(--ink-soft);cursor:pointer;margin-left:6px;white-space:nowrap'><input type='checkbox' id='fin-matdisc' ${finState.materials_discount ? "checked" : ""} onchange='finRecalc()'/> −3% mfr.</label>`)}
-      ${finRow("shipping", `Shipping <span class='muted' style='font-size:11px'>· ${finRateInp("fin-rate-ship", finPctStr(finFracVal("shipping_rate", FIN_DEF.shipRate)))}% of materials</span>`)}
-      ${finRow("tax", `Taxes <span class='muted' style='font-size:11px'>· ${finRateInp("fin-rate-tax", finPctStr(finFracVal("tax_rate", FIN_DEF.taxRate)))}% of (materials + shipping)</span>`)}
-      ${finRow("labor", `Labor <span class='muted' style='font-size:11px'>· ${finRateInp("fin-rate-labor", finPctStr(finFracVal("labor_rate", FIN_DEF.laborRate)))}% of price, min $350</span>`)}
-      <tr><td style="padding:6px 0">Misc</td><td style="text-align:right;white-space:nowrap"><span style="color:var(--ink-soft)">$</span><input id="fin-misc" value="${finDollars(f.misc_cents)}" oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right"/></td></tr>
-      <tr><td colspan="2" style="padding:9px 0 2px"><span class="muted" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Wall repair / paint · Option 2</span></td></tr>
-      <tr><td style="padding:6px 0">Wall total <span class='muted' style='font-size:11px'>· what we charge</span></td><td style="text-align:right;white-space:nowrap"><span style="color:var(--ink-soft)">$</span><input id="fin-wall-total" value="${finDollars(f.wall_total_cents)}" oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right"/></td></tr>
-      <tr><td style="padding:6px 0">Wall expense <span class='muted' style='font-size:11px'>· what it costs us</span></td><td style="text-align:right;white-space:nowrap"><span style="color:var(--ink-soft)">$</span><input id="fin-wall-expense" value="${finDollars(f.wall_expense_cents)}" oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right"/></td></tr>
-      <tr><td style="padding:2px 0;color:var(--ink-soft);font-size:11px">Wall profit <span class="muted">· overage to us</span></td><td style="text-align:right;color:var(--ink-soft);font-size:11px" id="fin-wall-profit">${SSCrm.fmtMoney((f.wall_total_cents||0)-(f.wall_expense_cents||0))}</td></tr>
       <tr>
-        <td style="padding:6px 0">Processing fee <span class='muted' style='font-size:11px'>· ${f.fee_auto === false ? "manual" : (f.processing_fee_is_actual ? "actual (card / Klarna / ACH)" : `${finRateInp("fin-rate-fee", finPctStr(finFracVal("fee_rate", FIN_DEF.feeRate)))}% of total charged, est.`)}</span></td>
+        <td style="padding:6px 0">Discount <span class='muted' style='font-size:11px'>· from proposal · out of profit</span></td>
         <td style="text-align:right;white-space:nowrap">
-          <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-fee-auto" ${f.fee_auto === false ? "" : "checked"} onchange="finToggle('fee')"/> auto</label>
-          <span style="color:var(--ink-soft)">$</span>
-          <input id="fin-fee" value="${finDollars(f.processing_fee_cents)}" ${f.fee_auto === false ? "" : "readonly"} oninput="finRecalc()" inputmode="decimal" style="width:96px;text-align:right;color:#B45309;${f.fee_auto === false ? "" : "background:var(--bg-soft)"}"/>
+          <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-discount-auto" ${f.discount_auto ? "checked" : ""} onchange="finToggle('discount')"/> auto</label>
+          ${finUnitTog("discount")}
+          <input id="fin-discount" value="${finDollars(f.discount_cents)}" ${f.discount_auto ? "readonly" : ""} oninput="finRecalc()" inputmode="decimal" style="width:104px;text-align:right;${f.discount_auto ? "background:var(--bg-soft);color:var(--ink-soft)" : ""}"/>
+          <div id="fin-discount-eq" class="muted" style="font-size:10px;margin-top:2px;height:12px"></div>
         </td>
       </tr>
-      <tr id="fin-grandtotal-row" style="display:${hasWall ? "" : "none"}"><td style="padding:4px 0;font-weight:600">Client pays <span class="muted" style="font-size:11px">· closet + wall</span></td><td style="text-align:right;font-weight:600" id="fin-grandtotal">${SSCrm.fmtMoney(netCents)}</td></tr>
+      <tr><td style="padding:4px 0;color:var(--ink-soft)">Net to client <span class="muted" style="font-size:11px">· after discount</span></td><td style="text-align:right;color:var(--ink-soft);font-weight:600" id="fin-net">${SSCrm.fmtMoney(f.net_cents)}</td></tr>
+      <tr><td colspan="2" style="padding:9px 0 3px"><div style="border-top:1px solid var(--line);margin-bottom:6px"></div><span class="muted" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Expenses · enter each line ($0 default)</span></td></tr>
+      ${finExpRow("materials", "Materials")}
+      ${finExpRow("shipping", "Shipping")}
+      ${finExpRow("tax", "Tax")}
+      ${finExpRow("wall_expense", "Wall repair")}
+      ${finExpRow("accessories", "Accessories")}
+      ${finExpRow("misc", "Other / misc")}
+      <tr>
+        <td style="padding:6px 0">Install labor <span class='muted' style='font-size:11px'>· auto 10% of gross, min $350</span></td>
+        <td style="text-align:right;white-space:nowrap">
+          <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-labor-auto" ${f.labor_auto ? "checked" : ""} onchange="finToggle('labor')"/> auto</label>
+          <span style="color:var(--ink-soft)">$</span>
+          <input id="fin-labor" value="${finDollars(f.labor_cents)}" ${f.labor_auto ? "readonly" : ""} oninput="finRecalc()" inputmode="decimal" style="width:104px;text-align:right;${f.labor_auto ? "background:var(--bg-soft);color:var(--ink-soft)" : ""}"/>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0">Processing fee <span class='muted' style='font-size:11px'>· % of total or flat $</span></td>
+        <td style="text-align:right;white-space:nowrap">
+          ${finUnitTog("fee")}
+          <input id="fin-fee" value="${feeVal}" oninput="finRecalc()" inputmode="decimal" style="width:104px;text-align:right;color:#B45309"/>
+          <div id="fin-fee-eq" class="muted" style="font-size:10px;margin-top:2px;height:12px"></div>
+        </td>
+      </tr>
       <tr><td colspan="2"><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"/></td></tr>
       <tr><td style="padding:4px 0">Total expenses</td><td style="text-align:right" id="fin-expenses">${SSCrm.fmtMoney(f.expenses_cents)}</td></tr>
       <tr style="font-weight:700"><td style="padding:4px 0">Profit</td><td style="text-align:right" id="fin-profit">${SSCrm.fmtMoney(f.profit_cents)}</td></tr>
-      <tr><td style="padding:0 0 8px;color:var(--ink-soft);font-size:11px">Margin</td><td style="text-align:right;color:var(--ink-soft);font-size:11px" id="fin-margin">${netCents ? Math.round((f.profit_cents / netCents) * 100) : 0}%</td></tr>
+      <tr><td style="padding:0 0 8px;color:var(--ink-soft);font-size:11px">Margin</td><td style="text-align:right;color:var(--ink-soft);font-size:11px" id="fin-margin">${f.net_cents ? Math.round((f.profit_cents / f.net_cents) * 100) : 0}%</td></tr>
     </table>
     <div style="display:flex;gap:8px;margin-top:6px">
       <button class="btn primary sm" onclick="saveFinancials()">Save</button>
-      <button class="btn ghost sm" onclick="resetFinancials()">Reset to formula</button>
+      <button class="btn ghost sm" onclick="resetFinancials()">Reset</button>
     </div>
-    <p class="muted" style="font-size:11px;margin:8px 0 0"><strong>Defaults: materials = price ÷ 2.0 and labor = 10% of the price (min $350); shipping &amp; taxes default to 0.</strong> Set the multiplier &amp; percentages in the line labels per job and Save (shipping = % of materials; taxes = % of materials + shipping; a divisor of 0 means no materials). The discount comes out of profit only (profit = net − expenses). Uncheck “auto” to override a line’s dollar amount. Feeds Reports → P&amp;L.</p>`;
+    <p class="muted" style="font-size:11px;margin:8px 0 0">The <strong>gross proposal</strong> is all-inclusive. Enter each expense as a dollar amount (default $0). Only <strong>install labor</strong> auto-fills at 10% of gross (min $350) — uncheck “auto” to override. The <strong>processing fee</strong> can be a % of the total or a flat $. The discount comes out of profit. Feeds Reports → P&amp;L.</p>`;
+  finRecalc();
 }
 
 function finReadPrice() {
@@ -1090,90 +1074,63 @@ function finToggle(key) {
 function finRecalc() {
   const price = finReadPrice();
   if (document.getElementById("fin-price-auto").checked) document.getElementById("fin-price").value = finDollars(price);
-  const rates = finReadRates();
-  const calc = finCalc(price, rates);
-  // Discount (auto = the proposal's discount) comes out of profit, not the cost basis.
+  // Discount (auto = the proposal's $ discount) comes out of profit.
   const discAutoOn = document.getElementById("fin-discount-auto").checked;
-  if (discAutoOn) {
-    // Auto pulls the proposal's discount, which is always a dollar figure.
-    finUnitMode.discount = "usd";
-    document.getElementById("fin-discount").value = finDollars(finState.default_discount_cents || 0);
-  }
-  const discount = finUnitCents("discount", price);
+  if (discAutoOn) { finUnitMode.discount = "usd"; document.getElementById("fin-discount").value = finDollars(finState.default_discount_cents || 0); }
+  const discount = finUnitCents("discount", price, true);
   const discEq = document.getElementById("fin-discount-eq");
   if (discEq) discEq.textContent = discount > 0 && price > 0
     ? (finUnitMode.discount === "pct" ? "= " + SSCrm.fmtMoney(discount) : "= " + Math.round((discount / price) * 100) + "% off")
     : "";
-  // Materials: auto = price ÷ divisor. Shipping: auto = shipRate of effective
-  // materials. Taxes: auto = taxRate of (materials + shipping). Labor: auto =
-  // laborRate of gross (min $350) — all from the editable rate inputs.
-  // Manufacturer 3% materials discount applies to the auto/formula materials only.
-  const matDiscOn = !!(document.getElementById("fin-matdisc") && document.getElementById("fin-matdisc").checked);
-  const autoMaterials = matDiscOn ? Math.round(calc.materials * 0.97) : calc.materials;
-  if (document.getElementById("fin-materials-auto").checked) document.getElementById("fin-materials").value = finDollars(autoMaterials);
-  const matCents = finToCents(document.getElementById("fin-materials").value);
-  const shipCents = document.getElementById("fin-shipping-auto").checked ? Math.round(matCents * rates.shipRate) : finToCents(document.getElementById("fin-shipping").value);
-  if (document.getElementById("fin-shipping-auto").checked) document.getElementById("fin-shipping").value = finDollars(shipCents);
-  const taxCents = document.getElementById("fin-tax-auto").checked ? Math.round((matCents + shipCents) * rates.taxRate) : finToCents(document.getElementById("fin-tax").value);
-  if (document.getElementById("fin-tax-auto").checked) document.getElementById("fin-tax").value = finDollars(taxCents);
-  const laborCents = document.getElementById("fin-labor-auto").checked ? (price > 0 ? Math.max(Math.round(price * rates.laborRate), 35000) : 0) : finToCents(document.getElementById("fin-labor").value);
-  if (document.getElementById("fin-labor-auto").checked) document.getElementById("fin-labor").value = finDollars(laborCents);
-  const net = price - discount;
-  // Wall repair/paint add-on: read first so the processing fee can be figured on
-  // the full amount charged (closet net + wall total).
-  const wallTotal = finToCents((document.getElementById("fin-wall-total") || {}).value || 0);
-  const wallExpense = finToCents((document.getElementById("fin-wall-expense") || {}).value || 0);
-  const grandTotal = net + wallTotal;       // the total the client is charged
-  const wpEl = document.getElementById("fin-wall-profit"); if (wpEl) wpEl.textContent = SSCrm.fmtMoney(wallTotal - wallExpense);
-  // Processing fee: manual dollar override when "auto" is off; otherwise the
-  // actual Stripe fee if collected, else the estimate (feeRate × the total charged).
-  const feeAutoEl = document.getElementById("fin-fee-auto");
-  const feeAuto = feeAutoEl ? feeAutoEl.checked : true;
-  let feeCents;
-  if (feeAuto) {
-    feeCents = finState.processing_fee_is_actual ? (finState.processing_fee_cents || 0) : Math.round(grandTotal * rates.feeRate);
-    const feeEl = document.getElementById("fin-fee"); if (feeEl) feeEl.value = finDollars(feeCents);
-  } else {
-    feeCents = finToCents(document.getElementById("fin-fee").value);
-  }
-  const closetSum = matCents + shipCents + taxCents + laborCents + finToCents(document.getElementById("fin-misc").value) + feeCents;
-  const sumAll = closetSum + wallExpense;   // closet expenses (incl. fee) + wall expense
-  document.getElementById("fin-net").textContent = SSCrm.fmtMoney(net);   // closet net — shows the discount
-  const gtRow = document.getElementById("fin-grandtotal-row");
-  if (gtRow) gtRow.style.display = (wallTotal > 0 || wallExpense > 0) ? "" : "none";
-  const gtEl = document.getElementById("fin-grandtotal"); if (gtEl) gtEl.textContent = SSCrm.fmtMoney(grandTotal);
-  document.getElementById("fin-expenses").textContent = SSCrm.fmtMoney(sumAll);
-  document.getElementById("fin-profit").textContent = SSCrm.fmtMoney(grandTotal - sumAll);
-  document.getElementById("fin-margin").textContent = (grandTotal ? Math.round(((grandTotal - sumAll) / grandTotal) * 100) : 0) + "%";
+  const net = price - discount;                 // gross is all-inclusive; discount out of profit
+  document.getElementById("fin-net").textContent = SSCrm.fmtMoney(net);
+  // Manual expense lines.
+  const g = (id) => finToCents((document.getElementById(id) || {}).value || 0);
+  const materials = g("fin-materials"), shipping = g("fin-shipping"), tax = g("fin-tax"),
+        wall = g("fin-wall_expense"), accessories = g("fin-accessories"), misc = g("fin-misc");
+  // Install labor: auto 10% of gross, min $350, unless overridden.
+  const laborAuto = document.getElementById("fin-labor-auto").checked;
+  const labor = laborAuto ? (price > 0 ? Math.max(Math.round(price * FIN_LABOR_RATE), FIN_MIN_LABOR) : 0) : g("fin-labor");
+  if (laborAuto) document.getElementById("fin-labor").value = finDollars(labor);
+  // Processing fee: a % of the total (net) or a flat $.
+  const fee = finUnitCents("fee", net, false);
+  const feeEq = document.getElementById("fin-fee-eq");
+  if (feeEq) feeEq.textContent = fee > 0
+    ? (finUnitMode.fee === "pct" ? "= " + SSCrm.fmtMoney(fee) : (net > 0 ? "= " + (Math.round((fee / net) * 1000) / 10) + "% of total" : ""))
+    : "";
+  const expenses = materials + shipping + tax + wall + accessories + misc + labor + fee;
+  document.getElementById("fin-expenses").textContent = SSCrm.fmtMoney(expenses);
+  document.getElementById("fin-profit").textContent = SSCrm.fmtMoney(net - expenses);
+  document.getElementById("fin-margin").textContent = (net ? Math.round(((net - expenses) / net) * 100) : 0) + "%";
 }
 
 async function saveFinancials() {
+  const g = (id) => finToCents((document.getElementById(id) || {}).value || 0);
   const priceAuto = document.getElementById("fin-price-auto").checked;
-  const body = { price_auto: priceAuto, misc_cents: finToCents(document.getElementById("fin-misc").value) };
+  const body = {
+    price_auto: priceAuto,
+    materials_auto: false, shipping_auto: false, tax_auto: false,
+    materials_cents: g("fin-materials"),
+    shipping_cents: g("fin-shipping"),
+    tax_cents: g("fin-tax"),
+    wall_expense_cents: g("fin-wall_expense"),
+    accessories_cents: g("fin-accessories"),
+    misc_cents: g("fin-misc"),
+  };
   if (!priceAuto) body.price_cents = finToCents(document.getElementById("fin-price").value);
   const discAuto = document.getElementById("fin-discount-auto").checked;
   body.discount_auto = discAuto;
-  if (!discAuto) body.discount_cents = finUnitCents("discount", finReadPrice());
-  ["materials", "shipping", "tax", "labor"].forEach((k) => {
-    const auto = document.getElementById(`fin-${k}-auto`).checked;
-    body[`${k}_auto`] = auto;
-    if (!auto) body[`${k}_cents`] = finToCents(document.getElementById(`fin-${k}`).value);
-  });
-  // Persist the (editable) formula rates so this job's auto lines re-derive
-  // from them — here, on /calc-consistent math, and in Reports → P&L.
-  const rates = finReadRates();
-  body.materials_divisor = rates.divisor;
-  body.shipping_rate = rates.shipRate;
-  body.tax_rate = rates.taxRate;
-  body.labor_rate = rates.laborRate;
-  body.fee_rate = rates.feeRate;
-  // Processing fee override: "auto" off = manual dollar amount (e.g. real ACH fee).
-  const feeAuto = document.getElementById("fin-fee-auto") ? document.getElementById("fin-fee-auto").checked : true;
-  body.fee_auto = feeAuto;
-  if (!feeAuto) body.fee_cents = finToCents(document.getElementById("fin-fee").value);
-  body.materials_discount = !!(document.getElementById("fin-matdisc") && document.getElementById("fin-matdisc").checked);
-  body.wall_total_cents = finToCents((document.getElementById("fin-wall-total") || {}).value || 0);
-  body.wall_expense_cents = finToCents((document.getElementById("fin-wall-expense") || {}).value || 0);
+  if (!discAuto) body.discount_cents = finUnitCents("discount", finReadPrice(), true);
+  const laborAuto = document.getElementById("fin-labor-auto").checked;
+  body.labor_auto = laborAuto;
+  if (!laborAuto) body.labor_cents = g("fin-labor");
+  // Processing fee: % → store a rate (auto); flat $ → store cents (manual).
+  if (finUnitMode.fee === "pct") {
+    const pct = parseFloat(String(document.getElementById("fin-fee").value).replace(/[^0-9.]/g, "")) || 0;
+    body.fee_auto = true; body.fee_rate = Math.max(0, pct / 100);
+  } else {
+    body.fee_auto = false; body.fee_cents = g("fin-fee");
+  }
   try {
     const r = await SSCrm.fetchJSON(`/api/projects/${state.project.id}/financials`, { method: "PUT", body: JSON.stringify(body) });
     finState = r.financials;
@@ -1184,10 +1141,14 @@ async function saveFinancials() {
 
 async function resetFinancials() {
   try {
-    const r = await SSCrm.fetchJSON(`/api/projects/${state.project.id}/financials`, { method: "PUT", body: JSON.stringify({ price_auto: true, discount_auto: true, misc_cents: 0 }) });
+    const r = await SSCrm.fetchJSON(`/api/projects/${state.project.id}/financials`, { method: "PUT", body: JSON.stringify({
+      price_auto: true, discount_auto: true, labor_auto: true, fee_auto: true, fee_rate: FIN_FEE_RATE_DEF,
+      materials_auto: false, shipping_auto: false, tax_auto: false,
+      materials_cents: 0, shipping_cents: 0, tax_cents: 0, accessories_cents: 0, wall_expense_cents: 0, misc_cents: 0,
+    }) });
     finState = r.financials;
     finRender();
-    SSCrm.toast("Reset to formula", "success");
+    SSCrm.toast("Reset", "success");
   } catch (err) { SSCrm.toast(err.message || "Reset failed", "error"); }
 }
 

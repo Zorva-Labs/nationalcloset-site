@@ -1,13 +1,12 @@
-// Job cost model. The expense breakdown and profit are derived FROM the price.
-// Everything EXCEPT labor defaults to 0 — the estimator sets materials, shipping
-// and taxes per job. Only labor auto-computes by default (15% of the gross).
-//   1. materials = price ÷ 2.0   (default divisor 2.0)
-//   2. shipping  = shipRate of materials            (default 0%)
-//   3. taxes     = taxRate of (materials+shipping)  (default 0%)
-//   4. labor     = 15% of the gross job price, min $350   (installation)
-//   5. profit    = net − (materials + shipping + taxes + labor + misc + fee)
-// The deposit covers the up-front hard costs (materials + shipping + taxes) plus
-// the payment-processing fee on the deposit, and is never less than 50% of net.
+// Job cost model — MANUAL line items. The gross proposal is all-inclusive (it
+// already contains everything the client pays). Every expense is entered by hand
+// per job and defaults to $0; the ONLY line that auto-computes is install labor.
+//   • materials, shipping, tax, accessories, wall repair, misc  → typed in ($0 default)
+//   • install labor  → 10% of the gross, min $350  (auto; editable override)
+//   • processing fee → a % of the total or a flat $ amount
+//   • discount       → comes out of profit only (client pays net = gross − discount)
+//   • profit         = net − (materials + shipping + tax + accessories + wall + misc + labor + fee)
+// The deposit is at least 50% of net, grossed up so it still covers card fees.
 
 export const MATERIALS_DIVISOR = 2.0;  // materials cost = job total ÷ 2.0 (default). One honest price — no list-then-discount.
 export const SHIPPING_RATE = 0;        // shipping default 0% (set per job)
@@ -64,20 +63,16 @@ export function quoteMarkupRate(env) {
 // through unchanged.
 export const markupLine = (cents, rate = QUOTE_MARKUP - 1) => (cents > 0 ? Math.round(cents * (1 + rate)) : cents);
 
-// `rates` is optional — pass the effective per-job rates (ratesFrom) to use the
-// adjustable multiplier/percentages; omit for the business defaults.
+// Only INSTALL LABOR auto-derives from the price (10% of gross, min $350).
+// Materials, shipping, tax, accessories, wall repair and misc are entered by
+// hand per job, so they are 0 here. Kept as {materials,shipping,tax,labor} so
+// existing callers (the deposit floor, the API) keep working.
 export function computeBreakdown(priceCents, rates) {
   const r = rates || {};
-  const divisor   = (Number.isFinite(r.divisor)   && r.divisor  > 0) ? r.divisor   : MATERIALS_DIVISOR;
-  const shipRate  = Number.isFinite(r.shipRate)  ? r.shipRate  : SHIPPING_RATE;
-  const taxRate   = Number.isFinite(r.taxRate)   ? r.taxRate   : TAX_RATE;
   const laborRate = Number.isFinite(r.laborRate) ? r.laborRate : LABOR_RATE;
   const price = Math.max(0, Math.round(priceCents || 0));
-  const materials = divisor > 0 ? Math.round(price / divisor) : 0;  // divisor 0 → no materials
-  const shipping = Math.round(materials * shipRate);
-  const tax = Math.round((materials + shipping) * taxRate);
   const labor = price > 0 ? Math.max(Math.round(price * laborRate), MIN_LABOR_CENTS) : 0; // %, min $350
-  return { materials, shipping, tax, labor };
+  return { materials: 0, shipping: 0, tax: 0, labor };
 }
 
 // The deposit collected up front. Two rules, whichever is larger:
@@ -110,60 +105,45 @@ export function depositForTotal(priceCents, netCents, rates) {
 export function resolveFinancials(defaultGrossCents, defaultDiscountCents, row) {
   const priceOverridden = row && row.price_auto === 0 && row.price_cents != null;
   const gross = priceOverridden ? row.price_cents : (defaultGrossCents || 0);
-  const rates = ratesFrom(row);          // per-job editable multiplier + percentages
-  const f = computeBreakdown(gross, rates);
+  const rates = ratesFrom(row);
+  const f = computeBreakdown(gross, rates);   // labor only
 
-  // Materials: override if set, else the formula value. Shipping/tax, when on
-  // auto, derive from the EFFECTIVE materials (so an overridden materials cost
-  // flows through) at the per-job rates. Labor, when on auto, is laborRate of
-  // the gross job price (NOT of materials).
-  const over = (key, auto) => row && row[auto] === 0 && row[key] != null;
-  // Manufacturer discount: 3% off the FORMULA materials cost when opted in.
-  // Only applied on the auto path — a manual materials override is taken exactly
-  // as typed (so re-saving can never compound the discount).
-  const materialsDiscount = !!(row && row.materials_discount);
-  const materialsManual = over("materials_cents", "materials_auto");
-  const materials = materialsManual ? row.materials_cents
-    : (materialsDiscount ? Math.round(f.materials * (1 - MATERIALS_DISCOUNT_RATE)) : f.materials);
-  const shipping  = over("shipping_cents", "shipping_auto") ? row.shipping_cents : Math.round(materials * rates.shipRate);
-  const tax       = over("tax_cents", "tax_auto") ? row.tax_cents : Math.round((materials + shipping) * rates.taxRate);
-  const labor     = over("labor_cents", "labor_auto") ? row.labor_cents : f.labor;
-  const misc      = (row && row.misc_cents != null) ? row.misc_cents : 0;
+  // Manual expense line items — taken exactly as stored, default $0. Only labor
+  // auto-derives (10% of gross, min $350) unless it was overridden by hand.
+  const val = (k) => (row && Number.isFinite(row[k]) ? Math.max(0, row[k]) : 0);
+  const materials   = val("materials_cents");
+  const shipping    = val("shipping_cents");
+  const tax         = val("tax_cents");
+  const accessories = val("accessories_cents");
+  const wall        = val("wall_expense_cents");   // wall repair — a plain expense; its revenue is inside the gross
+  const misc        = val("misc_cents");
+  const laborManual = row && row.labor_auto === 0 && row.labor_cents != null;
+  const labor       = laborManual ? Math.max(0, row.labor_cents) : f.labor;
 
   const discountOverridden = row && row.discount_auto === 0 && row.discount_cents != null;
   const discount  = Math.max(0, discountOverridden ? row.discount_cents : (defaultDiscountCents || 0));
 
-  // Wall repair / paint add-on (Option 2). A separate line with its own total
-  // (revenue) and expense (cost); the overage is straight profit. The closet
-  // formula above is untouched — the wall never runs through the ÷divisor math.
-  const wallTotal   = Math.max(0, (row && row.wall_total_cents)   || 0);
-  const wallExpense = Math.max(0, (row && row.wall_expense_cents) || 0);
-  const wallProfit  = wallTotal - wallExpense;
-
-  const closetExpenses = materials + shipping + tax + labor + misc;
-  const expenses = closetExpenses + wallExpense;
-  const closetNet = gross - discount;
-  const net = closetNet + wallTotal;   // client pays the closet net + the wall total
+  const net = gross - discount;   // gross is all-inclusive; the discount comes out of profit
+  const expenses = materials + shipping + tax + accessories + wall + misc + labor;
   return {
-    price_cents: gross,        // closet gross / cost basis
+    price_cents: gross,        // gross / cost basis (all-inclusive)
     discount_cents: discount,  // dollar discount, out of profit
-    net_cents: net,            // what the client pays (closet + wall)
-    closet_net_cents: closetNet,
-    materials_cents: materials, shipping_cents: shipping, tax_cents: tax, labor_cents: labor, misc_cents: misc,
-    wall_total_cents: wallTotal, wall_expense_cents: wallExpense, wall_profit_cents: wallProfit,
+    net_cents: net,            // what the client pays
+    closet_net_cents: net,
+    materials_cents: materials, shipping_cents: shipping, tax_cents: tax,
+    accessories_cents: accessories, misc_cents: misc, labor_cents: labor,
+    wall_expense_cents: wall,
+    // Back-compat: wall is now a plain expense (no separate revenue line).
+    wall_total_cents: 0, wall_profit_cents: 0,
     expenses_cents: expenses,
     profit_cents: net - expenses,
     price_auto: row ? (row.price_auto !== 0) : true,
     discount_auto: row ? (row.discount_auto !== 0) : true,
-    materials_auto: row ? (row.materials_auto !== 0) : true,
-    materials_discount: materialsDiscount,   // 3% manufacturer discount applied to materials
-    shipping_auto: row ? (row.shipping_auto !== 0) : true,
-    tax_auto: row ? (row.tax_auto !== 0) : true,
     labor_auto: row ? (row.labor_auto !== 0) : true,
-    // Effective per-job rates (the adjustable multiplier + percentages).
-    materials_divisor: rates.divisor,
-    shipping_rate: rates.shipRate,
-    tax_rate: rates.taxRate,
+    // Back-compat flags (line items are manual now).
+    materials_auto: false, shipping_auto: false, tax_auto: false,
+    materials_discount: false,
+    materials_divisor: rates.divisor, shipping_rate: rates.shipRate, tax_rate: rates.taxRate,
     labor_rate: rates.laborRate,
     fee_rate: rates.feeRate,
     fee_auto: row ? (row.fee_auto !== 0) : true,

@@ -48,7 +48,27 @@ export async function onRequestPost({ request, env }) {
   // doesn't retry; a real closet lead never trips these signals.
   const spam = spamReason(data);
   if (spam) {
-    console.warn("[contact.js] dropped spam submission:", spam);
+    console.warn("[contact.js] filtered submission:", spam);
+    // NEVER vanish silently. A filtered submission is not saved to the CRM (keeps
+    // obvious bot spam out), but we still email the team so a misclassified real
+    // customer is visible and recoverable. Best-effort — never blocks the response.
+    try {
+      await sendEmail(env, {
+        from: "National Closet Co. Website <hello@nationalclosetco.com>",
+        to: TO_ADDRESS,
+        replyTo: /^\S+@\S+\.\S+$/.test(email) ? email : undefined,
+        subject: `[Filtered — please review] Website submission from ${name || "(no name)"}`,
+        text:
+`A website form submission was auto-filtered as possible spam (reason: ${spam}) and was NOT saved to the CRM.
+If this looks like a real customer, add them to the CRM manually and reply directly.
+
+Name:    ${name || "(none)"}
+Phone:   ${phone || "(none)"}
+Email:   ${email || "(none)"}
+Message: ${message || "(none)"}
+`,
+      });
+    } catch (e) { console.error("[contact.js] filtered-alert email failed:", e?.message || e); }
     return json({ ok: true });
   }
 

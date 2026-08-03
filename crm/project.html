@@ -933,7 +933,7 @@ async function toggleMaterial(key, checked) {
 // ───────── Expenses & profit (cost model mirrors functions/_lib/financials.js) ─────────
 let finState = null;
 const finDollars = (cents) => (Math.max(0, cents || 0) / 100).toFixed(2);
-const finToCents = (v) => Math.max(0, Math.round((parseFloat(v) || 0) * 100));
+const finToCents = (v) => Math.max(0, Math.round((parseFloat(String(v).replace(/[^0-9.]/g, "")) || 0) * 100));
 // Only install labor auto-computes (10% of gross, min $350). The processing fee
 // can be a % of the total or a flat $. Every other line is entered by hand.
 const FIN_LABOR_RATE = 0.10, FIN_MIN_LABOR = 35000, FIN_FEE_RATE_DEF = 0.03;
@@ -1030,9 +1030,11 @@ function finRender() {
       ${finExpRow("manufacturer_discount", "Manufacturer discount <span class='muted' style='font-size:11px'>· − off materials</span>")}
       ${finExpRow("accessories", "Accessories expense")}
       <tr>
-        <td style="padding:6px 0">Install expense <span class='muted' style='font-size:11px'>· calculated · 10% of gross, min $350</span></td>
-        <td style="text-align:right;white-space:nowrap"><span style="color:var(--ink-soft)">$</span>
-          <input id="fin-labor" value="${finDollars(f.labor_cents)}" readonly inputmode="decimal" style="width:104px;text-align:right;background:var(--bg-soft);color:var(--ink-soft)"/>
+        <td style="padding:6px 0">Install expense <span class='muted' style='font-size:11px'>· 10% of gross, min $350</span></td>
+        <td style="text-align:right;white-space:nowrap">
+          <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-labor-auto" ${f.labor_auto ? "checked" : ""} onchange="finToggle('labor')"/> auto</label>
+          <span style="color:var(--ink-soft)">$</span>
+          <input id="fin-labor" value="${finDollars(f.labor_cents)}" ${f.labor_auto ? "readonly" : ""} oninput="finRecalc()" inputmode="decimal" style="width:104px;text-align:right;${f.labor_auto ? "background:var(--bg-soft);color:var(--ink-soft)" : ""}"/>
         </td>
       </tr>
       ${finExpRow("wall_expense", "Wall repair &amp; paint expense")}
@@ -1094,9 +1096,10 @@ function finRecalc() {
         shipping = g("fin-shipping"), tax = g("fin-tax"),
         wall = g("fin-wall_expense"), accessories = g("fin-accessories"), misc = g("fin-misc");
   const materialsNet = Math.max(0, materials - mfr);   // mfr discount reduces materials only
-  // Install expense: calculated — 10% of gross, min $350.
-  const install = price > 0 ? Math.max(Math.round(price * FIN_LABOR_RATE), FIN_MIN_LABOR) : 0;
-  document.getElementById("fin-labor").value = finDollars(install);
+  // Install expense: auto 10% of gross (min $350), overridable.
+  const installAuto = document.getElementById("fin-labor-auto").checked;
+  const install = installAuto ? (price > 0 ? Math.max(Math.round(price * FIN_LABOR_RATE), FIN_MIN_LABOR) : 0) : g("fin-labor");
+  if (installAuto) document.getElementById("fin-labor").value = finDollars(install);
   // Processing fee: a % of the total (net) or a flat $.
   const fee = finUnitCents("fee", net, false);
   const feeEq = document.getElementById("fin-fee-eq");
@@ -1114,7 +1117,6 @@ async function saveFinancials() {
   const priceAuto = document.getElementById("fin-price-auto").checked;
   const body = {
     price_auto: priceAuto,
-    labor_auto: true,   // install expense is always calculated (10% of gross, min $350)
     materials_auto: false, shipping_auto: false, tax_auto: false,
     // revenue breakdown (informational)
     materials_charged_cents: g("fin-materials_charged"),
@@ -1133,6 +1135,9 @@ async function saveFinancials() {
   const discAuto = document.getElementById("fin-discount-auto").checked;
   body.discount_auto = discAuto;
   if (!discAuto) body.discount_cents = finUnitCents("discount", finReadPrice(), true);
+  const laborAuto = document.getElementById("fin-labor-auto").checked;
+  body.labor_auto = laborAuto;
+  if (!laborAuto) body.labor_cents = g("fin-labor");
   // Processing fee: % → store a rate (auto); flat $ → store cents (manual).
   if (finUnitMode.fee === "pct") {
     const pct = parseFloat(String(document.getElementById("fin-fee").value).replace(/[^0-9.]/g, "")) || 0;

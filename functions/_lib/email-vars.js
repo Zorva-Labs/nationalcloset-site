@@ -57,6 +57,32 @@ export async function buildEmailContext(db, { contact, lead, project }) {
     if (ctr?.view_token) contract_link = `https://nationalclosetco.com/contract/?t=${ctr.view_token}`;
   }
 
+  // Appointment date/time — pull the next upcoming (else most recent) appointment
+  // for whichever entity we have, so {{appointment_date}}/{{appointment_time}}
+  // fill in automatically. Caller can still override per-send via body.vars.
+  let appointment_date = "";
+  let appointment_time = "";
+  const apptCols = [];
+  if (contact?.id) apptCols.push(["contact_id", contact.id]);
+  if (project?.id) apptCols.push(["project_id", project.id]);
+  if (lead?.id)    apptCols.push(["lead_id", lead.id]);
+  if (apptCols.length) {
+    const where = apptCols.map(([c]) => `${c}=?`).join(" OR ");
+    const appt = await db.prepare(
+      `SELECT start_at FROM appointments
+        WHERE (${where}) AND LOWER(COALESCE(status,'')) NOT IN ('canceled','cancelled')
+        ORDER BY CASE WHEN start_at >= datetime('now') THEN 0 ELSE 1 END,
+                 ABS(julianday(start_at) - julianday('now')) LIMIT 1`
+    ).bind(...apptCols.map(([, v]) => v)).first().catch(() => null);
+    if (appt?.start_at) {
+      const d = new Date(String(appt.start_at).replace(" ", "T") + "Z");   // stored UTC
+      if (!isNaN(d)) {
+        appointment_date = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "America/Chicago" });
+        appointment_time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" });
+      }
+    }
+  }
+
   return {
     name: name || "",
     first_name: first_name || "",
@@ -68,9 +94,8 @@ export async function buildEmailContext(db, { contact, lead, project }) {
     quoted_amount,
     proposal_link,
     contract_link,
-    // Appointment placeholders — caller may override per-send
-    appointment_date: "",
-    appointment_time: "",
+    appointment_date,
+    appointment_time,
   };
 }
 

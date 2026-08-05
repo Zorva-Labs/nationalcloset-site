@@ -128,6 +128,16 @@ export async function onRequestPost(context) {
   bodyText = renderTemplate(bodyText, vars);
   bodyHtml = renderTemplate(bodyHtml, vars);
 
+  // Safety net: strip any still-unresolved {{token}} before it reaches a customer.
+  // renderTemplate leaves them visible for the admin preview, but a literal
+  // "{{appointment_date}}" must never go out in a real send. Tidy leftover spacing.
+  const stripTokens = (s) => s == null ? s : String(s)
+    .replace(/\{\{\s*[a-z_][a-z0-9_]*\s*\}\}/gi, "")
+    .replace(/ ,/g, ",").replace(/[ \t]{2,}/g, " ").trim();
+  subject  = stripTokens(subject);
+  bodyText = stripTokens(bodyText);
+  bodyHtml = bodyHtml == null ? bodyHtml : String(bodyHtml).replace(/\{\{\s*[a-z_][a-z0-9_]*\s*\}\}/gi, "");
+
   if (!subject)  return json({ error: "subject required" }, 400);
   if (!bodyText && !bodyHtml) return json({ error: "body required" }, 400);
 

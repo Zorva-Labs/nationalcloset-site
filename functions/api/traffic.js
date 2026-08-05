@@ -50,11 +50,18 @@ export async function onRequestGet(context) {
 
   // Hourly → aggregate into 24 local-hour buckets. Today only in today-mode,
   // else the last 3 days (Cloudflare's free plan caps this dataset at 3 days).
-  const hStart = today ? (iso(now) + "T00:00:00Z") : isoDT(new Date(now.getTime() - 3 * DAY));
+  // Central-time "today" boundary expressed in UTC. Cloudflare's daily buckets use
+  // the UTC calendar date, so after 7pm Central (= next UTC day) the "today" bucket
+  // looks empty. Compute "today" from hourly data over the Central calendar day.
+  const ctNow = new Date(now.getTime() - CT_OFFSET * 3600 * 1000);
+  const ctDate = ctNow.toISOString().slice(0, 10);
+  const ctMidnightUTC = Date.parse(ctDate + "T00:00:00Z") + CT_OFFSET * 3600 * 1000;
+  const hStart = today ? (new Date(ctMidnightUTC).toISOString().slice(0, 19) + "Z") : isoDT(new Date(now.getTime() - 3 * DAY));
   const hourlyQ = `query { viewer { zones(filter: {zoneTag: "${ZONE}"}) {
     httpRequests1hGroups(limit: 200, filter: {datetime_geq: "${hStart}", datetime_leq: "${isoDT(now)}"}, orderBy: [datetime_ASC]) {
       dimensions { datetime }
       sum { pageViews }
+      uniq { uniques }
     }
   } } }`;
 
@@ -89,14 +96,24 @@ export async function onRequestGet(context) {
     const edge_split = { us: usReq, blocked: totalReq - usReq, total: totalReq };
 
     // Hour-of-day buckets (Central Time), pageViews summed across 7 days.
+    const hourlyGroups = hourlyRes?.data?.viewer?.zones?.[0]?.httpRequests1hGroups || [];
     const hours = new Array(24).fill(0);
-    for (const g of hourlyRes?.data?.viewer?.zones?.[0]?.httpRequests1hGroups || []) {
+    let todayPV = 0, todayUniq = 0;
+    for (const g of hourlyGroups) {
       const utcHour = parseInt(String(g.dimensions.datetime).slice(11, 13), 10);
-      if (!Number.isFinite(utcHour)) continue;
-      const local = ((utcHour - CT_OFFSET) % 24 + 24) % 24;
-      hours[local] += g.sum?.pageViews || 0;
+      if (Number.isFinite(utcHour)) {
+        const local = ((utcHour - CT_OFFSET) % 24 + 24) % 24;
+        hours[local] += g.sum?.pageViews || 0;
+      }
+      if (Date.parse(String(g.dimensions.datetime)) >= ctMidnightUTC) {
+        todayPV += g.sum?.pageViews || 0;
+        todayUniq += g.uniq?.uniques || 0;   // approx — hourly uniques can double-count a repeat visitor
+      }
     }
     const hourly = hours.map((pageViews, hour) => ({ hour, pageViews }));
+    // "Today" mode: the UTC daily bucket is misleadingly small near the UTC rollover
+    // (7pm Central onward). Report the Central-calendar-day totals from hourly instead.
+    if (today) days.splice(0, days.length, { date: ctDate, pageViews: todayPV, uniques: todayUniq });
 
     return json({ days, countries, edge_split, hourly, tz: "America/Chicago" });
   } catch (e) {

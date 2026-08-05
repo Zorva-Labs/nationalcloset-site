@@ -75,10 +75,20 @@ export async function buildEmailContext(db, { contact, lead, project }) {
                  ABS(julianday(start_at) - julianday('now')) LIMIT 1`
     ).bind(...apptCols.map(([, v]) => v)).first().catch(() => null);
     if (appt?.start_at) {
-      const d = new Date(String(appt.start_at).replace(" ", "T") + "Z");   // stored UTC
-      if (!isNaN(d)) {
-        appointment_date = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "America/Chicago" });
-        appointment_time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" });
+      // start_at is naive CENTRAL wall-clock (not UTC — see ics-feed TZID). Parse
+      // the components directly so the time isn't shifted.
+      const [datePart, timePart] = String(appt.start_at).replace(" ", "T").split("T");
+      const [Y, Mo, D] = (datePart || "").split("-").map((n) => parseInt(n, 10));
+      const [H, Mi] = (timePart || "00:00").split(":").map((n) => parseInt(n, 10));
+      if (Y && Mo && D) {
+        const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+        const weekdays = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+        const wd = new Date(Date.UTC(Y, Mo - 1, D)).getUTCDay();
+        appointment_date = `${weekdays[wd]}, ${months[Mo - 1]} ${D}`;
+        if (Number.isFinite(H)) {
+          const h12 = ((H + 11) % 12) + 1;
+          appointment_time = `${h12}:${String(Mi || 0).padStart(2, "0")} ${H < 12 ? "AM" : "PM"}`;
+        }
       }
     }
   }

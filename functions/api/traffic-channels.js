@@ -15,8 +15,12 @@ export async function onRequestGet(context) {
   span = Math.min(span, 90);
   const DB = context.env.DB;
 
-  // Today = since local midnight (date('now')); otherwise a rolling N-day window.
-  const TF = today ? "created_at >= date('now')" : "created_at >= datetime('now', ?1)";
+  // Today = since CENTRAL midnight (created_at is UTC; date('now') would use the
+  // UTC day, which flips at 7pm Central and makes "today" look empty). Central
+  // midnight in UTC = now → Central wall-clock → start of day → back to UTC.
+  const TF = today
+    ? "created_at >= datetime('now', '-5 hours', 'start of day', '+5 hours')"
+    : "created_at >= datetime('now', ?1)";
   const binds = today ? [] : [`-${span} days`];
   const q = (sql) => { const st = DB.prepare(sql); return (binds.length ? st.bind(...binds) : st).all().catch(() => ({ results: [] })); };
 

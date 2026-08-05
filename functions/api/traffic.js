@@ -60,7 +60,7 @@ export async function onRequestGet(context) {
   const hourlyQ = `query { viewer { zones(filter: {zoneTag: "${ZONE}"}) {
     httpRequests1hGroups(limit: 200, filter: {datetime_geq: "${hStart}", datetime_leq: "${isoDT(now)}"}, orderBy: [datetime_ASC]) {
       dimensions { datetime }
-      sum { pageViews }
+      sum { pageViews countryMap { clientCountryName requests } }
       uniq { uniques }
     }
   } } }`;
@@ -75,30 +75,12 @@ export async function onRequestGet(context) {
       uniques: g.uniq?.uniques || 0,
     }));
 
-    // Country breakdown — sum requests per country across the range.
-    const cAgg = {};
-    for (const g of groups) {
-      for (const c of g.sum?.countryMap || []) {
-        cAgg[c.clientCountryName] = (cAgg[c.clientCountryName] || 0) + (c.requests || 0);
-      }
-    }
-    const countries = Object.entries(cAgg)
-      .map(([code, requests]) => ({ code, requests }))
-      .sort((a, b) => b.requests - a.requests)
-      .slice(0, 10);
-
-    // US-vs-blocked split: the site is US-only, so US = allowed real audience and
-    // everything else = non-US requests that hit a 403 block page (overwhelmingly
-    // datacenter bots). Lets the Traffic page show "real traffic" vs "blocked" plainly.
-    let totalReq = 0;
-    for (const k in cAgg) totalReq += cAgg[k];
-    const usReq = cAgg["US"] || 0;
-    const edge_split = { us: usReq, blocked: totalReq - usReq, total: totalReq };
-
-    // Hour-of-day buckets (Central Time), pageViews summed across 7 days.
+    // Hour-of-day buckets (Central Time) + Central "today" totals + today's country
+    // map — all from hourly, which is the only source with sub-UTC-day resolution.
     const hourlyGroups = hourlyRes?.data?.viewer?.zones?.[0]?.httpRequests1hGroups || [];
     const hours = new Array(24).fill(0);
     let todayPV = 0, todayUniq = 0;
+    const hourlyCAgg = {};
     for (const g of hourlyGroups) {
       const utcHour = parseInt(String(g.dimensions.datetime).slice(11, 13), 10);
       if (Number.isFinite(utcHour)) {
@@ -108,11 +90,32 @@ export async function onRequestGet(context) {
       if (Date.parse(String(g.dimensions.datetime)) >= ctMidnightUTC) {
         todayPV += g.sum?.pageViews || 0;
         todayUniq += g.uniq?.uniques || 0;   // approx — hourly uniques can double-count a repeat visitor
+        for (const c of g.sum?.countryMap || []) hourlyCAgg[c.clientCountryName] = (hourlyCAgg[c.clientCountryName] || 0) + (c.requests || 0);
       }
     }
     const hourly = hours.map((pageViews, hour) => ({ hour, pageViews }));
-    // "Today" mode: the UTC daily bucket is misleadingly small near the UTC rollover
-    // (7pm Central onward). Report the Central-calendar-day totals from hourly instead.
+
+    // Country breakdown: in today-mode use hourly (Central day) — the UTC daily
+    // bucket is near-empty after the 7pm-Central rollover; otherwise the daily range.
+    const cAgg = {};
+    if (today) {
+      Object.assign(cAgg, hourlyCAgg);
+    } else {
+      for (const g of groups) for (const c of g.sum?.countryMap || []) cAgg[c.clientCountryName] = (cAgg[c.clientCountryName] || 0) + (c.requests || 0);
+    }
+    const countries = Object.entries(cAgg)
+      .map(([code, requests]) => ({ code, requests }))
+      .sort((a, b) => b.requests - a.requests)
+      .slice(0, 10);
+
+    // US-vs-blocked split: US = allowed real audience; everything else = non-US
+    // requests turned away with a 403 (overwhelmingly datacenter bots).
+    let totalReq = 0;
+    for (const k in cAgg) totalReq += cAgg[k];
+    const usReq = cAgg["US"] || 0;
+    const edge_split = { us: usReq, blocked: totalReq - usReq, total: totalReq };
+
+    // "Today" mode: replace the misleading UTC daily bucket with Central-day totals.
     if (today) days.splice(0, days.length, { date: ctDate, pageViews: todayPV, uniques: todayUniq });
 
     return json({ days, countries, edge_split, hourly, tz: "America/Chicago" });

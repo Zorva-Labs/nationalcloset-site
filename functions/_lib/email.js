@@ -38,11 +38,17 @@ export async function sendEmail(env, opts) {
     return { skipped: true, reason: "no_transport", messageId: opts.messageId || makeMessageId() };
   }
 
+  // Always populate BOTH alternative parts. If a caller sends text only (e.g. a
+  // plain-text CRM reply), we must still emit real HTML — an empty text/html part
+  // renders as a BLANK email in HTML-preferring clients (they pick the richest
+  // part), which is exactly the "email has no text" bug. Derive whichever is missing.
+  const text = opts.text || (opts.html ? htmlToText(opts.html) : "");
+  const html = opts.html || (text ? textToHtml(text) : "");
   const msg = {
     to: toList, cc: ccList, bcc: bccList,
     subject: opts.subject,
-    html: opts.html,
-    text: opts.text || (opts.html ? htmlToText(opts.html) : ""),
+    html,
+    text,
     reply: opts.replyTo || env.MAIL_DEFAULT_REPLY || DEFAULT_REPLY,
     from: opts.from || env.MAIL_FROM || DEFAULT_FROM,
     messageId: opts.messageId || makeMessageId(),
@@ -173,6 +179,15 @@ function htmlToText(html) {
        .replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'")
        .replace(/&mdash;/gi, "—").replace(/&hellip;/gi, "…").replace(/&rarr;/gi, "→");
   return t.replace(/[ \t]+/g, " ").replace(/ *\n */g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// Wrap a plain-text body as simple HTML so text-only sends still have a real
+// text/html part (an empty one shows blank in most clients). Preserves line
+// breaks/spacing and linkifies bare URLs.
+function textToHtml(text) {
+  const esc = escapeHtml(String(text || ""))
+    .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#B9542F;text-decoration:underline">$1</a>');
+  return `<div style="font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;font-size:15px;line-height:1.6;color:#16140F;white-space:pre-wrap">${esc}</div>`;
 }
 
 // --------------------------------------------------------------

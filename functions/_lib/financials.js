@@ -8,7 +8,7 @@
 //   • profit         = net − (materials + shipping + tax + accessories + wall + misc + labor + fee)
 // The deposit is at least 50% of net, grossed up so it still covers card fees.
 
-export const MATERIALS_DIVISOR = 2.0;  // materials cost = job total ÷ 2.0 (default). One honest price — no list-then-discount.
+export const MATERIALS_DIVISOR = 2.10; // default materials markup: charged = materials expense × 2.10 (i.e. materials = price ÷ 2.10).
 export const SHIPPING_RATE = 0;        // shipping default 0% (set per job)
 export const TAX_RATE = 0;             // taxes default 0% (set per job)
 export const LABOR_RATE = 0.10;        // installation labor = 10% of the gross job price (the only non-zero default)

@@ -937,6 +937,7 @@ const finToCents = (v) => Math.max(0, Math.round((parseFloat(String(v).replace(/
 // Only install labor auto-computes (10% of gross, min $350). The processing fee
 // can be a % of the total or a flat $. Every other line is entered by hand.
 const FIN_LABOR_RATE = 0.10, FIN_MIN_LABOR = 35000, FIN_FEE_RATE_DEF = 0.03;
+const FIN_MATERIALS_MARKUP = 2.10;   // default: Materials charged = Materials expense × 2.10
 
 async function loadFinancials() {
   const host = document.getElementById("fin-host");
@@ -1006,6 +1007,9 @@ function finRender() {
   // full amount and the section reconciles to Net client.
   if (!((f.materials_charged_cents || 0) + (f.accessories_charged_cents || 0) + (f.wall_charged_cents || 0)))
     f.materials_charged_cents = f.price_cents || 0;
+  // Materials charged auto-derives from the materials expense at the markup unless
+  // it's been set independently (e.g. seeded from a proposal). Inferred, not stored.
+  const mcAuto = (f.materials_charged_cents || 0) === Math.round((f.materials_cents || 0) * FIN_MATERIALS_MARKUP);
   const sect = (t) => `<tr><td colspan="2" style="padding:10px 0 3px"><div style="border-top:1px solid var(--line);margin-bottom:${t ? "6px" : "0"}"></div>${t ? `<span class="muted" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">${t}</span>` : ""}</td></tr>`;
   const calcRow = (label, id, val, o) => `<tr${o && o.bold ? ' style="font-weight:700"' : ""}><td style="padding:4px 0${o && o.muted ? ";color:var(--ink-soft);font-size:11px" : ""}">${label}</td><td style="text-align:right${o && o.muted ? ";color:var(--ink-soft);font-size:11px" : ""}" id="${id}">${val}</td></tr>`;
   host.innerHTML = `
@@ -1016,7 +1020,15 @@ function finRender() {
           <input id="fin-price" value="${finDollars(f.price_cents)}" readonly inputmode="decimal" style="width:104px;text-align:right;font-weight:700;background:var(--bg-soft);color:var(--ink)"/>
         </td>
       </tr>
-      ${finExpRow("materials_charged", "Materials charged <span class='muted' style='font-size:11px'>· of gross</span>")}
+      <tr>
+        <td style="padding:6px 0">Materials charged <span class='muted' style='font-size:11px'>· of gross</span></td>
+        <td style="text-align:right;white-space:nowrap">
+          <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer" title="Auto = Materials expense × 2.10"><input type="checkbox" id="fin-materials_charged-auto" ${mcAuto ? "checked" : ""} onchange="finToggle('materials_charged')"/> ×2.10</label>
+          <span style="color:var(--ink-soft)">$</span>
+          <input id="fin-materials_charged" value="${finDollars(f.materials_charged_cents)}" ${mcAuto ? "readonly" : ""} oninput="finRecalc()" inputmode="decimal" style="width:104px;text-align:right;${mcAuto ? "background:var(--bg-soft);color:var(--ink-soft)" : ""}"/>
+          <div id="fin-materials_charged-eq" class="muted" style="font-size:10px;margin-top:2px;height:12px"></div>
+        </td>
+      </tr>
       ${finExpRow("accessories_charged", "Accessories charged <span class='muted' style='font-size:11px'>· of gross</span>")}
       ${finExpRow("wall_charged", "Wall repair &amp; paint charged <span class='muted' style='font-size:11px'>· of gross</span>")}
       <tr>
@@ -1089,6 +1101,14 @@ function finToggle(key) {
 }
 
 function finRecalc() {
+  // Materials charged auto-derives from the materials expense at the 2.10 markup.
+  const mcAutoEl = document.getElementById("fin-materials_charged-auto");
+  const matExpCents = finToCents((document.getElementById("fin-materials") || {}).value || 0);
+  if (mcAutoEl && mcAutoEl.checked) {
+    document.getElementById("fin-materials_charged").value = finDollars(Math.round(matExpCents * FIN_MATERIALS_MARKUP));
+  }
+  const mcEq = document.getElementById("fin-materials_charged-eq");
+  if (mcEq) mcEq.textContent = (mcAutoEl && mcAutoEl.checked && matExpCents > 0) ? "= expense × 2.10" : "";
   const price = finReadPrice();                 // gross = sum of charged lines
   document.getElementById("fin-price").value = finDollars(price);
   // Discount (auto = the proposal's $ discount) comes out of profit.

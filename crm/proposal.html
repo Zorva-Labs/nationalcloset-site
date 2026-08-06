@@ -184,7 +184,7 @@ const towerValueCents = () => Math.round(TOWER_COST_CENTS * PROP_RATES.divisor);
 // Advertised figures read as round dollars — "$935", never "$935.20".
 const usd = (cents) => "$" + Math.round(cents / 100).toLocaleString("en-US");
 
-const PROP_RATES = { divisor: 2.0, shipRate: 0, taxRate: 0, laborRate: 0.10, matDiscRate: 0, feeRate: 0.03 };  // materials ÷2.0, labor 10%, processing fee 3%; shipping/taxes/mfr 0
+const PROP_RATES = { divisor: 2.10, shipRate: 0, taxRate: 0, laborRate: 0.10, matDiscRate: 0, feeRate: 0.03 };  // materials ÷2.10, labor 10%, processing fee 3%; shipping/taxes/mfr 0
 const propPctStr = (frac) => String(+((frac * 100).toFixed(4)));
 function tierCostCalc(grossCents, netCents) {
   const g = grossCents || 0;

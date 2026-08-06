@@ -36,7 +36,7 @@ export async function sendAppointmentConfirmation(env, appt, { leadId = null, co
       ${address ? `<p>We'll come to:<br/><strong>${escapeHtml(address)}</strong></p>` : ""}
       ${appt.rooms ? `<p><strong>Rooms / scope:</strong> ${escapeHtml(appt.rooms)}</p>` : ""}
       ${appt.notes ? `<p><strong>Notes:</strong> ${escapeHtml(appt.notes)}</p>` : ""}
-      <p>We'll bring samples, take measurements, and leave you with a written quote on the visit — no obligation.</p>
+      <p>We'll take measurements, design a 3D version of the space, and leave you with a quote — no obligation.</p>
       <p>If anything changes, you can <a href="${cancelUrl}">reschedule or cancel here</a>, or call/text us at <a href="tel:+16292988241">629-298-8241</a>.</p>
       <p style="margin-top:24px">Looking forward to meeting you,<br/>— National Closet Company</p>`,
   });

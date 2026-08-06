@@ -112,7 +112,7 @@ export async function onRequestPost(context) {
         <p style="font-size:18px;color:#16140F;font-weight:600;margin:14px 0">${escapeHtml(fmtPretty(startAt))}</p>
         ${body.address ? `<p>We'll come to:<br/><strong>${escapeHtml(formatAddress(body.address))}</strong></p>` : ""}
         ${body.rooms ? `<p><strong>Rooms / scope:</strong> ${escapeHtml(body.rooms)}</p>` : ""}
-        <p>We'll bring samples, measure every window, and leave you with a written quote on the visit — no obligation. The whole visit usually takes 45–75 minutes depending on window count.</p>
+        <p>We'll take measurements, design a 3D version of the space, and leave you with a quote — no obligation. The whole visit usually takes about 45–60 minutes.</p>
         <p>If anything changes, you can <a href="${SITE_URL}/book/?cancel=${cancelToken}">reschedule or cancel here</a>, or just call/text us at <a href="tel:+16292988241">629-298-8241</a>.</p>
         <p style="margin-top:24px">Looking forward to meeting you,<br/>— National Closet Company</p>
       `,

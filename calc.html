@@ -110,15 +110,15 @@
   </div>
 
   <h1>Job calculator</h1>
-  <p class="sub">Gross is all-inclusive. Enter each expense — only install auto-fills.</p>
+  <p class="sub">Enter the total the client pays — materials &amp; install auto-fill.</p>
 
   <div class="card">
-    <label class="field" for="gross">Gross amount</label>
+    <label class="field" for="gross">Total — what the client pays</label>
     <div class="input-money">
       <span>$</span>
       <input id="gross" type="text" inputmode="decimal" placeholder="10,000.00" autocomplete="off" autofocus />
     </div>
-    <p class="hint">The all-inclusive price you're quoting the client.</p>
+    <p class="hint">The final price the client pays, after any discount. List price (materials × 2.1) = this total + the discount.</p>
 
     <label class="field" for="disc" style="margin-top:18px">Client discount <span style="text-transform:none;font-weight:500;color:var(--ink-mute)">· optional, out of profit</span></label>
     <div class="disc-wrap">
@@ -150,6 +150,7 @@
       <label class="rate"><span>Install expense</span><i>$</i><input id="e-install" type="text" inputmode="decimal" value="0" autocomplete="off"/></label>
     </div>
     <div class="opts">
+      <label class="opt"><input type="checkbox" id="mat-auto" checked/> <b style="font-weight:800">Materials auto</b> — gross ÷ 2.1 (uncheck to type your own)</label>
       <label class="opt"><input type="checkbox" id="install-auto" checked/> <b style="font-weight:800">Auto</b> — 10% of gross, min $350 (uncheck to type your own)</label>
       <label class="opt"><input type="checkbox" id="self-install"/> I'm installing it — <b style="font-weight:800">no labor cost</b></label>
       <label class="opt"><input type="checkbox" id="pay-full"/> Client pays in <b style="font-weight:800">full</b> — one payment, not 3</label>
@@ -197,9 +198,9 @@
 
     <div class="card">
       <table class="rows">
-        <tr><td>Gross amount</td><td id="r-gross">$0</td></tr>
+        <tr><td>List price <span class="pct">· materials × 2.1</span></td><td id="r-gross">$0</td></tr>
         <tr class="disc-row" id="r-discrow" hidden><td>Client discount <span class="pct" id="r-disclbl"></span></td><td id="r-discamt">$0</td></tr>
-        <tr class="grand"><td>Net client</td><td id="r-net">$0</td></tr>
+        <tr class="grand"><td>Total · client pays</td><td id="r-net">$0</td></tr>
         <tr class="sep muted"><td>Expenses</td><td></td></tr>
         <tr><td>Materials</td><td id="r-mat">$0</td></tr>
         <tr class="disc-row" id="r-mfrrow" hidden><td>Mfr. discount</td><td id="r-mfr">$0</td></tr>
@@ -213,7 +214,7 @@
         <tr class="muted"><td>Total expenses</td><td id="r-exp">$0</td></tr>
         <tr class="grand"><td>Profit <span class="pct" id="r-margin"></span></td><td id="r-profit">$0</td></tr>
       </table>
-      <p class="hint" style="margin-top:10px">Gross is all-inclusive. Net client = gross − discount. Profit = net − every expense line (install, mfr discount off materials, processing fee and all the rest).</p>
+      <p class="hint" style="margin-top:10px">Enter the total the client pays. List price = total + discount; materials = list ÷ 2.1. Profit = total − every expense line (materials, install, processing fee and the rest); the discount comes out of profit.</p>
     </div>
   </div>
 </div>
@@ -222,7 +223,7 @@
 (function () {
   var el = function (id) { return document.getElementById(id); };
   var gross = el("gross"), disc = el("disc");
-  var LABOR_RATE = 0.10, MIN_LABOR = 35000, FEE_DEF = 3;
+  var LABOR_RATE = 0.10, MIN_LABOR = 35000, FEE_DEF = 3, MARKUP = 2.10;   // materials = gross ÷ 2.10
 
   // Discount: $ or % of the gross → resolves to cents (never exceeds the gross).
   var discMode = "usd";
@@ -269,23 +270,28 @@
 
   function render() {
     var out = el("out");
-    var price = cents(gross);                          // gross, all-inclusive
-    if (price <= 0) { out.hidden = true; return; }
+    var net = cents(gross);                            // the TOTAL the client pays (after discount)
+    if (net <= 0) { out.hidden = true; return; }
 
-    var discount = discCents(price);
-    var net = price - discount;                        // what the client pays
+    var discount = discCents(net);                     // $ or % — comes out of profit
+    var list = net + discount;                         // pre-discount list price = the materials markup base
 
-    // Install: auto 10% of gross (min $350); self-install → $0; else typed value.
+    // Install: auto 10% of the list price (min $350); self-install → $0; else typed.
     var install;
     if (cbSelfInstall.checked) install = 0;
-    else if (cbInstallAuto.checked) install = Math.max(Math.round(price * LABOR_RATE), MIN_LABOR);
+    else if (cbInstallAuto.checked) install = Math.max(Math.round(list * LABOR_RATE), MIN_LABOR);
     else install = cents(eInstall);
     var autoInstall = cbInstallAuto.checked && !cbSelfInstall.checked;
     eInstall.readOnly = autoInstall || cbSelfInstall.checked;
     eInstall.style.opacity = cbSelfInstall.checked ? ".4" : "";
     if (autoInstall || cbSelfInstall.checked) eInstall.value = (install / 100).toFixed(2);
 
-    var materials = cents(eMat), acc = cents(eAcc), wall = cents(eWall),
+    // Materials: auto = list ÷ 2.1 (the markup) unless you type your own.
+    var matAuto = el("mat-auto").checked;
+    var materials = matAuto ? Math.round(list / MARKUP) : cents(eMat);
+    eMat.readOnly = matAuto;
+    if (matAuto) eMat.value = (materials / 100).toFixed(2);
+    var acc = cents(eAcc), wall = cents(eWall),
         ship = cents(eShip), tax = cents(eTax), misc = cents(eMisc);
     // Manufacturer discount: flat $ or % of the materials expense; capped at it.
     var mfr = mfrMode === "pct" ? Math.round(materials * (num(eMfr) / 100)) : cents(eMfr);
@@ -345,10 +351,10 @@
     }
 
     // ── Breakdown ──
-    el("r-gross").textContent = money(price);
+    el("r-gross").textContent = money(list);
     el("r-discrow").hidden = !(discount > 0);
     el("r-discamt").textContent = "−" + money(discount);
-    el("r-disclbl").textContent = price > 0 ? "(" + pct(discount, price) + " off)" : "";
+    el("r-disclbl").textContent = list > 0 ? "(" + pct(discount, list) + " off)" : "";
     el("r-net").textContent = money(net);
     el("r-mat").textContent = money(materials);
     el("r-mfrrow").hidden = !(mfr > 0);
@@ -371,7 +377,7 @@
 
   var inputs = [gross, disc, eMat, eMfr, eAcc, eWall, eShip, eTax, eMisc, eFee, eInstall];
   inputs.forEach(function (i) { i.addEventListener("input", render); });
-  [cbInstallAuto, cbSelfInstall, cbPayFull].forEach(function (c) { c.addEventListener("change", render); });
+  [el("mat-auto"), cbInstallAuto, cbSelfInstall, cbPayFull].forEach(function (c) { c.addEventListener("change", render); });
 
   el("eq").addEventListener("click", function () {
     render();
@@ -382,7 +388,7 @@
     disc.value = "";
     [eMat, eMfr, eAcc, eWall, eShip, eTax, eMisc, eInstall].forEach(function (i) { i.value = "0"; });
     eFee.value = String(FEE_DEF);
-    cbInstallAuto.checked = true; cbSelfInstall.checked = false; cbPayFull.checked = false;
+    el("mat-auto").checked = true; cbInstallAuto.checked = true; cbSelfInstall.checked = false; cbPayFull.checked = false;
     if (feeMode !== "pct") { feeMode = "pct"; feeUnit.textContent = "%"; }
     if (mfrMode !== "usd") { mfrMode = "usd"; mfrUnit.textContent = "$"; }
     window.setDiscMode("usd");

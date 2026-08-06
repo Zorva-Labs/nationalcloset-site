@@ -69,10 +69,15 @@ export const markupLine = (cents, rate = QUOTE_MARKUP - 1) => (cents > 0 ? Math.
 // existing callers (the deposit floor, the API) keep working.
 export function computeBreakdown(priceCents, rates) {
   const r = rates || {};
+  const divisor   = (Number.isFinite(r.divisor) && r.divisor > 0) ? r.divisor : MATERIALS_DIVISOR;
   const laborRate = Number.isFinite(r.laborRate) ? r.laborRate : LABOR_RATE;
   const price = Math.max(0, Math.round(priceCents || 0));
+  // Materials estimate for the DEPOSIT floor (price ÷ markup). The job page's
+  // detailed breakdown reads materials from the saved row; this only backstops
+  // the deposit so it always covers the materials cost.
+  const materials = divisor > 0 ? Math.round(price / divisor) : 0;
   const labor = price > 0 ? Math.max(Math.round(price * laborRate), MIN_LABOR_CENTS) : 0; // %, min $350
-  return { materials: 0, shipping: 0, tax: 0, labor };
+  return { materials, shipping: 0, tax: 0, labor };
 }
 
 // The deposit collected up front. Two rules, whichever is larger:

@@ -42,7 +42,7 @@ export async function onRequestGet(context) {
   ).bind(...binds).all()).results || [];
 
   const jobs = [];
-  const totals = { gross: 0, discounts: 0, revenue: 0, materials: 0, shipping: 0, tax: 0, labor: 0, misc: 0, fee: 0, expenses: 0, profit: 0 };
+  const totals = { gross: 0, discounts: 0, revenue: 0, materials: 0, accessories: 0, wall: 0, wall_income: 0, shipping: 0, tax: 0, labor: 0, misc: 0, fee: 0, expenses: 0, profit: 0 };
 
   for (const r of rows) {
     // Cost basis is the pre-discount gross; revenue is the net the client pays.
@@ -67,12 +67,16 @@ export async function onRequestGet(context) {
     jobs.push({
       id: r.id, name: r.name, contact_name: r.contact_name, status: r.status, created_at: r.created_at,
       price_cents: fin.net_cents, gross_cents: fin.price_cents, discount_cents: fin.discount_cents,
-      materials_cents: fin.materials_cents, shipping_cents: fin.shipping_cents,
+      materials_cents: fin.materials_cents, accessories_cents: fin.accessories_cents,
+      wall_cents: fin.wall_expense_cents, wall_income_cents: fin.wall_charged_cents,
+      shipping_cents: fin.shipping_cents,
       tax_cents: fin.tax_cents, labor_cents: fin.labor_cents, misc_cents: fin.misc_cents, fee_cents: fee,
       expenses_cents: expenses, profit_cents: profit,
     });
     totals.gross += fin.price_cents; totals.discounts += fin.discount_cents; totals.revenue += fin.net_cents;
-    totals.materials += fin.materials_cents; totals.shipping += fin.shipping_cents;
+    totals.materials += fin.materials_cents; totals.accessories += fin.accessories_cents;
+    totals.wall += fin.wall_expense_cents; totals.wall_income += fin.wall_charged_cents;
+    totals.shipping += fin.shipping_cents;
     totals.tax += fin.tax_cents; totals.labor += fin.labor_cents; totals.misc += fin.misc_cents; totals.fee += fee;
     totals.expenses += expenses; totals.profit += profit;
   }

@@ -131,7 +131,7 @@
 
   // ───────── P&L view ─────────
   function renderPnl() {
-    const t = data ? data.totals : { revenue: 0, materials: 0, shipping: 0, tax: 0, labor: 0, misc: 0, fee: 0, expenses: 0, profit: 0 };
+    const t = data ? data.totals : { revenue: 0, materials: 0, accessories: 0, wall: 0, wall_income: 0, shipping: 0, tax: 0, labor: 0, misc: 0, fee: 0, expenses: 0, profit: 0 };
     const rev = t.revenue;
     const expRow = (label, cents) => `<tr class="exp"><td>${label}</td><td class="amt">${cents ? "(" + M(cents) + ")" : "—"}</td><td class="pct">${pct(cents, rev)}</td></tr>`;
     const jobsRows = (data && data.jobs.length) ? data.jobs.map((j) => `
@@ -139,10 +139,11 @@
         <td><a href="/crm/project.html?id=${j.id}">${e(j.name || "Job #" + j.id)}</a><div class="muted" style="font-size:12px">${e(j.contact_name || "")} · ${SSCrm.fmtDate(j.created_at)}</div></td>
         <td>${SSCrm.pill(STATUS_LABEL[j.status] || j.status, j.status)}</td>
         <td class="num">${M(j.price_cents)}</td><td class="num">${M(j.materials_cents)}</td>
+        <td class="num">${M(j.accessories_cents)}</td><td class="num">${M(j.wall_cents)}</td>
         <td class="num">${M(j.labor_cents)}</td><td class="num">${M(j.misc_cents)}</td>
         <td class="num" style="font-weight:700;color:#15803D">${M(j.profit_cents)}</td>
       </tr>`).join("")
-      : `<tr><td colspan="7" class="empty" style="padding:24px">No jobs in this range.</td></tr>`;
+      : `<tr><td colspan="9" class="empty" style="padding:24px">No jobs in this range.</td></tr>`;
 
     page.innerHTML = barHTML() + `
       <div class="rpt-cards">
@@ -158,7 +159,8 @@
             ${t.discounts ? `<tr><td>Gross sales</td><td class="amt">${M(t.gross)}</td><td class="pct"></td></tr>
             <tr class="exp"><td>Discounts</td><td class="amt">(${M(t.discounts)})</td><td class="pct">${pct(t.discounts, t.gross)}</td></tr>` : ""}
             <tr><td><strong>${t.discounts ? "Net revenue" : "Gross income"}</strong></td><td class="amt"><strong>${M(rev)}</strong></td><td class="pct">100%</td></tr>
-            ${expRow("Materials", t.materials)}${expRow("Shipping", t.shipping)}${expRow("Taxes", t.tax)}${expRow("Labor", t.labor)}${expRow("Misc", t.misc)}${expRow("Processing fees", t.fee)}
+            ${t.wall_income ? `<tr class="muted"><td style="padding-left:14px;font-size:12px">incl. wall repair income</td><td class="amt" style="font-size:12px">${M(t.wall_income)}</td><td class="pct"></td></tr>` : ""}
+            ${expRow("Materials", t.materials)}${expRow("Accessories", t.accessories)}${expRow("Wall repair", t.wall)}${expRow("Shipping", t.shipping)}${expRow("Taxes", t.tax)}${expRow("Labor", t.labor)}${expRow("Misc", t.misc)}${expRow("Processing fees", t.fee)}
             <tr class="sum"><td>Total expenses</td><td class="amt">(${M(t.expenses)})</td><td class="pct">${pct(t.expenses, rev)}</td></tr>
             <tr class="profit"><td>Net profit</td><td class="amt">${M(t.profit)}</td><td class="pct">${pct(t.profit, rev)}</td></tr>
           </table>
@@ -166,7 +168,7 @@
         <div class="card">
           <div class="card-head"><h3>By job <span class="muted" style="font-weight:500">· ${data ? data.count : 0}</span></h3></div>
           <div class="tbl"><table>
-            <thead><tr><th>Job</th><th>Status</th><th class="num">Price</th><th class="num">Materials</th><th class="num">Labor</th><th class="num">Misc</th><th class="num">Profit</th></tr></thead>
+            <thead><tr><th>Job</th><th>Status</th><th class="num">Price</th><th class="num">Materials</th><th class="num">Accessories</th><th class="num">Wall</th><th class="num">Labor</th><th class="num">Misc</th><th class="num">Profit</th></tr></thead>
             <tbody>${jobsRows}</tbody>
           </table></div>
         </div>
@@ -390,9 +392,10 @@
     const jobRows = data.jobs.length ? data.jobs.map((j) => `<tr>
         <td>${e(j.name || "Job #" + j.id)}<div class="sub">${e(j.contact_name || "")} · ${SSCrm.fmtDate(j.created_at)}</div></td>
         <td class="amt">${M(j.price_cents)}</td><td class="amt">${M(j.materials_cents)}</td>
+        <td class="amt">${M(j.accessories_cents)}</td><td class="amt">${M(j.wall_cents)}</td>
         <td class="amt">${M(j.labor_cents)}</td><td class="amt">${M(j.misc_cents)}</td>
         <td class="amt strong">${M(j.profit_cents)}</td></tr>`).join("")
-      : `<tr><td colspan="6" style="text-align:center;color:#777;padding:20px">No jobs in this range.</td></tr>`;
+      : `<tr><td colspan="8" style="text-align:center;color:#777;padding:20px">No jobs in this range.</td></tr>`;
     const scope = all ? "All projects" : "Won jobs (booked → completed)";
     return `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>P&amp;L — ${e(BIZ.name)} — ${e(rangeLabel())}</title><style>${PRINT_CSS}</style></head><body>
       ${letterhead()}
@@ -409,13 +412,14 @@
         ${t.discounts ? `<tr><td>Gross sales</td><td class="amt">${M(t.gross)}</td><td class="p"></td></tr>
         <tr><td class="lab">Discounts</td><td class="amt">(${M(t.discounts)})</td><td class="p">${pct(t.discounts, t.gross)}</td></tr>` : ""}
         <tr><td><strong>${t.discounts ? "Net revenue" : "Gross income"}</strong></td><td class="amt"><strong>${M(rev)}</strong></td><td class="p">100%</td></tr>
-        ${expRow("Materials", t.materials)}${expRow("Shipping", t.shipping)}${expRow("Taxes", t.tax)}${expRow("Labor", t.labor)}${expRow("Misc", t.misc)}${expRow("Processing fees", t.fee)}
+        ${t.wall_income ? `<tr><td class="lab" style="font-size:11px">incl. wall repair income</td><td class="amt" style="font-size:11px">${M(t.wall_income)}</td><td class="p"></td></tr>` : ""}
+        ${expRow("Materials", t.materials)}${expRow("Accessories", t.accessories)}${expRow("Wall repair", t.wall)}${expRow("Shipping", t.shipping)}${expRow("Taxes", t.tax)}${expRow("Labor", t.labor)}${expRow("Misc", t.misc)}${expRow("Processing fees", t.fee)}
         <tr class="tot"><td>Total expenses</td><td class="amt">(${M(t.expenses)})</td><td class="p">${pct(t.expenses, rev)}</td></tr>
         <tr class="tot"><td>Net profit</td><td class="amt" style="color:#15803D">${M(t.profit)}</td><td class="p">${pct(t.profit, rev)}</td></tr>
       </table>
       <h2>By job</h2>
       <table class="data">
-        <thead><tr><th>Job</th><th>Price</th><th>Materials</th><th>Labor</th><th>Misc</th><th>Profit</th></tr></thead>
+        <thead><tr><th>Job</th><th>Price</th><th>Materials</th><th>Accessories</th><th>Wall</th><th>Labor</th><th>Misc</th><th>Profit</th></tr></thead>
         <tbody>${jobRows}</tbody>
       </table>
       <div class="foot"><span>Generated ${generatedOn()} · ${e(BIZ.name)}</span><span>Internal management report</span></div>

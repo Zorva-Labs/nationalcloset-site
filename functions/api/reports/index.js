@@ -23,6 +23,8 @@ export async function onRequestGet(context) {
     `SELECT p.id, p.name, p.status, p.created_at, c.name AS contact_name,
             jf.price_cents, jf.discount_pct, jf.materials_cents, jf.shipping_cents, jf.tax_cents,
             jf.labor_cents, jf.misc_cents, jf.discount_cents, jf.price_auto, jf.discount_auto,
+            jf.materials_charged_cents, jf.accessories_charged_cents, jf.wall_charged_cents,
+            jf.accessories_cents, jf.wall_expense_cents, jf.manufacturer_discount_cents,
             jf.materials_auto, jf.shipping_auto, jf.tax_auto, jf.labor_auto,
             jf.materials_divisor, jf.shipping_rate, jf.tax_rate, jf.labor_rate, jf.fee_rate,
             jf.fee_cents, jf.fee_auto,

@@ -117,13 +117,18 @@ export function resolveFinancials(defaultGrossCents, defaultDiscountCents, row) 
 
   // Revenue breakdown of the all-inclusive gross — informational only (does NOT
   // add to what the client pays). Net to client = gross − discount.
-  const materialsCharged   = val("materials_charged_cents");
+  // Materials charged (revenue breakdown) — defaults to the full gross when the
+  // job hasn't been itemized, so the markup estimate has a basis.
+  const materialsCharged   = val("materials_charged_cents") || gross;
   const accessoriesCharged = val("accessories_charged_cents");
   const wallCharged        = val("wall_charged_cents");
 
-  // Manual expense line items — taken exactly as stored, default $0. Only install
-  // labor auto-derives (10% of gross, min $350).
-  const materials   = val("materials_cents");
+  // Materials EXPENSE: use the saved value when one exists, otherwise auto-derive
+  // from Materials charged ÷ markup (2.10) — so P&L, deposits and the card show a
+  // real materials cost even before anyone opens/saves the financials.
+  const materials   = (row && Number.isFinite(row.materials_cents) && row.materials_cents > 0)
+    ? Math.max(0, row.materials_cents)
+    : Math.round(materialsCharged / rates.divisor);
   const mfrDiscount = val("manufacturer_discount_cents");     // reduces the materials expense only
   const materialsNet = Math.max(0, materials - mfrDiscount);
   const shipping    = val("shipping_cents");

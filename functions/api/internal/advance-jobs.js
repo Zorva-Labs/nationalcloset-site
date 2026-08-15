@@ -11,6 +11,7 @@
 import { requireAuth, json } from "../../_lib/auth.js";
 import { recordActivity } from "../../_lib/db.js";
 import { sendStageEmail } from "../../_lib/stage-emails.js";
+import { sweepConsultationReminders } from "../../_lib/appointment-reminders.js";
 
 async function authenticate(context) {
   const authHeader = context.request.headers.get("Authorization") || "";
@@ -57,7 +58,13 @@ async function advance(context) {
     await sendStageEmail(context.env, "installing", p.id, { name: "auto-scheduler" });
   }
 
-  return json({ ok: true, advanced: due.length, ids: due.map((p) => p.id) });
+  // Morning-of consultation reminders — runs on the same cron tick.
+  const reminders = await sweepConsultationReminders(context.env).catch((e) => {
+    console.error("[advance-jobs] consult-reminder sweep failed:", e?.message || e);
+    return { reminded: 0 };
+  });
+
+  return json({ ok: true, advanced: due.length, ids: due.map((p) => p.id), reminded: reminders.reminded });
 }
 
 export const onRequestPost = advance;

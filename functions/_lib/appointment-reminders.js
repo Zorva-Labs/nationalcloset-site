@@ -8,14 +8,19 @@ import { recordActivity } from "./db.js";
 
 const SITE_URL = "https://nationalclosetco.com";
 
-// UTC "YYYY-MM-DD HH:MM:SS" (or ISO) → Central clock time, e.g. "2:00 PM".
+// DB datetimes are stored as LOCAL CENTRAL wall-clock strings with NO timezone
+// suffix (see _lib/dates.js) — so read the clock time straight off the string;
+// do NOT run it through Date()/timezone conversion (that shifts noon to 7am).
+// "2026-08-17T12:00:00" → "12:00 PM".
 function fmtTimeCentral(startAt) {
   if (!startAt) return "";
-  const s = String(startAt).trim();
-  const iso = s.includes("T") ? s : s.replace(" ", "T") + (s.length <= 10 ? "T00:00:00Z" : "Z");
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" });
+  const time = String(startAt).split(/[T ]/)[1] || "";
+  const [hStr, mStr] = time.split(":");
+  const h = parseInt(hStr, 10);
+  if (!Number.isFinite(h)) return "";
+  const mn = parseInt(mStr, 10) || 0;
+  const hour12 = ((h + 11) % 12) + 1;
+  return `${hour12}:${String(mn).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
 }
 
 export async function sweepConsultationReminders(env) {
@@ -31,8 +36,9 @@ export async function sweepConsultationReminders(env) {
       WHERE LOWER(COALESCE(type,'consultation')) IN ('consultation','measure')
         AND LOWER(COALESCE(status,'')) NOT IN ('canceled','cancelled','no_show','completed','done')
         AND reminder_sent_at IS NULL
-        AND start_at > datetime('now')
-        AND date(start_at,'-5 hours') = date('now','-5 hours')
+        -- start_at is stored in LOCAL CENTRAL time; compare against Central "now".
+        AND datetime(start_at) > datetime('now','-5 hours')
+        AND date(start_at) = date('now','-5 hours')
         AND CAST(strftime('%H', datetime('now','-5 hours')) AS INTEGER) >= 7`
   ).all()).results || [];
 

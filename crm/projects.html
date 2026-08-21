@@ -63,6 +63,7 @@ function rowHtml(p) {
     <td>${p.po_number ? SSCrm.esc(p.po_number) : `<span class="muted">—</span>`}</td>
     <td class="money">${total != null ? SSCrm.fmtMoney(total) : `<span class="muted">—</span>`}</td>
     <td class="money">${p.net_profit_cents != null ? `<span style="color:#15803D;font-weight:600">${SSCrm.fmtMoney(p.net_profit_cents)}</span>` : `<span class="muted">—</span>`}</td>
+    <td class="money">${p.labor_cents != null ? SSCrm.fmtMoney(p.labor_cents) : `<span class="muted">—</span>`}</td>
     <td class="money">${balanceCell}</td>
     <td style="white-space:nowrap">${matCell}</td>
     <td>${SSCrm.pill(p.status)}</td>
@@ -70,7 +71,7 @@ function rowHtml(p) {
     <td class="muted">${SSCrm.fmtDate(p.updated_at)}</td>
   </tr>`;
 }
-const THEAD = `<thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>City</th><th>PO #</th><th class="money">Total</th><th class="money">Net profit</th><th class="money">Balance</th><th>Materials</th><th>Status</th><th>Install date</th><th>Updated</th></tr></thead>`;
+const THEAD = `<thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>City</th><th>PO #</th><th class="money">Total</th><th class="money">Net profit</th><th class="money">Labor</th><th class="money">Balance</th><th>Materials</th><th>Status</th><th>Install date</th><th>Updated</th></tr></thead>`;
 const tableHtml = (list) => `<div class="tbl"><table>${THEAD}<tbody>${list.map(rowHtml).join("")}</tbody></table></div>`;
 const sectionTitle = (t, n) => `<h3 style="margin:22px 0 10px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft)">${t} <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">${n}</span></h3>`;
 

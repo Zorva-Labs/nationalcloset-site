@@ -87,7 +87,8 @@ export async function onRequestGet(context) {
       const fin = resolveFinancials(gross, discount, jfRow);
       const fee = processingFee(fin.net_cents, fin.fee_rate, r.fee_cents, fin.fee_manual_cents, fin.fee_auto === false ? 0 : 1);
       r.net_profit_cents = fin.profit_cents - fee;
-    } else r.net_profit_cents = null;
+      r.labor_cents = fin.labor_cents;
+    } else { r.net_profit_cents = null; r.labor_cents = null; }
   }
 
   // Always include the counts map so the list page can show filter badges.

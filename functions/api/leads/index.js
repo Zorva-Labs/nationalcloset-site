@@ -79,6 +79,10 @@ export async function onRequestPost(context) {
   const email = (b.email || "").toString().trim() || null;
   const phone = (b.phone || "").toString().trim() || null;
   const location = (b.location || "").toString().trim() || null;
+  const addressStreet = (b.address_street || "").toString().trim() || null;
+  const addressCity = (b.address_city || "").toString().trim() || null;
+  const addressState = (b.address_state || "").toString().trim() || null;
+  const addressZip = (b.address_zip || "").toString().trim() || null;
   const interest = (b.interest || "").toString().trim() || null;
   const message = (b.message || "").toString().trim() || null;
   const status = ALLOWED_STATUSES.has(b.status) ? b.status : "new";
@@ -89,9 +93,11 @@ export async function onRequestPost(context) {
   }
 
   const r = await DB.prepare(
-    `INSERT INTO leads (name, phone, email, location, interest, message, status, source_page, contact_id)
-     VALUES (?1,?2,?3,?4,?5,?6,?7,'crm-manual',?8) RETURNING id`
-  ).bind(name, phone, email, location, interest, message, status, contactId).first();
+    `INSERT INTO leads (name, phone, email, location, interest, message, status, source_page, contact_id,
+                        address_street, address_city, address_state, address_zip)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,'crm-manual',?8,?9,?10,?11,?12) RETURNING id`
+  ).bind(name, phone, email, location, interest, message, status, contactId,
+         addressStreet, addressCity, addressState, addressZip).first();
 
   await recordActivity(DB, {
     entityType: "lead", entityId: r.id, action: "created",

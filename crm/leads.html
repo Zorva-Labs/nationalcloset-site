@@ -12,7 +12,7 @@
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc106"></script>
+<script src="/crm/crm-app.js?v=ncc107"></script>
 <script>
 // booked + installed are Job statuses, not Lead statuses — see crm-app.js
 // JOB_STATUSES_NAV for the parallel set under Jobs.
@@ -85,7 +85,7 @@ function srcLabel(l) {
               <div style="font-size:12px;color:var(--ink-soft)">${l.phone ? `<a href="tel:${SSCrm.esc(l.phone)}" onclick="event.stopPropagation()">${SSCrm.esc(l.phone)}</a>` : ""}</div>
             </td>
             <td class="clickable" onclick="location.href='/crm/lead.html?id=${l.id}'">${SSCrm.esc(l.interest || "—")}</td>
-            <td class="clickable" onclick="location.href='/crm/lead.html?id=${l.id}'" style="color:var(--ink-soft)">${SSCrm.esc([l.address_city, l.address_state].filter(Boolean).join(", ") || l.location || "—")}</td>
+            <td class="clickable" onclick="location.href='/crm/lead.html?id=${l.id}'" style="color:var(--ink-soft)">${SSCrm.esc([l.address_city, l.address_state].filter(Boolean).join(", ") || l.address_street || l.location || "—")}</td>
             <td class="clickable" onclick="location.href='/crm/lead.html?id=${l.id}'" style="font-size:13px">${srcLabel(l)}</td>
             <td class="clickable" onclick="location.href='/crm/lead.html?id=${l.id}'">${SSCrm.pill(l.status)}</td>
             <td style="text-align:center">

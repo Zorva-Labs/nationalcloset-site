@@ -634,7 +634,7 @@ async function quickAddLead() {
             <label><span>Email <span class="muted" style="font-weight:400">(optional)</span></span><input id="ql-email" type="email"/></label>
           </div>
           <label><span>Interested in <span class="muted" style="font-weight:400">(optional)</span></span><input id="ql-interest" placeholder="e.g. Walk-in closet, pantry, garage"/></label>
-          <label><span>Location <span class="muted" style="font-weight:400">(optional)</span></span><input id="ql-location" placeholder="City / area"/></label>
+          <label><span>Address <span class="muted" style="font-weight:400">(optional)</span></span><input id="ql-address" placeholder="Street, city, state ZIP"/></label>
           <label><span>Notes <span class="muted" style="font-weight:400">(optional)</span></span><textarea id="ql-message" rows="2" placeholder="What did they ask for?"></textarea></label>
         </div>
       </div>
@@ -655,7 +655,7 @@ async function quickAddLead() {
       try {
         const { id } = await fetchJSON("/api/leads", { method: "POST", body: JSON.stringify({
           name, phone: val("phone") || null, email: val("email") || null,
-          interest: val("interest") || null, location: val("location") || null, message: val("message") || null,
+          interest: val("interest") || null, address_street: val("address") || null, message: val("message") || null,
         }) });
         bg.remove();
         location.href = "/crm/lead.html?id=" + id;

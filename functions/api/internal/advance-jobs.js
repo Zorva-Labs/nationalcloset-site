@@ -12,6 +12,7 @@ import { requireAuth, json } from "../../_lib/auth.js";
 import { recordActivity } from "../../_lib/db.js";
 import { sendStageEmail } from "../../_lib/stage-emails.js";
 import { sweepConsultationReminders } from "../../_lib/appointment-reminders.js";
+import { createInvoice } from "../../_lib/invoices.js";
 
 async function authenticate(context) {
   const authHeader = context.request.headers.get("Authorization") || "";
@@ -39,6 +40,7 @@ async function advance(context) {
         AND install_date <= date('now','-5 hours')`
   ).all()).results || [];
 
+  let balancesBilled = 0;
   for (const p of due) {
     // Materials are on the wall as of the install date — stamp it here so the
     // status can't drift from reality if nobody ticks a box.
@@ -56,6 +58,15 @@ async function advance(context) {
     }).catch(() => {});
     // Notify the client their install is underway + log to Messages.
     await sendStageEmail(context.env, "installing", p.id, { name: "auto-scheduler" });
+    // Auto-bill the final payment (25%) ON INSTALL DAY. This direct-DB advance
+    // bypasses the PATCH handler that normally fires the balance invoice, so we
+    // create it here. createInvoice dedups the balance per project (a job the
+    // admin already marked 'installing' won't be billed twice) and figures the
+    // amount from what's still uninvoiced (a paid-in-full job bills $0/skips).
+    const bal = await createInvoice(context.env, {
+      projectId: p.id, type: "balance", actor: { name: "auto-scheduler" },
+    }).catch((e) => { console.error("[advance-jobs/balance]", String(e)); return null; });
+    if (bal && bal.created) balancesBilled++;
   }
 
   // Morning-of consultation reminders — runs on the same cron tick.
@@ -64,7 +75,7 @@ async function advance(context) {
     return { reminded: 0 };
   });
 
-  return json({ ok: true, advanced: due.length, ids: due.map((p) => p.id), reminded: reminders.reminded });
+  return json({ ok: true, advanced: due.length, ids: due.map((p) => p.id), balancesBilled, reminded: reminders.reminded });
 }
 
 export const onRequestPost = advance;

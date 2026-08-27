@@ -277,6 +277,30 @@ export async function sendInvoiceEmail(env, invoice, project) {
   const labelByType = { deposit: "deposit", scheduling: "scheduling payment", balance: "final payment", full: "payment" };
   const label = labelByType[invoice.type] || "payment";
   const subject = `Invoice ${invoice.number} — ${money(invoice.amount_cents)} ${invoice.type === "deposit" ? "deposit" : "due"}`;
+
+  // Type-specific clarity note. The scheduling invoice is only 25% of the job —
+  // spell out the three-payment structure and the exact amount that follows on
+  // install day, so the customer knows this isn't the full remaining balance.
+  let note = "", noteText = "";
+  if (invoice.type === "scheduling") {
+    const billing = await getProjectBilling(db, invoice.project_id).catch(() => ({ totalCents: 0 }));
+    const invoiced = await db.prepare(
+      `SELECT COALESCE(SUM(amount_cents),0) AS n FROM invoices WHERE project_id=?1 AND status != 'void'`
+    ).bind(invoice.project_id).first().catch(() => null);
+    const finalBalance = Math.max(0, (billing.totalCents || 0) - (invoiced?.n || 0));
+    const finalPhrase = finalBalance > 0
+      ? `The remaining <strong>${money(finalBalance)}</strong> (the final 25%) will be automatically invoiced on your installation day`
+      : `The remaining balance will be invoiced on your installation day`;
+    note = `<p style="background:#FDF0EA;border-left:3px solid #C0552B;padding:12px 14px;border-radius:6px;margin:14px 0;font-size:14px;line-height:1.5">
+        <strong>This is just 25% of your project total</strong>, due now to lock in your installation date. ${finalPhrase} — nothing else is due before then.</p>`;
+    noteText = `This is just 25% of your project total, due now to schedule your install.`
+      + (finalBalance > 0 ? ` The remaining ${money(finalBalance)} (final 25%) will be invoiced on install day.` : ` The remaining balance is billed on install day.`);
+  } else if (invoice.type === "balance") {
+    note = `<p style="background:#FDF0EA;border-left:3px solid #C0552B;padding:12px 14px;border-radius:6px;margin:14px 0;font-size:14px;line-height:1.5">
+        <strong>This is your final payment</strong> — the last 25% of your project, due on installation day.</p>`;
+    noteText = `This is your final payment — the last 25%, due on installation day.`;
+  }
+
   const html = brandedEmail({
     title: `Your ${label} invoice is ready`,
     body: `
@@ -287,12 +311,14 @@ export async function sendInvoiceEmail(env, invoice, project) {
         <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Amount due</td><td style="padding:4px 0;font-weight:700;font-size:18px">${money(invoice.amount_cents)}</td></tr>
       </table>
       <p>${invoice.description}.</p>
+      ${note}
       <p>You can pay securely online using the button below — pay by card, bank, digital wallet or Klarna.</p>
     `,
     ctaLabel: `Pay ${money(invoice.amount_cents)}`,
     ctaUrl: payUrl,
   });
-  const text = `Invoice ${invoice.number}: ${money(invoice.amount_cents)} due.\nPay securely: ${payUrl}`;
+  const text = `Invoice ${invoice.number}: ${money(invoice.amount_cents)} due.`
+    + (noteText ? `\n${noteText}` : "") + `\nPay securely: ${payUrl}`;
   const messageId = makeMessageId();
   const to = project.contact_name ? `${project.contact_name} <${project.contact_email}>` : project.contact_email;
 

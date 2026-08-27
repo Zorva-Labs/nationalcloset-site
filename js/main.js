@@ -278,8 +278,50 @@
     });
   });
 
-  /* ---------- Lead form -> /api/lead (Resend) ---------- */
+  /* ---------- Lead form -> /api/contact ---------- */
+  // Anti-spam: an invisible Cloudflare Turnstile token, a hidden honeypot field,
+  // and a min-fill-time trap. All three are verified server-side and FAIL OPEN,
+  // so a real customer is never blocked. The Turnstile script loads once.
+  var TURNSTILE_SITEKEY = "0x4AAAAAAEeAHgFn213WJdnQ";
+  // Explicitly render each widget once the API is ready — reliable when the
+  // .cf-turnstile divs are injected by JS (auto-render only catches divs that
+  // exist at script-load time). Idempotent per div.
+  window.__renderTS = function () {
+    if (!window.turnstile) return;
+    document.querySelectorAll(".cf-turnstile").forEach(function (el) {
+      if (el.dataset.tsr) return;
+      el.dataset.tsr = "1";
+      try { window.turnstile.render(el, { sitekey: TURNSTILE_SITEKEY, size: "flexible" }); } catch (e) {}
+    });
+  };
+  window.__onTS = function () { window.__renderTS(); };
+  if (document.querySelector("form[data-lead]") && !window.__tsLoad) {
+    window.__tsLoad = true;
+    var _ts = document.createElement("script");
+    _ts.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=__onTS&render=explicit";
+    _ts.async = true; _ts.defer = true;
+    document.head.appendChild(_ts);
+  }
+
   document.querySelectorAll("form[data-lead]").forEach(function (form) {
+    // Stamp when the form became available; the submit carries elapsed ms.
+    var _renderTs = Date.now();
+    // Hidden honeypot — off-screen, unfocusable, non-autofilling name. A human
+    // never sees or fills it; a bot that fills every field does.
+    var _hp = document.createElement("input");
+    _hp.type = "text"; _hp.name = "hp_url"; _hp.tabIndex = -1; _hp.autocomplete = "off";
+    _hp.setAttribute("aria-hidden", "true");
+    _hp.style.cssText = "position:absolute!important;left:-9999px!important;top:auto;width:1px;height:1px;opacity:0;pointer-events:none";
+    form.appendChild(_hp);
+    // Invisible/managed Turnstile widget, placed just above the submit button.
+    var _tw = document.createElement("div");
+    _tw.className = "cf-turnstile";
+    _tw.setAttribute("data-sitekey", TURNSTILE_SITEKEY);
+    _tw.setAttribute("data-size", "flexible");
+    _tw.style.margin = "12px 0";
+    var _sb = form.querySelector('button[type="submit"]');
+    if (_sb && _sb.parentNode) _sb.parentNode.insertBefore(_tw, _sb); else form.appendChild(_tw);
+
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       var card = form.closest(".form-card") || form.parentElement;
@@ -320,7 +362,11 @@
         email: (fd.get("email") || "").toString(),
         interest: (fd.get("project") || "").toString(),
         message: (fd.get("msg") || "").toString(),
-        source: "website" + (location.pathname === "/" ? "" : location.pathname)
+        source: "website" + (location.pathname === "/" ? "" : location.pathname),
+        // Anti-spam signals (all verified server-side, all fail open).
+        hp_url: (fd.get("hp_url") || "").toString(),
+        hp_ms: String(Date.now() - _renderTs),
+        cf_ts: (fd.get("cf-turnstile-response") || "").toString()
       };
       // Carry the ad click through with the lead. The server can't read any of
       // this itself — it only ever sees a POST to /api/contact.

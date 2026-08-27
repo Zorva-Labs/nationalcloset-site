@@ -7,7 +7,7 @@ import { sendEmail, brandedEmail, makeMessageId } from "../_lib/email.js";
 import { upsertContact } from "../_lib/db.js";
 import { genToken } from "../_lib/tokens.js";
 import { logOutboundEmail } from "../_lib/email-log.js";
-import { spamReason } from "../_lib/spam.js";
+import { spamReason, botReason, turnstileReason } from "../_lib/spam.js";
 
 const TO_ADDRESS = "hello@nationalclosetco.com";
 
@@ -43,9 +43,19 @@ export async function onRequestPost({ request, env }) {
   const message = (data.message || "").toString().trim();
   const source = (data.source || "unknown").toString().trim().slice(0, 32);
 
-  // Spam gate — drop bots (filled honeypot, links, SEO/marketing pitches) BEFORE
-  // we save or email anything. Return ok so the bot thinks it succeeded and
-  // doesn't retry; a real closet lead never trips these signals.
+  // High-confidence bot gate — a filled honeypot, an impossibly fast submit, or
+  // a Turnstile token Cloudflare explicitly rejected. Near-zero false positives,
+  // so drop SILENTLY (return ok so the bot doesn't retry) with no team alert.
+  // All three FAIL OPEN when their signal is absent, so a real lead is never
+  // blocked because the check couldn't run.
+  const ip = request.headers.get("CF-Connecting-IP") || "";
+  const bot = botReason(data) || (await turnstileReason(env, data.cf_ts, ip));
+  if (bot) { console.warn("[contact.js] bot drop:", bot); return json({ ok: true }); }
+
+  // Spam gate — drop bots (links, SEO/marketing pitches) BEFORE we save or email
+  // anything. Return ok so the bot thinks it succeeded and doesn't retry; a real
+  // closet lead never trips these signals. Unlike the bot gate above these are
+  // fuzzier, so a filtered submission still emails the team for a human to review.
   const spam = spamReason(data);
   if (spam) {
     console.warn("[contact.js] filtered submission:", spam);

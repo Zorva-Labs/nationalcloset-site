@@ -2,7 +2,7 @@
 // Receives contact-form submissions and emails the lead to hello@nationalclosetco.com
 // via the shared sendEmail() wrapper (Gmail API — Google Workspace).
 
-import { spamReason } from "../_lib/spam.js";
+import { spamReason, botReason, turnstileReason } from "../_lib/spam.js";
 import { sendEmail } from "../_lib/email.js";
 
 const TO = "hello@nationalclosetco.com";
@@ -36,8 +36,14 @@ export async function onRequestPost({ request, env }) {
     return json({ ok: false, error: "bad_request" }, 400);
   }
 
-  // Spam gate — honeypot + links + SEO/marketing pitches. Silently accept bots
-  // (return ok so they don't retry) so no spam email is ever sent.
+  // High-confidence bot gate (honeypot + too-fast submit + Turnstile). Silently
+  // accept (return ok so they don't retry); all checks fail open on a missing
+  // signal so a real lead is never dropped.
+  const ip = request.headers.get("CF-Connecting-IP") || "";
+  const bot = botReason(data) || (await turnstileReason(env, data.cf_ts, ip));
+  if (bot) { console.warn("[lead.js] bot drop:", bot); return json({ ok: true }); }
+
+  // Content heuristics — links / pasted markup. Silently drop.
   const spam = spamReason(data);
   if (spam) { console.warn("[lead.js] dropped spam submission:", spam); return json({ ok: true }); }
 

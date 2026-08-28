@@ -65,6 +65,15 @@ let mode = "today"; // "today" | "all"
     <div class="card" style="margin-bottom:16px" id="tf-rank-watch-card" hidden>
       <div class="card-head"><h2>Keywords we&rsquo;re targeting</h2><span class="more" style="cursor:default" title="Times shown = how often Google put this site in front of someone searching that phrase. Clicks = how many of them came through. No position means Google is not showing this site for that search yet.">our target list</span></div>
       <div id="tf-rank-watch" style="margin-top:6px"></div>
+      <div id="watch-empty" style="font-size:12px;color:var(--ink-soft);margin-top:6px" hidden>No target keywords yet. Add the searches you want this site to win.</div>
+      <p style="margin-top:10px"><button type="button" id="watch-toggle" style="background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;opacity:.75">Edit target keywords</button></p>
+      <div id="watch-edit" hidden>
+        <p style="font-size:12px;color:var(--ink-soft)">One search per line, exactly as someone would type it into Google. Commas are part of the phrase, not separators.</p>
+        <textarea id="watch-box" rows="8" spellcheck="false" aria-label="Target keywords, one per line" style="width:100%;box-sizing:border-box;font:13px/1.6 ui-monospace,Menlo,monospace;padding:.6rem .7rem;border:1px solid var(--line-soft);border-radius:6px;background:transparent;color:inherit;resize:vertical"></textarea>
+        <p style="margin-top:8px"><button type="button" id="watch-save" style="font:inherit;padding:.35rem .9rem;border-radius:6px;border:1px solid var(--line-soft);cursor:pointer">Save</button>
+           <button type="button" id="watch-cancel" style="background:none;border:0;padding:0 0 0 10px;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;opacity:.75">Cancel</button>
+           <span id="watch-msg" style="font-size:12px;color:var(--ink-soft);margin-left:8px"></span></p>
+      </div>
     </div>
     <div class="card" style="margin-bottom:16px" id="tf-rank-card" hidden>
       <div class="card-head"><h2>Where you rank on Google</h2><span class="more" style="cursor:default" title="Straight from Google Search Console - the same numbers Google shows the site owner. Collected once a week, so unlike everything else on this page it is not live to the second.">via Search Console &middot; weekly</span></div>
@@ -204,6 +213,59 @@ function rkTable(rows, cols) {
     + `<tbody>${rows.map((r) => `<tr>${cols.map((c) => td(c, r)).join("")}</tr>`).join("")}</tbody></table>`;
 }
 
+/* Editing the target list from the dashboard. The list lives in this site's own
+   database and the weekly ingest mirrors it upward rather than overwriting it,
+   so a keyword typed here survives Thursday.
+
+   Delegated from document rather than bound to the buttons at startup. This
+   page builds its markup from a template string inside this IIFE, so at the
+   moment this runs the buttons do not exist yet — binding directly found null,
+   returned quietly, and left a visible link that did nothing. Delegation makes
+   the binding time irrelevant. */
+function initWatchEditor() {
+  const load = async () => {
+    const box = el("watch-box");
+    el("watch-msg").textContent = "";
+    const b = await SSCrm.fetchJSON("/api/traffic-watch").catch(() => null);
+    box.value = (b && b.keywords) || "";
+    box.focus();
+  };
+
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("#watch-toggle, #watch-save, #watch-cancel");
+    if (!btn) return;
+    const panel = el("watch-edit");
+
+    if (btn.id === "watch-toggle" || btn.id === "watch-cancel") {
+      const show = btn.id === "watch-toggle" ? panel.hidden : false;
+      panel.hidden = !show;
+      el("watch-toggle").textContent = show ? "Close editor" : "Edit target keywords";
+      if (show) await load();
+      return;
+    }
+
+    btn.disabled = true;
+    el("watch-msg").textContent = "Saving\u2026";
+    try {
+      const r = await fetch("/api/traffic-watch", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ keywords: el("watch-box").value }),
+      });
+      const b = await r.json().catch(() => ({}));
+      if (!r.ok || !b.ok) throw new Error(b.error || `HTTP ${r.status}`);
+      el("watch-msg").textContent =
+        `Saved ${b.count} keyword${b.count === 1 ? "" : "s"}. Positions appear at the next weekly update.`;
+      refresh();
+    } catch (err) {
+      el("watch-msg").textContent = `Could not save: ${err.message}`;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+initWatchEditor();
+
 function renderRankings(rk) {
   /* An absent table and an empty one are different facts and the card says
      which. "Not set up" is a job for us; "collecting, nothing yet" is a job for
@@ -213,8 +275,11 @@ function renderRankings(rk) {
   /* Targets first, and rendered even when the site has no ranking data at all —
      a new site's target list is exactly when it matters most, and "none of
      these yet" is a real answer rather than an empty card. */
+  /* Shown even when empty — the card is where the editor lives, so hiding it
+     with no keywords would leave no way to add the first one. */
+  el("tf-rank-watch-card").hidden = false;
+  el("watch-empty").hidden = !!(rk.watch || []).length;
   if ((rk.watch || []).length) {
-    el("tf-rank-watch-card").hidden = false;
     el("tf-rank-watch").innerHTML = rkTable(rk.watch, [
       { h: "Search", f: (r) => rkEsc(r.label || r.query) + (r.note ? ` <span style="color:var(--ink-soft)">&middot; ${rkEsc(r.note)}</span>` : "") },
       { h: "Position", n: 1, f: (r) => {

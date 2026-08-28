@@ -107,11 +107,24 @@ export async function onRequestGet(context) {
   const visitsBy = Object.fromEntries((convPages.results || []).map((r) => [pathOf(r.path), r.leads]));
   const pageRows = (pages.results || []).map((r) => ({ ...r, path: pathOf(r.page), visits: visitsBy[pathOf(r.page)] || 0 }));
 
+  /* Searches that actually produced a visit. The "what people searched" table
+     above is ordered by impressions, which is the right way to show reach but
+     buries the handful of terms that did the work — a query shown 900 times
+     with no clicks outranks one shown 40 times that brought 11 people. This is
+     the money list, so it gets its own section and its own ordering. */
+  const clicked = await DB.prepare(
+    `SELECT query, position, impressions, clicks
+       FROM rank_snapshots
+      WHERE week_start = ?1 AND clicks > 0
+      ORDER BY clicks DESC, impressions DESC LIMIT 25`
+  ).bind(week).all().catch(() => ({ results: [] }));
+
   return json({
     installed: true,
     week,
     meta,
     watch,
+    clicked: clicked.results || [],
     trend: (trend.results || []).slice().reverse(),
     movement: movement.results || [],
     top: top.results || [],

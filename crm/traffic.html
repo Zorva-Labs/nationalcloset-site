@@ -63,7 +63,7 @@ let mode = "today"; // "today" | "all"
       <div id="tf-daily" style="margin-top:8px"></div>
     </div>
     <div class="card" style="margin-bottom:16px" id="tf-rank-watch-card" hidden>
-      <div class="card-head"><h2>Keywords we&rsquo;re targeting</h2><span class="more" style="cursor:default" title="A term with no position is one Google is not showing this site for yet.">our target list</span></div>
+      <div class="card-head"><h2>Keywords we&rsquo;re targeting</h2><span class="more" style="cursor:default" title="Times shown = how often Google put this site in front of someone searching that phrase. Clicks = how many of them came through. No position means Google is not showing this site for that search yet.">our target list</span></div>
       <div id="tf-rank-watch" style="margin-top:6px"></div>
     </div>
     <div class="card" style="margin-bottom:16px" id="tf-rank-card" hidden>
@@ -75,6 +75,10 @@ let mode = "today"; // "today" | "all"
     <div class="card" style="margin-bottom:16px" id="tf-rank-top-card" hidden>
       <div class="card-head"><h2>What people searched to find you</h2><span class="more" style="cursor:default" title="Every search that showed this site in Google, with where it ranked.">impressions = times shown</span></div>
       <div id="tf-rank-top" style="margin-top:6px"></div>
+    </div>
+    <div class="card" style="margin-bottom:16px" id="tf-rank-clicked-card" hidden>
+      <div class="card-head"><h2>Searches that brought visitors</h2><span class="more" style="cursor:default" title="Ordered by visits rather than appearances.">the half that matters</span></div>
+      <div id="tf-rank-clicked" style="margin-top:6px"></div>
     </div>
     <div class="card" style="margin-bottom:16px" id="tf-rank-near-card" hidden>
       <div class="card-head"><h2>Closest to page one</h2><span class="more" style="cursor:default" title="Ranking 4-20 with real search volume behind it - where the next month of work pays off fastest.">next month&rsquo;s targets</span></div>
@@ -144,11 +148,59 @@ function rkEsc(v) {
   return String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+
+/* Click a column heading to sort. Reads the rendered cell text rather than the
+   source rows, so it works on every table here without each render passing its
+   data along — and rows whose cell is not a number ("not ranking yet", an
+   em-dash) always sink to the bottom instead of being parsed as zero and
+   claiming the top of an ascending sort. */
+function initSortable() {
+  const st = document.createElement('style');
+  st.textContent = 'th[data-s]{cursor:pointer;user-select:none}'
+    + 'th[data-s][data-d="asc"]::after{content:" \\25B2";font-size:.8em}'
+    + 'th[data-s][data-d="desc"]::after{content:" \\25BC";font-size:.8em}';
+  document.head.appendChild(st);
+
+  document.addEventListener('click', (e) => {
+    const th = e.target.closest('th[data-s]');
+    if (!th) return;
+    const tbl = th.closest('table');
+    const body = tbl && tbl.tBodies[0];
+    if (!body) return;
+    const i = Number(th.dataset.s);
+    const dir = th.getAttribute('data-d') === 'asc' ? 'desc' : 'asc';
+    tbl.querySelectorAll('th[data-s]').forEach((h) => h.removeAttribute('data-d'));
+    th.setAttribute('data-d', dir);
+
+    const txt = (r) => ((r.cells[i] && r.cells[i].textContent) || '').trim();
+    const numOf = (r) => {
+      const t = txt(r);
+      if (!/\d/.test(t)) return null;
+      const m = t.replace(/,/g, '').match(/-?\d+(\.\d+)?/);
+      return m ? parseFloat(m[0]) : null;
+    };
+    const rows = Array.prototype.slice.call(body.rows);
+    const nums = rows.filter((r) => numOf(r) !== null);
+    const rest = rows.filter((r) => numOf(r) === null);
+    if (!nums.length) {
+      rows.sort((a, b) => txt(a).localeCompare(txt(b)));
+      if (dir === 'desc') rows.reverse();
+      rows.forEach((r) => body.appendChild(r));
+      return;
+    }
+    nums.sort((a, b) => numOf(a) - numOf(b));
+    if (dir === 'desc') nums.reverse();
+    rest.sort((a, b) => txt(a).localeCompare(txt(b)));
+    nums.concat(rest).forEach((r) => body.appendChild(r));
+  });
+}
+initSortable();
+
 function rkTable(rows, cols) {
   if (!rows || !rows.length) return box("Nothing yet.");
-  const th = (c) => `<th style="text-align:${c.n ? "right" : "left"};padding:6px 8px;border-bottom:1px solid var(--line-soft);font-size:11.5px;color:var(--ink-soft);font-weight:600">${c.h}</th>`;
+  const th = (c, i) => `<th data-s="${i}" style="text-align:${c.n ? "right" : "left"};padding:6px 8px;border-bottom:1px solid var(--line-soft);font-size:11.5px;color:var(--ink-soft);font-weight:600">${c.h}</th>`;
   const td = (c, r) => `<td style="text-align:${c.n ? "right" : "left"};padding:6px 8px;border-bottom:1px solid var(--line-soft);font-size:13px">${c.f(r)}</td>`;
-  return `<table style="width:100%;border-collapse:collapse"><thead><tr>${cols.map(th).join("")}</tr></thead>`
+  return `<table style="width:100%;border-collapse:collapse"><thead><tr>${cols.map((c, i) => th(c, i)).join("")}</tr></thead>`
     + `<tbody>${rows.map((r) => `<tr>${cols.map((c) => td(c, r)).join("")}</tr>`).join("")}</tbody></table>`;
 }
 
@@ -172,7 +224,7 @@ function renderRankings(rk) {
             : ` <span style="color:${d > 0 ? "#1a7f37" : "#b42318"}">${d > 0 ? "\u25b2" : "\u25bc"} ${Math.abs(d).toFixed(1)}</span>`;
           return r.position.toFixed(1) + mv;
         } },
-      { h: "Shown", n: 1, f: (r) => (r.impressions == null ? "&mdash;" : N(r.impressions)) },
+      { h: "Times shown", n: 1, f: (r) => (r.impressions == null ? "&mdash;" : N(r.impressions)) },
       { h: "Clicks", n: 1, f: (r) => (r.clicks == null ? "&mdash;" : N(r.clicks)) },
     ]);
   }
@@ -231,6 +283,20 @@ function renderRankings(rk) {
       { h: "Position", n: 1, f: (r) => r.position.toFixed(1) },
       { h: "Shown", n: 1, f: (r) => N(r.impressions) },
       { h: "Clicks", n: 1, f: (r) => N(r.clicks) },
+    ]);
+  }
+
+  /* Its own card rather than reusing the list above: this is the only place
+     clicks and click-through rate are the point, and an ordering by
+     appearances hides exactly the rows this exists to surface. */
+  if ((rk.clicked || []).length) {
+    el("tf-rank-clicked-card").hidden = false;
+    el("tf-rank-clicked").innerHTML = rkTable(rk.clicked, [
+      { h: "Search", f: (r) => rkEsc(r.query) },
+      { h: "Position", n: 1, f: (r) => r.position.toFixed(1) },
+      { h: "Times shown", n: 1, f: (r) => N(r.impressions) },
+      { h: "Visits", n: 1, f: (r) => `<strong>${N(r.clicks)}</strong>` },
+      { h: "Clicked", n: 1, f: (r) => (r.impressions ? Math.round((r.clicks / r.impressions) * 100) + "%" : "&mdash;") },
     ]);
   }
 

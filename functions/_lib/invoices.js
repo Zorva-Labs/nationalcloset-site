@@ -148,7 +148,7 @@ async function projectGrossBasis(db, projectId, fallbackNet) {
 // (executed > signed > sent > latest), falling back to an accepted proposal.
 export async function getProjectBilling(db, projectId) {
   const k = await db.prepare(
-    `SELECT id, total_cents, deposit_cents FROM contracts WHERE project_id=?1
+    `SELECT id, total_cents, deposit_cents, payment_plan FROM contracts WHERE project_id=?1
       ORDER BY CASE status WHEN 'fully_executed' THEN 0 WHEN 'signed_by_customer' THEN 1 WHEN 'sent' THEN 2 ELSE 3 END,
                datetime(created_at) DESC LIMIT 1`
   ).bind(projectId).first().catch(() => null);
@@ -162,6 +162,7 @@ export async function getProjectBilling(db, projectId) {
       depositCents: k.deposit_cents && k.deposit_cents > 0 ? k.deposit_cents : depositForTotal(gross, k.total_cents || 0),
       contractId: k.id,
       proposalId: null,
+      paymentPlan: k.payment_plan || "installments",
     };
   }
   const p = await db.prepare(
@@ -229,12 +230,16 @@ export async function createInvoice(env, opts) {
   amountCents = Math.round(amountCents || 0);
   if (amountCents <= 0) return { skipped: true, reason: "zero_amount" };
 
-  const description = opts.description || ({
-    deposit: "Deposit (50%) to release your custom closet order",
-    scheduling: "Second payment (25%) — your installation is scheduled",
-    balance: "Final payment (25%) — due the day of installation",
-    full: "Custom closet project — payment",
-  })[type] || "Invoice";
+  const description = opts.description || (
+    (billing.paymentPlan === "full" && type === "deposit")
+      ? "Payment in full — due at signing"
+      : ({
+          deposit: "Deposit (50%) to release your custom closet order",
+          scheduling: "Second payment (25%) — your installation is scheduled",
+          balance: "Final payment (25%) — due the day of installation",
+          full: "Custom closet project — payment",
+        })[type]
+  ) || "Invoice";
 
   const year = new Date().getUTCFullYear();
   const seq = await nextSequence(db, `invoice-${year}`);

@@ -38,6 +38,9 @@ async function retype(kind) {
 function render() {
   const { proposal: p, tiers, comments } = state;
   if (state.quote_markup_rate != null) MK_RATE = state.quote_markup_rate;
+  // Restore the saved internal cost-rate bar so the profit preview persists
+  // instead of resetting to the 2.10 default on every reload.
+  if (p.cost_rates) { try { Object.assign(PROP_RATES, JSON.parse(p.cost_rates)); } catch (e) {} }
   // Derive the proposal "kind" from its option count: 1 option = single, 2 = custom.
   const currentKind = (tiers || []).length <= 1 ? "single" : "custom";
   document.getElementById("page-title").textContent = `${p.number} · ${p.project_name}`;
@@ -108,6 +111,7 @@ function render() {
     </div>
 
     <div class="form-actions" style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink)" title="One invoice for the full amount at signing instead of the 50% / 25% / 25% schedule"><input type="checkbox" id="pay-in-full" ${p.payment_plan === "full" ? "checked" : ""}/> Pay in full <span class="muted" style="font-size:11px">· one invoice, no 50/25/25</span></label>
       <button class="btn secondary" onclick="saveAll()">💾 Save proposal</button>
       ${canSend ? `<button class="btn primary" onclick="saveThenSend()">📧 Save &amp; Send to customer →</button>` : ""}
       ${isAccepted ? `<button class="btn success" onclick="convertToContract()">Convert to Contract →</button>` : ""}
@@ -436,6 +440,8 @@ async function saveAll() {
     await SSCrm.fetchJSON("/api/proposals/" + id, { method: "PATCH", body: JSON.stringify({
       intro: document.getElementById("intro").value.trim(),
       job_notes: jn ? jn.value.trim() : "",
+      cost_rates: JSON.stringify(PROP_RATES),
+      payment_plan: (document.getElementById("pay-in-full") && document.getElementById("pay-in-full").checked) ? "full" : "installments",
       tiers,
     })});
     SSCrm.toast("Saved", "success");

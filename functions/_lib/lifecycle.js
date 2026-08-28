@@ -14,6 +14,10 @@ const RENTAL_CLAUSE = `<h3>Rental or Leased Property</h3><p>If this property is 
 // so custom_order and wallprep can't drift apart.
 const PAYMENT_SCHEDULE = `<h3>Payment Schedule</h3><p>The total contract price is paid in three installments:</p><ul><li><strong>50% due at signing</strong> (the &ldquo;Deposit&rdquo;) — or, if greater, the amount required to cover the materials, shipping and payment-processing fees for this order. Manufacturing and scheduling begin only after the Deposit is received.</li><li><strong>25% due when installation is scheduled</strong> — invoiced once all materials have arrived and the install date is set.</li><li><strong>25% due the day of installation.</strong></li></ul><p><strong>Paying in full.</strong> Instead of the schedule above, you may pay in full at signing or at any point afterward, and you may pay any individual installment early. There is no penalty or added fee for paying early.</p><p>The Deposit is non-refundable once materials are released to the manufacturer.</p>`;
 
+// Used when the proposal was marked pay-in-full: a single payment replaces the
+// 50/25/25 schedule above.
+const PAY_IN_FULL = `<h3>Payment</h3><p>The total contract price is due <strong>in full at signing</strong>. Manufacturing and scheduling begin once payment is received. Payment is non-refundable once materials are released to the manufacturer.</p>`;
+
 const MATERIALS_LEADTIME = `<h3>Materials &amp; Manufacture</h3><p>Custom materials typically take 4 to 8 weeks to be manufactured and delivered after the Deposit, depending on holidays, shipping, supplier lead times and other unforeseen circumstances. Once all materials have arrived, any repairs and the installation are scheduled.</p>`;
 
 const FALLBACK_TERMS = {
@@ -64,9 +68,16 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
   // Load default template for this contract type
   const tpl = await db.prepare(`SELECT * FROM document_templates WHERE kind='contract' AND subkind=?1 AND is_default=1 ORDER BY id LIMIT 1`).bind(contractType).first();
   const intro = tpl?.intro || FALLBACK_INTROS[contractType];
-  const terms = tpl?.terms_html || FALLBACK_TERMS[contractType];
+  let terms = tpl?.terms_html || FALLBACK_TERMS[contractType];
   const installWindow = tpl?.estimated_install_window || FALLBACK_WINDOWS[contractType];
   const scopeHtml = (tpl?.scope_html || "");
+
+  // Pay-in-full carries over from the proposal. It swaps the 50/25/25 schedule
+  // for a single payment and (below) sets the contract deposit to the full
+  // total, so exactly one 100% invoice is raised and the scheduling/balance
+  // milestones self-skip (nothing is left to bill).
+  const paymentPlan = proposal.payment_plan === "full" ? "full" : "installments";
+  if (paymentPlan === "full") terms = terms.replace(PAYMENT_SCHEDULE, PAY_IN_FULL);
 
   const year = new Date().getUTCFullYear();
   const seq = await nextSequence(db, `contract-${year}`);
@@ -76,12 +87,14 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
   // Deposit is figured from the pre-discount GROSS (tier subtotal), so a
   // discount (which lives between subtotal and total) never lowers it.
   const grossBasis = (tier.subtotal_cents || 0) > totalCents ? tier.subtotal_cents : totalCents;
-  const depositCents = depositForTotal(grossBasis, totalCents);  // ≥50%, covers materials
+  // Pay-in-full → deposit is the whole total (one 100% invoice); otherwise the
+  // usual ≥50% hard-cost deposit.
+  const depositCents = paymentPlan === "full" ? totalCents : depositForTotal(grossBasis, totalCents);
 
   const r = await db.prepare(
     `INSERT INTO contracts (project_id, proposal_id, number, view_token, status, contract_type, total_cents, deposit_cents,
-       intro, scope_html, terms_html, estimated_install_window, author_user_id)
-     VALUES (?1, ?2, ?3, ?4, 'draft', ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12) RETURNING id`
+       intro, scope_html, terms_html, estimated_install_window, author_user_id, payment_plan)
+     VALUES (?1, ?2, ?3, ?4, 'draft', ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13) RETURNING id`
   ).bind(
     proposal.project_id, proposal.id, number, token, contractType, totalCents, depositCents,
     intro,
@@ -89,6 +102,7 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
     terms,
     installWindow,
     actor?.kind === "admin" ? actor.id : null,
+    paymentPlan,
   ).first();
 
   // Copy lines from the accepted tier

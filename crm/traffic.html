@@ -62,6 +62,20 @@ let mode = "today"; // "today" | "all"
       <div class="card-head"><h2 id="tf-daily-h">Daily traffic</h2><span class="more" style="cursor:default" title="Cloudflare counts every request at the server — immune to ad blockers, GA filters and reporting lag">via Cloudflare edge</span></div>
       <div id="tf-daily" style="margin-top:8px"></div>
     </div>
+    <div class="card" style="margin-bottom:16px" id="tf-rank-card" hidden>
+      <div class="card-head"><h2>Where you rank on Google</h2><span class="more" style="cursor:default" title="Straight from Google Search Console - the same numbers Google shows the site owner. Collected once a week, so unlike everything else on this page it is not live to the second.">via Search Console &middot; weekly</span></div>
+      <p id="tf-rank-asof" style="font-size:12px;color:var(--ink-soft);line-height:1.55;margin:6px 0 0"></p>
+      <div id="tf-rank-tiles" style="display:flex;gap:22px;flex-wrap:wrap;margin-top:12px"></div>
+      <div id="tf-rank-move" style="margin-top:12px"></div>
+    </div>
+    <div class="card" style="margin-bottom:16px" id="tf-rank-top-card" hidden>
+      <div class="card-head"><h2>What people searched to find you</h2><span class="more" style="cursor:default" title="Every search that showed this site in Google, with where it ranked.">impressions = times shown</span></div>
+      <div id="tf-rank-top" style="margin-top:6px"></div>
+    </div>
+    <div class="card" style="margin-bottom:16px" id="tf-rank-near-card" hidden>
+      <div class="card-head"><h2>Closest to page one</h2><span class="more" style="cursor:default" title="Ranking 4-20 with real search volume behind it - where the next month of work pays off fastest.">next month&rsquo;s targets</span></div>
+      <div id="tf-rank-near" style="margin-top:6px"></div>
+    </div>
     <div class="card" style="margin-bottom:16px">
       <div class="card-head"><h2>Traffic channels · where visitors come from</h2><a class="more" href="/crm/leads.html">Lead sources →</a></div>
       <div id="tf-channels" style="margin-top:6px"></div>
@@ -113,6 +127,97 @@ async function refresh() {
   }
   renderEdge(edge, label);
   renderOwned(owned, label);
+
+  /* Fetched separately and never allowed to fail the page. Rankings are weekly
+     and everything else here is live, so a Search Console hiccup must not blank
+     out traffic the client can otherwise see. */
+  SSCrm.fetchJSON("/api/traffic-rankings").then(renderRankings).catch(() => {});
+}
+
+/* ------------------------------- rankings -------------------------------- */
+
+function rkEsc(v) {
+  return String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function rkTable(rows, cols) {
+  if (!rows || !rows.length) return box("Nothing yet.");
+  const th = (c) => `<th style="text-align:${c.n ? "right" : "left"};padding:6px 8px;border-bottom:1px solid var(--line-soft);font-size:11.5px;color:var(--ink-soft);font-weight:600">${c.h}</th>`;
+  const td = (c, r) => `<td style="text-align:${c.n ? "right" : "left"};padding:6px 8px;border-bottom:1px solid var(--line-soft);font-size:13px">${c.f(r)}</td>`;
+  return `<table style="width:100%;border-collapse:collapse"><thead><tr>${cols.map(th).join("")}</tr></thead>`
+    + `<tbody>${rows.map((r) => `<tr>${cols.map((c) => td(c, r)).join("")}</tr>`).join("")}</tbody></table>`;
+}
+
+function renderRankings(rk) {
+  /* An absent table and an empty one are different facts and the card says
+     which. "Not set up" is a job for us; "collecting, nothing yet" is a job for
+     time — rendering both as blank makes a working pipeline look broken. */
+  if (!rk || !rk.installed) return;
+  el("tf-rank-card").hidden = false;
+
+  if (!rk.week) {
+    el("tf-rank-asof").textContent = "Connected to Google Search Console. No data has arrived yet \u2014 Google needs a few days after a site is verified.";
+    return;
+  }
+
+  const t = rk.trend || [];
+  const cur = t[t.length - 1] || {};
+  const prev = t.length > 1 ? t[t.length - 2] : null;
+  const tile = (label, n, before) => {
+    const d = before === null || before === undefined ? null : (n || 0) - (before || 0);
+    const col = !d ? "var(--ink-soft)" : d > 0 ? "#1a7f37" : "#b42318";
+    const txt = d === null ? "" : !d ? "no change" : `${d > 0 ? "+" : ""}${d} vs last week`;
+    return `<div><div style="font-size:22px;font-weight:700;color:var(--ink)">${N(n || 0)}</div>`
+      + `<div style="font-size:11.5px;color:var(--ink-soft)">${label}</div>`
+      + `<div style="font-size:11px;color:${col}">${txt}</div></div>`;
+  };
+
+  el("tf-rank-asof").textContent = `Week of ${rk.week} \u00b7 ${N(cur.impressions || 0)} appearances in Google, ${N(cur.clicks || 0)} clicks`
+    + (rk.meta && rk.meta.property ? ` \u00b7 ${rk.meta.property}` : "");
+
+  /* Buckets, not average position: average position gets WORSE as a site
+     succeeds, because newly earned long-tail terms enter around 40 and drag
+     the mean down. */
+  el("tf-rank-tiles").innerHTML =
+      tile("ranking 1-3", cur.top3, prev ? prev.top3 : null)
+    + tile("ranking 4-10", cur.top10, prev ? prev.top10 : null)
+    + tile("ranking 11-20", cur.top20, prev ? prev.top20 : null)
+    + tile("keywords total", cur.total, prev ? prev.total : null);
+
+  /* Wins and losses together. Showing only the winners is the fastest way to
+     make a real result look fabricated. */
+  const mv = (rk.movement || []).filter((r) => Math.abs(r.was - r.now) >= 0.5).slice(0, 12);
+  el("tf-rank-move").innerHTML = mv.length
+    ? `<div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:6px">Movement since we started tracking each term</div>`
+      + rkTable(mv, [
+          { h: "Search", f: (r) => rkEsc(r.query) },
+          { h: "Was", n: 1, f: (r) => r.was.toFixed(1) },
+          { h: "Now", n: 1, f: (r) => r.now.toFixed(1) },
+          { h: "Change", n: 1, f: (r) => {
+              const d = r.was - r.now;
+              return `<span style="color:${d > 0 ? "#1a7f37" : "#b42318"};font-weight:600">${d > 0 ? "\u25b2" : "\u25bc"} ${Math.abs(d).toFixed(1)}</span>`;
+            } },
+        ])
+    : "";
+
+  if ((rk.top || []).length) {
+    el("tf-rank-top-card").hidden = false;
+    el("tf-rank-top").innerHTML = rkTable(rk.top, [
+      { h: "Search", f: (r) => rkEsc(r.query) },
+      { h: "Position", n: 1, f: (r) => r.position.toFixed(1) },
+      { h: "Shown", n: 1, f: (r) => N(r.impressions) },
+      { h: "Clicks", n: 1, f: (r) => N(r.clicks) },
+    ]);
+  }
+
+  if ((rk.striking || []).length) {
+    el("tf-rank-near-card").hidden = false;
+    el("tf-rank-near").innerHTML = rkTable(rk.striking, [
+      { h: "Search", f: (r) => rkEsc(r.query) },
+      { h: "Position", n: 1, f: (r) => r.position.toFixed(1) },
+      { h: "Shown", n: 1, f: (r) => N(r.impressions) },
+    ]);
+  }
 }
 
 // Cloudflare edge data → stats, daily list, country, hourly.

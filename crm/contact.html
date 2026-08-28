@@ -15,12 +15,22 @@
 </style>
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc107"></script>
+<script src="/crm/crm-app.js?v=ncc108"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/contacts.html";
 
 let state = null; // { contact, projects, appointments }
+
+// Book an appointment pre-filled from this contact (links the appointment to them).
+function bookAppt() {
+  const c = state.contact;
+  SSCrm.quickAddAppointment({
+    name: c.name, email: c.email, phone: c.phone,
+    site_address: [c.address_street, c.address_city, c.address_state, c.address_zip].filter(Boolean).join(", "),
+    contact_id: c.id,
+  });
+}
 
 (async () => {
   const user = await SSCrm.mount({ title: "Contact", actions: `<a class="btn ghost" href="/crm/contacts.html">← Contacts</a>` });
@@ -63,6 +73,7 @@ function render() {
         <div class="card">
           <div class="card-head">
             <h2>Jobs <span class="muted" style="font-size:11px;font-weight:400">${stats.project_count > 1 ? "· past + active" : ""}</span></h2>
+            <button class="btn secondary sm" onclick="bookAppt()">📅 Book appointment</button>
             <button class="btn primary sm" onclick="newJob(${c.id})">+ New job</button>
           </div>
           ${projects.length ? `<div class="tbl"><table>

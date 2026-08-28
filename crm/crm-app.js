@@ -681,21 +681,25 @@ async function quickAddJob() {
   } catch (e) { toast(e.message, "error"); }
 }
 
-async function quickAddAppointment() {
+async function quickAddAppointment(prefill = {}) {
   const bg = document.createElement("div");
   bg.className = "modal-bg";
   // Pre-fill with tomorrow 10:00 Central
   const tomorrow = new Date(Date.now() + 86400000);
   const defaultDate = tomorrow.toISOString().slice(0, 10);
+  // Links carried onto the appointment so it ties back to the contact / lead / job.
+  const link = { contact_id: prefill.contact_id || null, lead_id: prefill.lead_id || null, project_id: prefill.project_id || null };
   bg.innerHTML = `
     <div class="modal" style="max-width:520px">
       <div class="modal-head">Book appointment</div>
       <div class="modal-body">
         <div class="form">
-          <label><span>Customer name</span><input id="qa-name" autofocus required/></label>
+          <button type="button" class="btn secondary" id="qa-pick" style="width:100%;margin-bottom:2px">📇 Pick from address book</button>
+          <p class="muted" style="font-size:12px;margin:0 0 4px">…or type a new customer below.</p>
+          <label><span>Customer name</span><input id="qa-name" autofocus required value="${esc(prefill.name || "")}"/></label>
           <div class="row">
-            <label><span>Email</span><input id="qa-email" type="email" required/></label>
-            <label><span>Phone</span><input id="qa-phone" type="tel"/></label>
+            <label><span>Email</span><input id="qa-email" type="email" required value="${esc(prefill.email || "")}"/></label>
+            <label><span>Phone</span><input id="qa-phone" type="tel" value="${esc(prefill.phone || "")}"/></label>
           </div>
           <div class="row">
             <label><span>Date</span><input id="qa-date" type="date" value="${defaultDate}" required/></label>
@@ -707,7 +711,7 @@ async function quickAddAppointment() {
               <select id="qa-type"><option value="consultation">Consultation</option><option value="measure">Measure</option><option value="install">Install</option><option value="service">Service</option></select>
             </label>
           </div>
-          <label><span>Site address (optional)</span><input id="qa-addr"/></label>
+          <label><span>Site address (optional)</span><input id="qa-addr" value="${esc(prefill.site_address || "")}"/></label>
           <label><span>Rooms (optional)</span><input id="qa-rooms" placeholder="Living, primary BR, 2 baths"/></label>
         </div>
       </div>
@@ -721,6 +725,19 @@ async function quickAddAppointment() {
   const close = () => bg.remove();
   bg.querySelector("[data-cancel]").onclick = close;
   bg.addEventListener("click", (e) => { if (e.target === bg) close(); });
+  // Address-book picker: fills the fields and links the appointment to that contact.
+  bg.querySelector("#qa-pick").onclick = async () => {
+    bg.style.display = "none";
+    const c = await pickContact();
+    bg.style.display = "";
+    if (!c) return;
+    bg.querySelector("#qa-name").value = c.name || "";
+    bg.querySelector("#qa-email").value = c.email || "";
+    bg.querySelector("#qa-phone").value = c.phone || "";
+    const addr = c.address || c.site_address || [c.address_street, c.address_city, c.address_state, c.address_zip].filter(Boolean).join(", ");
+    if (addr) bg.querySelector("#qa-addr").value = addr;
+    link.contact_id = c.id;
+  };
   bg.querySelector("[data-save]").onclick = async () => {
     const date = bg.querySelector("#qa-date").value;
     const time = bg.querySelector("#qa-time").value;
@@ -740,6 +757,9 @@ async function quickAddAppointment() {
       rooms: bg.querySelector("#qa-rooms").value.trim() || null,
       status: "confirmed",
       source: "admin",
+      contact_id: link.contact_id,
+      lead_id: link.lead_id,
+      project_id: link.project_id,
     };
     if (!body.name || !body.email) { toast("Name + email required", "error"); return; }
     try {

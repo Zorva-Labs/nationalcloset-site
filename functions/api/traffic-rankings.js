@@ -28,7 +28,22 @@ export async function onRequestGet(context) {
     ((await DB.prepare("SELECT key, value FROM rank_meta").all().catch(() => ({ results: [] }))).results || [])
       .map((r) => [r.key, r.value])
   );
-  if (!week) return json({ installed: true, week: null, meta, trend: [] });
+  /* Keywords we have said matter for this site, each with where it sits today.
+     LEFT JOIN on purpose: Search Console reports nothing at all for a term the
+     site does not rank for — not a position — so a null here means "not ranking
+     yet", which is the honest answer and the one worth showing. Queried before
+     the early return so a brand-new site with a target list still shows it,
+     which is exactly when that list is most useful. */
+  const watch = ((await DB.prepare(
+    `SELECT w.label, w.query, w.note, s.position, s.impressions, s.clicks,
+            b.position AS was
+       FROM rank_watch w
+       LEFT JOIN rank_snapshots s ON s.query = w.query AND s.week_start = ?1
+       LEFT JOIN rank_baseline  b ON b.query = w.query
+      ORDER BY (s.position IS NULL), s.position`
+  ).bind(week || '').all().catch(() => ({ results: [] }))).results || []);
+
+  if (!week) return json({ installed: true, week: null, meta, watch, trend: [] });
 
   const q = (sql, ...binds) => {
     const st = DB.prepare(sql);
@@ -96,6 +111,7 @@ export async function onRequestGet(context) {
     installed: true,
     week,
     meta,
+    watch,
     trend: (trend.results || []).slice().reverse(),
     movement: movement.results || [],
     top: top.results || [],

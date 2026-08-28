@@ -62,6 +62,10 @@ let mode = "today"; // "today" | "all"
       <div class="card-head"><h2 id="tf-daily-h">Daily traffic</h2><span class="more" style="cursor:default" title="Cloudflare counts every request at the server — immune to ad blockers, GA filters and reporting lag">via Cloudflare edge</span></div>
       <div id="tf-daily" style="margin-top:8px"></div>
     </div>
+    <div class="card" style="margin-bottom:16px" id="tf-rank-watch-card" hidden>
+      <div class="card-head"><h2>Keywords we&rsquo;re targeting</h2><span class="more" style="cursor:default" title="A term with no position is one Google is not showing this site for yet.">our target list</span></div>
+      <div id="tf-rank-watch" style="margin-top:6px"></div>
+    </div>
     <div class="card" style="margin-bottom:16px" id="tf-rank-card" hidden>
       <div class="card-head"><h2>Where you rank on Google</h2><span class="more" style="cursor:default" title="Straight from Google Search Console - the same numbers Google shows the site owner. Collected once a week, so unlike everything else on this page it is not live to the second.">via Search Console &middot; weekly</span></div>
       <p id="tf-rank-asof" style="font-size:12px;color:var(--ink-soft);line-height:1.55;margin:6px 0 0"></p>
@@ -153,6 +157,26 @@ function renderRankings(rk) {
      which. "Not set up" is a job for us; "collecting, nothing yet" is a job for
      time — rendering both as blank makes a working pipeline look broken. */
   if (!rk || !rk.installed) return;
+
+  /* Targets first, and rendered even when the site has no ranking data at all —
+     a new site's target list is exactly when it matters most, and "none of
+     these yet" is a real answer rather than an empty card. */
+  if ((rk.watch || []).length) {
+    el("tf-rank-watch-card").hidden = false;
+    el("tf-rank-watch").innerHTML = rkTable(rk.watch, [
+      { h: "Search", f: (r) => rkEsc(r.label || r.query) + (r.note ? ` <span style="color:var(--ink-soft)">&middot; ${rkEsc(r.note)}</span>` : "") },
+      { h: "Position", n: 1, f: (r) => {
+          if (r.position === null || r.position === undefined) return '<span style="color:var(--ink-soft)">not ranking yet</span>';
+          const d = r.was === null || r.was === undefined ? null : r.was - r.position;
+          const mv = d === null || Math.abs(d) < 0.5 ? ""
+            : ` <span style="color:${d > 0 ? "#1a7f37" : "#b42318"}">${d > 0 ? "\u25b2" : "\u25bc"} ${Math.abs(d).toFixed(1)}</span>`;
+          return r.position.toFixed(1) + mv;
+        } },
+      { h: "Shown", n: 1, f: (r) => (r.impressions == null ? "&mdash;" : N(r.impressions)) },
+      { h: "Clicks", n: 1, f: (r) => (r.clicks == null ? "&mdash;" : N(r.clicks)) },
+    ]);
+  }
+
   el("tf-rank-card").hidden = false;
 
   if (!rk.week) {

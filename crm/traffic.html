@@ -14,7 +14,249 @@
     .tf-tog{display:inline-flex;border:2px solid var(--line-soft,#e6e3dd);border-radius:999px;overflow:hidden;background:#fff}
     .tf-tog button{font-family:inherit;font-size:.85rem;font-weight:700;padding:7px 20px;border:0;background:transparent;color:var(--ink-soft);cursor:pointer}
     .tf-tog button.on{background:var(--accent);color:#fff}
-  </style>
+  .src-head{
+  font-size:.78rem;text-transform:uppercase;letter-spacing:.09em;
+  font-weight:700;margin:0 0 .3rem;
+}
+.src-lede{font-size:.86rem;line-height:1.55;margin:0 0 1rem;max-width:62rem}
+.src-lede strong{font-weight:700}
+
+.src-edge{background:#f4f6f8;border-top-color:#5b6673}
+.src-edge .src-head{color:#3c4854}
+.src-edge .src-lede{color:#4a5663}
+
+.src-gsc{background:#f0f8f2;border-top-color:#1e8e3e}
+.src-gsc .src-head{color:#10652a}
+.src-gsc .src-lede{color:#2f6b42}
+.src-gsc .panel{border-color:#cfe6d6}
+
+.src-ga{background:#f2f7fd;border-top-color:#1a73e8}
+.src-ga .src-head{color:#12467f}
+.src-ga .src-lede{color:#3d5878}
+.src-ga .panel{border-color:#c9dcf4}
+
+/* The caveat that stops the three sections being read as one number measured
+   three times. Sits inside its section so it inherits the ground. */
+.src-note{
+  margin:0 0 1rem;padding:.8rem .95rem;border-radius:3px;
+  background:rgba(255,255,255,.75);font-size:.82rem;line-height:1.55;
+}
+.src-note ul{margin:.45rem 0 0;padding-left:1.1rem}
+.src-note li{margin-bottom:.28rem}
+.src-gsc .src-note{color:#2f6b42}
+.src-ga .src-note{color:#3d5878}
+.src-edge .src-note{color:#4a5663}
+
+
+/* ---- Panels in columns ----------------------------------------------------
+ *
+ * Seventeen full-width panels ran to several screens and made the three
+ * sections feel like three pages. auto-fit means the same markup is one column
+ * on a phone and three on a desktop without a breakpoint per layout.
+ *
+ * Charts and the wide tables opt out: a sparkline squeezed into a third of the
+ * width is smaller without being more readable, which is the wrong trade.
+ */
+.panels{display:grid;gap:.85rem;grid-template-columns:1fr;align-items:start}
+.panels .panel{margin-bottom:0}
+@media (min-width:56rem){
+  .panels{grid-template-columns:repeat(auto-fit,minmax(20rem,1fr))}
+  .panels .panel-wide{grid-column:1 / -1}
+}
+.panels .panel h2{font-size:.92rem;margin-bottom:.6rem}
+.panels .panel .pg-sub{font-size:.78rem;margin-bottom:.6rem}
+
+/* Air between the sections, so the colour change reads as a boundary rather
+   than as a panel that happens to be tinted. */
+/* The nav is sticky, so an anchor must not land under it. */
+.src-nav{
+  position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:.4rem;
+  margin:0 -1rem 1.25rem;padding:.7rem 1rem;
+  background:rgba(255,255,255,.94);backdrop-filter:saturate(140%) blur(8px);
+  border-bottom:1px solid var(--rule);
+}
+.src-nav a{
+  font-size:.76rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  text-decoration:none;padding:.35rem .7rem;border-radius:999px;
+  border:1px solid var(--rule);color:var(--ink-2,#39424e);background:#fff;
+}
+.src-nav a:hover{border-color:currentColor}
+.src-nav a:nth-child(1):hover{color:#3c4854}
+.src-nav a:nth-child(2){color:#10652a;border-color:#cfe6d6}
+.src-nav a:nth-child(3){color:#12467f;border-color:#c9dcf4}
+
+
+.why{margin:0 0 .9rem}
+.why summary{display:inline-block;cursor:pointer;list-style:none;font-size:.75rem;font-weight:600;
+  color:var(--muted,#6b7684);border-bottom:1px dotted currentColor;padding:.1rem 0}
+.why summary::-webkit-details-marker{display:none}
+.why summary:hover{color:var(--ink-2,#39424e)}
+.why[open] summary{margin-bottom:.5rem}
+.why .src-note{margin:0}
+.panel-wide #chart,.panel-wide .spark,.panel-wide svg{width:100%}
+/* ---- Stat tiles -----------------------------------------------------------
+ *
+ * .grid-3 and .tile are used by the summary rows and by the Analytics panel,
+ * and were never defined — so every tile row rendered as a vertical stack of
+ * unstyled number-then-label pairs. The markup was right; the stylesheet was
+ * simply missing.
+ */
+.grid{display:grid;gap:.7rem}
+.grid-3{grid-template-columns:1fr}
+@media (min-width:34rem){.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tile{
+  background:var(--sunk,#f5f7fa);border:1px solid var(--rule,#e2e6ec);
+  border-radius:2px;padding:.7rem .8rem;
+}
+.tile-n{margin:0;font-size:1.35rem;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.tile-k{margin:.15rem 0 0;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted,#6b7684)}
+.src-ga .tile{background:rgba(255,255,255,.75);border-color:#c9dcf4}
+.src-gsc .tile{background:rgba(255,255,255,.75);border-color:#cfe6d6}
+
+/* ---- Overflow -------------------------------------------------------------
+ *
+ * A grid item defaults to min-width:auto, which means it refuses to shrink
+ * below the intrinsic width of its widest child. A five-column table inside a
+ * 19rem column therefore pushes the panel wider than its track, clipping the
+ * last column and shoving the next panel off the edge — which is exactly what
+ * it did.
+ *
+ * min-width:0 lets the track win; overflow-x:auto gives the table somewhere to
+ * go instead of being cut off. Both are needed: the first alone would squash
+ * the table, the second alone would never trigger.
+ */
+.panels > *,.panels .panel{min-width:0}
+.panel{overflow-x:auto;overflow-y:visible}
+.panel table{width:100%;border-collapse:collapse}
+.panel td,.panel th{overflow-wrap:anywhere}
+
+/* Long URLs and search phrases are the usual culprit: one unbroken string is
+   as wide as it is, and no amount of column sizing helps. */
+.panel .bar-label,.panel .tbl td:first-child{overflow-wrap:anywhere;word-break:break-word}
+
+/* Nothing on the page may push the document sideways. */
+html,body{max-width:100%;overflow-x:hidden}
+
+/* ---- Overflow, corrected --------------------------------------------------
+ *
+ * overflow-wrap:anywhere on every cell broke headings mid-word ("Visit s",
+ * "Conversi ons"). It belongs only on the cells that actually carry unbreakable
+ * strings — URLs and search phrases in the first column. Headings and numbers
+ * wrap at word boundaries or not at all.
+ */
+.panel th{overflow-wrap:normal;word-break:normal;hyphens:none;white-space:normal}
+.panel td{overflow-wrap:normal}
+.panel td:first-child,.panel .bar-label{overflow-wrap:anywhere}
+.panel td.n,.panel th.n{white-space:nowrap;text-align:right}
+
+/* auto-fill keeps empty tracks, which is where the gap on the right came from.
+   auto-fit collapses them, so two panels share the row instead of two panels
+   and a hole. */
+@media (min-width:56rem){
+  .panels{grid-template-columns:repeat(auto-fit,minmax(19rem,1fr))}
+}
+
+/* The chart is drawn to its container, so the container has to be the thing
+   that is bounded. */
+.panel-wide{overflow:hidden}
+.panel-wide #chart,.panel-wide .spark{max-width:100%;overflow-x:auto}
+
+/* ---- Track width, finally -------------------------------------------------
+ *
+ * A panel spanning 1 / -1 fixes the track count, so auto-fit cannot collapse
+ * the unused one — which is where the empty third column came from. Wider
+ * tracks mean the row is full at two panels on a normal screen, and three only
+ * on a genuinely wide one. Fewer, wider panels also read better: these are
+ * tables, not tiles.
+ */
+@media (min-width:56rem){
+  .panels{grid-template-columns:repeat(auto-fit,minmax(24rem,1fr))}
+}
+@media (min-width:100rem){
+  .panels{grid-template-columns:repeat(auto-fit,minmax(21rem,1fr))}
+}
+
+/* ---- Masonry, and air between the sections --------------------------------
+ *
+ * Grid gives every item in a row the height of the tallest, so a five-row table
+ * beside a two-row one leaves a hole under the short one. CSS columns pack
+ * bottom-up instead — true masonry, no gaps, and no JavaScript. It is also the
+ * only version of this that degrades sanely: one column on a phone, and the
+ * browser decides the rest.
+ *
+ * The trade is reading order: columns flow top-to-bottom then across, so panel
+ * two sits under panel one rather than beside it. These panels are independent
+ * readings, so that costs nothing.
+ */
+.panels{
+  display:block;
+  columns:1;
+  column-gap:1rem;
+}
+@media (min-width:56rem){ .panels{columns:2} }
+@media (min-width:92rem){ .panels{columns:3} }
+
+.panels > *{
+  break-inside:avoid;
+  -webkit-column-break-inside:avoid;
+  page-break-inside:avoid;
+  display:block;
+  margin:0 0 1rem;
+  width:100%;
+}
+
+/* Charts want the full width, and column-span resets the flow around them. */
+.panels > .panel-wide{
+  column-span:all;
+  -webkit-column-span:all;
+  margin-bottom:1.15rem;
+}
+
+/* ---- Section separation ---------------------------------------------------
+ *
+ * The bands were landing directly on the panel above them, so the colour change
+ * read as a rendering fault rather than a boundary. Each section is now an
+ * inset block with its own ground and real space around it.
+ */
+.src-head{margin:0 0 .35rem}
+.src-lede{margin:0 0 1rem;max-width:62ch}
+.why{margin:0 0 1.15rem}
+
+/* ---- Section spacing, actually ---------------------------------------------
+ *
+ * `.src + .src` only works when the sections are adjacent siblings, and they
+ * are not — a "show more" details block sits between them, so the rule never
+ * matched and the bands kept landing on the panel above. Margin on the section
+ * itself does not care what is between them.
+ */
+.src:last-of-type{margin-bottom:1rem}
+
+/* Panels have to read as separate cards against a near-white ground, or a
+   column of them merges into one sheet of text. */
+.panels > .panel{
+  background:#fff;
+  border:1px solid #dde3ea;
+  border-radius:3px;
+  box-shadow:0 1px 2px rgba(16,24,40,.04);
+}
+
+/* ---- Sections: one definition, deliberately last --------------------------
+ *
+ * Replaces five overlapping .src rules that accumulated across patches. Each
+ * set part of the spacing and partly overrode the one before, so the result was
+ * whatever the cascade landed on rather than anything chosen.
+ */
+.src{
+  padding:1.75rem 1.35rem 1.6rem;
+  border-radius:4px;
+  margin:0 0 3rem;
+  scroll-margin-top:4.5rem;
+}
+.src:last-of-type{margin-bottom:1.5rem}
+.src-head{margin:0 0 .35rem}
+.src-lede{margin:0 0 1rem;max-width:62ch}
+.why{margin:0 0 1.15rem}
+</style>
 </head>
 <body>
 <script src="/crm/crm-app.js?v=ncc108"></script>
@@ -57,13 +299,51 @@ let mode = "today"; // "today" | "all"
         <button type="button" id="tg-all">All time</button>
       </div>
     </div>
-    <div id="tf-stats" class="card" style="display:flex;gap:22px;flex-wrap:wrap;margin-bottom:16px"></div>
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-head"><h2 id="tf-daily-h">Daily traffic</h2><span class="more" style="cursor:default" title="Cloudflare counts every request at the server — immune to ad blockers, GA filters and reporting lag">via Cloudflare edge</span></div>
+    <nav class="src-nav"><a href="#edge">1 &middot; Our log</a><a href="#search-console">2 &middot; Search Console</a><a href="#analytics">3 &middot; Analytics</a></nav>
+<div class="src src-edge" id="edge">
+<p class="src-head">1 &middot; Our own log, at the edge</p>
+<p class="src-lede">Our own count, logged before any script runs. <strong>This is the number we quote.</strong></p>
+
+<div class="panels">
+<div id="tf-stats" class="card" style="display:flex;gap:22px;flex-wrap:wrap;margin-bottom:16px"></div>
+<div class="card" style="margin-bottom:16px">
+      <div class="card-head"><h2 id="tf-daily-h">Daily traffic</h2>
+<p class="panel-help">How many pages were opened each day. Taller bar, busier day.</p><span class="more" style="cursor:default" title="Cloudflare counts every request at the server — immune to ad blockers, GA filters and reporting lag">via Cloudflare edge</span></div>
       <div id="tf-daily" style="margin-top:8px"></div>
     </div>
-    <div class="card" style="margin-bottom:16px" id="tf-rank-watch-card" hidden>
-      <div class="card-head"><h2>Keywords we&rsquo;re targeting</h2><span class="more" style="cursor:default" title="Times shown = how often Google put this site in front of someone searching that phrase. Clicks = how many of them came through. No position means Google is not showing this site for that search yet.">our target list</span></div>
+<div class="card" style="margin-bottom:16px">
+      <div class="card-head"><h2>Traffic channels · where visitors come from</h2>
+<p class="panel-help">Where visitors were immediately before they arrived. <strong>Organic Search</strong> means they found you on Google without an ad.</p><a class="more" href="/crm/leads.html">Lead sources →</a></div>
+      <div id="tf-channels" style="margin-top:6px"></div>
+    </div>
+<div class="card" style="margin-bottom:16px">
+      <div class="card-head"><h2>Traffic by page · most visited</h2>
+<p class="panel-help">The most-opened pages, including people clicking around once they are here.</p><span class="more" style="cursor:default" title="Real visitor pageviews, excluding your CRM, bots and non-US traffic">excludes /crm &amp; bots</span></div>
+      <div id="tf-pages" style="margin-top:6px"></div>
+    </div>
+<div class="card">
+        <div class="card-head"><h2>Edge requests · US vs blocked</h2>
+<p class="panel-help">Cloudflare&rsquo;s own count of every request, and how many were blocked as out-of-area or automated.</p></div>
+        <div id="tf-country" style="margin-top:8px"></div>
+        <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">The site is <strong>US-only</strong>. <strong>US</strong> = your real audience; <strong>Blocked</strong> = non-US requests turned away with a 403 (overwhelmingly datacenter bots that keep retrying). Expand for the country breakdown. For channels, see <a href="/crm/leads.html" class="inline">Lead sources</a>.</p>
+      </div>
+<div class="card">
+        <div class="card-head"><h2 id="tf-hourly-h">Traffic by hour · Central Time</h2>
+<p class="panel-help">What time of day people visit, in Central Time. Useful for when to be reachable.</p></div>
+        <div id="tf-hourly" style="min-height:120px"></div>
+        <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">Page views by hour of day (Central Time) — shows <strong>when people visit</strong>, useful for timing ads and posts.</p>
+      </div>
+</div>
+</div>
+<!-- /src-edge -->
+<div class="src src-gsc" id="search-console">
+<p class="src-head">2 &middot; Google Search Console</p>
+<p class="src-lede">How Google&rsquo;s search results treat this site &mdash; impressions, position and clicks.</p>
+
+<div class="panels">
+<div class="card" style="margin-bottom:16px" id="tf-rank-watch-card" hidden>
+      <div class="card-head"><h2>Keywords we&rsquo;re targeting</h2>
+<p class="panel-help">The searches we have set out to win for you, and where you sit for each.</p><span class="more" style="cursor:default" title="Times shown = how often Google put this site in front of someone searching that phrase. Clicks = how many of them came through. No position means Google is not showing this site for that search yet.">our target list</span></div>
       <div id="tf-rank-watch" style="margin-top:6px"></div>
       <div id="watch-empty" style="font-size:12px;color:var(--ink-soft);margin-top:6px" hidden>No target keywords yet. Add the searches you want this site to win.</div>
       <p style="margin-top:10px"><button type="button" id="watch-toggle" style="background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;opacity:.75">Edit target keywords</button></p>
@@ -75,43 +355,51 @@ let mode = "today"; // "today" | "all"
            <span id="watch-msg" style="font-size:12px;color:var(--ink-soft);margin-left:8px"></span></p>
       </div>
     </div>
-    <div class="card" style="margin-bottom:16px" id="tf-rank-card" hidden>
-      <div class="card-head"><h2>Where you rank on Google</h2><span class="more" style="cursor:default" title="Straight from Google Search Console - the same numbers Google shows the site owner. Collected once a week, so unlike everything else on this page it is not live to the second.">via Search Console &middot; weekly</span></div>
+<div class="card" style="margin-bottom:16px" id="tf-rank-card" hidden>
+      <div class="card-head"><h2>Where you rank on Google</h2>
+<p class="panel-help">Where this site sits in Google&rsquo;s results. <strong>Position 1 is the top</strong>; under 10 is page one.</p><span class="more" style="cursor:default" title="Straight from Google Search Console - the same numbers Google shows the site owner. Collected once a week, so unlike everything else on this page it is not live to the second.">via Search Console &middot; weekly</span></div>
       <p id="tf-rank-asof" style="font-size:12px;color:var(--ink-soft);line-height:1.55;margin:6px 0 0"></p>
       <div id="tf-rank-tiles" style="display:flex;gap:22px;flex-wrap:wrap;margin-top:12px"></div>
       <div id="tf-rank-move" style="margin-top:12px"></div>
     </div>
-    <div class="card" style="margin-bottom:16px" id="tf-rank-top-card" hidden>
-      <div class="card-head"><h2>What people searched to find you</h2><span class="more" style="cursor:default" title="Every search that showed this site in Google, with where it ranked.">impressions = times shown</span></div>
+<div class="card" style="margin-bottom:16px" id="tf-rank-top-card" hidden>
+      <div class="card-head"><h2>What people searched to find you</h2>
+<p class="panel-help">The searches Google most often showed this site for. Being shown is not the same as being clicked.</p><span class="more" style="cursor:default" title="Every search that showed this site in Google, with where it ranked.">impressions = times shown</span></div>
       <div id="tf-rank-top" style="margin-top:6px"></div>
     </div>
-    <div class="card" style="margin-bottom:16px" id="tf-rank-clicked-card" hidden>
-      <div class="card-head"><h2>Searches that brought visitors</h2><span class="more" style="cursor:default" title="Ordered by visits rather than appearances.">the half that matters</span></div>
+<div class="card" style="margin-bottom:16px" id="tf-rank-clicked-card" hidden>
+      <div class="card-head"><h2>Searches that brought visitors</h2>
+<p class="panel-help">The searches that actually sent people here &mdash; the half of the list that matters.</p><span class="more" style="cursor:default" title="Ordered by visits rather than appearances.">the half that matters</span></div>
       <div id="tf-rank-clicked" style="margin-top:6px"></div>
     </div>
-    <div class="card" style="margin-bottom:16px" id="tf-rank-near-card" hidden>
-      <div class="card-head"><h2>Closest to page one</h2><span class="more" style="cursor:default" title="Ranking 4-20 with real search volume behind it - where the next month of work pays off fastest.">next month&rsquo;s targets</span></div>
+<div class="card" style="margin-bottom:16px" id="tf-rank-near-card" hidden>
+      <div class="card-head"><h2>Closest to page one</h2>
+<p class="panel-help">Searches where you are close to page one already. These usually move with the least work.</p><span class="more" style="cursor:default" title="Ranking 4-20 with real search volume behind it - where the next month of work pays off fastest.">next month&rsquo;s targets</span></div>
       <div id="tf-rank-near" style="margin-top:6px"></div>
     </div>
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-head"><h2>Traffic channels · where visitors come from</h2><a class="more" href="/crm/leads.html">Lead sources →</a></div>
-      <div id="tf-channels" style="margin-top:6px"></div>
-    </div>
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-head"><h2>Traffic by page · most visited</h2><span class="more" style="cursor:default" title="Real visitor pageviews, excluding your CRM, bots and non-US traffic">excludes /crm &amp; bots</span></div>
-      <div id="tf-pages" style="margin-top:6px"></div>
-    </div>
-    <div class="dash" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div class="card">
-        <div class="card-head"><h2>Edge requests · US vs blocked</h2></div>
-        <div id="tf-country" style="margin-top:8px"></div>
-        <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">The site is <strong>US-only</strong>. <strong>US</strong> = your real audience; <strong>Blocked</strong> = non-US requests turned away with a 403 (overwhelmingly datacenter bots that keep retrying). Expand for the country breakdown. For channels, see <a href="/crm/leads.html" class="inline">Lead sources</a>.</p>
-      </div>
-      <div class="card">
-        <div class="card-head"><h2 id="tf-hourly-h">Traffic by hour · Central Time</h2></div>
-        <div id="tf-hourly" style="min-height:120px"></div>
-        <p class="muted" style="font-size:12px;margin:12px 0 0;line-height:1.5">Page views by hour of day (Central Time) — shows <strong>when people visit</strong>, useful for timing ads and posts.</p>
-      </div>
+</div>
+</div>
+<!-- /src-gsc -->
+<div class="src src-ga" id="analytics">
+<p class="src-head">3 &middot; Google Analytics</p>
+<p class="src-lede">Google&rsquo;s own tag, measured in the visitor&rsquo;s browser.</p>
+<details class="why"><summary>Why this differs from section 1</summary><div class="src-note">A browser-side tag never sees a visit where a blocker stopped it loading, a privacy browser stripped it, the person left before it ran, or Google judged the visit automated. Our own log is written before any script runs at all, which is why both are on this page.</div></details>
+<div class="panels">
+<div class="panel panel-wide" id="ga4-panel">
+  <h2>Google Analytics</h2>
+  <p class="panel-help">Google&rsquo;s own count of visits. <strong>Sessions</strong> are visits, <strong>users</strong> are people, <strong>page views</strong> are pages opened.</p>
+  <p class="pg-sub" id="ga4-asof">Loading&hellip;</p>
+  <div class="grid grid-3" id="ga4-tiles"></div>
+</div>
+<div class="panel" id="ga4-channels-panel">
+  <h2>Channels, per Analytics</h2>
+  <p class="panel-help">How Google groups the sources it saw. It groups differently from section 1, so the lists will not match line for line.</p>
+  <div id="ga4-channels"></div>
+</div>
+</div>
+</div>
+<!-- /src-ga -->
+
     </div>
     <p class="muted" style="font-size:12px;margin:16px 2px 0;line-height:1.5">Counted at Cloudflare's edge and a first-party log — <strong>immune to ad blockers, GA filters and reporting lag</strong>. Edge totals include bots (upper bound); channels, pages &amp; time exclude bots, /crm and non-US.</p>
   `;
@@ -500,6 +788,104 @@ function renderOwned(data, label) {
   }
 }
 })();
+
+
+/* ---- Cap every list at a few rows -----------------------------------------
+ *
+ * A dashboard where one panel runs forty rows and its neighbour runs three is
+ * unreadable: the sections stop being comparable and the page becomes a scroll.
+ * Every table and bar list shows its top five and hides the rest behind a
+ * count, so panels stay the same rough height and the whole page fits.
+ *
+ * Runs after each render, and is idempotent — re-rendering re-caps rather than
+ * stacking a second button.
+ */
+(function () {
+  var SHOW = 5;
+
+  function cap(root) {
+    var lists = (root || document).querySelectorAll('table tbody, ol.bars, ul.bars');
+    Array.prototype.forEach.call(lists, function (list) {
+      if (list.dataset.capped === '1') return;
+      var rows = Array.prototype.filter.call(list.children, function (n) {
+        return n.tagName === 'TR' || n.tagName === 'LI';
+      });
+      if (rows.length <= SHOW + 1) { list.dataset.capped = '1'; return; }
+
+      rows.forEach(function (r, i) { if (i >= SHOW) r.classList.add('row-hidden'); });
+
+      var host = list.tagName === 'TBODY' ? list.closest('table').parentNode : list.parentNode;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'rows-more';
+      var hidden = rows.length - SHOW;
+      btn.textContent = 'Show all ' + rows.length;
+      btn.addEventListener('click', function () {
+        var nowHidden = list.querySelector('.row-hidden');
+        rows.forEach(function (r, i) {
+          if (i >= SHOW) r.classList.toggle('row-hidden', !nowHidden);
+        });
+        btn.textContent = nowHidden ? 'Show top ' + SHOW : 'Show all ' + rows.length;
+      });
+      if (host) host.insertBefore(btn, list.tagName === 'TBODY' ? null : list.nextSibling);
+      list.dataset.capped = '1';
+    });
+  }
+
+  window.capRows = cap;
+  /* Panels are filled asynchronously, so cap on a settle rather than once. */
+  var t = null;
+  new MutationObserver(function () {
+    clearTimeout(t);
+    t = setTimeout(function () { cap(document); }, 120);
+  }).observe(document.body, { childList: true, subtree: true });
+  cap(document);
+})();
+
+
+function renderGa4(ga) {
+  var asof = document.getElementById('ga4-asof');
+  var tiles = document.getElementById('ga4-tiles');
+  var chans = document.getElementById('ga4-channels');
+  if (!asof) return;
+
+  if (!ga || !ga.measurementId) {
+    asof.textContent = 'Not connected on this site yet.';
+    tiles.innerHTML = ''; chans.innerHTML = '';
+    return;
+  }
+  if (!ga.days || !ga.days.length) {
+    asof.textContent = 'Connected as ' + ga.measurementId + '. No figures yet \u2014 Analytics needs about '
+      + 'a day after the tag goes live, and a new property longer than that.';
+    tiles.innerHTML = ''; chans.innerHTML = '';
+    return;
+  }
+
+  var sum = function (k) {
+    return ga.days.reduce(function (a, d) { return a + (Number(d[k]) || 0); }, 0);
+  };
+  asof.textContent = 'Measured by Google\u2019s own tag (' + ga.measurementId + ')'
+    + (ga.asOf ? ', to ' + ga.asOf : '') + '.';
+  tiles.innerHTML = [
+    ['Sessions', sum('sessions')], ['Users', sum('users')], ['Page views', sum('views')],
+  ].map(function (p) {
+    /* The same tile markup the ranking bands use, so the two blocks in this
+       section look like one thing rather than two designs. */
+    return '<div class="rk__b"><div class="rk__n">' + p[1].toLocaleString()
+      + '</div><div class="rk__l">' + p[0] + '</div></div>';
+  }).join('');
+
+  chans.innerHTML = !(ga.channels && ga.channels.length) ? '' :
+    '<p class="hint" style="margin:1rem 0 .5rem">How Analytics attributed those sessions. It groups '
+    + 'differently from the section above, so the two will not match line for line.</p>'
+    + '<table class="tbl"><thead><tr><th>Channel</th><th class="n">Sessions</th></tr></thead><tbody>'
+    + ga.channels.slice(0, 8).map(function (c) {
+        return '<tr><td>' + esc(c.channel) + '</td><td class="n">'
+          + (Number(c.sessions) || 0).toLocaleString() + '</td></tr>';
+      }).join('')
+    + '</tbody></table>';
+}
+
 </script>
 </body>
 </html>

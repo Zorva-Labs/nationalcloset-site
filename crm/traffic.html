@@ -437,6 +437,17 @@ async function refresh() {
      and everything else here is live, so a Search Console hiccup must not blank
      out traffic the client can otherwise see. */
   SSCrm.fetchJSON("/api/traffic-rankings").then(renderRankings).catch(() => {});
+
+  /* Same rule as rankings: Analytics is a nightly copy sitting beside live edge
+     figures, so a hiccup fetching it must not blank out traffic the client can
+     otherwise see. It does have to say so, though \u2014 a panel left on
+     "Loading\u2026" is indistinguishable from one that is merely slow. */
+  SSCrm.fetchJSON("/api/traffic-ga4")
+    .then(renderGa4)
+    .catch(() => {
+      const e = el("ga4-asof");
+      if (e) e.textContent = "Couldn\u2019t load the Analytics figures.";
+    });
 }
 
 /* ------------------------------- rankings -------------------------------- */
@@ -851,6 +862,17 @@ function renderGa4(ga) {
 
   if (!ga || !ga.measurementId) {
     asof.textContent = 'Not connected on this site yet.';
+    tiles.innerHTML = ''; chans.innerHTML = '';
+    return;
+  }
+  /* The tag is live and Google is recording, but nothing has ever copied those
+     figures into this dashboard's database. Worth saying plainly: the message
+     below would blame Analytics for a pipeline that was never pointed at this
+     site, and the two faults have completely different fixes. */
+  if (ga.ingested === false) {
+    asof.textContent = 'Google\u2019s tag (' + ga.measurementId + ') is live on the site and recording. '
+      + 'Those figures are not being copied into this dashboard yet \u2014 this site\u2019s Analytics '
+      + 'property has not been connected to the nightly ingest. The numbers do exist in Analytics itself.';
     tiles.innerHTML = ''; chans.innerHTML = '';
     return;
   }

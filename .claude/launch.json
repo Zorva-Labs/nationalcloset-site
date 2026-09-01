@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "nationalcloset",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4117",
+        "--directory",
+        "."
+      ],
+      "port": 4117
+    }
+  ]
+}

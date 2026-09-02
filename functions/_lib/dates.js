@@ -39,12 +39,16 @@ export function addDays(dateStr, n) {
   return d.toISOString().slice(0, 10);
 }
 
-// Today (server) as YYYY-MM-DD in Central Time
+// Today (server) as YYYY-MM-DD in Central Time.
+//
+// An IANA zone rather than a fixed offset. Central is UTC-6 in winter and UTC-5
+// in daylight time, so the old flat -6 reported YESTERDAY for the first hour of
+// every daylight-saving day. That hour is no longer cosmetic: the milestone
+// invoices ask this function whether an install date has arrived, and the answer
+// decides whether a customer is billed 25% or their whole remaining balance.
 export function todayCentral() {
-  // Central is UTC-6 standard / UTC-5 daylight. We approximate with -6 — close enough
-  // for booking grid purposes since admin can manually shift if needed.
-  const d = new Date(Date.now() - 6 * 60 * 60 * 1000);
-  return d.toISOString().slice(0, 10);
+  // en-CA renders ISO order (YYYY-MM-DD), which is what every caller compares.
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(new Date());
 }
 
 // Pretty format for emails

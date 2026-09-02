@@ -230,13 +230,22 @@ export async function createInvoice(env, opts) {
   amountCents = Math.round(amountCents || 0);
   if (amountCents <= 0) return { skipped: true, reason: "zero_amount" };
 
+  /* Percentages are computed from what this invoice actually bills, never
+     asserted. The deposit floor can push the first payment above 50%, and an
+     install booked for today collapses the last two payments into one invoice
+     for 50% — a hard-coded "(25%)" then prints a number the customer can see is
+     not the number they are being charged. */
+  const pctTag = billing.totalCents > 0
+    ? ` (${Math.round((amountCents / billing.totalCents) * 100)}%)`
+    : "";
+
   const description = opts.description || (
     (billing.paymentPlan === "full" && type === "deposit")
       ? "Payment in full — due at signing"
       : ({
-          deposit: "Deposit (50%) to release your custom closet order",
-          scheduling: "Second payment (25%) — your installation is scheduled",
-          balance: "Final payment (25%) — due the day of installation",
+          deposit: `Deposit${pctTag} to release your custom closet order`,
+          scheduling: `Second payment${pctTag} — your installation is scheduled`,
+          balance: `Final payment${pctTag} — due the day of installation`,
           full: "Custom closet project — payment",
         })[type]
   ) || "Invoice";
@@ -283,27 +292,42 @@ export async function sendInvoiceEmail(env, invoice, project) {
   const label = labelByType[invoice.type] || "payment";
   const subject = `Invoice ${invoice.number} — ${money(invoice.amount_cents)} ${invoice.type === "deposit" ? "deposit" : "due"}`;
 
-  // Type-specific clarity note. The scheduling invoice is only 25% of the job —
-  // spell out the three-payment structure and the exact amount that follows on
+  // Type-specific clarity note. A scheduling invoice is only part of the job —
+  // spell out the payment structure and the exact amount that follows on
   // install day, so the customer knows this isn't the full remaining balance.
   let note = "", noteText = "";
-  if (invoice.type === "scheduling") {
+  if (invoice.type === "scheduling" || invoice.type === "balance") {
     const billing = await getProjectBilling(db, invoice.project_id).catch(() => ({ totalCents: 0 }));
-    const invoiced = await db.prepare(
-      `SELECT COALESCE(SUM(amount_cents),0) AS n FROM invoices WHERE project_id=?1 AND status != 'void'`
-    ).bind(invoice.project_id).first().catch(() => null);
-    const finalBalance = Math.max(0, (billing.totalCents || 0) - (invoiced?.n || 0));
-    const finalPhrase = finalBalance > 0
-      ? `The remaining <strong>${money(finalBalance)}</strong> (the final 25%) will be automatically invoiced on your installation day`
-      : `The remaining balance will be invoiced on your installation day`;
-    note = `<p style="background:#FDF0EA;border-left:3px solid #C0552B;padding:12px 14px;border-radius:6px;margin:14px 0;font-size:14px;line-height:1.5">
-        <strong>This is just 25% of your project total</strong>, due now to lock in your installation date. ${finalPhrase} — nothing else is due before then.</p>`;
-    noteText = `This is just 25% of your project total, due now to schedule your install.`
-      + (finalBalance > 0 ? ` The remaining ${money(finalBalance)} (final 25%) will be invoiced on install day.` : ` The remaining balance is billed on install day.`);
-  } else if (invoice.type === "balance") {
-    note = `<p style="background:#FDF0EA;border-left:3px solid #C0552B;padding:12px 14px;border-radius:6px;margin:14px 0;font-size:14px;line-height:1.5">
-        <strong>This is your final payment</strong> — the last 25% of your project, due on installation day.</p>`;
-    noteText = `This is your final payment — the last 25%, due on installation day.`;
+    /* Same rule as the description: state the share this invoice actually
+       represents rather than the one the standard schedule assumes. An install
+       booked for the same day bills the last two payments together, so the
+       "final payment" below is 50% of the job, not 25%. */
+    const pctOf = (cents) => ((billing.totalCents || 0) > 0 ? Math.round((cents / billing.totalCents) * 100) : null);
+    const thisPct = pctOf(invoice.amount_cents);
+    const CARD = "background:#FDF0EA;border-left:3px solid #C0552B;padding:12px 14px;border-radius:6px;margin:14px 0;font-size:14px;line-height:1.5";
+
+    if (invoice.type === "scheduling") {
+      const invoiced = await db.prepare(
+        `SELECT COALESCE(SUM(amount_cents),0) AS n FROM invoices WHERE project_id=?1 AND status != 'void'`
+      ).bind(invoice.project_id).first().catch(() => null);
+      const finalBalance = Math.max(0, (billing.totalCents || 0) - (invoiced?.n || 0));
+      const finalPct = pctOf(finalBalance);
+      const share = thisPct == null ? "a portion of" : `just ${thisPct}% of`;
+      const finalPhrase = finalBalance > 0
+        ? `The remaining <strong>${money(finalBalance)}</strong>${finalPct == null ? "" : ` (the final ${finalPct}%)`} will be automatically invoiced on your installation day`
+        : `The remaining balance will be invoiced on your installation day`;
+      note = `<p style="${CARD}">
+        <strong>This is ${share} your project total</strong>, due now to lock in your installation date. ${finalPhrase} — nothing else is due before then.</p>`;
+      noteText = `This is ${share} your project total, due now to schedule your install.`
+        + (finalBalance > 0
+            ? ` The remaining ${money(finalBalance)}${finalPct == null ? "" : ` (final ${finalPct}%)`} will be invoiced on install day.`
+            : ` The remaining balance is billed on install day.`);
+    } else {
+      const share = thisPct == null ? "the remainder of your project" : `the last ${thisPct}% of your project`;
+      note = `<p style="${CARD}">
+        <strong>This is your final payment</strong> — ${share}, due on installation day.</p>`;
+      noteText = `This is your final payment — ${share}, due on installation day.`;
+    }
   }
 
   const html = brandedEmail({

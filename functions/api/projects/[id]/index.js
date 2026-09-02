@@ -2,6 +2,7 @@ import { requireAuth, json } from "../../../_lib/auth.js";
 import { sendStageEmail, STAGE_EMAIL_KIND } from "../../../_lib/stage-emails.js";
 import { createInvoice, getProjectBilling } from "../../../_lib/invoices.js";
 import { deleteProjectCascade } from "../../../_lib/cascade.js";
+import { todayCentral } from "../../../_lib/dates.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -153,7 +154,19 @@ export async function onRequestPatch(context) {
   const milestones = [];
   // Setting the install date for the first time = the install is scheduled.
   if (body.install_date !== undefined && body.install_date && !prevInstallDate) {
-    milestones.push("scheduling");
+    /* ...unless that date is today or already gone. The schedule bills 25% when
+       the install is booked and the final 25% on the day itself; when both land
+       on the same day there is no gap to bill across, so raise ONE invoice for
+       the whole remainder rather than sending a customer 25% in the morning and
+       the rest that afternoon. `balance` bills everything still uninvoiced and
+       dedups against the invoice the installing/completed hop below would
+       otherwise raise, so a same-day install that also starts in this PATCH
+       still produces exactly one. */
+    // slice(0,10): the column holds a plain YYYY-MM-DD, and a value that ever
+    // arrived with a time on it would sort AFTER the bare date and read as
+    // future — billing 25% on the morning of the install.
+    const arrived = String(body.install_date).slice(0, 10) <= todayCentral();
+    milestones.push(arrived ? "balance" : "scheduling");
   }
   // The final payment is due the day of installation — fire it when the crew is
   // marked on site. Completion is a backstop for jobs that skip 'installing'.
@@ -165,7 +178,7 @@ export async function onRequestPatch(context) {
     // so running scheduling and balance concurrently (one PATCH that both sets
     // the date and starts the install) would let both claim the same money.
     const chain = (async () => {
-      for (const type of milestones) {
+      for (const type of new Set(milestones)) {
         await createInvoice(context.env, { projectId: id, type, actor: { id: auth.id, name: auth.email } })
           .catch((e) => console.error(`[invoice/${type}]`, String(e)));
       }

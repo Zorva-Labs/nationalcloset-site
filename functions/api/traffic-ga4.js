@@ -38,11 +38,22 @@ export async function onRequestGet(context) {
     "SELECT channel, SUM(sessions) AS sessions FROM ga4_channels GROUP BY channel ORDER BY sessions DESC"
   ).all().catch(() => ({}))).results || [];
 
+  /* The per-dimension breakdowns behind the cards: a label, this period, and
+     the same period before it, so every row can carry its own change without a
+     second query. Grouped by kind here rather than in the page — the page
+     should not have to know that six cards come out of one table. */
+  const dims = (await DB.prepare(
+    "SELECT kind, label, value, prev FROM ga4_dims ORDER BY kind, value DESC"
+  ).all().catch(() => ({}))).results || [];
+  const byKind = {};
+  for (const d of dims) (byKind[d.kind] = byKind[d.kind] || []).push(d);
+
   return json({
     measurementId: meta.value || MEASUREMENT_ID,
     ingested: true,
     asOf: asOf && asOf.d,
     days,
     channels,
+    dims: byKind,
   });
 }

@@ -391,10 +391,35 @@ let mode = "today"; // "today" | "all"
   <p class="pg-sub" id="ga4-asof">Loading&hellip;</p>
   <div class="grid grid-3" id="ga4-tiles"></div>
 </div>
+<div class="panel" id="ga4-pages-panel">
+  <h2>Views by page</h2>
+  <p class="panel-help">Which pages Google saw opened most, and how each compares with the period before it.</p>
+  <div id="ga4-pages"></div>
+</div>
 <div class="panel" id="ga4-channels-panel">
   <h2>Channels, per Analytics</h2>
   <p class="panel-help">How Google groups the sources it saw. It groups differently from section 1, so the lists will not match line for line.</p>
   <div id="ga4-channels"></div>
+</div>
+<div class="panel" id="ga4-events-panel">
+  <h2>Events</h2>
+  <p class="panel-help">Things Google recorded people doing. <strong>page_view</strong> is a page opening; <strong>session_start</strong> is a visit beginning.</p>
+  <div id="ga4-events"></div>
+</div>
+<div class="panel" id="ga4-newusers-panel">
+  <h2>New visitors by channel</h2>
+  <p class="panel-help">First-time visitors only, by how they first found us. This is reach, rather than repeat interest.</p>
+  <div id="ga4-newusers"></div>
+</div>
+<div class="panel" id="ga4-devices-panel">
+  <h2>Visits by device</h2>
+  <p class="panel-help">Phone, tablet or desktop, as Google saw it. Most closet searches happen on a phone.</p>
+  <div id="ga4-devices"></div>
+</div>
+<div class="panel" id="ga4-countries-panel">
+  <h2>Visitors by country</h2>
+  <p class="panel-help">Where Google placed the visitor. The site is served only in the United States, so anything else is a crawler or a VPN.</p>
+  <div id="ga4-countries"></div>
 </div>
 </div>
 </div>
@@ -443,10 +468,11 @@ async function refresh() {
      otherwise see. It does have to say so, though \u2014 a panel left on
      "Loading\u2026" is indistinguishable from one that is merely slow. */
   SSCrm.fetchJSON("/api/traffic-ga4")
-    .then(renderGa4)
+    .then((ga) => { renderGa4(ga); renderGa4Cards(ga); })
     .catch(() => {
       const e = el("ga4-asof");
       if (e) e.textContent = "Couldn\u2019t load the Analytics figures.";
+      renderGa4Cards(null);
     });
 }
 
@@ -906,6 +932,68 @@ function renderGa4(ga) {
           + (Number(c.sessions) || 0).toLocaleString() + '</td></tr>';
       }).join('')
     + '</tbody></table>';
+}
+
+/* Analytics cards: one metric by one dimension, each row a bar against the
+   biggest in its own card, plus the change against the period before. Google's
+   card shape, drawn in this page's furniture rather than the network
+   dashboard's — same data and same arithmetic, this site's look. */
+function gaBars(rows, dimLabel, metricLabel, limit) {
+  if (!rows || !rows.length) return box("Nothing recorded in this period yet.");
+  const top = rows.slice(0, limit || 8);
+  const max = Math.max(...top.map((r) => Number(r.value) || 0), 1);
+  /* A rise from nothing is "new", not "+100%" — a percentage needs a
+     denominator that actually existed. */
+  const delta = (cur, prev) => {
+    cur = Number(cur) || 0; prev = Number(prev) || 0;
+    if (!prev) return cur ? { txt: "new", col: "#1a7f37" } : null;
+    const pc = ((cur - prev) / prev) * 100;
+    if (Math.abs(pc) < 0.5) return { txt: "no change", col: "var(--ink-soft)" };
+    return { txt: (pc > 0 ? "\u25b2" : "\u25bc") + " " + Math.abs(pc).toFixed(0) + "%",
+             col: pc > 0 ? "#1a7f37" : "#b42318" };
+  };
+  const head = `<div style="display:flex;gap:10px;padding:0 0 6px;font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em">`
+    + `<span style="flex:1">${rkEsc(dimLabel)}</span><span>${rkEsc(metricLabel)}</span></div>`;
+  return head + top.map((r) => {
+    const v = Number(r.value) || 0;
+    const d = delta(v, r.prev);
+    return `<div style="padding:7px 0;border-bottom:1px solid var(--line-soft)">
+        <div style="display:flex;align-items:baseline;gap:10px">
+          <span style="flex:1;font-size:13px;color:var(--ink);overflow-wrap:anywhere">${rkEsc(r.label)}</span>
+          <span style="font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink);font-size:13px">${N(v)}</span>
+          <span style="font-size:11px;min-width:64px;text-align:right;color:${d ? d.col : "transparent"}">${d ? d.txt : "&nbsp;"}</span>
+        </div>
+        <div style="margin-top:5px;height:6px;background:var(--bg-soft);border-radius:3px;overflow:hidden"><span style="display:block;height:100%;background:var(--accent);width:${Math.max(2, Math.round((v / max) * 100))}%"></span></div>
+      </div>`;
+  }).join("");
+}
+
+function renderGa4Cards(ga) {
+  const CARDS = [
+    ["ga4-pages",     "page",    "Page",    "Views"],
+    ["ga4-channels",  "channel", "Channel", "Visits"],
+    ["ga4-events",    "event",   "Event",   "Count"],
+    ["ga4-newusers",  "newuser", "Channel", "New visitors"],
+    ["ga4-devices",   "device",  "Device",  "Visits"],
+    ["ga4-countries", "country", "Country", "Visitors"],
+  ];
+  const dims = (ga && ga.dims) || {};
+  const live = !!(ga && ga.measurementId && ga.ingested !== false);
+  for (const [id, kind, dimLabel, metricLabel] of CARDS) {
+    const host = el(id);
+    if (!host) continue;
+    /* Nothing ingested yet: the panel above already explains why, and six cards
+       each saying "nothing recorded" would read as six more faults. */
+    const panel = el(id + "-panel");
+    if (panel) panel.hidden = !live;
+    if (!live) continue;
+    const rows = dims[kind] || [];
+    /* Channels are drawn by renderGa4 as well, from the daily table. Only
+       replace that when the dimension rows are really present, so a site
+       ingested before ga4_dims existed keeps the table it already has. */
+    if (!rows.length && host.innerHTML.trim()) continue;
+    host.innerHTML = gaBars(rows, dimLabel, metricLabel, 8);
+  }
 }
 
 </script>

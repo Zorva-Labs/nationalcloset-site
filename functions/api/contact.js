@@ -162,6 +162,10 @@ https://nationalclosetco.com/crm/
       const utm_content = pick("utm_content");
       const gclid = pick("gclid");
       const landingPage = pick("landing_page");
+      // GA4 ids captured at submit time so a later booked consultation can be sent to
+      // GA4 (Measurement Protocol) against this exact session and imported by Google Ads.
+      const gaClientId = ((pick("ga_client_id") || "").toString().slice(0, 64)) || null;
+      const gaSessionId = ((pick("ga_session_id") || "").toString().slice(0, 32)) || null;
       // Handed back to this browser only, so the confirmation step can attach a
       // service address to THIS lead without lead ids ever going public.
       updateToken = genToken(24);
@@ -190,8 +194,8 @@ https://nationalclosetco.com/crm/
            address_street, address_city, address_state, address_zip, location,
            interest, message,
            source_page, utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-           referrer, user_agent, ip_hash, contact_id, gclid, landing_page, update_token)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)
+           referrer, user_agent, ip_hash, contact_id, gclid, landing_page, update_token, ga_client_id, ga_session_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)
          RETURNING id`
       )
         .bind(
@@ -200,7 +204,7 @@ https://nationalclosetco.com/crm/
           interest || null, message || null,
           source,
           utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-          ref, ua, ipHash, contactId, gclid, landingPage, updateToken
+          ref, ua, ipHash, contactId, gclid, landingPage, updateToken, gaClientId, gaSessionId
         )
         .first();
       leadId = leadRow?.id || null;

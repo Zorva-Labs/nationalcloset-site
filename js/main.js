@@ -303,6 +303,7 @@
     document.head.appendChild(_ts);
   }
 
+  function gaCookie(re) { try { var m = document.cookie.match(re); return m ? m[1] : ""; } catch (e) { return ""; } }
   document.querySelectorAll("form[data-lead]").forEach(function (form) {
     // Stamp when the form became available; the submit carries elapsed ms.
     var _renderTs = Date.now();
@@ -366,7 +367,11 @@
         // Anti-spam signals (all verified server-side, all fail open).
         hp_url: (fd.get("hp_url") || "").toString(),
         hp_ms: String(Date.now() - _renderTs),
-        cf_ts: (fd.get("cf-turnstile-response") || "").toString()
+        cf_ts: (fd.get("cf-turnstile-response") || "").toString(),
+        // GA4 client + session ids, so a booked consultation can later be attributed
+        // to this visit (Measurement Protocol -> GA4 key event -> Google Ads import).
+        ga_client_id: gaCookie(/(?:^|; )_ga=GA1\.\d\.([\d.]+)/),
+        ga_session_id: gaCookie(/(?:^|; )_ga_EJEDXZZWJN=GS\d\.\d\.s?(\d+)/)
       };
       // Carry the ad click through with the lead. The server can't read any of
       // this itself — it only ever sees a POST to /api/contact.

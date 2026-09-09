@@ -9,7 +9,7 @@
      per-action labels below — the AW tag then activates automatically. Leave
      them blank to stay GA4-only (import GA4 conversions into Ads instead). */
   var GADS_ID = "AW-18306256681";            // Google Ads Conversion ID (account 896-812-2786)
-  var GADS_LABELS = { lead: "UnZvCNvcxMwcEKmejZlE", call: "" };  // "Submit lead form" label set; "call" pending
+  var GADS_LABELS = { lead: "UnZvCNvcxMwcEKmejZlE", call: "rm_UCOCV2_AcEKmejZlE" };  // "Submit lead form" + "Phone call lead (website click-to-call)" labels
   if (typeof gtag === "function" && GADS_ID) { gtag("config", GADS_ID); }
 
   /* ---------- Lead attribution ----------

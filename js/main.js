@@ -395,6 +395,13 @@
       postLead()
         .catch(function () { return new Promise(function (res) { setTimeout(res, 1000); }).then(postLead); })
         .then(function (res) {
+          // A dropped submission (honeypot / time-trap / spam heuristics) is answered
+          // with HTTP 200 and {ok:true} on purpose, so a bot cannot tell it was filtered.
+          // Only a real save returns success:true (functions/api/contact.js), so that is
+          // the discriminator: without it, no conversion is reported and the visitor is
+          // shown the failure message rather than a false "You're all set!".
+          if (!res || res.success !== true) { fail(); return; }
+
           // Enhanced Conversions: hand Google the customer's own contact details
           // so it can match this lead to the ad click that drove it. gtag
           // SHA-256-hashes these client-side before they ever leave the browser —
@@ -417,8 +424,8 @@
             }
           } catch (e) { /* enhanced data is best-effort; never block the conversion */ }
 
-          // Conversion fires only once the lead is actually saved (bots take the
-          // honeypot early-return above and never reach here). value/currency
+          // Conversion fires only once the lead is actually saved — guaranteed by the
+          // res.success gate above, not by any client-side bot check. value/currency
           // match the Ads "Submit lead form" action (1.0 USD). Note this fires
           // BEFORE the address step — the lead is already banked, so a customer
           // who skips the address still counts as a conversion.

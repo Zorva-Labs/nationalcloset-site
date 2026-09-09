@@ -81,7 +81,8 @@ body::before {
   font-family: var(--body);
   font-size: 0.72rem; font-weight: 700;
   letter-spacing: 0.22em; text-transform: uppercase;
-  color: var(--clay);
+  /* --clay (#d2683f) is ~3.1:1 on near-white and fails WCAG AA for text; --clay-deep clears it. */
+  color: var(--clay-deep);
 }
 .eyebrow::before {
   content: ""; width: 28px; height: 1px; background: var(--clay);
@@ -173,17 +174,26 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .hamburger.open span:nth-child(2) { opacity: 0; }
 .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
+/* Reassurance line under a lead form's submit button. Lived only in index.html's
+   inline block, so every other page rendered the two items as run-on text. */
+.form-reassure { display: flex; flex-wrap: wrap; gap: .4rem 1rem; margin-top: .6rem;
+  font-size: .8rem; font-weight: 600; color: var(--muted); }
+.form-reassure span { display: inline-flex; align-items: center; gap: .35rem; }
+.form-reassure .tick { color: var(--clay-deep); font-weight: 800; }
+
 /* Mobile drawer */
 .drawer {
-  position: fixed; inset: 0; z-index: 999;
+  position: fixed; inset: 0; z-index: 999; visibility: hidden;
   background: var(--white);
   padding: calc(var(--nav-h) + 1.5rem) 1.5rem 2rem;
   display: flex; flex-direction: column;
   transform: translateY(-100%);
-  transition: transform .5s var(--ease);
+  /* visibility keeps the closed drawer out of the tab order; the 0s .5s delay
+     lets the slide-out finish before it disappears. */
+  transition: transform .5s var(--ease), visibility 0s .5s;
   overflow-y: auto;
 }
-.drawer.open { transform: translateY(0); }
+.drawer.open { transform: translateY(0); visibility: visible; transition: transform .5s var(--ease), visibility 0s 0s; }
 .drawer a.drawer__link {
   font-family: var(--display); font-weight: 800; font-size: 2rem; letter-spacing: -0.02em;
   padding: 0.7rem 0; border-bottom: 1px solid var(--line);
@@ -623,3 +633,10 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .ba__range:focus-visible + .ba__knob { outline: 3px solid var(--clay); outline-offset: 3px; }
 .ba__cap { text-align: center; margin-top: 1.1rem; color: var(--ink-soft); font-size: 0.96rem; }
 .ba__cap b { color: var(--clay-deep); font-weight: 700; white-space: nowrap; }
+
+/* The .mobicta bar is position:fixed at the bottom on phones/tablets, so the last
+   ~56px of every page sat underneath it (the footer's design credit). Reserve the
+   space, plus the iOS home-indicator inset. */
+@media (max-width: 939px) {
+  body { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+}

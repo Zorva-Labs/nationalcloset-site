@@ -605,3 +605,58 @@
     }
   } catch (e) { /* best-effort progressive enhancement */ }
 })();
+
+
+/* ---------- Before/after sliders, cost estimator, gallery + blog filters (Sept 2026) ---------- */
+(function () {
+  // Before/after: the range input drives the --x custom property the CSS clips on.
+  document.querySelectorAll("[data-ba]").forEach(function (ba) {
+    var r = ba.querySelector(".ba__range"); if (!r) return;
+    var set = function () { ba.style.setProperty("--x", r.value + "%"); };
+    r.addEventListener("input", set); set();
+  });
+
+  // Cost estimator. Ranges mirror the published cost guide; size picks a slice of
+  // the range and finish scales it. Rounded to $100. Never a quote — the copy says
+  // the designer confirms the exact price at the free in-home design.
+  var RANGES = { reachin: [1000, 3000], walkin: [2500, 10000], pantry: [1500, 5000], garage: [2500, 8000], office: [2000, 7000], laundry: [1500, 6000] };
+  var SIZE = { small: [0, 0.34], medium: [0.25, 0.7], large: [0.6, 1] };
+  var FINISH = { standard: 1, wood: 1.12, premium: 1.3 };
+  document.querySelectorAll("[data-estimator]").forEach(function (est) {
+    var type = est.querySelector('[data-est="type"]');
+    var out = est.querySelector('[data-est="range"]');
+    if (!type || !out) return;
+    function pick(group) { var on = est.querySelector('[data-est="' + group + '"] .on'); return on ? on.getAttribute("data-v") : null; }
+    function money(n) { return "$" + Math.round(n / 100) * 100 .toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+    function calc() {
+      var rg = RANGES[type.value] || RANGES.walkin, s = SIZE[pick("size")] || SIZE.medium, f = FINISH[pick("finish")] || 1;
+      var span = rg[1] - rg[0];
+      var lo = Math.round((rg[0] + span * s[0]) * f / 100) * 100, hi = Math.round((rg[0] + span * s[1]) * f / 100) * 100;
+      out.textContent = money(lo) + " – " + money(hi) + (hi > rg[1] ? "+" : "");
+      try { if (typeof gtag === "function") gtag("event", "estimate", { space: type.value, size: pick("size"), finish: pick("finish"), low: lo, high: hi }); } catch (e) {}
+    }
+    est.querySelectorAll(".est__chips button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        b.parentNode.querySelectorAll("button").forEach(function (x) { x.classList.remove("on"); });
+        b.classList.add("on"); calc();
+      });
+    });
+    type.addEventListener("change", calc);
+    calc();
+  });
+
+  // Filter chips: [data-filters="#grid"] buttons with data-filter; items carry data-cat="a b".
+  document.querySelectorAll("[data-filters]").forEach(function (bar) {
+    var target = document.querySelector(bar.getAttribute("data-filters")); if (!target) return;
+    bar.querySelectorAll("button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        bar.querySelectorAll("button").forEach(function (x) { x.classList.remove("on"); }); b.classList.add("on");
+        var v = b.getAttribute("data-filter");
+        target.querySelectorAll("[data-cat]").forEach(function (el) {
+          var cats = (el.getAttribute("data-cat") || "").split(" ");
+          el.hidden = !(v === "all" || cats.indexOf(v) >= 0);
+        });
+      });
+    });
+  });
+})();

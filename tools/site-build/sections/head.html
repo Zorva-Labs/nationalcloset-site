@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Custom Closets &amp; Closet Organizers | Nashville TN</title>
+<meta name="description" content="Custom closets, closet organizers &amp; custom pantries at a price normal families can afford. Serving Nashville &amp; Middle TN — free in-home design." />
+<link rel="canonical" href="https://nationalclosetco.com/" />
+<meta name="robots" content="index, follow, max-image-preview:large" />
+<meta name="theme-color" content="#16140f" />
+
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="National Closet Company" />
+<meta property="og:title" content="Custom Closets &amp; Closet Organizers | Nashville TN" />
+<meta property="og:description" content="Custom closets, closet organizers &amp; custom pantries at a price normal families can afford. Serving Nashville &amp; Middle TN — free in-home design." />
+<meta property="og:url" content="https://nationalclosetco.com/" />
+<meta property="og:image" content="https://nationalclosetco.com/img/hero-closet-og.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Affordable Custom Closets | National Closet Co." />
+<meta name="twitter:description" content="Beautiful custom-designed closets at a price normal families can afford. Custom closet systems for Nashville &amp; Middle TN — free in-home design." />
+<meta name="twitter:image" content="https://nationalclosetco.com/img/hero-closet-og.jpg" />
+
+<!-- Fonts are self-hosted (same-origin). The hero image is inlined as a data-URI
+     (no request), so the LCP element is the H1 text — preload Montserrat so it
+     swaps in early and LCP stays low + stable. -->
+<link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/montserrat-latin.woff2" />
+<link rel="icon" type="image/png" href="/img/favicon-ncc.png" />
+<link rel="apple-touch-icon" href="/img/favicon-ncc.png" />
+<!-- styles.css inlined to eliminate the render-blocking request and speed up LCP.
+     If css/styles.css changes, re-run the inline. Other pages load it externally. -->
+<style id="ncc-inline-css">
+/* Self-hosted fonts (same-origin). Montserrat=swap (primary UI font); Caveat=optional so the decorative script font never delays LCP. */
+@font-face{font-family:'Montserrat';font-style:normal;font-weight:100 900;font-display:swap;src:url(/fonts/montserrat-latin.woff2) format('woff2')}
+@font-face{font-family:'Caveat';font-style:normal;font-weight:400 700;font-display:swap;src:url(/fonts/caveat-latin.woff2) format('woff2')}
+/* ============================================================
+   National Closet Company — Crisp Architectural design system
+   White · Charcoal · Terracotta · Fog
+   Display: Archivo · Body: Hanken Grotesk
+   ============================================================ */
+
+:root {
+  /* Color */
+  --white:      #ffffff;
+  --paper:      #faf9f6;
+  --fog:        #edece8;
+  --fog-2:      #e3e1dc;
+  --line:       #d8d6d0;
+  --ink:        #16140f;
+  --ink-soft:   #3a362f;
+  --muted:      #6c665b;
+  --clay:       #d2683f;   /* terracotta accent */
+  --clay-deep:  #b9542f;
+  --clay-wash:  #f6e6df;
+  --sand:       #c9a063;
+
+  /* Type */
+  --display: "Montserrat", system-ui, sans-serif;
+  --body:    "Montserrat", system-ui, sans-serif;
+
+  /* Spacing scale */
+  --sp-1: 0.5rem;
+  --sp-2: 1rem;
+  --sp-3: 1.5rem;
+  --sp-4: 2rem;
+  --sp-5: 3rem;
+  --sp-6: 4.5rem;
+  --sp-7: 7rem;
+  --sp-8: 10rem;
+
+  --maxw: 1240px;
+  --radius: 4px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --nav-h: 72px;
+}
+
+/* ---------- Reset ---------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; scroll-padding-top: var(--nav-h); overflow-x: hidden; overflow-x: clip; max-width: 100%; }
+body {
+  font-family: var(--body);
+  background: var(--white);
+  color: var(--ink);
+  line-height: 1.55;
+  font-size: 1.0625rem;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+img { display: block; max-width: 100%; height: auto; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+ul { list-style: none; }
+::selection { background: var(--clay); color: #fff; }
+
+/* Grain overlay for atmosphere */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 9999;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- Layout primitives ---------- */
+.wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 1.25rem; }
+.section { padding: var(--sp-7) 0; position: relative; }
+.section--fog { background: var(--fog); }
+.section--ink { background: var(--ink); color: var(--paper); }
+.section--tight { padding: var(--sp-6) 0; }
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  font-family: var(--body);
+  font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  /* --clay (#d2683f) is ~3.1:1 on near-white and fails WCAG AA for text. */
+  color: var(--clay-deep);
+}
+.eyebrow::before {
+  content: ""; width: 28px; height: 1px; background: var(--clay);
+  display: inline-block;
+}
+.section--ink .eyebrow { color: var(--sand); }
+.section--ink .eyebrow::before { background: var(--sand); }
+
+h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.02; letter-spacing: -0.02em; }
+.display {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(2.6rem, 8.5vw, 6.5rem);
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+  text-transform: none;
+}
+.h2 { font-size: clamp(2rem, 5.2vw, 3.6rem); line-height: 0.98; letter-spacing: -0.03em; }
+.h3 { font-size: clamp(1.35rem, 2.6vw, 1.9rem); letter-spacing: -0.02em; }
+.lead { font-size: clamp(1.05rem, 1.6vw, 1.28rem); color: var(--ink-soft); max-width: 60ch; line-height: 1.5; }
+.section--ink .lead { color: #cbc6bc; }
+.muted { color: var(--muted); }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+  font-weight: 700; font-size: 0.95rem; letter-spacing: 0.01em;
+  padding: 1rem 1.6rem; border-radius: var(--radius);
+  min-height: 48px;
+  transition: transform .35s var(--ease), background .25s, color .25s, box-shadow .35s var(--ease);
+  position: relative; will-change: transform;
+}
+.btn .arr { transition: transform .35s var(--ease); }
+.btn:hover .arr { transform: translateX(5px); }
+.btn--primary { background: var(--clay); color: #fff; box-shadow: 0 10px 24px -12px rgba(210,104,63,.8); }
+.btn--primary:hover { background: var(--clay-deep); transform: translateY(-3px); box-shadow: 0 18px 34px -14px rgba(185,84,47,.9); }
+.btn--ink { background: var(--ink); color: #fff; }
+.btn--ink:hover { transform: translateY(-3px); background: #000; }
+.btn--ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
+.btn--ghost:hover { background: var(--ink); color: #fff; transform: translateY(-3px); }
+.btn--light { background: #fff; color: var(--ink); }
+.btn--light:hover { transform: translateY(-3px); background: var(--paper); }
+.btn--block { width: 100%; }
+
+/* ---------- Nav ---------- */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  display: flex; flex-direction: column;   /* row 1 = utility bar (desktop), row 2 = main nav */
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: saturate(140%) blur(12px);
+  border-bottom: 1px solid transparent;
+  transition: border-color .3s, background .3s, box-shadow .3s;
+}
+.nav.scrolled { border-bottom-color: var(--line); box-shadow: 0 8px 30px -22px rgba(0,0,0,.4); }
+
+/* Top utility bar — phone + social links on their own row (desktop only) */
+.nav__top { display: none; }
+.nav__top-inner { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 1.25rem; height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.nav__top-msg { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.02em; color: rgba(255,255,255,0.72); }
+.nav__top-right { display: flex; align-items: center; gap: 0.5rem; }
+
+.nav__inner { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 1.25rem; min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.brand { display: flex; align-items: center; gap: 0.6rem; font-family: var(--display); font-weight: 800; font-size: 1.1rem; letter-spacing: -0.02em; line-height: 1; }
+.brand__mark { height: 40px; width: auto; flex: none; display: block; transition: transform .4s var(--ease); }
+.brand__mark img { height: 40px; width: auto; display: block; }
+.brand:hover .brand__mark { transform: scale(1.06) rotate(-1deg); }
+/* Subtitle sized in em (scales with the wordmark) + tracking tuned so
+   "Custom Closets & Pantries" matches the width of "National Closet Co."
+   in every location the lockup appears (header, footer, etc.). Font-size
+   nudged 0.53em -> 0.515em when "Systems" (7ch) became "Pantries" (8ch),
+   so the one-character-wider word still lines up under the wordmark. */
+.brand small { display: block; font-family: var(--body); font-weight: 600; font-size: 0.515em; letter-spacing: 0.118em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+
+.nav__links { display: none; align-items: center; gap: 0.35rem; }
+.nav__link { font-weight: 600; font-size: 0.93rem; padding: 0.55rem 0.7rem; border-radius: var(--radius); color: var(--ink-soft); position: relative; transition: color .2s; }
+.nav__link::after { content:""; position:absolute; left:0.7rem; right:0.7rem; bottom:0.32rem; height:2px; background:var(--clay); transform: scaleX(0); transform-origin: left; transition: transform .3s var(--ease); }
+.nav__link:hover { color: var(--ink); }
+.nav__link:hover::after { transform: scaleX(1); }
+.nav__cta { display: none; align-items: center; gap: 0.6rem; }
+.nav__phone { display: none; font-weight: 700; font-size: 0.95rem; align-items: center; gap: 0.45rem; }
+.nav__phone:hover { color: var(--clay); }
+.nav__social { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; color: var(--ink); transition: color .2s, background .2s; }
+.nav__social:hover { color: var(--clay); background: var(--clay-wash); }
+.nav__social svg { display: block; }
+
+.hamburger { display: inline-flex; flex-direction: column; gap: 5px; padding: 0.6rem; margin-right: -0.4rem; }
+.hamburger span { width: 24px; height: 2px; background: var(--ink); border-radius: 2px; transition: transform .35s var(--ease), opacity .25s; }
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* Mobile drawer */
+.drawer {
+  position: fixed; inset: 0; z-index: 999;
+  background: var(--white);
+  padding: calc(var(--nav-h) + 1.5rem) 1.5rem 2rem;
+  display: flex; flex-direction: column;
+  transform: translateY(-100%);
+  transition: transform .5s var(--ease);
+  overflow-y: auto;
+}
+.drawer.open { transform: translateY(0); }
+.drawer a.drawer__link {
+  font-family: var(--display); font-weight: 800; font-size: 2rem; letter-spacing: -0.02em;
+  padding: 0.7rem 0; border-bottom: 1px solid var(--line);
+  display: flex; align-items: baseline; justify-content: space-between;
+}
+.drawer a.drawer__link .n { font-family: var(--body); font-size: 0.8rem; font-weight: 700; color: var(--clay); letter-spacing: 0.1em; }
+.drawer__foot { margin-top: auto; padding-top: 2rem; display: grid; gap: 0.8rem; }
+.drawer__foot .btn { width: 100%; }
+.drawer__contact { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 700; font-size: 1.05rem; }
+.drawer__contact a { display: inline-flex; align-items: center; gap: 0.5rem; }
+.drawer__contact a:hover { color: var(--clay); }
+
+/* ---------- Hero ---------- */
+.hero { position: relative; padding-top: calc(var(--nav-h) + 3rem); padding-bottom: var(--sp-6); overflow: hidden; }
+.hero__bg { position: absolute; inset: 0; z-index: -2; overflow: hidden; }
+.hero__bg img { width: 100%; height: 100%; object-fit: cover; object-position: center; animation: imgIn 1.4s var(--ease) .1s forwards; }
+.hero__bg::after { content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.95) 0%, rgba(255,255,255,.86) 34%, rgba(255,255,255,.74) 100%); }
+@media (min-width: 940px) {
+  .hero__bg::after { background: linear-gradient(102deg, rgba(255,255,255,.97) 0%, rgba(255,255,255,.92) 36%, rgba(255,255,255,.6) 58%, rgba(255,255,255,.22) 100%); }
+}
+.hero__form { position: relative; }
+.hero__form .form-card { box-shadow: 0 36px 80px -38px rgba(20,18,14,.5); }
+.hero__form-tag { display: inline-block; text-align: center; font-weight: 700; font-size: .76rem; letter-spacing: .04em; text-transform: uppercase; color: var(--clay-deep); background: var(--clay-wash); padding: .4rem .9rem; border-radius: 100px; line-height: 1.45; }
+.hero__inner { display: grid; gap: 2.2rem; }
+.hero__tag { display: inline-flex; align-items: center; gap: 0.6rem; align-self: start;
+  background: var(--clay-wash); color: var(--clay-deep); font-weight: 700; font-size: 0.78rem;
+  letter-spacing: 0.06em; text-transform: uppercase; padding: 0.5rem 0.9rem; border-radius: 100px; }
+.hero__tag .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--clay); box-shadow: 0 0 0 0 rgba(210,104,63,.6); animation: pulse 2.2s infinite; }
+@keyframes pulse { 0%{ box-shadow:0 0 0 0 rgba(210,104,63,.55);} 70%{ box-shadow:0 0 0 9px rgba(210,104,63,0);} 100%{ box-shadow:0 0 0 0 rgba(210,104,63,0);} }
+.hero h1 .line { display: block; overflow: hidden; padding-bottom: 0.16em; margin-bottom: -0.16em; }
+.hero h1 .line > span { display: block; transform: translateY(115%); animation: riseIn .9s var(--ease) forwards; }
+.hero h1 .line:nth-child(2) > span { animation-delay: .12s; }
+.hero h1 .line:nth-child(3) > span { animation-delay: .24s; }
+@keyframes riseIn { to { transform: translateY(0); } }
+.hero .accent { color: var(--clay); position: relative; }
+.hero__sub { opacity: 0; animation: fadeUp .8s var(--ease) .5s forwards; }
+/* Playful brand slogan under the headline (handwritten Caveat) */
+.hero__slogan { font-family: "Caveat", "Montserrat", cursive; color: var(--clay-deep); font-weight: 700; font-size: clamp(1.55rem, 3.6vw, 2.35rem); line-height: 1.04; letter-spacing: 0.01em; margin-top: 0.9rem; text-align: right; }
+/* The pricing claim. Reads as a statement of fact, not a tagline — so it sits
+   flush under the h1 with a rule, rather than in a badge or a script face. */
+.no-sale { margin-top: 1rem; padding-left: 0.9rem; border-left: 3px solid var(--clay); font-size: clamp(1rem, 1.9vw, 1.15rem); font-weight: 600; color: var(--ink-soft); line-height: 1.45; }
+.no-sale strong { color: var(--ink); font-weight: 800; }
+/* Honest scarcity: real install capacity, not a fake countdown. The month is
+   computed at runtime (see CAPACITY in js/main.js) so it can never go stale —
+   only the slot count is hand-set, and the bar hides itself if it isn't. */
+.capacity { display: none; align-items: center; gap: .6rem; margin-top: 1rem; padding: .7rem 1rem;
+  background: var(--clay-wash); border: 1px solid #EBC7B7; border-left: 4px solid var(--clay);
+  border-radius: 10px; font-size: .95rem; font-weight: 600; color: var(--ink-soft); line-height: 1.4; }
+.capacity.is-on { display: flex; }
+.capacity .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--clay); flex: none;
+  box-shadow: 0 0 0 0 rgba(210,104,63,.6); animation: pulse 2.2s infinite; }
+.capacity b { color: var(--clay-deep); font-weight: 800; }
+/* Reassurance directly under the submit button, where hesitation happens. */
+.form-reassure { display: flex; flex-wrap: wrap; gap: .4rem 1rem; margin-top: .6rem;
+  font-size: .8rem; font-weight: 600; color: var(--muted); }
+.form-reassure span { display: inline-flex; align-items: center; gap: .35rem; }
+.form-reassure .tick { color: var(--clay-deep); font-weight: 800; }
+.hero__actions { display: flex; flex-wrap: wrap; gap: 0.8rem; opacity: 0; animation: fadeUp .8s var(--ease) .62s forwards; }
+.hero__proof { display: flex; flex-wrap: wrap; gap: 1.4rem 2rem; align-items: center; padding-top: 0.6rem; opacity: 0; animation: fadeUp .8s var(--ease) .74s forwards; }
+.hero__proof .stars { color: var(--clay); letter-spacing: 2px; }
+.hero__proof b { font-family: var(--display); }
+@keyframes fadeUp { from { opacity:0; transform: translateY(22px);} to { opacity:1; transform: translateY(0);} }
+
+.hero__visual { position: relative; }
+.hero__photo { position: relative; border-radius: var(--radius); overflow: hidden; background: var(--ink); aspect-ratio: 4/5; box-shadow: 0 40px 80px -40px rgba(0,0,0,.5); }
+.hero__photo img { width: 100%; height: 100%; object-fit: cover; animation: imgIn 1.2s var(--ease) .3s forwards; }
+/* Ken-burns zoom only — NO opacity fade. An opacity:0 start would hide the
+   hero image (the LCP element) until the animation runs, wrecking LCP. */
+@keyframes imgIn { from { transform: scale(1.06);} to { transform: scale(1);} }
+.hero__chip {
+  position: absolute; background: #fff; border-radius: var(--radius);
+  padding: 0.85rem 1.05rem; box-shadow: 0 20px 40px -20px rgba(0,0,0,.45);
+  display: flex; align-items: center; gap: 0.7rem; font-weight: 700; font-size: 0.9rem;
+  animation: floaty 5s ease-in-out infinite;
+}
+.hero__chip .big { font-family: var(--display); font-size: 1.7rem; line-height: 1; color: var(--clay); }
+.hero__chip--1 { left: -0.6rem; bottom: 1.4rem; }
+.hero__chip--2 { right: -0.6rem; top: 1.6rem; animation-delay: 1.2s; }
+@keyframes floaty { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-9px);} }
+
+/* ---------- Marquee ---------- */
+.marquee { background: var(--ink); color: var(--paper); overflow: hidden; padding: 1.1rem 0; border-top: 1px solid #2a261f; border-bottom: 1px solid #2a261f; }
+.marquee__track { display: flex; gap: 3rem; width: max-content; animation: scroll 32s linear infinite; }
+.marquee:hover .marquee__track { animation-play-state: paused; }
+.marquee__item { display: inline-flex; align-items: center; gap: 1rem; font-family: var(--display); font-weight: 800; font-size: 1.15rem; letter-spacing: -0.01em; white-space: nowrap; text-transform: uppercase; }
+.marquee__item .star { color: var(--clay); }
+@keyframes scroll { to { transform: translateX(-50%); } }
+
+/* ---------- Section header ---------- */
+.sec-head { display: grid; gap: 1.1rem; margin-bottom: var(--sp-5); max-width: 70ch; }
+.sec-head--split { display: grid; gap: 1.4rem; }
+
+/* ---------- Services ---------- */
+.svc-grid { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.svc {
+  background: var(--white); position: relative;
+  display: flex; flex-direction: column; min-height: 230px;
+  transition: background .4s var(--ease), color .4s; overflow: hidden;
+}
+.svc::after { content:""; position:absolute; left:0; bottom:0; height:3px; width:100%; background: var(--clay); transform: scaleX(0); transform-origin: left; transition: transform .45s var(--ease); z-index: 2; }
+.svc:hover { background: var(--ink); color: var(--paper); }
+.svc:hover::after { transform: scaleX(1); }
+.svc:hover .svc__desc { color: #c7c2b8; }
+.svc:hover .svc__arrow { background: var(--clay); color: #fff; transform: rotate(0deg); border-color: var(--clay); }
+.svc__img { display: block; aspect-ratio: 16/10; overflow: hidden; background: var(--fog-2); }
+.svc__img img { width: 100%; height: 100%; object-fit: cover; transition: transform .65s var(--ease); }
+.svc:hover .svc__img img { transform: scale(1.06); }
+.svc__body { padding: 1.4rem 1.4rem 1.5rem; display: flex; flex-direction: column; gap: 0.55rem; flex: 1; }
+.svc h3 { font-size: 1.3rem; letter-spacing: -0.02em; }
+.svc__desc { color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
+.svc__arrow { margin-top: auto; align-self: flex-start; width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid currentColor; display: grid; place-items: center; transition: all .4s var(--ease); transform: rotate(-45deg); }
+.svc:hover .svc__arrow { transform: rotate(0deg); }
+.svc--cta { background: var(--ink); color: var(--paper); justify-content: center; }
+.svc--cta .svc__desc { color: #c7c2b8; }
+.svc--cta .svc__arrow { background: var(--clay); color: #fff; border-color: var(--clay); transform: rotate(0deg); }
+.svc--cta:hover { background: #000; }
+
+/* ---------- Stats ---------- */
+.stats { display: grid; gap: 1px; background: #2a261f; border-radius: var(--radius); overflow: hidden; }
+.stat { padding: 2rem 1.4rem; background: var(--ink); text-align: center; }
+.stat__num { font-family: var(--display); font-weight: 900; font-size: clamp(2.6rem, 6vw, 4.2rem); line-height: 1; letter-spacing: -0.04em; color: var(--paper); }
+.stat__num .suf { color: var(--clay); }
+.stat__label { margin-top: 0.5rem; font-size: 0.82rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #9a958b; }
+
+/* ---------- Process ---------- */
+.steps { display: grid; gap: 1.4rem; counter-reset: step; }
+.step { display: grid; grid-template-columns: auto 1fr; gap: 1.2rem; padding: 1.6rem 0; border-top: 1px solid var(--line); align-items: start; transition: padding-left .4s var(--ease); }
+.step:hover { padding-left: 0.6rem; }
+.step__n { font-family: var(--display); font-weight: 900; font-size: 1.6rem; color: var(--clay); line-height: 1; min-width: 2.4rem; }
+.step h3 { font-size: 1.4rem; margin-bottom: 0.3rem; }
+.step p { color: var(--muted); max-width: 56ch; }
+
+/* ---------- Gallery ---------- */
+.gallery { display: grid; gap: 0.9rem; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; grid-auto-flow: dense; }
+.gal {
+  position: relative; overflow: hidden; border-radius: var(--radius); background: var(--fog-2);
+  aspect-ratio: 1/1;
+}
+.gal img { width: 100%; height: 100%; object-fit: cover; transition: transform .7s var(--ease); }
+.gal:hover img { transform: scale(1.06); }
+.gal__cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 1.4rem 1.1rem 1rem; color: #fff;
+  background: linear-gradient(to top, rgba(20,18,14,.85), transparent); font-weight: 700;
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  transform: translateY(8px); opacity: 0; transition: all .4s var(--ease); }
+.gal:hover .gal__cap { transform: translateY(0); opacity: 1; }
+.gal--tall { grid-row: span 2; aspect-ratio: auto; }
+.gal--wide { grid-column: span 2; aspect-ratio: 2/1; }
+@media (max-width: 640px) {
+  .gallery { grid-template-columns: 1fr 1fr; }
+  .gal--wide { grid-column: auto; aspect-ratio: 1/1; }
+  .gal--tall { grid-row: auto; aspect-ratio: 1/1; }
+}
+
+/* ---------- Before / after slider ---------- */
+.ba-feature { max-width: 560px; margin: 0 auto 2.6rem; }
+.ba { position: relative; aspect-ratio: 3/4; border-radius: var(--radius); overflow: hidden; background: var(--fog-2); box-shadow: 0 40px 80px -42px rgba(0,0,0,.5); user-select: none; touch-action: pan-y; }
+.ba__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.ba__after { clip-path: inset(0 0 0 var(--x, 50%)); }
+.ba__tag { position: absolute; top: 1rem; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: #fff; background: rgba(22,20,15,.74); padding: 0.4rem 0.75rem; border-radius: 100px; pointer-events: none; }
+.ba__tag--b { left: 1rem; } .ba__tag--a { right: 1rem; }
+.ba__line { position: absolute; top: 0; bottom: 0; left: var(--x, 50%); width: 3px; margin-left: -1.5px; background: #fff; box-shadow: 0 0 8px rgba(0,0,0,.3); pointer-events: none; }
+.ba__knob { position: absolute; top: 50%; left: var(--x, 50%); width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: #fff; box-shadow: 0 3px 14px rgba(0,0,0,.32); display: flex; align-items: center; justify-content: center; gap: 6px; pointer-events: none; }
+.ba__knob i { width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+.ba__knob i:first-child { border-right: 8px solid var(--clay); }
+.ba__knob i:last-child { border-left: 8px solid var(--clay); }
+.ba__range { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.ba__range:focus-visible + .ba__knob { outline: 3px solid var(--clay); outline-offset: 3px; }
+.ba__cap { text-align: center; margin-top: 1.1rem; color: var(--ink-soft); font-size: 0.96rem; }
+.ba__cap b { color: var(--clay-deep); font-weight: 700; white-space: nowrap; }
+
+/* ---------- Split feature ---------- */
+.split { display: grid; gap: 2.2rem; align-items: center; }
+.split__media { position: relative; border-radius: var(--radius); overflow: hidden; aspect-ratio: 5/4; background: var(--fog-2); box-shadow: 0 30px 60px -36px rgba(0,0,0,.4); }
+.split__media img { width: 100%; height: 100%; object-fit: cover; }
+.feat-list { display: grid; gap: 0.9rem; margin-top: 1.4rem; }
+.feat-list li { display: flex; gap: 0.8rem; align-items: flex-start; }
+.feat-list .tick { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--clay-wash); color: var(--clay-deep); display: grid; place-items: center; font-weight: 800; font-size: 0.85rem; margin-top: 2px; }
+
+/* ---------- Testimonials ---------- */
+.tcard { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.8rem 1.6rem; display: flex; flex-direction: column; gap: 1rem; height: 100%; transition: transform .4s var(--ease), box-shadow .4s var(--ease); }
+.tcard:hover { transform: translateY(-5px); box-shadow: 0 26px 50px -30px rgba(0,0,0,.35); }
+.tcard .stars { color: var(--clay); letter-spacing: 2px; }
+.tcard blockquote { font-family: var(--display); font-weight: 600; font-size: 1.18rem; line-height: 1.32; letter-spacing: -0.01em; }
+.tcard__who { display: flex; align-items: center; gap: 0.75rem; margin-top: auto; }
+.tcard__av { width: 42px; height: 42px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font-family: var(--display); font-weight: 800; }
+.tcard__who b { display: block; }
+.tcard__who span { font-size: 0.85rem; color: var(--muted); }
+
+/* ---------- FAQ ---------- */
+.faq { border-top: 1px solid var(--line); }
+.faq__item { border-bottom: 1px solid var(--line); }
+.faq__q { width: 100%; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 1.2rem;
+  padding: 1.4rem 0.2rem; font-family: var(--display); font-weight: 700; font-size: clamp(1.08rem, 2vw, 1.35rem); letter-spacing: -0.01em; color: var(--ink); }
+.faq__q:hover { color: var(--clay); }
+.faq__icon { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; position: relative; transition: all .3s var(--ease); }
+.faq__icon::before, .faq__icon::after { content:""; position:absolute; background: var(--ink); border-radius: 2px; transition: transform .3s var(--ease), background .3s; }
+.faq__icon::before { width: 13px; height: 2px; }
+.faq__icon::after { width: 2px; height: 13px; }
+.faq__item.open .faq__icon { background: var(--clay); border-color: var(--clay); }
+.faq__item.open .faq__icon::before, .faq__item.open .faq__icon::after { background: #fff; }
+.faq__item.open .faq__icon::after { transform: scaleY(0); }
+.faq__a { max-height: 0; overflow: hidden; transition: max-height .4s var(--ease); }
+.faq__a-inner { padding: 0 0.2rem 1.5rem; color: var(--ink-soft); max-width: 75ch; line-height: 1.6; }
+
+/* ---------- Not-a-franchise band ---------- */
+.nofran { display: grid; gap: 2.2rem; align-items: center; }
+.nofran__chips { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1.4rem 0 1.7rem; }
+.nofran__chip { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 700; font-size: 0.9rem; background: #fff; border: 1px solid var(--line); border-radius: 100px; padding: 0.55rem 0.95rem; }
+.nofran__chip::before { font-weight: 900; }
+.nofran__chip--no::before { content: "✗"; color: var(--clay-deep); }
+.nofran__chip--yes::before { content: "✓"; color: #2f7d4f; }
+.nofran__badge { display: grid; place-items: center; }
+.stamp { position: relative; width: min(64vw, 250px); aspect-ratio: 1; display: grid; place-items: center; }
+.stamp__svg { position: absolute; inset: 0; width: 100%; height: 100%; animation: spin 22s linear infinite; }
+.stamp__svg text { font-family: var(--display); font-weight: 700; font-size: 13.5px; letter-spacing: 1.5px; fill: var(--ink); text-transform: uppercase; }
+.stamp__center { width: 56%; aspect-ratio: 1; border-radius: 50%; background: var(--clay); color: #fff; display: grid; place-items: center; text-align: center; font-family: var(--display); font-weight: 800; font-size: 1rem; line-height: 1.04; letter-spacing: 0.01em; box-shadow: 0 18px 34px -16px rgba(210,104,63,.85); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .stamp__svg { animation: none; } }
+
+/* ---------- Quote / CTA band ---------- */
+.cta-band { position: relative; overflow: hidden; }
+.cta-band__inner { position: relative; z-index: 1; display: grid; gap: 1.6rem; text-align: center; place-items: center; }
+.cta-band__glow { position: absolute; width: 60vw; height: 60vw; max-width: 700px; max-height: 700px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(210,104,63,.35), transparent 65%); top: -20%; left: 50%; transform: translateX(-50%); filter: blur(20px); animation: floaty 9s ease-in-out infinite; }
+
+/* ---------- Lead form ---------- */
+.form-card { background: var(--white); border-radius: var(--radius); padding: 1.8rem; border: 1px solid var(--line); box-shadow: 0 40px 80px -50px rgba(0,0,0,.5); }
+.section--ink .form-card { color: var(--ink); }
+/* Mobile: the two columns of the bottom consultation band stack, so add
+   breathing room between the contact details (email) and the form. */
+@media (max-width: 939px) {
+  .cta-band .form-card { margin-top: 2.5rem; }
+}
+.form-grid { display: grid; gap: 1rem; }
+.field { display: grid; gap: 0.4rem; }
+.field label { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); }
+.field input, .field select, .field textarea {
+  font-family: var(--body); font-size: 1rem; color: var(--ink);
+  background: var(--paper); border: 1.5px solid var(--line); border-radius: var(--radius);
+  padding: 0.85rem 0.95rem; width: 100%; transition: border-color .2s, box-shadow .2s, background .2s; min-height: 48px;
+}
+.field textarea { min-height: 110px; resize: vertical; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--clay); box-shadow: 0 0 0 3px var(--clay-wash); background: #fff; }
+.field--row { display: grid; gap: 1rem; }
+.field--csz { display: grid; gap: 1rem; grid-template-columns: 1.6fr 0.7fr 1fr; }
+.form-note { font-size: 0.82rem; color: var(--muted); display: flex; align-items: center; gap: 0.5rem; }
+.form-success { display: none; text-align: center; padding: 1rem; }
+.form-success.show { display: block; animation: fadeUp .5s var(--ease); }
+.form-success .check { width: 64px; height: 64px; border-radius: 50%; background: var(--clay-wash); color: var(--clay-deep); display: grid; place-items: center; font-size: 2rem; margin: 0 auto 1rem; }
+
+/* ---------- Footer ---------- */
+.footer { background: var(--ink); color: #b6b1a7; padding: var(--sp-6) 0 2rem; }
+.footer a:hover { color: #fff; }
+.footer__top { display: grid; gap: 2.4rem; padding-bottom: 2.6rem; border-bottom: 1px solid #2a261f; }
+.footer__brand h3 { color: #fff; font-size: 1.9rem; margin-bottom: 0.7rem; }
+/* Footer brand lockup — same NC logo as the header, but using the white-N
+   favicon variant so the monogram reads on the dark footer. */
+.footer__logo { display: inline-flex; align-items: center; gap: 0.7rem; font-family: var(--display); font-weight: 800; font-size: 1.6rem; letter-spacing: -0.02em; line-height: 1; color: #fff; text-decoration: none; margin-bottom: 0.9rem; }
+.footer__logo img { height: 44px; width: auto; flex: none; display: block; transition: transform .4s var(--ease); }
+.footer__logo:hover { color: #fff; }
+.footer__logo:hover img { transform: scale(1.06) rotate(-1deg); }
+.footer__logo small { display: block; font-family: var(--body); font-weight: 600; font-size: 0.515em; letter-spacing: 0.118em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-top: 5px; }
+.footer__cols { display: grid; gap: 2rem; grid-template-columns: repeat(2, 1fr); }
+.footer__col h4 { color: #fff; font-family: var(--body); font-size: 0.78rem; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 0.9rem; font-weight: 700; }
+.footer__col a, .footer__col li { display: block; padding: 0.28rem 0; font-size: 0.95rem; }
+.footer__contact a { display: flex; align-items: center; gap: 0.6rem; font-weight: 700; color: #fff; font-size: 1.05rem; padding: 0.3rem 0; }
+.footer__areas { padding: 1.8rem 0 0.2rem; border-top: 1px solid #2a261f; }
+.footer__areas h4 { color: #fff; font-family: var(--body); font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 0.7rem; font-weight: 700; }
+.footer__areas p { font-size: 0.9rem; line-height: 1.7; max-width: 82ch; color: #b6b1a7; margin: 0; }
+.footer__bottom { padding-top: 1.8rem; display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.85rem; }
+.footer__bottom a { text-decoration: underline; text-underline-offset: 2px; }
+.zorva { color: #cfcabf; }
+
+/* ---------- Sticky mobile CTA ---------- */
+/* Reserve the fixed mobile CTA bar's height so it never covers the end of the page. */
+@media (max-width: 939px) {
+  body { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+}
+.mobicta {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 900;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line);
+  box-shadow: 0 -8px 24px -16px rgba(0,0,0,.4);
+  transform: translateY(110%); transition: transform .4s var(--ease);
+}
+.mobicta.show { transform: translateY(0); }
+.mobicta a { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 1rem; font-weight: 800; font-size: 0.95rem; min-height: 56px; }
+.mobicta a.call { background: var(--ink); color: #fff; }
+.mobicta a.quote { background: var(--clay); color: #fff; }
+
+/* ---------- Page hero (interior pages) ---------- */
+.phero { padding-top: calc(var(--nav-h) + 3rem); padding-bottom: var(--sp-5); background: var(--fog); position: relative; overflow: hidden; }
+.phero .crumb { font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 1.2rem; }
+.phero .crumb a:hover { color: var(--clay); }
+.phero h1 { font-size: clamp(2.4rem, 6.5vw, 4.6rem); line-height: 0.96; letter-spacing: -0.035em; max-width: 16ch; }
+.phero .lead { margin-top: 1.2rem; }
+
+/* ---------- Prose (blog) ---------- */
+.prose { max-width: 70ch; margin: 0 auto; }
+.prose h2 { font-size: clamp(1.6rem, 3.5vw, 2.3rem); margin: 2.4rem 0 0.9rem; letter-spacing: -0.02em; }
+.prose h3 { font-size: 1.4rem; margin: 1.8rem 0 0.6rem; }
+.prose p { margin-bottom: 1.1rem; color: var(--ink-soft); }
+.prose ul.bullets { margin: 0 0 1.3rem 0; display: grid; gap: 0.6rem; }
+.prose ul.bullets li { padding-left: 1.6rem; position: relative; color: var(--ink-soft); }
+.prose ul.bullets li::before { content:""; position: absolute; left: 0; top: 0.6rem; width: 8px; height: 8px; background: var(--clay); border-radius: 2px; }
+.prose a.inline { color: var(--clay-deep); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.prose blockquote { border-left: 3px solid var(--clay); padding: 0.4rem 0 0.4rem 1.3rem; margin: 1.6rem 0; font-family: var(--display); font-weight: 600; font-size: 1.3rem; letter-spacing: -0.01em; }
+.prose figure { margin: 1.8rem 0; }
+.prose figure img { border-radius: var(--radius); width: 100%; }
+.prose figcaption { font-size: 0.85rem; color: var(--muted); margin-top: 0.5rem; text-align: center; }
+
+/* ---------- Blog cards ---------- */
+.post-grid { display: grid; gap: 1.6rem; }
+.post-card { display: flex; flex-direction: column; border-radius: var(--radius); overflow: hidden; background: var(--white); border: 1px solid var(--line); transition: transform .4s var(--ease), box-shadow .4s var(--ease); }
+.post-card:hover { transform: translateY(-6px); box-shadow: 0 30px 60px -36px rgba(0,0,0,.4); }
+.post-card__img { aspect-ratio: 3/2; overflow: hidden; background: var(--fog-2); }
+.post-card__img img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s var(--ease); }
+.post-card:hover .post-card__img img { transform: scale(1.06); }
+.post-card__body { padding: 1.4rem; display: flex; flex-direction: column; gap: 0.7rem; flex: 1; }
+.tag { align-self: flex-start; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--clay-deep); background: var(--clay-wash); padding: 0.3rem 0.6rem; border-radius: 100px; }
+.post-card h3 { font-size: 1.3rem; line-height: 1.12; letter-spacing: -0.02em; }
+.post-card p { color: var(--muted); font-size: 0.95rem; }
+.post-card__meta { margin-top: auto; font-size: 0.82rem; color: var(--muted); font-weight: 600; }
+
+/* ---------- Scroll reveal ---------- */
+[data-reveal] { opacity: 0; transform: translateY(28px); transition: opacity .8s var(--ease-out), transform .8s var(--ease-out); }
+[data-reveal].in { opacity: 1; transform: none; }
+[data-reveal][data-delay="1"] { transition-delay: .08s; }
+[data-reveal][data-delay="2"] { transition-delay: .16s; }
+[data-reveal][data-delay="3"] { transition-delay: .24s; }
+[data-reveal][data-delay="4"] { transition-delay: .32s; }
+[data-reveal][data-delay="5"] { transition-delay: .40s; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+  [data-reveal] { opacity: 1 !important; transform: none !important; }
+  .hero h1 .line > span { transform: none !important; }
+}
+
+/* ============================================================
+   Responsive — mobile-first, scale up
+   ============================================================ */
+@media (min-width: 600px) {
+  .wrap { padding: 0 2rem; }
+  .field--row { grid-template-columns: 1fr 1fr; }
+  .footer__cols { grid-template-columns: repeat(3, 1fr); }
+  .post-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 768px) {
+  .svc-grid { grid-template-columns: repeat(2, 1fr); }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .gallery { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; }
+  .nav__phone { display: inline-flex; }
+}
+
+@media (min-width: 940px) {
+  /* Header is now two rows on desktop: 44px utility bar + 72px main row. */
+  :root { --nav-h: 116px; }
+  .nav__links { display: flex; }
+  .nav__cta { display: flex; }
+  .nav__top { display: block; height: 44px; background: var(--ink); }
+  .nav__top .nav__phone { display: inline-flex; color: #fff; font-size: 0.9rem; }
+  .nav__top .nav__phone:hover { color: var(--clay); }
+  .nav__top .nav__social { width: 34px; height: 34px; color: #fff; }
+  .nav__top .nav__social:hover { color: var(--clay); background: rgba(255,255,255,0.14); }
+  .nav__top .nav__social svg { width: 18px; height: 18px; }
+  .hamburger { display: none; }
+  .mobicta { display: none; }
+  .hero__inner { grid-template-columns: 1.05fr 0.95fr; align-items: center; gap: 3rem; }
+  .hero { padding-bottom: var(--sp-7); }
+  .svc-grid { grid-template-columns: repeat(3, 1fr); }
+  .stats { grid-template-columns: repeat(4, 1fr); }
+  .split { grid-template-columns: 1fr 1fr; gap: 3.5rem; }
+  .split--rev .split__media { order: 2; }
+  .sec-head--split { grid-template-columns: 1fr 1fr; align-items: end; }
+  .post-grid { grid-template-columns: repeat(3, 1fr); }
+  .footer__top { grid-template-columns: 1.1fr 1.6fr; }
+  .two-col { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 3.5rem; align-items: start; }
+}
+
+@media (min-width: 1100px) {
+  .display { font-size: clamp(3.5rem, 7vw, 7rem); }
+}
+
+/* ===== Process: "flight path" journey (numbered nodes + dashed path + paper plane) ===== */
+.flightpath { position: relative; margin-top: var(--sp-5); }
+.flightpath__line { position: absolute; top: 0; left: 0; width: 100%; height: 64px; z-index: 0; pointer-events: none; overflow: visible; }
+.flightpath__line path { fill: none; stroke: var(--line); stroke-width: 2.5; stroke-dasharray: 7 11; stroke-linecap: round; }
+.flightpath__plane { position: absolute; top: 10px; right: 0; color: var(--clay); z-index: 2; transform: rotate(-6deg); }
+.flightpath__plane svg { width: 46px; height: 46px; display: block; }
+.fp-nodes { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.fp-node { flex: 1 1 0; max-width: 14rem; margin: 0 auto; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.fp-node__dot { width: 64px; height: 64px; border-radius: 50%; background: var(--ink); color: var(--clay); font-family: var(--display); font-weight: 800; font-size: 1.55rem; line-height: 1; display: grid; place-items: center; box-shadow: 0 12px 26px -12px rgba(22,20,15,.55); transition: transform .35s var(--ease); }
+.fp-node:hover .fp-node__dot { transform: translateY(-4px); }
+.fp-node__title { font-size: 1.12rem; margin: 1.05rem 0 .35rem; }
+.fp-node__text { color: var(--muted); font-size: .95rem; line-height: 1.5; max-width: 22ch; }
+
+@media (max-width: 760px) {
+  .flightpath { margin-top: var(--sp-4); }
+  .flightpath__line { display: none; }
+  .fp-nodes { flex-direction: column; gap: 0; }
+  .fp-node { flex-direction: row; align-items: flex-start; text-align: left; max-width: none; gap: 1.1rem; padding-bottom: 1.9rem; position: relative; }
+  .fp-node__dot { flex: 0 0 auto; width: 50px; height: 50px; font-size: 1.25rem; }
+  .fp-node:not(:last-child)::before { content: ""; position: absolute; left: 24px; top: 56px; bottom: -2px; border-left: 2px dashed var(--line); }
+  .fp-node__title { margin: .15rem 0 .3rem; }
+  .fp-node__text { max-width: none; }
+  .flightpath__plane { position: static; transform: rotate(48deg); margin: .2rem 0 0 12px; }
+}
+
+/* Mobile: breathing room between the contact details and the form in the bottom consult band */
+@media (max-width: 939px) { .cta-band .form-card { margin-top: 2.25rem; } }
+
+/* ===== Playful hand-drawn accents (cohesive with the Process flight path) ===== */
+.u-squig {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 16' preserveAspectRatio='none'%3E%3Cpath d='M3,10 C 48,2 82,2 112,7 S 168,13 197,5' fill='none' stroke='%23d2683f' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat left bottom / 100% 0.32em;
+  padding-bottom: .08em;
+}
+.u-circle { position: relative; display: inline-block; }
+.u-circle::after {
+  content: ""; position: absolute; inset: -34% -22%; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 60' preserveAspectRatio='none'%3E%3Cpath d='M62,4 C 98,5 117,17 116,31 C 115,47 90,57 56,56 C 24,55 4,43 5,29 C 6,15 30,4 66,5' fill='none' stroke='%23d2683f' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
+}
+
+/* ===== Handwritten doodle note + arrow (Caveat) ===== */
+.doodle-note { font-family: "Caveat", "Montserrat", cursive; color: var(--clay-deep); font-size: 1.6rem; font-weight: 700; line-height: 1.1; display: inline-flex; align-items: center; gap: .55rem; }
+.doodle-note .doodle-arrow { width: 40px; height: 34px; flex: none; color: var(--clay); }
+.doodle-note .doodle-arrow svg { width: 100%; height: 100%; display: block; }
+.section--ink .doodle-note { color: #f3c9b6; }
+.section--ink .doodle-note .doodle-arrow { color: var(--clay); }
+
+/* ===== Sky divider: dashed flight motif between sections ===== */
+.sky-divider { position: relative; max-width: 720px; margin: .4rem auto; height: 38px; }
+.sky-divider__line { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sky-divider__line path { fill: none; stroke: var(--line); stroke-width: 2; stroke-dasharray: 2 11; stroke-linecap: round; }
+.sky-divider__plane { position: absolute; right: -4px; top: 3px; color: var(--clay); }
+.sky-divider__plane svg { width: 30px; height: 30px; display: block; transform: rotate(-8deg); }
+
+/* ===== Process: plane glides along the path as the section scrolls in ===== */
+.flightpath__plane { right: auto; left: calc(100% - 52px); }
+@keyframes fp-fly {
+  0%   { left: 1%;  top: 30px; transform: rotate(-15deg); }
+  45%  { top: 0; }
+  100% { left: calc(100% - 52px); top: 10px; transform: rotate(-5deg); }
+}
+@media (min-width: 761px) and (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .flightpath { view-timeline-name: --flightpath; }
+    .flightpath__plane { animation: fp-fly linear both; animation-timeline: --flightpath; animation-range: entry 0% cover 60%; }
+  }
+}
+
+/* ===== Process: paper plane flies through the 4 steps once; dotted trail appears only behind it ===== */
+.fpfly { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; overflow: visible; }
+.fpfly__dot { fill: var(--clay); opacity: 0; }
+.fpfly__plane { position: absolute; top: 0; left: 0; width: 28px; height: 28px; z-index: 4; color: var(--clay); pointer-events: none; opacity: 0; offset-rotate: auto; filter: drop-shadow(0 3px 5px rgba(22,20,15,.28)); }
+.fpfly__plane svg { width: 100%; height: 100%; display: block; }
+/* plane glides once and parks; each dot fades in (via its own per-dot delay) as the plane reaches it */
+.flightpath.is-flying .fpfly__plane { opacity: 1; animation-name: fpfly-move; animation-duration: 14s; animation-timing-function: linear; animation-fill-mode: forwards; }
+.flightpath.is-flying .fpfly__dot { animation-name: fpfly-dot; animation-duration: .45s; animation-timing-function: ease; animation-fill-mode: forwards; }
+@keyframes fpfly-move { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+@keyframes fpfly-dot { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .flightpath.is-flying .fpfly__plane { animation: none; offset-distance: 100%; }
+  .flightpath.is-flying .fpfly__dot { animation: none; opacity: 1; }
+}
+@media (max-width: 760px) { .fpfly { display: none; } }
+
+</style>
+
+<!-- ============ JSON-LD: Organization + LocalBusiness + WebSite ============ -->
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://nationalclosetco.com/#org", "name": "National Closet Company", "alternateName": "National Closet Co.", "url": "https://nationalclosetco.com/", "logo": {"@type": "ImageObject", "url": "https://nationalclosetco.com/img/ncc.png", "width": 512, "height": 512, "creator": {"@type": "Organization", "@id": "https://nationalclosetco.com/#org", "name": "National Closet Company"}, "creditText": "National Closet Company", "contentUrl": "https://nationalclosetco.com/img/ncc.png"}, "image": "https://nationalclosetco.com/img/hero-closet-og.jpg", "description": "National Closet Company designs, builds and installs beautiful custom-designed closets at a price normal families can afford — custom closet systems, walk-in and reach-in closets, home offices, garage storage, pantries and more.", "foundingDate": "2012", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com", "priceRange": "$$", "slogan": "Beautiful custom-designed closets at a price normal families can afford.", "numberOfEmployees": {"@type": "QuantitativeValue", "value": 4}, "areaServed": [{"@type": "GeoCircle", "geoMidpoint": {"@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467}, "geoRadius": "144840"}, {"@type": "City", "name": "Gallatin, TN"}, {"@type": "City", "name": "Hendersonville, TN"}, {"@type": "City", "name": "Nashville, TN"}, {"@type": "City", "name": "Goodlettsville, TN"}, {"@type": "City", "name": "Mount Juliet, TN"}, {"@type": "City", "name": "Lebanon, TN"}, {"@type": "City", "name": "Brentwood, TN"}, {"@type": "City", "name": "Franklin, TN"}, {"@type": "City", "name": "Murfreesboro, TN"}, {"@type": "City", "name": "Smyrna, TN"}, {"@type": "City", "name": "Spring Hill, TN"}, {"@type": "City", "name": "Columbia, TN"}, {"@type": "City", "name": "Springfield, TN"}, {"@type": "City", "name": "Clarksville, TN"}, {"@type": "City", "name": "Dickson, TN"}, {"@type": "City", "name": "Bowling Green, KY"}, {"@type": "City", "name": "White House, TN"}, {"@type": "City", "name": "Portland, TN"}, {"@type": "City", "name": "La Vergne, TN"}, {"@type": "City", "name": "Nolensville, TN"}, {"@type": "City", "name": "Belle Meade, TN"}, {"@type": "City", "name": "Green Hills, Nashville, TN"}, {"@type": "City", "name": "Hermitage, Nashville, TN"}, {"@type": "City", "name": "Old Hickory, Nashville, TN"}, {"@type": "City", "name": "Cookeville, TN"}, {"@type": "City", "name": "Shelbyville, TN"}], "sameAs": ["https://www.facebook.com/NationalClosetCompany", "https://www.instagram.com/nationalclosetcompany", "https://www.pinterest.com/nationalclosetco", "https://www.houzz.com/pro/nationalclosetco", "https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE"], "contactPoint": {"@type": "ContactPoint", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com", "contactType": "sales", "areaServed": "US", "availableLanguage": "English"}}, {"@type": "LocalBusiness", "@id": "https://nationalclosetco.com/#localbusiness", "name": "National Closet Company", "image": "https://nationalclosetco.com/img/hero-closet-og.jpg", "url": "https://nationalclosetco.com/", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com", "priceRange": "$$", "address": {"@type": "PostalAddress", "addressLocality": "Gallatin", "addressRegion": "TN", "addressCountry": "US"}, "geo": {"@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467}, "areaServed": [{"@type": "GeoCircle", "geoMidpoint": {"@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467}, "geoRadius": "144840"}, {"@type": "City", "name": "Gallatin, TN"}, {"@type": "City", "name": "Hendersonville, TN"}, {"@type": "City", "name": "Nashville, TN"}, {"@type": "City", "name": "Goodlettsville, TN"}, {"@type": "City", "name": "Mount Juliet, TN"}, {"@type": "City", "name": "Lebanon, TN"}, {"@type": "City", "name": "Brentwood, TN"}, {"@type": "City", "name": "Franklin, TN"}, {"@type": "City", "name": "Murfreesboro, TN"}, {"@type": "City", "name": "Smyrna, TN"}, {"@type": "City", "name": "Spring Hill, TN"}, {"@type": "City", "name": "Columbia, TN"}, {"@type": "City", "name": "Springfield, TN"}, {"@type": "City", "name": "Clarksville, TN"}, {"@type": "City", "name": "Dickson, TN"}, {"@type": "City", "name": "Bowling Green, KY"}, {"@type": "City", "name": "White House, TN"}, {"@type": "City", "name": "Portland, TN"}, {"@type": "City", "name": "La Vergne, TN"}, {"@type": "City", "name": "Nolensville, TN"}, {"@type": "City", "name": "Belle Meade, TN"}, {"@type": "City", "name": "Green Hills, Nashville, TN"}, {"@type": "City", "name": "Hermitage, Nashville, TN"}, {"@type": "City", "name": "Old Hickory, Nashville, TN"}, {"@type": "City", "name": "Cookeville, TN"}, {"@type": "City", "name": "Shelbyville, TN"}], "openingHoursSpecification": [{"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "opens": "08:00", "closes": "18:00"}, {"@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "09:00", "closes": "16:00"}], "parentOrganization": {"@id": "https://nationalclosetco.com/#org"}, "hasMap": "https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE", "sameAs": ["https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE"]}, {"@type": "WebSite", "@id": "https://nationalclosetco.com/#website", "url": "https://nationalclosetco.com/", "name": "National Closet Company", "publisher": {"@id": "https://nationalclosetco.com/#org"}, "potentialAction": {"@type": "SearchAction", "target": {"@type": "EntryPoint", "urlTemplate": "https://nationalclosetco.com/closet-cases?q={search_term_string}"}, "query-input": "required name=search_term_string"}}, {"@type": "Person", "@id": "https://nationalclosetco.com/#founder", "name": "Michael Blair", "jobTitle": "Founder & Owner", "worksFor": {"@id": "https://nationalclosetco.com/#org"}, "knowsAbout": ["Custom closets", "Walk-in closet design", "Home storage systems", "Closet installation"]}, {"@type": "WebPage", "@id": "https://nationalclosetco.com/#webpage", "url": "https://nationalclosetco.com/", "name": "Custom Closet Systems | National Closet Co.", "isPartOf": {"@id": "https://nationalclosetco.com/#website"}, "about": {"@id": "https://nationalclosetco.com/#org"}, "primaryImageOfPage": "https://nationalclosetco.com/img/hero-closet-og.jpg", "speakable": {"@type": "SpeakableSpecification", "cssSelector": ["h1", ".hero__slogan", ".hero__sub"]}}]}</script>
+
+<!-- ============ JSON-LD: Service catalog ============ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "serviceType": "Custom Closet Systems",
+  "provider": { "@id": "https://nationalclosetco.com/#org" },
+  "areaServed": { "@type": "GeoCircle", "geoMidpoint": { "@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467 }, "geoRadius": "144840" },
+  "description": "Beautiful custom-designed closets and closet organizers at a price normal families can afford — custom closet systems, professionally designed and installed: walk-in and reach-in closets, closet organizers, custom pantries and pantry cabinets, home offices, garage storage, laundry rooms, wall beds and entertainment centers.",
+  "keywords": "closet organizers, custom closets, closet systems, closet design, custom pantry, pantry cabinets, butler pantry, walk-in pantry, kitchen pantry, pantry shelving, closet organizers near me, custom closets Nashville",
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "Custom Storage Solutions",
+    "itemListElement": [
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Closet Organizers" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Custom Walk-In Closets" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Reach-In Closet Systems" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Home Office Cabinetry" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Garage Storage Systems" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Custom Pantries &amp; Pantry Cabinets" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Butler &amp; Walk-In Pantry Organization" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Laundry Room & Mudroom Storage" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Wall Beds & Murphy Beds" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Entertainment & Media Centers" } }
+    ]
+  }
+}
+</script>
+
+<!-- ============ JSON-LD: FAQ ============ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Are you a franchise?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "No, and that saves you money. National Closet Company is 100% family owned and operated, not a franchise. You are not paying franchise royalties, national advertising fees or an overpriced brand name, only premium materials and expert craftsmanship. It is the same caliber of custom closets the big franchise showrooms sell, at an honest, transparent price." } },
+    { "@type": "Question", "name": "Do you offer discounts or run sales?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "We may run a straightforward, honest coupon or promotion now and then \u2014 but we don't play the inflated 'National Price, then 40% off if you sign tonight' game the national brands do. Their discount was never real; it was baked into the price so it could be handed back as a favor. We price the job once, honestly, for the same closet system, and our everyday price often lands around half of a national brand's discounted, book-now price \u2014 on a closet we quote deeper, with 14-inch shelves versus their 12-inch. No inflated list price, no countdown, no manager to call, no sale to wait for." } },
+    { "@type": "Question", "name": "How much does a custom closet cost?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Custom closets typically cost between about $1,000 and $10,000 or more, with a national average around $2,000. A custom reach-in closet system usually runs $1,000–$2,500, a walk-in closet $3,000–$10,000+, and large luxury closets can go higher depending on size, materials and accessories. National Closet Company gives you an exact, no-obligation price at your free in-home consultation, never an estimate that changes later." } },
+    { "@type": "Question", "name": "Do I have to remove my old shelving and paint first?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Only if you want to. National Closet Company gives you two quotes. With Option 1, you remove the existing shelving, patch the holes and paint, and we design, build and install your new closet, which is the most budget-friendly route. With Option 2, the turnkey option, you simply empty the space of your belongings and we handle everything else: removing the old shelving, patching and repairing the walls, painting, then building and installing your new closet. Most closet companies only offer Option 1, but we give you both." } },
+    { "@type": "Question", "name": "Are custom closets worth it?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "For most homeowners, yes. A custom closet uses every inch of the room and often doubles usable storage compared with a basic builder closet, keeping you organized for years. It costs more up front than a wire kit, but the furniture-grade materials, lifetime use and everyday convenience make custom closets well worth it if you value storage and a clutter-free home." } },
+    { "@type": "Question", "name": "Do custom closets add value to your home?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Custom closets and storage, including walk-in closets, pantries, mudrooms and garage systems, are a strong selling feature that makes a home more appealing and can help it sell faster. They do not add square footage, so they will not change a formal appraisal, but buyers consistently rank organized, custom storage near the top of their wish list, which gives your home an edge." } },
+    { "@type": "Question", "name": "What's the difference between a custom closet and a closet system?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "A closet system is the engineered framework of shelves, rods, drawers and accessories that organizes your space. A custom closet means that system is designed specifically for your room's exact dimensions, your wardrobe and the way you live, rather than a one-size-fits-all kit. Every National Closet Company project is fully custom." } },
+    { "@type": "Question", "name": "Do you build wall-mounted (floating) or floor-based closets?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Both, and it's your choice. We build wall-mounted (floating) systems that hang off the wall with the floor open underneath, and floor-based (floor-standing) systems that sit on the floor with a toe kick like built-in furniture. Neither performs better than the other; it comes down to the look you prefer and your room, and for a carpeted room a wall-mounted (floating) system is usually the better fit because it keeps the carpet clear. We show you both options during your free in-home design." } },
+    { "@type": "Question", "name": "What materials do you use for custom closets?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "We build with premium, furniture-grade materials, durable laminate and thermally-fused melamine over engineered wood, chosen for strength, easy cleaning and a high-end finish. You choose from dozens of colors and finishes, from crisp whites to warm woodgrains, along with soft-close drawers, glass fronts, lighting and other accessories. Everything is built to handle daily use for the long haul." } },
+    { "@type": "Question", "name": "How long does it take to design and install a custom closet?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "From start to finish, most custom closets take about 3 to 6 weeks. Design happens at your free in-home consultation, custom manufacturing typically takes 2 to 4 weeks, and professional installation of a standard closet is usually finished in a single day with minimal disruption to your home." } },
+    { "@type": "Question", "name": "Do you require a deposit, and do you offer financing or buy now, pay later?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes to both. Your project is paid in three steps: 50% at signing, which releases your order to our manufacturing partners, 25% once your materials arrive and we schedule your installation, and the final 25% on install day. You can also pay in full at any time. You can Buy Now, Pay Later with Klarna — including a 0% interest option — and split your project into flexible payments at checkout, subject to Klarna approval, and we accept all major credit and debit cards, bank transfer and digital wallets like Apple Pay and Google Pay. Ask your designer about the easiest way to fit a custom closet into your budget." } },
+    { "@type": "Question", "name": "Do you build more than closets?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. Besides custom walk-in and reach-in closets, we design and install garage storage systems, custom pantries, home offices, laundry rooms and mudrooms, Murphy and wall beds, and media and wall units, all built and installed by the same team." } },
+    { "@type": "Question", "name": "Is there a custom closet company near me? What areas do you serve?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "National Closet Company designs and installs custom closets and storage systems throughout Middle Tennessee, serving every city within about 90 miles of Gallatin, TN. That includes Nashville, Franklin, Brentwood, Hendersonville, Mount Juliet, Murfreesboro, Gallatin, Lebanon, Smyrna, Nolensville, Spring Hill, Belle Meade, Goodlettsville, White House, Portland, La Vergne, Green Hills, Hermitage, Old Hickory, Columbia, Springfield, Clarksville, Dickson, Cookeville and Shelbyville, plus Bowling Green, KY, and the surrounding communities. See the full list at https://nationalclosetco.com/service-areas, or call or text 629-298-8241 to confirm your city and book a free in-home consultation." } },
+    { "@type": "Question", "name": "Do you offer a free in-home consultation?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. Every project starts with a 100% free, no-pressure in-home consultation. Your designer measures your space in person, walks through your options and finishes, and gives you a photorealistic design with transparent pricing on the spot. We measure in person, not virtually, for a perfect fit." } },
+    { "@type": "Question", "name": "How do I get started?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Just call or text 629-298-8241, email hello@nationalclosetco.com, or fill out the form on this page. We will schedule your free in-home consultation, design your custom closet, and handle manufacturing and installation from there." } },
+    { "@type": "Question", "name": "Do you install everything, or do I assemble it myself?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "We handle everything, and there is no flat-pack to build. Our team professionally constructs and installs your closet on site, securely anchored to the wall, and cleans up before we leave. A standard closet is usually installed in a single day, so you go from empty space to finished closet without lifting a tool." } },
+    { "@type": "Question", "name": "Do I need to measure my closet before my consultation?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "No. Your designer measures your space in person at your free in-home consultation so the design fits to the inch. You do not need to measure, sketch or prep anything beforehand. Just book it and we take it from there." } },
+    { "@type": "Question", "name": "Can I see color and finish samples before I decide?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. Your designer brings finish, color and hardware samples to your in-home consultation so you can see and feel the exact laminate, woodgrain and accessories in your own lighting before you choose. On-screen colors can look different in person, so we always confirm your finish face to face." } },
+    { "@type": "Question", "name": "Do your custom closets come with a warranty?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. Your installation is backed by our workmanship guarantee, and the furniture-grade materials and hardware we use, including soft-close drawers, hinges and rods, carry their own manufacturer warranties. If something is not right, call or text us and we will make it right. Ask your designer for the specific coverage on your project." } },
+    { "@type": "Question", "name": "Can I add to or reconfigure my closet system later?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Often, yes, especially with our adjustable systems. Shelves and rods adjust without tools, and many layouts can be added onto or reconfigured as your wardrobe and organization needs change. If you would like room to grow, tell your designer and we will plan the closet organization system with future add-ons in mind." } },
+    { "@type": "Question", "name": "How much weight can the shelves hold?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Plenty for everyday use. Our floor-based and wall-mounted systems use furniture-grade shelving engineered to hold folded clothes, shoes, bins, small appliances and typical closet and pantry loads without sagging. For unusually heavy items, let your designer know and we will spec the shelf thickness, spacing and supports to match." } },
+    { "@type": "Question", "name": "Can you add LED lighting to my closet?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. We offer integrated LED lighting, including shelf, rod and cabinet lighting, that makes a closet feel like a boutique and helps you see every item clearly. It is a popular upgrade for walk-in closets and pantries. Ask your designer about lighting options at your consultation." } },
+    { "@type": "Question", "name": "Which company is best for closets?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "The best closet company designs to your exact space, builds with furniture-grade materials, and prices honestly without franchise markups. In Middle Tennessee that is National Closet Company: family-owned, 100% custom, with deeper 14-inch shelving versus the 12-inch many competitors install, a free in-home 3D design, and an everyday price that often lands around half of the national brands' discounted quotes. You get the same caliber as the big-name showrooms without paying for the brand name." } },
+    { "@type": "Question", "name": "What is the average cost to design a closet?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "With National Closet Company the design is free. Your in-home consultation, in-person measurements and a photorealistic 3D design cost nothing and come with no obligation; some companies charge a design or measure fee, but we do not. The closet itself typically runs about $1,000 to $2,500 for a reach-in and $3,000 to $10,000 or more for a walk-in, and you get an exact, all-inclusive price at your free design, never an estimate that changes later." } },
+    { "@type": "Question", "name": "What closet company does Costco use?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Warehouse clubs like Costco sometimes promote a national closet brand as a member perk, but you are still paying that brand's franchise pricing through a middleman, not a local, family-owned price. You do not need a membership or a markup: National Closet Company builds the same custom, furniture-grade closets, designed and installed by our own team, at an honest everyday price that often lands around half of a national brand's discounted quote. Go direct and skip the markup." } },
+    { "@type": "Question", "name": "Which closet company is the cheapest?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "The cheapest closets are DIY wire kits from a big-box store, but they sag, waste space and do not last. Among custom closet companies the smarter question is value, not just price. National Closet Company is one of the most affordable custom options in Middle Tennessee because we are family-owned with no franchise royalties and no inflated list-price-then-40-percent-off games; our everyday price often lands around half of a national brand's discounted, book-now quote, on a closet we build deeper with 14-inch versus 12-inch shelves. Premium quality at an honest price beats cheapest every time." } },
+    { "@type": "Question", "name": "Does National Closet Company have reviews?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. We are proud of our 5-star reviews from homeowners across Middle Tennessee, which you can read on Google and Facebook, and we are happy to share local references at your free consultation. As a family-owned company our reputation is everything, so we make sure every closet is done right." } },
+    { "@type": "Question", "name": "How much does closet installation cost?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "On average, professional closet installation ranges from a few hundred dollars for a basic reach-in to a few thousand for a large walk-in. With National Closet Company, installation is included in your all-inclusive price and never billed separately, so there are no surprise labor charges. A reach-in system typically runs about $1,000 to $2,500 and a walk-in about $3,000 to $10,000 or more, installed. Your free in-home design gives you one exact price covering design, custom manufacturing, delivery and professional installation by our own team, usually completed in a single day." } },
+    { "@type": "Question", "name": "How much does Home Depot or Lowe's charge to install a closet?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Home Depot and Lowe's mostly sell DIY wire and laminate closet kits you assemble yourself, and when they do offer installation it is usually a basic, subcontracted job on a stock kit that is not designed to your exact space. National Closet Company is a full-service custom closet company: we design your closet in 3D, build it from furniture-grade materials to your room's exact dimensions, and install it with our own team, all for one all-inclusive price that often lands around half of a national brand's discounted quote. You get a true custom closet that fits to the inch and lasts, not a flat-pack kit." } },
+    { "@type": "Question", "name": "How much does a contractor charge to build a closet?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "A general contractor or carpenter building a closet from scratch on site often runs $2,000 to $5,000 or more and can take weeks. A dedicated custom closet company is usually faster and more affordable: National Closet Company designs your closet in 3D, manufactures it from furniture-grade materials, and installs it in about a single day, with an exact, all-inclusive price at your free in-home design. You get built-in-furniture quality without the general-contractor timeline or markup." } },
+    { "@type": "Question", "name": "Do you build corner closets and handle awkward corners?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. Corners are where storage is usually wasted, so we design curved and angled corner shelving and specialty units that turn tight or awkward corners into fully usable space, a common upgrade in walk-in closets and pantries." } },
+    { "@type": "Question", "name": "Are your closet materials eco-friendly and low-odor?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "We build with engineered wood products, laminate and thermally-fused melamine, chosen to be durable, easy to clean and low-odor. Any faint new-material smell fades quickly after installation. If low-emission materials are a priority for you, mention it to your designer and we will walk through your options." } },
+    { "@type": "Question", "name": "How do I clean and care for my custom closet?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "It is easy. Wipe the surfaces with a soft cloth and mild soap and water, then dry. Avoid abrasive pads and harsh solvents, which can dull the finish. The laminate and melamine surfaces are built to resist everyday scuffs and wipe clean in seconds." } },
+    { "@type": "Question", "name": "What if a drawer or door needs adjusting after installation?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Just reach out. Soft-close drawers and door hinges can be fine-tuned, and if anything shifts or needs adjusting after install, we will take care of it under our workmanship guarantee. Call or text 629-298-8241 and we will make it right." } },
+    { "@type": "Question", "name": "Can I change or cancel my order?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Because every piece is custom-made to your exact measurements, we ask that you confirm your design before we start manufacturing. If your plans change, let us know as early as possible and we will do our best to help. Call or text 629-298-8241 with any questions about your order." } },
+    { "@type": "Question", "name": "Do you build closet organizers and closet organization systems?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes, a custom closet organizer is exactly what we do. We design and install complete closet organization systems with shelves, drawers, rods, shoe storage and accessories laid out around your wardrobe, so every item has a place and stays organized. Whether you call it a closet organizer, an organization system or a custom closet, we build it to fit your space to the inch." } },
+    { "@type": "Question", "name": "Do you offer pantry organization and home organization systems too?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. Beyond closets, we design pantry organization and whole-home organization systems, including pantries, garages, laundry rooms, mudrooms and home offices, using the same custom, furniture-grade approach. If a space in your home needs to be organized, we can build an organization system that fits it perfectly." } }
+  ]
+}
+</script>
+
+<!-- ============ JSON-LD: HowTo (process) ============ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How to get a custom closet from National Closet Company",
+  "description": "The simple four-step process to design, build and install a custom closet or storage system.",
+  "totalTime": "P6W",
+  "step": [
+    { "@type": "HowToStep", "position": 1, "name": "Free in-home consultation", "text": "We come to your home, measure your space in person, and walk through your options and finishes with no pressure and no obligation." },
+    { "@type": "HowToStep", "position": 2, "name": "Photorealistic design", "text": "Your designer builds your closet system in a photorealistic design so you can see every finish and detail, with an exact price on the spot." },
+    { "@type": "HowToStep", "position": 3, "name": "Precision manufacturing", "text": "Your approved design is custom-built in our facility, typically ready in 2 to 4 weeks." },
+    { "@type": "HowToStep", "position": 4, "name": "Professional installation", "text": "Our certified installers handle everything, usually in a single day, and leave your space spotless and ready to fill." }
+  ]
+}
+</script>
+
+<!-- ============ JSON-LD: Breadcrumb ============ -->
+<script type="application/ld+json">
+{ "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+  { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://nationalclosetco.com/" }
+]}
+</script>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-EJEDXZZWJN"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-EJEDXZZWJN');
+</script>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '904015652453670');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+</head>
+

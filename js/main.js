@@ -627,7 +627,7 @@
     var out = est.querySelector('[data-est="range"]');
     if (!type || !out) return;
     function pick(group) { var on = est.querySelector('[data-est="' + group + '"] .on'); return on ? on.getAttribute("data-v") : null; }
-    function money(n) { return "$" + Math.round(n / 100) * 100 .toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+    function money(n) { n = Math.round(n / 100) * 100; return "$" + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
     function calc() {
       var rg = RANGES[type.value] || RANGES.walkin, s = SIZE[pick("size")] || SIZE.medium, f = FINISH[pick("finish")] || 1;
       var span = rg[1] - rg[0];

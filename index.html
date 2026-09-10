@@ -759,110 +759,31 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .proof-chips { display: flex; flex-wrap: wrap; gap: .5rem .9rem; font-weight: 700; font-size: .92rem; color: var(--ink-soft); }
 .proof-chips span::before { content: "✓ "; color: var(--clay); font-weight: 800; }
 
+
+/* Phones: show the closet photo as a band above the copy instead of a faded backdrop. */
+@media (max-width: 899px) {
+  .hero { padding-top: calc(var(--nav-h) + .9rem); }
+  .hero__bg { position: relative; inset: auto; z-index: 0; height: 230px; margin: 0 1.25rem 1.1rem; border-radius: 16px; }
+  .hero__bg img { animation: none; opacity: 1; transform: none; }
+  .hero__bg::after { background: linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,.22)); }
+}
+
 </style>
 
 <!-- ============ JSON-LD: Organization + LocalBusiness + WebSite ============ -->
 <script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://nationalclosetco.com/#org", "name": "National Closet Company", "alternateName": "National Closet Co.", "url": "https://nationalclosetco.com/", "logo": {"@type": "ImageObject", "url": "https://nationalclosetco.com/img/ncc.png", "width": 512, "height": 512, "creator": {"@type": "Organization", "@id": "https://nationalclosetco.com/#org", "name": "National Closet Company"}, "creditText": "National Closet Company", "contentUrl": "https://nationalclosetco.com/img/ncc.png"}, "image": "https://nationalclosetco.com/img/hero-closet-og.jpg", "description": "National Closet Company designs, builds and installs beautiful custom-designed closets at a price normal families can afford — custom closet systems, walk-in and reach-in closets, home offices, garage storage, pantries and more.", "foundingDate": "2012", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com", "priceRange": "$$", "slogan": "Beautiful custom-designed closets at a price normal families can afford.", "numberOfEmployees": {"@type": "QuantitativeValue", "value": 4}, "areaServed": [{"@type": "GeoCircle", "geoMidpoint": {"@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467}, "geoRadius": "144840"}, {"@type": "City", "name": "Gallatin, TN"}, {"@type": "City", "name": "Hendersonville, TN"}, {"@type": "City", "name": "Nashville, TN"}, {"@type": "City", "name": "Goodlettsville, TN"}, {"@type": "City", "name": "Mount Juliet, TN"}, {"@type": "City", "name": "Lebanon, TN"}, {"@type": "City", "name": "Brentwood, TN"}, {"@type": "City", "name": "Franklin, TN"}, {"@type": "City", "name": "Murfreesboro, TN"}, {"@type": "City", "name": "Smyrna, TN"}, {"@type": "City", "name": "Spring Hill, TN"}, {"@type": "City", "name": "Columbia, TN"}, {"@type": "City", "name": "Springfield, TN"}, {"@type": "City", "name": "Clarksville, TN"}, {"@type": "City", "name": "Dickson, TN"}, {"@type": "City", "name": "Bowling Green, KY"}, {"@type": "City", "name": "White House, TN"}, {"@type": "City", "name": "Portland, TN"}, {"@type": "City", "name": "La Vergne, TN"}, {"@type": "City", "name": "Nolensville, TN"}, {"@type": "City", "name": "Belle Meade, TN"}, {"@type": "City", "name": "Green Hills, Nashville, TN"}, {"@type": "City", "name": "Hermitage, Nashville, TN"}, {"@type": "City", "name": "Old Hickory, Nashville, TN"}, {"@type": "City", "name": "Cookeville, TN"}, {"@type": "City", "name": "Shelbyville, TN"}], "sameAs": ["https://www.facebook.com/NationalClosetCompany", "https://www.instagram.com/nationalclosetcompany", "https://www.pinterest.com/nationalclosetco", "https://www.houzz.com/pro/nationalclosetco", "https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE"], "contactPoint": {"@type": "ContactPoint", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com", "contactType": "sales", "areaServed": "US", "availableLanguage": "English"}}, {"@type": "LocalBusiness", "@id": "https://nationalclosetco.com/#localbusiness", "name": "National Closet Company", "image": "https://nationalclosetco.com/img/hero-closet-og.jpg", "url": "https://nationalclosetco.com/", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com", "priceRange": "$$", "address": {"@type": "PostalAddress", "addressLocality": "Gallatin", "addressRegion": "TN", "addressCountry": "US"}, "geo": {"@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467}, "areaServed": [{"@type": "GeoCircle", "geoMidpoint": {"@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467}, "geoRadius": "144840"}, {"@type": "City", "name": "Gallatin, TN"}, {"@type": "City", "name": "Hendersonville, TN"}, {"@type": "City", "name": "Nashville, TN"}, {"@type": "City", "name": "Goodlettsville, TN"}, {"@type": "City", "name": "Mount Juliet, TN"}, {"@type": "City", "name": "Lebanon, TN"}, {"@type": "City", "name": "Brentwood, TN"}, {"@type": "City", "name": "Franklin, TN"}, {"@type": "City", "name": "Murfreesboro, TN"}, {"@type": "City", "name": "Smyrna, TN"}, {"@type": "City", "name": "Spring Hill, TN"}, {"@type": "City", "name": "Columbia, TN"}, {"@type": "City", "name": "Springfield, TN"}, {"@type": "City", "name": "Clarksville, TN"}, {"@type": "City", "name": "Dickson, TN"}, {"@type": "City", "name": "Bowling Green, KY"}, {"@type": "City", "name": "White House, TN"}, {"@type": "City", "name": "Portland, TN"}, {"@type": "City", "name": "La Vergne, TN"}, {"@type": "City", "name": "Nolensville, TN"}, {"@type": "City", "name": "Belle Meade, TN"}, {"@type": "City", "name": "Green Hills, Nashville, TN"}, {"@type": "City", "name": "Hermitage, Nashville, TN"}, {"@type": "City", "name": "Old Hickory, Nashville, TN"}, {"@type": "City", "name": "Cookeville, TN"}, {"@type": "City", "name": "Shelbyville, TN"}], "openingHoursSpecification": [{"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "opens": "08:00", "closes": "18:00"}, {"@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "09:00", "closes": "16:00"}], "parentOrganization": {"@id": "https://nationalclosetco.com/#org"}, "hasMap": "https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE", "sameAs": ["https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE"]}, {"@type": "WebSite", "@id": "https://nationalclosetco.com/#website", "url": "https://nationalclosetco.com/", "name": "National Closet Company", "publisher": {"@id": "https://nationalclosetco.com/#org"}, "potentialAction": {"@type": "SearchAction", "target": {"@type": "EntryPoint", "urlTemplate": "https://nationalclosetco.com/closet-cases?q={search_term_string}"}, "query-input": "required name=search_term_string"}}, {"@type": "Person", "@id": "https://nationalclosetco.com/#founder", "name": "Michael Blair", "jobTitle": "Founder & Owner", "worksFor": {"@id": "https://nationalclosetco.com/#org"}, "knowsAbout": ["Custom closets", "Walk-in closet design", "Home storage systems", "Closet installation"]}, {"@type": "WebPage", "@id": "https://nationalclosetco.com/#webpage", "url": "https://nationalclosetco.com/", "name": "Custom Closet Systems | National Closet Co.", "isPartOf": {"@id": "https://nationalclosetco.com/#website"}, "about": {"@id": "https://nationalclosetco.com/#org"}, "primaryImageOfPage": "https://nationalclosetco.com/img/hero-closet-og.jpg", "speakable": {"@type": "SpeakableSpecification", "cssSelector": ["h1", ".hero__slogan", ".hero__sub"]}}]}</script>
 
 <!-- ============ JSON-LD: Service catalog ============ -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Service",
-  "serviceType": "Custom Closet Systems",
-  "provider": { "@id": "https://nationalclosetco.com/#org" },
-  "areaServed": { "@type": "GeoCircle", "geoMidpoint": { "@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467 }, "geoRadius": "144840" },
-  "description": "Beautiful custom-designed closets and closet organizers at a price normal families can afford — custom closet systems, professionally designed and installed: walk-in and reach-in closets, closet organizers, custom pantries and pantry cabinets, home offices, garage storage, laundry rooms, wall beds and entertainment centers.",
-  "keywords": "closet organizers, custom closets, closet systems, closet design, custom pantry, pantry cabinets, butler pantry, walk-in pantry, kitchen pantry, pantry shelving, closet organizers near me, custom closets Nashville",
-  "hasOfferCatalog": {
-    "@type": "OfferCatalog",
-    "name": "Custom Storage Solutions",
-    "itemListElement": [
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Closet Organizers" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Custom Walk-In Closets" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Reach-In Closet Systems" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Home Office Cabinetry" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Garage Storage Systems" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Custom Pantries &amp; Pantry Cabinets" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Butler &amp; Walk-In Pantry Organization" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Laundry Room & Mudroom Storage" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Wall Beds & Murphy Beds" } },
-      { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Entertainment & Media Centers" } }
-    ]
-  }
-}
-</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Service", "serviceType": "Custom Closet Systems", "provider": {"@id": "https://nationalclosetco.com/#org"}, "areaServed": {"@type": "GeoCircle", "geoMidpoint": {"@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467}, "geoRadius": "144840"}, "description": "Beautiful custom-designed closets and closet organizers at a price normal families can afford — custom closet systems, professionally designed and installed: walk-in and reach-in closets, closet organizers, custom pantries and pantry cabinets, home offices, garage storage, laundry rooms, wall beds and entertainment centers.", "keywords": "closet organizers, custom closets, closet systems, closet design, custom pantry, pantry cabinets, butler pantry, walk-in pantry, kitchen pantry, pantry shelving, closet organizers near me, custom closets Nashville", "hasOfferCatalog": {"@type": "OfferCatalog", "name": "Custom Storage Solutions", "itemListElement": [{"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Closet Organizers"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Custom Walk-In Closets"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Reach-In Closet Systems"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Home Office Cabinetry"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Garage Storage Systems"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Custom Pantries &amp; Pantry Cabinets"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Butler &amp; Walk-In Pantry Organization"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Laundry Room & Mudroom Storage"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Wall Beds & Murphy Beds"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Entertainment & Media Centers"}}]}}</script>
 
 <!-- ============ JSON-LD: FAQ ============ -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    { "@type": "Question", "name": "Are you a franchise?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "No, and that saves you money. National Closet Company is 100% family owned and operated, not a franchise. You are not paying franchise royalties, national advertising fees or an overpriced brand name, only premium materials and expert craftsmanship. It is the same caliber of custom closets the big franchise showrooms sell, at an honest, transparent price." } },
-    { "@type": "Question", "name": "Do you offer discounts or run sales?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "We may run a straightforward, honest coupon or promotion now and then \u2014 but we don't play the inflated 'National Price, then 40% off if you sign tonight' game the national brands do. Their discount was never real; it was baked into the price so it could be handed back as a favor. We price the job once, honestly, for the same closet system, and our everyday price often lands around half of a national brand's discounted, book-now price \u2014 on a closet we quote deeper, with 14-inch shelves versus their 12-inch. No inflated list price, no countdown, no manager to call, no sale to wait for." } },
-    { "@type": "Question", "name": "How much does a custom closet cost?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Custom closets typically cost between about $1,000 and $10,000 or more, with a national average around $2,000. A custom reach-in closet system usually runs $1,000–$2,500, a walk-in closet $3,000–$10,000+, and large luxury closets can go higher depending on size, materials and accessories. National Closet Company gives you an exact, no-obligation price at your free in-home consultation, never an estimate that changes later." } },
-    { "@type": "Question", "name": "Do I have to remove my old shelving and paint first?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Only if you want to. National Closet Company gives you two quotes. With Option 1, you remove the existing shelving, patch the holes and paint, and we design, build and install your new closet, which is the most budget-friendly route. With Option 2, the turnkey option, you simply empty the space of your belongings and we handle everything else: removing the old shelving, patching and repairing the walls, painting, then building and installing your new closet. Most closet companies only offer Option 1, but we give you both." } },
-    { "@type": "Question", "name": "Are custom closets worth it?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "For most homeowners, yes. A custom closet uses every inch of the room and often doubles usable storage compared with a basic builder closet, keeping you organized for years. It costs more up front than a wire kit, but the furniture-grade materials, lifetime use and everyday convenience make custom closets well worth it if you value storage and a clutter-free home." } },
-    { "@type": "Question", "name": "Do custom closets add value to your home?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Custom closets and storage, including walk-in closets, pantries, mudrooms and garage systems, are a strong selling feature that makes a home more appealing and can help it sell faster. They do not add square footage, so they will not change a formal appraisal, but buyers consistently rank organized, custom storage near the top of their wish list, which gives your home an edge." } },
-    { "@type": "Question", "name": "What's the difference between a custom closet and a closet system?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "A closet system is the engineered framework of shelves, rods, drawers and accessories that organizes your space. A custom closet means that system is designed specifically for your room's exact dimensions, your wardrobe and the way you live, rather than a one-size-fits-all kit. Every National Closet Company project is fully custom." } },
-    { "@type": "Question", "name": "Do you build wall-mounted (floating) or floor-based closets?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Both, and it's your choice. We build wall-mounted (floating) systems that hang off the wall with the floor open underneath, and floor-based (floor-standing) systems that sit on the floor with a toe kick like built-in furniture. Neither performs better than the other; it comes down to the look you prefer and your room, and for a carpeted room a wall-mounted (floating) system is usually the better fit because it keeps the carpet clear. We show you both options during your free in-home design." } },
-    { "@type": "Question", "name": "What materials do you use for custom closets?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "We build with premium, furniture-grade materials, durable laminate and thermally-fused melamine over engineered wood, chosen for strength, easy cleaning and a high-end finish. You choose from dozens of colors and finishes, from crisp whites to warm woodgrains, along with soft-close drawers, glass fronts, lighting and other accessories. Everything is built to handle daily use for the long haul." } },
-    { "@type": "Question", "name": "How long does it take to design and install a custom closet?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "From start to finish, most custom closets take about 3 to 6 weeks. Design happens at your free in-home consultation, custom manufacturing typically takes 2 to 4 weeks, and professional installation of a standard closet is usually finished in a single day with minimal disruption to your home." } },
-    { "@type": "Question", "name": "Do you require a deposit, and do you offer financing or buy now, pay later?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes to both. Your project is paid in three steps: 50% at signing, which releases your order to our manufacturing partners, 25% once your materials arrive and we schedule your installation, and the final 25% on install day. You can also pay in full at any time. You can Buy Now, Pay Later with Klarna — including a 0% interest option — and split your project into flexible payments at checkout, subject to Klarna approval, and we accept all major credit and debit cards, bank transfer and digital wallets like Apple Pay and Google Pay. Ask your designer about the easiest way to fit a custom closet into your budget." } },
-    { "@type": "Question", "name": "Do you build more than closets?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. Besides custom walk-in and reach-in closets, we design and install garage storage systems, custom pantries, home offices, laundry rooms and mudrooms, Murphy and wall beds, and media and wall units, all built and installed by the same team." } },
-    { "@type": "Question", "name": "Is there a custom closet company near me? What areas do you serve?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "National Closet Company designs and installs custom closets and storage systems throughout Middle Tennessee, serving every city within about 90 miles of Gallatin, TN. That includes Nashville, Franklin, Brentwood, Hendersonville, Mount Juliet, Murfreesboro, Gallatin, Lebanon, Smyrna, Nolensville, Spring Hill, Belle Meade, Goodlettsville, White House, Portland, La Vergne, Green Hills, Hermitage, Old Hickory, Columbia, Springfield, Clarksville, Dickson, Cookeville and Shelbyville, plus Bowling Green, KY, and the surrounding communities. See the full list at https://nationalclosetco.com/service-areas, or call or text 629-298-8241 to confirm your city and book a free in-home consultation." } },
-    { "@type": "Question", "name": "Do you offer a free in-home consultation?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. Every project starts with a 100% free, no-pressure in-home consultation. Your designer measures your space in person, walks through your options and finishes, and gives you a photorealistic design with transparent pricing on the spot. We measure in person, not virtually, for a perfect fit." } },
-    { "@type": "Question", "name": "How do I get started?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Just call or text 629-298-8241, email hello@nationalclosetco.com, or fill out the form on this page. We will schedule your free in-home consultation, design your custom closet, and handle manufacturing and installation from there." } },
-    { "@type": "Question", "name": "Do you install everything, or do I assemble it myself?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "We handle everything, and there is no flat-pack to build. Our team professionally constructs and installs your closet on site, securely anchored to the wall, and cleans up before we leave. A standard closet is usually installed in a single day, so you go from empty space to finished closet without lifting a tool." } },
-    { "@type": "Question", "name": "Do I need to measure my closet before my consultation?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "No. Your designer measures your space in person at your free in-home consultation so the design fits to the inch. You do not need to measure, sketch or prep anything beforehand. Just book it and we take it from there." } },
-    { "@type": "Question", "name": "Can I see color and finish samples before I decide?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. Your designer brings finish, color and hardware samples to your in-home consultation so you can see and feel the exact laminate, woodgrain and accessories in your own lighting before you choose. On-screen colors can look different in person, so we always confirm your finish face to face." } },
-    { "@type": "Question", "name": "Do your custom closets come with a warranty?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. Your installation is backed by our workmanship guarantee, and the furniture-grade materials and hardware we use, including soft-close drawers, hinges and rods, carry their own manufacturer warranties. If something is not right, call or text us and we will make it right. Ask your designer for the specific coverage on your project." } },
-    { "@type": "Question", "name": "Can I add to or reconfigure my closet system later?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Often, yes, especially with our adjustable systems. Shelves and rods adjust without tools, and many layouts can be added onto or reconfigured as your wardrobe and organization needs change. If you would like room to grow, tell your designer and we will plan the closet organization system with future add-ons in mind." } },
-    { "@type": "Question", "name": "How much weight can the shelves hold?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Plenty for everyday use. Our floor-based and wall-mounted systems use furniture-grade shelving engineered to hold folded clothes, shoes, bins, small appliances and typical closet and pantry loads without sagging. For unusually heavy items, let your designer know and we will spec the shelf thickness, spacing and supports to match." } },
-    { "@type": "Question", "name": "Can you add LED lighting to my closet?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. We offer integrated LED lighting, including shelf, rod and cabinet lighting, that makes a closet feel like a boutique and helps you see every item clearly. It is a popular upgrade for walk-in closets and pantries. Ask your designer about lighting options at your consultation." } },
-    { "@type": "Question", "name": "Which company is best for closets?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "The best closet company designs to your exact space, builds with furniture-grade materials, and prices honestly without franchise markups. In Middle Tennessee that is National Closet Company: family-owned, 100% custom, with deeper 14-inch shelving versus the 12-inch many competitors install, a free in-home 3D design, and an everyday price that often lands around half of the national brands' discounted quotes. You get the same caliber as the big-name showrooms without paying for the brand name." } },
-    { "@type": "Question", "name": "What is the average cost to design a closet?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "With National Closet Company the design is free. Your in-home consultation, in-person measurements and a photorealistic 3D design cost nothing and come with no obligation; some companies charge a design or measure fee, but we do not. The closet itself typically runs about $1,000 to $2,500 for a reach-in and $3,000 to $10,000 or more for a walk-in, and you get an exact, all-inclusive price at your free design, never an estimate that changes later." } },
-    { "@type": "Question", "name": "What closet company does Costco use?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Warehouse clubs like Costco sometimes promote a national closet brand as a member perk, but you are still paying that brand's franchise pricing through a middleman, not a local, family-owned price. You do not need a membership or a markup: National Closet Company builds the same custom, furniture-grade closets, designed and installed by our own team, at an honest everyday price that often lands around half of a national brand's discounted quote. Go direct and skip the markup." } },
-    { "@type": "Question", "name": "Which closet company is the cheapest?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "The cheapest closets are DIY wire kits from a big-box store, but they sag, waste space and do not last. Among custom closet companies the smarter question is value, not just price. National Closet Company is one of the most affordable custom options in Middle Tennessee because we are family-owned with no franchise royalties and no inflated list-price-then-40-percent-off games; our everyday price often lands around half of a national brand's discounted, book-now quote, on a closet we build deeper with 14-inch versus 12-inch shelves. Premium quality at an honest price beats cheapest every time." } },
-    { "@type": "Question", "name": "Does National Closet Company have reviews?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. We are proud of our 5-star reviews from homeowners across Middle Tennessee, which you can read on Google and Facebook, and we are happy to share local references at your free consultation. As a family-owned company our reputation is everything, so we make sure every closet is done right." } },
-    { "@type": "Question", "name": "How much does closet installation cost?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "On average, professional closet installation ranges from a few hundred dollars for a basic reach-in to a few thousand for a large walk-in. With National Closet Company, installation is included in your all-inclusive price and never billed separately, so there are no surprise labor charges. A reach-in system typically runs about $1,000 to $2,500 and a walk-in about $3,000 to $10,000 or more, installed. Your free in-home design gives you one exact price covering design, custom manufacturing, delivery and professional installation by our own team, usually completed in a single day." } },
-    { "@type": "Question", "name": "How much does Home Depot or Lowe's charge to install a closet?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Home Depot and Lowe's mostly sell DIY wire and laminate closet kits you assemble yourself, and when they do offer installation it is usually a basic, subcontracted job on a stock kit that is not designed to your exact space. National Closet Company is a full-service custom closet company: we design your closet in 3D, build it from furniture-grade materials to your room's exact dimensions, and install it with our own team, all for one all-inclusive price that often lands around half of a national brand's discounted quote. You get a true custom closet that fits to the inch and lasts, not a flat-pack kit." } },
-    { "@type": "Question", "name": "How much does a contractor charge to build a closet?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "A general contractor or carpenter building a closet from scratch on site often runs $2,000 to $5,000 or more and can take weeks. A dedicated custom closet company is usually faster and more affordable: National Closet Company designs your closet in 3D, manufactures it from furniture-grade materials, and installs it in about a single day, with an exact, all-inclusive price at your free in-home design. You get built-in-furniture quality without the general-contractor timeline or markup." } },
-    { "@type": "Question", "name": "Do you build corner closets and handle awkward corners?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. Corners are where storage is usually wasted, so we design curved and angled corner shelving and specialty units that turn tight or awkward corners into fully usable space, a common upgrade in walk-in closets and pantries." } },
-    { "@type": "Question", "name": "Are your closet materials eco-friendly and low-odor?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "We build with engineered wood products, laminate and thermally-fused melamine, chosen to be durable, easy to clean and low-odor. Any faint new-material smell fades quickly after installation. If low-emission materials are a priority for you, mention it to your designer and we will walk through your options." } },
-    { "@type": "Question", "name": "How do I clean and care for my custom closet?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "It is easy. Wipe the surfaces with a soft cloth and mild soap and water, then dry. Avoid abrasive pads and harsh solvents, which can dull the finish. The laminate and melamine surfaces are built to resist everyday scuffs and wipe clean in seconds." } },
-    { "@type": "Question", "name": "What if a drawer or door needs adjusting after installation?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Just reach out. Soft-close drawers and door hinges can be fine-tuned, and if anything shifts or needs adjusting after install, we will take care of it under our workmanship guarantee. Call or text 629-298-8241 and we will make it right." } },
-    { "@type": "Question", "name": "Can I change or cancel my order?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Because every piece is custom-made to your exact measurements, we ask that you confirm your design before we start manufacturing. If your plans change, let us know as early as possible and we will do our best to help. Call or text 629-298-8241 with any questions about your order." } },
-    { "@type": "Question", "name": "Do you build closet organizers and closet organization systems?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes, a custom closet organizer is exactly what we do. We design and install complete closet organization systems with shelves, drawers, rods, shoe storage and accessories laid out around your wardrobe, so every item has a place and stays organized. Whether you call it a closet organizer, an organization system or a custom closet, we build it to fit your space to the inch." } },
-    { "@type": "Question", "name": "Do you offer pantry organization and home organization systems too?", "acceptedAnswer": { "@type": "Answer", "upvoteCount": 0, "text": "Yes. Beyond closets, we design pantry organization and whole-home organization systems, including pantries, garages, laundry rooms, mudrooms and home offices, using the same custom, furniture-grade approach. If a space in your home needs to be organized, we can build an organization system that fits it perfectly." } }
-  ]
-}
-</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Are you a franchise?", "acceptedAnswer": {"@type": "Answer", "upvoteCount": 0, "text": "No, and that saves you money. National Closet Company is 100% family owned and operated, not a franchise. You are not paying franchise royalties, national advertising fees or an overpriced brand name, only premium materials and expert craftsmanship. It is the same caliber of custom closets the big franchise showrooms sell, at an honest, transparent price."}}, {"@type": "Question", "name": "Do you offer discounts or run sales?", "acceptedAnswer": {"@type": "Answer", "upvoteCount": 0, "text": "We may run a straightforward, honest coupon or promotion now and then — but we don't play the inflated 'National Price, then 40% off if you sign tonight' game the national brands do. Their discount was never real; it was baked into the price so it could be handed back as a favor. We price the job once, honestly, for the same closet system, and our everyday price often lands around half of a national brand's discounted, book-now price — on a closet we quote deeper, with 14-inch shelves versus their 12-inch. No inflated list price, no countdown, no manager to call, no sale to wait for."}}, {"@type": "Question", "name": "How much does a custom closet cost?", "acceptedAnswer": {"@type": "Answer", "upvoteCount": 0, "text": "Custom closets typically cost between about $1,000 and $10,000 or more, with a national average around $2,000. A custom reach-in closet system usually runs $1,000–$2,500, a walk-in closet $3,000–$10,000+, and large luxury closets can go higher depending on size, materials and accessories. National Closet Company gives you an exact, no-obligation price at your free in-home consultation, never an estimate that changes later."}}, {"@type": "Question", "name": "How long does it take to design and install a custom closet?", "acceptedAnswer": {"@type": "Answer", "upvoteCount": 0, "text": "From start to finish, most custom closets take about 3 to 6 weeks. Design happens at your free in-home consultation, custom manufacturing typically takes 2 to 4 weeks, and professional installation of a standard closet is usually finished in a single day with minimal disruption to your home."}}, {"@type": "Question", "name": "Do you offer a free in-home consultation?", "acceptedAnswer": {"@type": "Answer", "upvoteCount": 0, "text": "Yes. Every project starts with a 100% free, no-pressure in-home consultation. Your designer measures your space in person, walks through your options and finishes, and gives you a photorealistic design with transparent pricing on the spot. We measure in person, not virtually, for a perfect fit."}}, {"@type": "Question", "name": "Do your custom closets come with a warranty?", "acceptedAnswer": {"@type": "Answer", "upvoteCount": 0, "text": "Yes. Your installation is backed by our workmanship guarantee, and the furniture-grade materials and hardware we use, including soft-close drawers, hinges and rods, carry their own manufacturer warranties. If something is not right, call or text us and we will make it right. Ask your designer for the specific coverage on your project."}}]}</script>
 
 <!-- ============ JSON-LD: HowTo (process) ============ -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "HowTo",
-  "name": "How to get a custom closet from National Closet Company",
-  "description": "The simple four-step process to design, build and install a custom closet or storage system.",
-  "totalTime": "P6W",
-  "step": [
-    { "@type": "HowToStep", "position": 1, "name": "Free in-home consultation", "text": "We come to your home, measure your space in person, and walk through your options and finishes with no pressure and no obligation." },
-    { "@type": "HowToStep", "position": 2, "name": "Photorealistic design", "text": "Your designer builds your closet system in a photorealistic design so you can see every finish and detail, with an exact price on the spot." },
-    { "@type": "HowToStep", "position": 3, "name": "Precision manufacturing", "text": "Your approved design is custom-built in our facility, typically ready in 2 to 4 weeks." },
-    { "@type": "HowToStep", "position": 4, "name": "Professional installation", "text": "Our certified installers handle everything, usually in a single day, and leave your space spotless and ready to fill." }
-  ]
-}
-</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "HowTo", "name": "How to get a custom closet from National Closet Company", "description": "The simple four-step process to design, build and install a custom closet or storage system.", "totalTime": "P6W", "step": [{"@type": "HowToStep", "position": 1, "name": "Free in-home consultation", "text": "We come to your home, measure your space in person, and walk through your options and finishes with no pressure and no obligation."}, {"@type": "HowToStep", "position": 2, "name": "Photorealistic design", "text": "Your designer builds your closet system in a photorealistic design so you can see every finish and detail, with an exact price on the spot."}, {"@type": "HowToStep", "position": 3, "name": "Precision manufacturing", "text": "Your approved design is custom-built in our facility, typically ready in 2 to 4 weeks."}, {"@type": "HowToStep", "position": 4, "name": "Professional installation", "text": "Our certified installers handle everything, usually in a single day, and leave your space spotless and ready to fill."}]}</script>
 
 <!-- ============ JSON-LD: Breadcrumb ============ -->
-<script type="application/ld+json">
-{ "@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
-  { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://nationalclosetco.com/" }
-]}
-</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://nationalclosetco.com/"}]}</script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-EJEDXZZWJN"></script>
 <script>
@@ -962,27 +883,18 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
         </h1>
         <p class="no-sale hero__sub"><strong>No 40% off.</strong> We never marked it up 40% to begin with.</p>
         <p class="hero__slogan hero__sub">We're Closet Freaks!</p>
-        <p class="lead hero__sub" style="margin-top:1.1rem">
-          <strong>Custom closets, closet organizers, pantries, garages &amp; home offices</strong> — designed and installed for you, at a price normal families can afford.
-        </p>
-        <ul class="hero__sub" style="list-style:none;padding:0;margin:.9rem 0 0;display:flex;flex-wrap:wrap;gap:.5rem 1.4rem;font-weight:600;font-size:1rem">
-          <li><span style="color:var(--clay);font-weight:800">✓</span> Free in-home design</li>
-          <li><span style="color:var(--clay);font-weight:800">✓</span> Wall-mounted or floor-based</li>
-          <li><span style="color:var(--clay);font-weight:800">✓</span> Honest, upfront pricing</li>
-          <li><span style="color:var(--clay);font-weight:800">✓</span> Flexible payment options</li>
-        </ul>
-        <p class="hero__sub" style="margin-top:.7rem;font-size:.95rem"><a href="/service-areas" style="color:var(--clay-deep);font-weight:700">Serving Nashville &amp; all of Middle TN — see service areas →</a></p>
+        <p class="lead hero__sub" style="margin-top:1.1rem"><strong>Custom closets, pantries, garages &amp; home offices</strong> — designed free in your home, installed by our own team, at a price normal families can afford.</p>
+        <p class="hero__sub proof-chips" style="margin-top:1rem"><span>Reach-ins from $1,000</span><span>Walk-ins from $2,500</span><span>Free in-home 3D design</span><span>1-year workmanship guarantee</span></p>
+        
         <div class="hero__actions">
           <a class="btn btn--primary" href="#consult">Get Your Free Design <span class="arr">→</span></a>
-          <a class="btn btn--ghost" href="#services">Explore Services</a>
+          <a class="btn btn--ghost" href="/our-work">See Real Projects</a>
         </div>
         <p class="capacity" id="capacity-bar">
           <span class="dot"></span><span id="capacity-text"></span>
         </p>
         <p class="doodle-note" aria-hidden="true"><span class="doodle-arrow"><svg viewBox="0 0 80 60" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M72,52 C 36,50 13,38 14,9"/><path d="M5,22 L14,5 L26,16"/></svg></span> it's 100% free — no obligation!</p>
-        <div class="hero__proof">
-          <a href="https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE" target="_blank" rel="noopener" style="text-decoration:none;color:inherit" aria-label="See our reviews on Google"><span><span class="stars">★★★★★</span> <b class="u-circle">5.0</b> <span style="font-weight:600;font-size:.9rem">on Google</span></span></a>
-        </div>
+        <div class="hero__proof"><a class="gbadge" href="https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE" target="_blank" rel="noopener"><span class="stars">★★★★★</span> <b>5.0</b> from 6 Google reviews</a></div>
       </div>
 
       <div class="hero__form" data-reveal>
@@ -1039,6 +951,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
   </div>
 </section>
 
+
 <!-- ================= MARQUEE ================= -->
 <div class="marquee" aria-hidden="true">
   <div class="marquee__track">
@@ -1063,6 +976,78 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
 </div>
 
 <!-- ================= SERVICES ================= -->
+
+<!-- ================= REAL PROJECTS ================= -->
+<section class="section section--fog" id="real">
+  <div class="wrap">
+    <div class="split" style="align-items:start">
+      <figure class="ba-feature" style="margin:0">
+  <div class="ba" data-ba>
+    <img class="ba__img" src="/img/pantry-before.webp" alt="Before: builder-grade wire shelving in the Fraleys' pantry" loading="lazy" />
+    <img class="ba__img ba__after" src="/img/pantry-after.webp" alt="After: the same pantry with custom white shelving, deep drawers and pull-outs" loading="lazy" />
+    <span class="ba__tag ba__tag--b">Before</span><span class="ba__tag ba__tag--a">After</span>
+    <span class="ba__line" aria-hidden="true"></span><span class="ba__knob" aria-hidden="true"><i></i><i></i></span>
+    <input class="ba__range" type="range" min="0" max="100" value="50" aria-label="Drag to compare before and after" />
+  </div><figcaption class="ba__cap">The Fraleys' pantry, Middle Tennessee. Drag to compare. <a href='/blog/fraley-pantry-master-closet-makeover'>Read their story →</a></figcaption>
+</figure>
+      <div>
+        <span class="eyebrow">Real homes · real prices</span>
+        <h2 class="h2" style="margin-top:.8rem">Wire shelving to custom, in a day.</h2>
+        <p class="lead">Every project starts as a 3D design at your free in-home consultation, so you see exactly what you're getting and one honest installed price before you say yes. Then we build it to the inch and install it, usually in a single day.</p>
+        <div class="pair" style="margin-top:1.2rem">
+          <figure><img src="/img/blog-3d-design.webp" alt="True-to-scale 3D design of a white reach-in closet with double-hang sections and a drawer tower" loading="lazy" width="1574" height="1142" /><figcaption><b>Your 3D design</b> — drawn to your real wall measurements.</figcaption></figure>
+          <figure><img src="/img/blog-3d-design-result.webp" alt="The same reach-in closet installed and filled with clothing, baskets and shoes" loading="lazy" width="1232" height="864" /><figcaption><b>Brought to life</b> — this reach-in: <b>$2,290 installed.</b></figcaption></figure>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.7rem;margin-top:1.3rem">
+          <a class="btn btn--primary" href="/our-work">See Our Work <span class="arr">→</span></a>
+          <a class="btn btn--ghost" href="/gallery">Browse the gallery</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= REVIEWS ================= -->
+<section class="section" id="reviews">
+  <div class="wrap">
+    <div class="sec-head--split" style="margin-bottom:1.6rem;align-items:end">
+      <div data-reveal>
+        <span class="eyebrow">Loved by homeowners</span>
+        <h2 class="h2" style="margin-top:1rem">Don't take our word for it.</h2>
+      </div>
+      <p data-reveal data-delay="1"><a class="gbadge" href="https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE" target="_blank" rel="noopener"><span class="stars">★★★★★</span> <b>5.0</b> from 6 Google reviews</a></p>
+    </div>
+    <div class="reviews-grid">
+      <figure class="tcard" data-reveal>
+  <span class="stars" aria-label="5 out of 5 stars">★★★★★</span>
+  <blockquote>“Holy Wow! BEST investment for our home! The pantry and closet systems were a game changer — helping us organize better, fit more items and look amazing. The process of designing, ordering and installing was…”</blockquote>
+  <a class="tcard__story" href="/blog/fraley-pantry-master-closet-makeover">See the Fraleys' pantry and closet →</a>
+  <figcaption class="tcard__who"><span class="tcard__av">AF</span><span><b>Amber Fraley</b><span>Pantry + master closet · Google review, July 2026</span></span></figcaption>
+</figure>
+      <figure class="tcard" data-reveal>
+  <span class="stars" aria-label="5 out of 5 stars">★★★★★</span>
+  <blockquote>“Absolutely thrilled with our new pantry and master closet! The entire process was seamless, communication was excellent, and the finished product exceeded our expectations. We were also pleasantly surprised by…”</blockquote>
+  
+  <figcaption class="tcard__who"><span class="tcard__av">CW</span><span><b>Cheryl Webb</b><span>Pantry + master closet · Google review, June 2026</span></span></figcaption>
+</figure>
+      <figure class="tcard" data-reveal>
+  <span class="stars" aria-label="5 out of 5 stars">★★★★★</span>
+  <blockquote>“We would highly recommend National Closet Company. The customer service was exceptional. The materials and installation were outstanding. We are very happy with Michael Blair and his installer.”</blockquote>
+  <a class="tcard__story" href="/blog/keith-irena-office-storage-wall">See Keith & Irena's storage wall →</a>
+  <figcaption class="tcard__who"><span class="tcard__av">KV</span><span><b>Keith Vasseur</b><span>Office storage wall · Google review, July 2026</span></span></figcaption>
+</figure>
+    </div>
+    <div style="text-align:center;margin-top:2rem;display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center" data-reveal>
+      <a class="btn btn--ink" href="/reviews">Read all our reviews</a>
+      <a class="btn btn--ghost" href="https://g.page/r/Calj4533P4lBEBM/review" target="_blank" rel="noopener">Leave us a review</a>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ========== WHY HOMEOWNERS CHOOSE US (family-owned · choices · process) ========== -->
+
 <section class="section" id="services">
   <div class="wrap">
     <div class="sec-head--split" style="margin-bottom:2.6rem">
@@ -1175,8 +1160,6 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
     </div>
   </div>
 </section>
-
-<!-- ========== WHY HOMEOWNERS CHOOSE US (family-owned · choices · process) ========== -->
 <section class="section section--fog" id="family-owned">
   <style>
     #why{text-align:center}
@@ -1221,10 +1204,8 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
 
     <div class="sec-head" style="max-width:70ch;margin-inline:auto" data-reveal>
       <span class="eyebrow" style="justify-content:center">Why homeowners choose us</span>
-      <h2 class="h2" style="margin-top:1rem">Why Homeowners Choose National Closet Company</h2>
-      <h3 class="subhead" style="margin-top:1.2rem">We're not a franchise — and you'll feel it in the price.</h3>
-      <p class="lead" style="margin-top:1.1rem">National Closet Company is 100% family-owned and operated, which means every dollar goes into premium materials, expert craftsmanship, and exceptional service instead of franchise royalties, corporate overhead, or national advertising funds. It also means we can build better: our shelving comes standard at a full <strong>14&Prime; depth</strong>, while many of the big-name brands ship only <strong>12&Prime;</strong> — so you get more usable storage. You get the same caliber of custom closets as the big-name showroom brands, built deeper — without the franchise markup.</p>
-      <p class="lead" style="margin-top:1rem">We're passionate about what we do. In fact, you could call us <span style="font-family:'Caveat','Montserrat',cursive;color:var(--clay-deep);font-weight:700;font-size:1.5em;line-height:1">closet freaks</span>. We're happily obsessed with every shelf, drawer, pull-out, and finishing detail until your space is exactly right.</p>
+      <h2 class="h2" style="margin-top:1rem">We're not a franchise — and you'll feel it in the price.</h2>
+      <p class="lead" style="margin-top:1.1rem">No franchise royalties, no national ad budget, no showroom to fund. Every dollar goes into the closet: <strong>14&Prime; deep shelves as standard</strong> where the big brands install 12&Prime;, and one honest price instead of a "40% off" on a marked-up list. We're happily obsessed with every shelf and drawer — around here they call us <span style="font-family:'Caveat','Montserrat',cursive;color:var(--clay-deep);font-weight:700;font-size:1.5em;line-height:1">closet freaks</span>.</p>
     </div>
 
     <div id="two-quotes" style="margin-top:3.2rem">
@@ -1285,31 +1266,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
         </div>
       </div>
 
-      <div style="margin-top:3.2rem" data-reveal>
-        <div style="text-align:center;margin-bottom:1.5rem">
-          <span class="eyebrow" style="color:var(--clay-deep)">No paper drawings</span>
-          <h3 style="font-family:var(--display);font-size:clamp(1.5rem,3.4vw,2rem);font-weight:800;line-height:1.15;margin:.7rem 0 0;color:var(--ink)">You'll see your closet in 3D — <em style="font-style:normal;color:var(--clay-deep)">not on graph paper</em></h3>
-          <p class="muted" style="max-width:66ch;margin:.8rem auto 0;line-height:1.6">Most companies sketch a few lines on graph paper, then hit you with an inflated &ldquo;National Price&rdquo; and a stack of discounts. We design your closet in <strong>3D, to your exact measurements</strong> — so you see precisely what you're getting, and <strong>one honest installed price</strong>, before you ever say yes. <a href="/blog/see-your-closet-in-3d" style="color:var(--clay-deep);font-weight:700;white-space:nowrap">See how it works →</a></p>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:18px;justify-content:center">
-          <figure style="flex:1 1 380px;max-width:520px;margin:0;background:var(--fog);border-radius:14px;overflow:hidden;border-top:4px solid var(--ink)">
-            <img src="/img/blog-3d-design.webp" alt="A true-to-scale 3D closet design of a white melamine reach-in with double-hang sections, a four-drawer center tower and open shelving" loading="lazy" width="1574" height="1142" style="width:100%;aspect-ratio:3/2;object-fit:cover;display:block" />
-            <figcaption style="padding:14px 18px;font-size:.95rem;color:var(--ink-soft)"><strong style="color:var(--ink)">Your 3D design</strong> — built to your real wall measurements at your free consultation.</figcaption>
-          </figure>
-          <figure style="flex:1 1 380px;max-width:520px;margin:0;background:var(--fog);border-radius:14px;overflow:hidden;border-top:4px solid var(--clay)">
-            <img src="/img/blog-3d-design-result.webp" alt="The same reach-in closet design brought to life as a realistic white melamine system filled with clothing, folded stacks, baskets and shoes" loading="lazy" width="1232" height="864" style="width:100%;aspect-ratio:3/2;object-fit:cover;display:block" />
-            <figcaption style="padding:14px 18px;font-size:.95rem;color:var(--ink-soft)"><strong style="color:var(--ink)">Brought to life</strong> — this reach-in came in at just <strong>$2,290 installed.</strong></figcaption>
-          </figure>
-        </div>
       </div>
-    </div>
-
-    <p style="max-width:62ch;margin:2.8rem auto 0;font-weight:800;font-size:1.14rem;line-height:1.45">No franchise fees. No corporate markup. Just beautifully organized spaces built by people who genuinely care about getting every detail right.</p>
-
-    <div style="max-width:720px;margin:1.8rem auto 0;padding:1.4rem 1.6rem;background:var(--fog);border-left:4px solid var(--clay);border-radius:12px;text-align:left" data-reveal>
-      <strong style="font-family:var(--display);font-size:1.06rem;color:var(--ink)">And no fake &ldquo;80% off&rdquo; games.</strong>
-      <p class="muted" style="margin:.5rem 0 0;line-height:1.6">The national brands stack discounts — 40% off, then another 15%, then a &ldquo;book-tonight&rdquo; bonus — on a price they marked up first, so the closet still costs about <strong>double</strong>. We just quote one honest price for the same closet system, and it&rsquo;s often <strong>half their &ldquo;discounted&rdquo; price</strong> — on a closet we build <strong>deeper (14&Prime; shelves vs their 12&Prime;)</strong>. <a href="/blog/fake-discounts-65-percent-off" style="color:var(--clay-deep);font-weight:700;white-space:nowrap">See how the gimmick works →</a></p>
-    </div>
 
     <div style="margin-top:1.6rem" data-reveal>
       <a class="btn btn--primary" href="#consult">Book Your Free Design <span class="arr">→</span></a>
@@ -1317,281 +1274,124 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
 
   </div>
 </section>
-
-<!-- ================= GALLERY / OUR WORK ================= -->
-<section class="section" id="work">
+<!-- ================= PRICING + ESTIMATOR ================= -->
+<section class="section section--fog" id="pricing">
   <div class="wrap">
-    <div class="sec-head--split" style="margin-bottom:2.4rem">
+    <div class="sec-head--split" style="margin-bottom:1.6rem">
+      <div data-reveal>
+        <span class="eyebrow">Honest, upfront pricing</span>
+        <h2 class="h2" style="margin-top:1rem">What a custom closet actually costs.</h2>
+      </div>
+      <p class="lead" data-reveal data-delay="1">Typical installed prices, design included. Pick your space below for a range, then get the exact number free at your in-home design. <a href="/custom-closet-cost-nashville" style="color:var(--clay-deep);font-weight:700">Full pricing guide →</a></p>
+    </div>
+    <div class="price-tiles" data-reveal>
+      <div><span>Reach-in closet</span><b>from $1,000</b></div>
+      <div><span>Walk-in closet</span><b>from $2,500</b></div>
+      <div><span>Custom pantry</span><b>from $1,500</b></div>
+      <div><span>Garage storage</span><b>from $2,500</b></div>
+      <div><span>Home office</span><b>from $2,000</b></div>
+      <div><span>Laundry / mudroom</span><b>from $1,500</b></div>
+    </div>
+    <div style="margin-top:1.4rem" data-reveal><div class="est" data-estimator>
+  <div class="est__grid">
+    <div class="est__q"><label class="est__lbl" for="est-type">What space?</label>
+      <select id="est-type" data-est="type"><option value="reachin">Reach-in closet</option><option value="walkin">Walk-in closet</option><option value="pantry">Pantry</option><option value="garage">Garage storage</option><option value="office">Home office</option><option value="laundry">Laundry / mudroom</option></select></div>
+    <div class="est__q"><span class="est__lbl">How big?</span>
+      <div class="est__chips" data-est="size" role="group" aria-label="Size"><button type="button" data-v="small">Small</button><button type="button" data-v="medium" class="on">Medium</button><button type="button" data-v="large">Large</button></div></div>
+    <div class="est__q"><span class="est__lbl">Finish</span>
+      <div class="est__chips" data-est="finish" role="group" aria-label="Finish"><button type="button" data-v="standard" class="on">Classic white</button><button type="button" data-v="wood">Wood-grain</button><button type="button" data-v="premium">Doors, glass &amp; lighting</button></div></div>
+  </div>
+  <div class="est__out" aria-live="polite">
+    <span class="est__lead">Typically</span>
+    <span class="est__range" data-est="range">$2,500 – $7,000</span>
+    <span class="est__note">installed, design included. Your designer confirms an exact price at your free in-home design.</span>
+  </div>
+  <div class="est__actions">
+    <a class="btn btn--primary" href="#consult">Get My Exact Price — Free <span class="arr">→</span></a>
+    <a class="btn btn--ghost" href="sms:+16292988241?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F">📷 Text us a photo of your closet</a>
+  </div>
+</div></div>
+  </div>
+</section>
+
+<!-- ================= ABOUT STRIP ================= -->
+<section class="section" id="family">
+  <div class="wrap">
+    <div class="about-strip">
+      <div>
+        <span class="eyebrow">Family-owned · not a franchise</span>
+        <h2 class="h2" style="margin-top:.8rem">Meet the family behind the closets.</h2>
+        <div class="note" style="margin-top:1.2rem" data-reveal>
+          <p><strong>Hi, I'm Michael Blair.</strong> My family started National Closet Company in Gallatin because we kept watching neighbors pay national-brand prices for closets that were marked up just so they could be "discounted."</p>
+          <p>We're a small team, so the person who measures your closet is the person who answers the phone. You get a free 3D design, two quotes, 14-inch shelves as standard, and most installs are done in a single day.</p>
+          <p class="sig">Michael Blair<small>Founder, National Closet Company · Gallatin, TN</small></p>
+        </div>
+        <p style="margin-top:1.2rem"><a class="btn btn--ghost" href="/about">More about us <span class="arr">→</span></a></p>
+      </div>
+      <img src="/img/ncc-truck.webp" alt="The National Closet Company truck, lettered 'Closet Freaks', parked in a Middle Tennessee neighborhood" width="1600" height="600" loading="lazy" />
+    </div>
+  </div>
+</section>
+
+<!-- ================= GALLERY TEASER ================= -->
+<section class="section section--fog" id="work">
+  <div class="wrap">
+    <div class="sec-head--split" style="margin-bottom:1.6rem">
       <div data-reveal>
         <span class="eyebrow">Inspiration</span>
-        <h2 class="h2" style="margin-top:1rem">Closet &amp; pantry<br>inspiration.</h2>
+        <h2 class="h2" style="margin-top:1rem">Closet &amp; pantry inspiration.</h2>
       </div>
-      <p class="lead" data-reveal data-delay="1">Ideas to spark your space — custom walk-in closets, reach-ins, pantries, home offices and more. Find a look you love, then let's design one built around you.</p>
+      <p class="lead" data-reveal data-delay="1">Ideas by room to spark your own space. Find a look you love, then let's design one built around you.</p>
     </div>
-
     <div class="gallery">
-      <a class="gal gal--wide" href="#consult" data-reveal>
-        <img src="/img/insp-closet-1.webp" alt="Bright custom white melamine walk-in closet inspiration with open shelving, hanging sections and a small bench" loading="lazy" />
-        <span class="gal__cap">Bright Walk-In <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="1">
-        <img src="/img/insp-pantry-1.webp" alt="Custom corner pantry inspiration with white melamine adjustable shelving, stocked with organized food and baskets" loading="lazy" />
-        <span class="gal__cap">Corner Pantry <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="2">
-        <img src="/img/svc-reachin.webp" alt="Reach-in closet with double-hang rods and folded sweaters" loading="lazy" />
-        <span class="gal__cap">Reach-In System <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal>
-        <img src="/img/insp-closet-2.webp" alt="Custom white melamine walk-in closet inspiration with a full wall of shoe shelves, double-hang rods and drawers" loading="lazy" />
-        <span class="gal__cap">Walk-In Closet <span>→</span></span>
-      </a>
-      <a class="gal gal--wide" href="#consult" data-reveal data-delay="1">
-        <img src="/img/insp-pantry-2.webp" alt="Custom wrap-around pantry inspiration with white shelving fully stocked with labeled jars and baskets" loading="lazy" />
-        <span class="gal__cap">Walk-In Pantry <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="1">
-        <img src="/img/svc-office.webp" alt="Bright custom home office with built-in cabinetry and desk" loading="lazy" />
-        <span class="gal__cap">Home Office <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="2">
-        <img src="/img/svc-pantry.webp" alt="Custom pantry with deep drawers and organized shelving in a modern kitchen" loading="lazy" />
-        <span class="gal__cap">Chef's Pantry <span>→</span></span>
-      </a>
-      <a class="gal gal--wide" href="#consult" data-reveal>
-        <img src="/img/feat-island.webp" alt="Modern white melamine reach-in closet system with open shelving and hanging space" loading="lazy" />
-        <span class="gal__cap">Closet System <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal>
-        <img src="/img/insp-reachin-1.webp" alt="Realistic reach-in bedroom closet with white shelving, double-hang rods and folded clothes behind bifold doors" loading="lazy" />
-        <span class="gal__cap">Reach-In Closet <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="1">
-        <img src="/img/insp-walkin-1.webp" alt="Practical custom walk-in closet with white shelving, drawers and shoe storage in an average-size room" loading="lazy" />
-        <span class="gal__cap">Everyday Walk-In <span>→</span></span>
-      </a>
-      <a class="gal gal--wide" href="#consult" data-reveal data-delay="2">
-        <img src="/img/insp-garage-1.webp" alt="Realistic garage storage system with white wall cabinets, a workbench, pegboard tools and bin shelving" loading="lazy" />
-        <span class="gal__cap">Garage Storage <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal>
-        <img src="/img/insp-reachin-2.webp" alt="Reach-in closet with white shelving, shoe cubbies, folded sweaters and hanging clothes" loading="lazy" />
-        <span class="gal__cap">Reach-In System <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="1">
-        <img src="/img/insp-pantry-3.webp" alt="Everyday kitchen pantry with white adjustable shelves stocked with groceries, cans and baskets" loading="lazy" />
-        <span class="gal__cap">Kitchen Pantry <span>→</span></span>
-      </a>
-      <a class="gal gal--wide" href="#consult" data-reveal data-delay="2">
-        <img src="/img/insp-garage-2.webp" alt="Organized garage storage wall with tall cabinets, overhead racks and labeled bins" loading="lazy" />
-        <span class="gal__cap">Garage System <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal>
-        <img src="/img/insp-reachin-3.webp" alt="Reach-in closet with white shelving, storage bins and double-hang rods" loading="lazy" />
-        <span class="gal__cap">Reach-In Closet <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="1">
-        <img src="/img/insp-walkin-2.webp" alt="Small custom walk-in closet with white shelving, drawers and a shoe shelf" loading="lazy" />
-        <span class="gal__cap">Custom Walk-In <span>→</span></span>
-      </a>
-      <a class="gal gal--wide" href="#consult" data-reveal data-delay="2">
-        <img src="/img/insp-garage-3.webp" alt="Realistic garage storage system with gray cabinets, a workbench and pegboard tools" loading="lazy" />
-        <span class="gal__cap">Gray Garage Storage <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal>
-        <img src="/img/insp-reachin-4.webp?v=2" alt="Reach-in family closet with solid white melamine cubbies, baskets, drawers and hanging clothes" loading="lazy" />
-        <span class="gal__cap">Family Closet <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="1">
-        <img src="/img/insp-pantry-4.webp" alt="Practical kitchen pantry with white shelving, pull-out drawers and everyday food" loading="lazy" />
-        <span class="gal__cap">Pantry with Pull-Outs <span>→</span></span>
-      </a>
-      <a class="gal gal--wide" href="#consult" data-reveal data-delay="2">
-        <img src="/img/insp-garage-4.webp" alt="Organized garage with tall gray cabinets, gray overhead racks and labeled bins" loading="lazy" />
-        <span class="gal__cap">Gray Garage System <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal>
-        <img src="/img/insp-walkin-3.webp" alt="Custom white melamine walk-in closet with double-hang rods, drawers and a full wall of angled shoe shelves" loading="lazy" />
-        <span class="gal__cap">Walk-In Closet <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="1">
-        <img src="/img/insp-walkin-4.webp" alt="Wide custom white melamine walk-in closet with wall-to-wall shelving, double-hang rods, a bank of drawers and shoe shelves" loading="lazy" />
-        <span class="gal__cap">Wall-to-Wall Walk-In <span>→</span></span>
-      </a>
-      <a class="gal gal--wide" href="#consult" data-reveal>
-        <img src="/img/insp-walkin-5.webp" alt="Large L-shaped all-white walk-in closet with shaker-style drawers and doors, long double-hang rods, a shoe column and women's dresses and heels" loading="lazy" />
-        <span class="gal__cap">L-Shaped Walk-In <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="1">
-        <img src="/img/insp-reachin-5.webp" alt="Small all-white reach-in closet behind an open bifold door with shaker-style drawers, double-hang rods and kids' clothing" loading="lazy" />
-        <span class="gal__cap">Kids' Reach-In <span>→</span></span>
-      </a>
-      <a class="gal gal--wide" href="#consult" data-reveal data-delay="2">
-        <img src="/img/insp-pantry-5.webp" alt="Large U-shaped all-white walk-in pantry with open shelves above and shaker-style lower cabinets, stocked with jars, cans and boxes" loading="lazy" />
-        <span class="gal__cap">U-Shaped Pantry <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal>
-        <img src="/img/insp-laundry-1.webp" alt="All-white galley laundry room with shaker-style upper cabinets, side-by-side washer and dryer under a white counter and a folding area" loading="lazy" />
-        <span class="gal__cap">Laundry Room <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="1">
-        <img src="/img/insp-walkin-6.webp" alt="Small narrow galley all-white walk-in closet with floor-based cabinets, men's suits, dress shirts and sneakers" loading="lazy" />
-        <span class="gal__cap">Galley Walk-In <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="2">
-        <img src="/img/insp-reachin-6.webp" alt="Wide wall-to-wall all-white reach-in closet with floor-based cabinets, women's dresses, folded sweaters and baskets" loading="lazy" />
-        <span class="gal__cap">Wide Reach-In <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal>
-        <img src="/img/insp-pantry-6.webp" alt="Small tall all-white reach-in pantry cabinet with pull-out drawers, canned goods, boxed food and baskets" loading="lazy" />
-        <span class="gal__cap">Pantry Cabinet <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="1">
-        <img src="/img/insp-walkin-7.webp" alt="Medium U-shaped all-white wall-mounted walk-in closet with shaker-style doors, folded knits, hanging shirts and handbags" loading="lazy" />
-        <span class="gal__cap">U-Shaped Walk-In <span>→</span></span>
-      </a>
-      <a class="gal gal--wide" href="#consult" data-reveal data-delay="2">
-        <img src="/img/insp-laundry-2.webp" alt="All-white L-shaped laundry and mudroom with shaker-style cabinets, a utility sink, tall cabinet, hooks and a bench with baskets" loading="lazy" />
-        <span class="gal__cap">Laundry &amp; Mudroom <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal>
-        <img src="/img/insp-reachin-7.webp" alt="Medium all-white reach-in closet with shaker-style lower cabinets, hanging shirts, shoe cubbies and storage bins" loading="lazy" />
-        <span class="gal__cap">Reach-In with Cabinets <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="1">
-        <img src="/img/insp-pantry-7.webp" alt="Medium galley all-white pantry on two walls with open upper shelving and shaker-style lower cabinets, jars, boxes and baskets" loading="lazy" />
-        <span class="gal__cap">Galley Pantry <span>→</span></span>
-      </a>
-      <a class="gal gal--wide" href="#consult" data-reveal data-delay="2">
-        <img src="/img/insp-walkin-8.webp" alt="Large square all-white walk-in closet with a bench, long-hang coats and jackets, a bank of drawers and boots on low shelves" loading="lazy" />
-        <span class="gal__cap">Walk-In with Bench <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal>
-        <img src="/img/insp-reachin-8.webp" alt="Small corner all-white wall-mounted reach-in closet with coats, tote bags and a bank of drawers" loading="lazy" />
-        <span class="gal__cap">Corner Reach-In <span>→</span></span>
-      </a>
-      <a class="gal gal--wide" href="#consult" data-reveal data-delay="1">
-        <img src="/img/insp-pantry-8.webp" alt="Large L-shaped all-white pantry with floor-to-ceiling shelving, labeled bins, baskets and boxed and canned food" loading="lazy" />
-        <span class="gal__cap">Floor-to-Ceiling Pantry <span>→</span></span>
-      </a>
-      <a class="gal" href="#consult" data-reveal data-delay="2">
-        <img src="/img/insp-laundry-3.webp" alt="Compact all-white laundry closet behind an open bifold door with a side-by-side washer and dryer under a white counter, shaker-style upper cabinets and a hanging rod" loading="lazy" />
-        <span class="gal__cap">Laundry Closet <span>→</span></span>
-      </a>
+      <a class="gal" href="/gallery" data-reveal><img src="/img/insp-walkin-1.webp" alt="Practical custom walk-in closet with white shelving, drawers and shoe storage in an average-size room" loading="lazy" /><span class="gal__cap">Walk-in closet</span></a><a class="gal" href="/gallery" data-reveal><img src="/img/insp-pantry-1.webp" alt="Custom corner pantry inspiration with white melamine adjustable shelving, stocked with organized food and baskets" loading="lazy" /><span class="gal__cap">Pantry</span></a><a class="gal" href="/gallery" data-reveal><img src="/img/insp-reachin-1.webp" alt="Realistic reach-in bedroom closet with white shelving, double-hang rods and folded clothes behind bifold doors" loading="lazy" /><span class="gal__cap">Reach-in closet</span></a><a class="gal" href="/gallery" data-reveal><img src="/img/insp-garage-1.webp" alt="Realistic garage storage system with white wall cabinets, a workbench, pegboard tools and bin shelving" loading="lazy" /><span class="gal__cap">Garage storage</span></a><a class="gal" href="/gallery" data-reveal><img src="/img/svc-office.webp" alt="Bright custom home office with built-in cabinetry and desk" loading="lazy" /><span class="gal__cap">Home office</span></a><a class="gal" href="/gallery" data-reveal><img src="/img/insp-laundry-1.webp" alt="All-white galley laundry room with shaker-style upper cabinets, side-by-side washer and dryer under a white counter and a folding area" loading="lazy" /><span class="gal__cap">Laundry &amp; mudroom</span></a>
     </div>
-    <div style="text-align:center;margin-top:2rem" data-reveal>
-      <a class="btn btn--ghost" href="#consult">Design a Space Like These <span class="arr">→</span></a>
-    </div>
+    <p style="text-align:center;margin-top:1.8rem" data-reveal><a class="btn btn--primary" href="/gallery">See the Full Gallery <span class="arr">→</span></a></p>
   </div>
 </section>
 
-<!-- ================= SPLIT REV: Core spaces ================= -->
-<section class="section section--fog">
-  <div class="wrap">
-    <div class="split split--rev">
-      <div class="split__media" data-reveal>
-        <img src="/img/svc-walkin.webp" alt="Custom white melamine master walk-in closet with double-hang rods, drawers and shoe shelving" loading="lazy" width="1100" height="880" />
-      </div>
-      <div data-reveal data-delay="1">
-        <span class="eyebrow">What we do best</span>
-        <h2 class="h2" style="margin:1rem 0">Storage that works<br>as hard as you do.</h2>
-        <p class="lead">We focus on the spaces that make everyday life smoother — custom master closets, reach-in closets, pantries and laundry rooms. Every one is designed to the inch, built in furniture-grade white melamine at our standard 14&Prime; depth, and professionally installed.</p>
-        <ul class="feat-list">
-          <li><span class="tick">✓</span> <span><strong>Custom master &amp; walk-in closets</strong> — double-hang, drawers, shoe walls and deep 14&Prime; shelving.</span></li>
-          <li><span class="tick">✓</span> <span><strong>Custom reach-in closets</strong> — smart double-hang and shelving that can triple a standard reach-in.</span></li>
-          <li><span class="tick">✓</span> <span><strong>Custom pantries</strong> — adjustable shelves, pull-outs and baskets that make everything easy to find.</span></li>
-          <li><span class="tick">✓</span> <span><strong>Laundry &amp; mudrooms</strong> — folding counters, hampers, hanging space and hooks.</span></li>
-        </ul>
-        <a class="btn btn--ink" href="#consult" style="margin-top:1.6rem">Design My Space <span class="arr">→</span></a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= TESTIMONIALS ================= -->
-<section class="section">
-  <div class="wrap">
-    <div class="sec-head" data-reveal>
-      <span class="eyebrow">Loved by homeowners</span>
-      <h2 class="h2">Don't take our word for it.</h2>
-    </div>
-    <div class="post-grid">
-      <figure class="tcard" data-reveal>
-        <span class="stars">★★★★★</span>
-        <blockquote>"Our walk-in went from chaos to a boutique. The design was exactly what got installed — to the inch."</blockquote>
-        <figcaption class="tcard__who"><span class="tcard__av">SM</span><span><b>Sarah M.</b><span>Custom Walk-In Closet</span></span></figcaption>
-      </figure>
-      <figure class="tcard" data-reveal data-delay="1">
-        <span class="stars">★★★★★</span>
-        <blockquote>"Installed in one day, spotless cleanup, and my garage finally has a floor again. Worth every penny."</blockquote>
-        <figcaption class="tcard__who"><span class="tcard__av">DT</span><span><b>David T.</b><span>Garage Storage System</span></span></figcaption>
-      </figure>
-      <figure class="tcard" data-reveal data-delay="2">
-        <span class="stars">★★★★★</span>
-        <blockquote>"The designer listened, priced it honestly, and the home office is now my favorite room in the house."</blockquote>
-        <figcaption class="tcard__who"><span class="tcard__av">JL</span><span><b>Jenna L.</b><span>Home Office Build</span></span></figcaption>
-      </figure>
-    </div>
-    <div style="text-align:center;margin-top:2.2rem;display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center">
-      <a class="btn btn--ink" href="https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE" target="_blank" rel="noopener">★ Read our Google reviews</a>
-      <a class="btn btn--ghost" href="https://g.page/r/Calj4533P4lBEBM/review" target="_blank" rel="noopener">Leave us a review</a>
-    </div>
-  </div>
-</section>
-
-<!-- ================= LATEST FROM THE BLOG ================= -->
+<!-- ================= RECENT PROJECTS + BLOG ================= -->
 <section class="section" id="blog">
   <div class="wrap">
     <div class="sec-head--split" style="margin-bottom:2.4rem">
       <div data-reveal>
-        <span class="eyebrow">From the Blog</span>
-        <h2 class="h2" style="margin-top:1rem">Latest tips,<br>guides &amp; honest pricing.</h2>
+        <span class="eyebrow">Recent projects &amp; closet cases</span>
+        <h2 class="h2" style="margin-top:1rem">Real projects,<br>straight answers.</h2>
       </div>
-      <p class="lead" data-reveal data-delay="1">Real projects, straight answers and no-nonsense pricing advice from our team. Here's what's new on the Closet Cases blog.</p>
+      <p class="lead" data-reveal data-delay="1">Actual Middle Tennessee installs with the price, plus no-nonsense pricing advice from our team.</p>
     </div>
-    <div class="post-grid" id="latest-posts">
-      <a class="post-card" href="/blog/see-your-closet-in-3d" data-reveal>
-        <div class="post-card__img"><img src="/img/blog-3d-design-result.webp" alt="A 3D closet design brought to life — a realistic white melamine reach-in filled with clothing and shoes" loading="lazy" /></div>
-        <div class="post-card__body">
-          <span class="tag">Our Process</span>
-          <h3>See Your Closet in 3D — Before You Say Yes</h3>
-          <p>A real 3D design at every free consultation — no paper drawings, no inflated &ldquo;National Price.&rdquo; This reach-in: $2,290 installed.</p>
-          <span class="post-card__meta">Aug 1, 2026 · 6 min read</span>
-        </div>
+    <div class="post-grid">
+      <a class="post-card" href="/blog/fraley-pantry-master-closet-makeover" data-reveal>
+        <div class="post-card__img"><img src="/img/blog-fraley-closet.webp" alt="The Fraleys' new custom master walk-in closet" loading="lazy" /></div>
+        <div class="post-card__body"><span class="tag">Real project</span><h3>Wire shelving to custom: the Fraleys' pantry &amp; master closet</h3><p>Builder-grade wire shelving replaced with custom systems in a day. "Holy Wow! BEST investment for our home."</p><span class="post-card__meta">Before &amp; after photos</span></div>
       </a>
-      <a class="post-card" href="/blog/large-walk-in-closet-6700" data-reveal data-delay="1">
-        <div class="post-card__img"><img src="/img/blog-large-walkin.webp" alt="Large custom white melamine walk-in closet with double-hang sections, drawer banks and a wall of shoe shelves" loading="lazy" /></div>
-        <div class="post-card__body">
-          <span class="tag">Customer Project</span>
-          <h3>A Large Walk-In Closet for $6,700 (Not $12K–$17K)</h3>
-          <p>The national brands quoted $12,000–$17,000. Here's the same big walk-in — hanging, drawers &amp; shoe storage — for $6,700.</p>
-          <span class="post-card__meta">Aug 1, 2026 · 4 min read</span>
-        </div>
+      <a class="post-card" href="/blog/keith-irena-office-storage-wall" data-reveal data-delay="1">
+        <div class="post-card__img"><img src="/img/blog-office-storage-after.webp" alt="Keith and Irena's floor-to-ceiling office storage wall" loading="lazy" /></div>
+        <div class="post-card__body"><span class="tag">Real project</span><h3>Keith &amp; Irena's floor-to-ceiling office storage wall</h3><p>A beautiful home with almost no closets, solved with one custom wall. "Very happy with Michael Blair and his installer."</p><span class="post-card__meta">Before &amp; after photos</span></div>
       </a>
-      <a class="post-card" href="/blog/fake-discounts-65-percent-off" data-reveal data-delay="2">
-        <div class="post-card__img"><img src="/img/blog-no-fake-discounts.webp" alt="A closet price tag with an inflated price crossed out and stacked discount stickers, final price still high" loading="lazy" /></div>
-        <div class="post-card__body">
-          <span class="tag">Honest Pricing</span>
-          <h3>Fake Closet Discounts: 80% Off, Still Twice the Price</h3>
-          <p>Stacked discounts on a marked-up price. How two homeowners saw through the gimmick — and paid half.</p>
-          <span class="post-card__meta">Updated Aug 1, 2026 · 8 min read</span>
-        </div>
+      <a class="post-card" href="/blog/large-walk-in-closet-6700" data-reveal data-delay="2">
+        <div class="post-card__img"><img src="/img/blog-large-walkin.webp" alt="Large custom white walk-in closet with double-hang sections, drawers and shoe shelves" loading="lazy" /></div>
+        <div class="post-card__body"><span class="tag">Real project · $6,700</span><h3>A large walk-in closet for $6,700, not $12K–$17K</h3><p>The national brands quoted $12,000 to $17,000 for the same closet. Here's the one we built.</p><span class="post-card__meta">4 min read</span></div>
       </a>
     </div>
-    <div style="text-align:center;margin-top:2.2rem" data-reveal>
-      <a class="btn btn--ghost" href="/closet-cases">Read all closet cases <span class="arr">→</span></a>
+    <div style="text-align:center;margin-top:2.2rem;display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center" data-reveal>
+      <a class="btn btn--ghost" href="/our-work">All our work <span class="arr">→</span></a>
+      <a class="btn btn--ghost" href="/closet-cases">Read the Closet Cases blog</a>
     </div>
   </div>
 </section>
 
+
+
 <!-- ================= FAQ ================= -->
+
 <section class="section section--fog" id="faq">
   <div class="wrap">
     <div class="two-col">
       <div data-reveal>
         <span class="eyebrow">Good questions</span>
         <h2 class="h2" style="margin:1rem 0 1.2rem">Custom closet FAQs</h2>
-        <p class="lead">Everything you might be wondering before you book your free design consultation.</p>
+        <p class="lead">The six questions we hear most. The full list is on the FAQ page.</p>
         <div style="margin-top:1.6rem;padding:1.4rem;background:#fff;border:1px solid var(--line);border-radius:var(--radius)">
           <p style="font-weight:700;margin-bottom:.4rem">Still have a question?</p>
           <p class="muted" style="font-size:.95rem;margin-bottom:1rem">Call or text us — a real designer answers.</p>
@@ -1604,156 +1404,35 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
           <button class="faq__q" aria-expanded="false">Are you a franchise?<span class="faq__icon" aria-hidden="true"></span></button>
           <div class="faq__a"><div class="faq__a-inner">No — and that's good news for your wallet. We're <strong>100% family owned and operated, not a franchise</strong>. You're not paying franchise royalties, national advertising fees or an overpriced brand name — only premium materials and expert craftsmanship. It's the same caliber of custom closets the big franchise showrooms sell, at an honest, transparent price.</div></div>
         </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Which company is best for closets?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">The best closet company designs to your <strong>exact space</strong>, builds with <strong>furniture-grade materials</strong> and prices honestly — no franchise markups. In Middle Tennessee, that's <strong>National Closet Company</strong>: family-owned, 100% custom, with deeper <strong>14&Prime; shelving</strong> (vs. the 12&Prime; many install), a <strong>free in-home 3D design</strong>, and an everyday price that often lands around <strong>half</strong> of the national brands' "discounted" quotes — the same caliber as the big-name showrooms without paying for the brand name.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">What is the average cost to design a closet?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">With us, <strong>the design is free</strong>. Your in-home consultation, in-person measurements and a photorealistic <strong>3D design</strong> cost nothing, with no obligation — some companies charge a design or measure fee, we don't. The closet itself typically runs about <strong>$1,000–$2,500 for a reach-in</strong> and <strong>$3,000–$10,000+ for a walk-in</strong>, and you get an exact, all-inclusive price at your free design — never an estimate that changes later.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">What closet company does Costco use?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Warehouse clubs like Costco sometimes promote a national closet brand as a member perk — but you're still paying that brand's <strong>franchise pricing through a middleman</strong>, not a local, family-owned price. You don't need a membership or a markup: <strong>National Closet Company</strong> builds the same custom, furniture-grade closets, designed and installed by our own team, at an honest everyday price that often lands around <strong>half of a national brand's discounted quote</strong>. Go direct and skip the markup.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Which closet company is the cheapest?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">The cheapest "closets" are DIY wire kits from a big-box store — but they sag, waste space and don't last. Among <strong>custom</strong> closet companies, the smarter question is value, not just price. <strong>National Closet Company</strong> is one of the most affordable custom options in Middle Tennessee: family-owned, <strong>no franchise royalties</strong>, and no inflated "list price, then 40% off tonight" games — our everyday price often lands around <strong>half</strong> of a national brand's discounted quote, on a closet we build <strong>deeper (14&Prime; vs. 12&Prime;)</strong>. Premium quality at an honest price beats "cheapest" every time.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Do you have reviews I can read?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Yes — we're proud of our <strong>5-star reviews</strong> from homeowners across Middle Tennessee. Read them on <strong>Google and Facebook</strong>, and we're happy to share local references at your free consultation. As a family-owned company, our reputation is everything, so we make sure every closet is done right.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">How much does closet installation cost?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">On average, professional closet installation ranges from a few hundred dollars for a basic reach-in to a few thousand for a large walk-in. With us, <strong>installation is included</strong> in your all-inclusive price — never billed separately, no surprise labor charges. A reach-in typically runs about <strong>$1,000–$2,500</strong> and a walk-in <strong>$3,000–$10,000+</strong>, installed by our own team in about a day.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">How much does Home Depot or Lowe's charge to install a closet?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Home Depot and Lowe's mostly sell <strong>DIY kits</strong> you assemble yourself, and when they do offer installation it's usually a basic, subcontracted job on a stock kit that isn't designed to your space. <strong>National Closet Company</strong> is full-service custom: we design your closet in <strong>3D</strong>, build it from furniture-grade materials to your room's exact dimensions, and install it ourselves — one all-inclusive price, often around <strong>half of a national brand's discounted quote</strong>. A true custom closet that fits to the inch, not a flat-pack kit.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">How much does a contractor charge to build a closet?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">A general contractor or carpenter building a closet from scratch on site often runs <strong>$2,000–$5,000+</strong> and can take weeks. A dedicated custom closet company is usually faster and more affordable: we design in <strong>3D</strong>, manufacture from furniture-grade materials, and install in about <strong>a single day</strong> — with an exact, all-inclusive price at your free in-home design. Built-in-furniture quality without the general-contractor timeline or markup.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Do I have to remove my old shelving and paint first?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Only if you want to — we give you <strong>two quotes</strong>. With <strong>Option 1</strong>, you remove the existing shelving, patch the holes and paint, then we design, build and install (the most budget-friendly route). With <strong>Option 2 — turnkey</strong>, you simply empty the space of your belongings and we handle everything else: removing the old shelving, patching and repairing the walls, painting, then building and installing your new closet. <strong>Most closet companies only offer Option 1 — we give you both.</strong></div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Do you offer discounts or run sales?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">We may run a <strong>straightforward, honest coupon or promotion</strong> now and then — but we don&rsquo;t play the inflated &ldquo;National Price, then 40% off if you sign tonight&rdquo; game the national brands do. <strong>That discount was never real</strong> &mdash; it was baked into the price so it could be handed back as a favor. We price the job <strong>once, honestly</strong>, for the same closet system, and our everyday price often lands around <strong>half of a national brand&rsquo;s discounted, book-now price</strong> — on a closet we quote <strong>deeper (14&Prime; shelves vs their 12&Prime;)</strong>. No inflated list price, no countdown, no manager to call, no sale to wait for. <a href="/blog/fake-discounts-65-percent-off">See how the fake-discount game works →</a></div></div>
-        </div>
-        <div class="faq__item">
+<div class="faq__item">
           <button class="faq__q" aria-expanded="false">How much does a custom closet cost?<span class="faq__icon" aria-hidden="true"></span></button>
           <div class="faq__a"><div class="faq__a-inner">Custom closets typically cost between about <strong>$1,000 and $10,000+</strong>, with a national average around $2,000. A reach-in closet system usually runs $1,000–$2,500 and a walk-in closet $3,000–$10,000+ depending on size, materials and accessories. You'll get an exact, no-obligation price at your free in-home consultation — never an estimate that changes later.</div></div>
         </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Are custom closets worth it?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">For most homeowners, <strong>yes</strong>. A custom closet uses every inch of the room and often <strong>doubles usable storage</strong> versus a basic builder closet, and keeps you organized for years. It costs more up front than a wire kit, but the furniture-grade materials, lifetime use and everyday convenience make it well worth it if you value storage and a clutter-free home.</div></div>
+<div class="faq__item">
+          <button class="faq__q" aria-expanded="false">Do you offer discounts or run sales?<span class="faq__icon" aria-hidden="true"></span></button>
+          <div class="faq__a"><div class="faq__a-inner">We may run a <strong>straightforward, honest coupon or promotion</strong> now and then — but we don&rsquo;t play the inflated &ldquo;National Price, then 40% off if you sign tonight&rdquo; game the national brands do. <strong>That discount was never real</strong> &mdash; it was baked into the price so it could be handed back as a favor. We price the job <strong>once, honestly</strong>, for the same closet system, and our everyday price often lands around <strong>half of a national brand&rsquo;s discounted, book-now price</strong> — on a closet we quote <strong>deeper (14&Prime; shelves vs their 12&Prime;)</strong>. No inflated list price, no countdown, no manager to call, no sale to wait for. <a href="/blog/fake-discounts-65-percent-off">See how the fake-discount game works →</a></div></div>
         </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Do custom closets add value to your home?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Custom closets and storage — walk-in closets, pantries, mudrooms and garage systems — are a strong selling feature that makes a home more appealing and can help it sell faster. They don't add square footage, so they won't change a formal appraisal, but buyers consistently rank organized, custom storage near the top of their wish list, which gives your home an edge.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">What's the difference between a custom closet and a closet system?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">A closet system is the engineered framework of shelves, rods, drawers and accessories that organizes your space. A <em>custom</em> closet means that system is designed specifically for your room's exact dimensions, your wardrobe and the way you live — rather than a one-size-fits-all kit. Every project we build is fully custom.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">What materials do you use for custom closets?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">We build with premium, <strong>furniture-grade materials</strong> — durable laminate and thermally-fused melamine over engineered wood — chosen for strength, easy cleaning and a high-end finish. You choose from dozens of colors and finishes, from crisp whites to warm woodgrains, plus soft-close drawers, glass fronts, LED lighting and accessories. Built to handle daily use for the long haul.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">How long does it take to design and install a custom closet?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">From start to finish, most custom closets take about <strong>3–6 weeks</strong>. Design happens at your free in-home consultation, custom manufacturing typically takes 2–4 weeks, and professional installation of a standard closet is usually finished in a <strong>single day</strong> with minimal disruption to your home.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Do you require a deposit, and do you offer financing or buy now, pay later?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Yes to both. Your project is paid in three steps: <strong>50% at signing</strong>, which releases your order to our manufacturing partners, <strong>25% once your materials arrive</strong> and we schedule your installation, and the final <strong>25% on install day</strong> — or you can pay in full at any time. You can also <strong>Buy Now, Pay Later with Klarna</strong> — including a <strong>0% interest option</strong> — and split your project into flexible payments at checkout, subject to Klarna approval, and we accept all major credit and debit cards, bank transfer and digital wallets like Apple&nbsp;Pay and Google&nbsp;Pay. Ask your designer about the easiest way to fit a custom closet into your budget.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Do you build wall-mounted (floating) or floor-based closets?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Both — it's your choice. We build <strong>wall-mounted (floating)</strong> systems that hang off the wall with the floor open underneath, and <strong>floor-based (floor-standing)</strong> systems that sit on the floor with a toe kick like built-in furniture. Neither is better than the other; it comes down to the look you prefer and your room — in a carpeted room, for example, a floating wall-mounted system is usually the better fit since it keeps the carpet clear. We'll show you both at your <strong>free in-home design</strong>, and you can even mix the two in one closet. See our <a href="/blog/wall-mounted-vs-floor-based-closet-systems">wall-mounted vs. floor-based guide</a> for the full breakdown.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Do you build more than closets?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Yes. Besides custom walk-in and reach-in closets, we design and install <strong>garage storage systems, custom pantries, home offices, laundry rooms and mudrooms, Murphy/wall beds, and media &amp; wall units</strong> — all built and installed by the same team.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Is there a custom closet company near me? What areas do you serve?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">We design and install custom closets and storage systems throughout <strong>Middle Tennessee — every city within about 90 miles of Gallatin, TN</strong>. We have dedicated custom-closet pages for <a href="/custom-closets-nashville">Nashville</a>, <a href="/custom-closets-franklin">Franklin</a>, <a href="/custom-closets-brentwood">Brentwood</a>, <a href="/custom-closets-hendersonville">Hendersonville</a>, <a href="/custom-closets-mt-juliet">Mt. Juliet</a>, <a href="/custom-closets-murfreesboro">Murfreesboro</a>, <a href="/custom-closets-gallatin">Gallatin</a>, <a href="/custom-closets-lebanon">Lebanon</a>, <a href="/custom-closets-smyrna">Smyrna</a>, <a href="/custom-closets-nolensville">Nolensville</a>, <a href="/custom-closets-spring-hill">Spring Hill</a>, <a href="/custom-closets-belle-meade">Belle Meade</a>, <a href="/custom-closets-goodlettsville">Goodlettsville</a>, <a href="/custom-closets-white-house">White House</a>, <a href="/custom-closets-portland">Portland</a>, <a href="/custom-closets-la-vergne">La Vergne</a>, <a href="/custom-closets-green-hills">Green Hills</a>, <a href="/custom-closets-hermitage">Hermitage</a> and <a href="/custom-closets-old-hickory">Old Hickory</a> — and we also serve Columbia, Springfield, Clarksville, Dickson, Cookeville, Shelbyville and Bowling Green, KY, plus the surrounding communities. See our full <a href="/service-areas">service areas</a> page, or call or text <a href="tel:+16292988241">629-298-8241</a> to confirm your city and book a free in-home consultation.</div></div>
-        </div>
-        <div class="faq__item">
+<div class="faq__item">
           <button class="faq__q" aria-expanded="false">Do you offer a free in-home consultation?<span class="faq__icon" aria-hidden="true"></span></button>
           <div class="faq__a"><div class="faq__a-inner">Yes — every project starts with a <strong>100% free, no-pressure in-home consultation</strong>. Your designer measures your space in person, walks through your options and finishes, and gives you a photorealistic design with transparent pricing on the spot. (We measure in person, not virtually, for a perfect fit.)</div></div>
         </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">How do I get started?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Just call or text <a href="tel:+16292988241">629-298-8241</a>, email <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a>, or fill out the form on this page. We'll schedule your free in-home consultation, design your custom closet, and handle manufacturing and installation from there.</div></div>
+<div class="faq__item">
+          <button class="faq__q" aria-expanded="false">How long does it take to design and install a custom closet?<span class="faq__icon" aria-hidden="true"></span></button>
+          <div class="faq__a"><div class="faq__a-inner">From start to finish, most custom closets take about <strong>3–6 weeks</strong>. Design happens at your free in-home consultation, custom manufacturing typically takes 2–4 weeks, and professional installation of a standard closet is usually finished in a <strong>single day</strong> with minimal disruption to your home.</div></div>
         </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Do you install everything, or do I assemble it myself?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">We handle everything — there's <strong>no flat-pack to build</strong>. Our team professionally constructs and installs your closet on site, securely anchored to the wall, and cleans up before we leave. A standard closet is usually installed in a single day, so you go from empty space to finished closet without lifting a tool.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Do I need to measure my closet before my consultation?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">No. Your designer measures your space in person at your <strong>free in-home consultation</strong> so the design fits to the inch. You don't need to measure, sketch or prep anything beforehand — just book it and we take it from there.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Can I see color and finish samples before I decide?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Yes. Your designer brings <strong>finish, color and hardware samples</strong> to your in-home consultation so you can see and feel the exact laminate, woodgrain and accessories in your own lighting before you choose. On-screen colors can look different in person, so we always confirm your finish face to face.</div></div>
-        </div>
-        <div class="faq__item">
+<div class="faq__item">
           <button class="faq__q" aria-expanded="false">Do your custom closets come with a warranty?<span class="faq__icon" aria-hidden="true"></span></button>
           <div class="faq__a"><div class="faq__a-inner">Yes. Your installation is backed by our <strong>workmanship guarantee</strong>, and the furniture-grade materials and hardware we use — soft-close drawers, hinges and rods — carry their own manufacturer warranties. If something isn't right, call or text us and we'll make it right. Ask your designer for the specific coverage on your project.</div></div>
         </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Can I add to or reconfigure my closet system later?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Often, yes — especially with our <strong>adjustable systems</strong>. Shelves and rods adjust without tools, and many layouts can be added onto or reconfigured as your wardrobe and organization needs change. If you'd like room to grow, tell your designer and we'll plan the closet organization system with future add-ons in mind.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">How much weight can the shelves hold?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Plenty for everyday use. Our floor-based and wall-mounted systems use <strong>furniture-grade shelving</strong> engineered to hold folded clothes, shoes, bins, small appliances and typical closet and pantry loads without sagging. For unusually heavy items, let your designer know and we'll spec the shelf thickness, spacing and supports to match.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Can you add LED lighting to my closet?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Yes. We offer <strong>integrated LED lighting</strong> — shelf, rod and cabinet lighting — that makes a closet feel like a boutique and helps you see every item clearly. It's a popular upgrade for walk-in closets and pantries; ask your designer about lighting options at your consultation.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Do you build corner closets and handle awkward corners?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Yes. Corners are where storage is usually wasted, so we design <strong>curved and angled corner shelving</strong> and specialty units that turn tight or awkward corners into fully usable space — a common upgrade in walk-in closets and pantries.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Are your closet materials eco-friendly and low-odor?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">We build with <strong>engineered wood products</strong> — laminate and thermally-fused melamine — chosen to be durable, easy to clean and low-odor. Any faint new-material smell fades quickly after installation. If low-emission materials are a priority for you, mention it to your designer and we'll walk through your options.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">How do I clean and care for my custom closet?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">It's easy. Wipe the surfaces with a <strong>soft cloth and mild soap and water</strong>, then dry. Avoid abrasive pads and harsh solvents, which can dull the finish. The laminate and melamine surfaces are built to resist everyday scuffs and wipe clean in seconds.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">What if a drawer or door needs adjusting after installation?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Just reach out. Soft-close drawers and door hinges can be fine-tuned, and if anything shifts or needs adjusting after install, we'll take care of it under our <strong>workmanship guarantee</strong>. Call or text <a href="tel:+16292988241">629-298-8241</a> and we'll make it right.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Can I change or cancel my order?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Because every piece is <strong>custom-made to your exact measurements</strong>, we ask that you confirm your design before we start manufacturing. If your plans change, let us know as early as possible and we'll do our best to help. Call or text <a href="tel:+16292988241">629-298-8241</a> with any questions about your order.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Do you build closet organizers and closet organization systems?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Yes — a custom <strong>closet organizer</strong> is exactly what we do. We design and install complete <strong>closet organization systems</strong> with shelves, drawers, rods, shoe storage and accessories laid out around your wardrobe, so every item has a place and stays organized. Whether you call it a closet organizer, an organization system or a custom closet, we build it to fit your space to the inch.</div></div>
-        </div>
-        <div class="faq__item">
-          <button class="faq__q" aria-expanded="false">Do you offer pantry organization and home organization systems too?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">Yes. Beyond closets, we design <strong>pantry organization</strong> and whole-<strong>home organization</strong> systems — pantries, garages, laundry rooms, mudrooms and home offices — using the same custom, furniture-grade approach. If a space in your home needs to be organized, we can build an organization system that fits it perfectly.</div></div>
-        </div>
-      </div>
+    </div>
+    <p style="margin-top:1.2rem"><a class="btn btn--ghost" href="/faq">See all 37 questions <span class="arr">→</span></a></p>
     </div>
   </div>
 </section>
 
+
 <!-- ================= CTA + LEAD FORM ================= -->
+
 <section class="section section--ink cta-band" id="consult">
   <div class="cta-band__glow" aria-hidden="true"></div>
   <div class="wrap">
@@ -1818,52 +1497,6 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
           <p class="muted" style="margin-top:.5rem">Thanks for reaching out. A National Closet Company designer will contact you within one business day to book your free design. Prefer to talk now? Call or text <a href="tel:+16292988241" style="color:var(--clay-deep);font-weight:700">629-298-8241</a>.</p>
         </div>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= BLOG TEASER (Closet Cases) ================= -->
-<section class="section">
-  <div class="wrap">
-    <div class="sec-head--split" style="margin-bottom:2.4rem">
-      <div data-reveal>
-        <span class="eyebrow">Closet Cases · our blog</span>
-        <h2 class="h2" style="margin-top:1rem">Ideas, tips &amp;<br>before-and-afters.</h2>
-      </div>
-      <p class="lead" data-reveal data-delay="1">Real organization strategies and custom closet inspiration from the National Closet Company design team.</p>
-    </div>
-
-    <div class="post-grid">
-      <a class="post-card" href="/blog/walk-in-closet-design-ideas" data-reveal>
-        <div class="post-card__img"><img src="/img/svc-walkin.webp" alt="Custom white melamine walk-in closet design idea with shelving, drawers and shoe storage" loading="lazy" /></div>
-        <div class="post-card__body">
-          <span class="tag">Walk-In Closets</span>
-          <h3>9 Walk-In Closet Design Ideas That Feel Like a Boutique</h3>
-          <p>Islands, lighting and display shelving — the details that turn storage into a showroom.</p>
-          <span class="post-card__meta">7 min read</span>
-        </div>
-      </a>
-      <a class="post-card" href="/blog/maximize-small-reach-in-closet" data-reveal data-delay="1">
-        <div class="post-card__img"><img src="/img/svc-reachin.webp" alt="Small reach-in closet maximized with a custom closet system" loading="lazy" /></div>
-        <div class="post-card__body">
-          <span class="tag">Reach-In Systems</span>
-          <h3>How to Triple the Space in a Small Reach-In Closet</h3>
-          <p>Double-hang zones, smarter shelving and the accessories that reclaim every inch.</p>
-          <span class="post-card__meta">6 min read</span>
-        </div>
-      </a>
-      <a class="post-card" href="/blog/garage-storage-systems-guide" data-reveal data-delay="2">
-        <div class="post-card__img"><img src="/img/svc-garage.webp" alt="Custom garage storage system with cabinets and overhead racks" loading="lazy" /></div>
-        <div class="post-card__body">
-          <span class="tag">Garage Storage</span>
-          <h3>The Complete Guide to Custom Garage Storage Systems</h3>
-          <p>Cabinets vs. shelving vs. overhead racks — how to plan a garage that finally works.</p>
-          <span class="post-card__meta">8 min read</span>
-        </div>
-      </a>
-    </div>
-    <div style="text-align:center;margin-top:2rem" data-reveal>
-      <a class="btn btn--ghost" href="/closet-cases">Read More on Closet Cases <span class="arr">→</span></a>
     </div>
   </div>
 </section>

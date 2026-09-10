@@ -61,9 +61,18 @@ function isBot(ua) {
   return BOT_UA.some((b) => s.includes(b));
 }
 
+const REPO_INTERNAL = /^\/(tools|scripts)\/|^\/crm\/migrations\/|^\/crm\/setup-admin\.mjs$|^\/wrangler\.toml$|\.sql$/;
+
 export async function onRequest(context) {
   const { request, next } = context;
   const url = new URL(request.url);
+
+  // 0) Repo internals ride along in the static upload (build tools, ops scripts,
+  //    D1 migrations, wrangler config, the admin-setup script). None of them is a
+  //    page; never serve them. Checked before the CRM bypass on purpose.
+  if (REPO_INTERNAL.test(url.pathname)) {
+    return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex" } });
+  }
 
   // 1) Owner / machine surfaces are never geo-blocked.
   if (isBypassPath(url.pathname)) return next();

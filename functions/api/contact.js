@@ -9,6 +9,8 @@ import { genToken } from "../_lib/tokens.js";
 import { logOutboundEmail } from "../_lib/email-log.js";
 import { spamReason, botReason, turnstileReason } from "../_lib/spam.js";
 
+// Staff alerts go here. Set STAFF_EMAIL (a Pages variable) to route them to a
+// different mailbox or a Google Group; until then they land in hello@.
 const TO_ADDRESS = "hello@nationalclosetco.com";
 
 export async function onRequestPost({ request, env }) {
@@ -65,8 +67,7 @@ export async function onRequestPost({ request, env }) {
     try {
       await sendEmail(env, {
         from: "National Closet Co. Website <hello@nationalclosetco.com>",
-        to: TO_ADDRESS,
-        replyTo: /^\S+@\S+\.\S+$/.test(email) ? email : undefined,
+        to: env.STAFF_EMAIL || TO_ADDRESS,
         subject: `[Filtered — please review] Website submission from ${name || "(no name)"}`,
         text:
 `A website form submission was auto-filtered as possible spam (reason: ${spam}) and was NOT saved to the CRM.
@@ -111,6 +112,8 @@ Considering: ${interest || "(not specified)"}
 Message:
 ${message || "(no message)"}
 
+Reply to the customer: ${email}
+
 View this lead in the CRM:
 https://nationalclosetco.com/crm/
 `;
@@ -128,6 +131,7 @@ https://nationalclosetco.com/crm/
   </table>
   <p style="margin: 0 0 8px; color: #3A362F;">Message:</p>
   <div style="background: #FAF9F6; border-left: 2px solid #D2683F; padding: 14px 18px; white-space: pre-wrap;">${esc(message || "(no message)")}</div>
+  <p style="margin: 28px 0 0;"><a href="mailto:${esc(email)}?subject=${encodeURIComponent(`Re: your closet consultation request — National Closet Company`)}" style="display: inline-block; padding: 10px 18px; background: #D2683F; color: #FAF9F6; text-decoration: none; font-family: 'Montserrat','Helvetica Neue',Arial,sans-serif; font-size: 13px; font-weight: 700; border-radius: 6px;">Reply to ${esc(name)}</a></p>
   <p style="margin: 28px 0 0;"><a href="https://nationalclosetco.com/crm/" style="display: inline-block; padding: 10px 18px; background: #16140F; color: #FAF9F6; text-decoration: none; font-family: 'Montserrat','Helvetica Neue',Arial,sans-serif; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; border-radius: 2px;">Open in CRM →</a></p>
   <p style="margin: 28px 0 0; font-size: 12px; color: #8B7F6F;">Sent from the National Closet Company website. This lead has been saved to the CRM automatically.</p>
 </div>`;
@@ -221,15 +225,14 @@ https://nationalclosetco.com/crm/
   // 2) Fire-and-forget mail send via Gmail. sendEmail never throws — a mail
   // failure just logs to the Pages function console. The customer is told
   // their lead was captured (it was) regardless of email delivery.
-  // We set Reply-To to the customer's email so hitting "Reply" in the admin
-  // mailbox responds directly to the lead.
-  // Send the internal notification from a DISTINCT sender (not hello@) so it is
-  // not a self-addressed message (from == to), which receivers commonly junk.
-  // Reply-To stays the customer so hitting Reply answers the lead directly.
+  //
+  // No customer Reply-To on this alert. The Gmail API can only send as the
+  // mailbox it impersonates, so the alert is hello@ → hello@, and a message
+  // from you to you with a stranger's Reply-To is the shape of a spoof — Gmail
+  // junks it. The body carries a "Reply to <name>" link instead.
   await sendEmail(env, {
     from: "National Closet Co. Website <hello@nationalclosetco.com>",
-    to: TO_ADDRESS,
-    replyTo: email,
+    to: env.STAFF_EMAIL || TO_ADDRESS,
     subject,
     text: textBody,
     html: htmlBody,
@@ -260,6 +263,7 @@ https://nationalclosetco.com/crm/
       await logOutboundEmail(env, {
         to: ackTo, subject: ackSubject, html: ackHtml, text: ackText, messageId: ackMsgId,
         leadId, contactId, templateKind: "lead_ack", status: failed ? "failed" : "sent",
+        errorCode: failed ? (res?.reason || null) : null, errorMessage: failed ? (res?.error || null) : null,
       });
     } catch (e) {
       console.error("[contact.js] lead acknowledgment failed:", e?.message || e);

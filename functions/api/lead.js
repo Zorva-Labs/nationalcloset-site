@@ -81,7 +81,7 @@ export async function onRequestPost({ request, env }) {
           )
           .join("")}
       </table>
-      <p style="color:#6c665b;font-size:12px;margin-top:16px">Reply directly to this email to reach the customer.</p>
+      <p style="margin-top:16px">${email ? `<a href="mailto:${esc(email)}?subject=${encodeURIComponent("Re: your free design request — National Closet Company")}" style="display:inline-block;padding:10px 18px;background:#D2683F;color:#faf9f6;text-decoration:none;font-weight:700;border-radius:6px">Reply to ${esc(name)}</a>` : `<span style="color:#6c665b;font-size:12px">No email given — call or text the customer.</span>`}</p>
     </div>`;
 
   const text =
@@ -90,11 +90,10 @@ export async function onRequestPost({ request, env }) {
 
   const res = await sendEmail(env, {
     from: FROM,
-    to: TO,
+    to: env.STAFF_EMAIL || TO,
     subject: `New website lead — ${name}${project ? " · " + project : ""}`,
     html,
     text,
-    replyTo: email || undefined,
   });
 
   if (res?.skipped || res?.error) {

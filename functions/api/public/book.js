@@ -131,17 +131,19 @@ export async function onRequestPost(context) {
     }],
   });
 
-  // Notify the team. Internal alert delivered to hello@ — send it from a DISTINCT
-  // address (not hello@) so it isn't self-addressed (from == to), which receivers junk.
+  // Notify the team. The Gmail API can only send as the mailbox it impersonates,
+  // so this is hello@ → hello@ unless STAFF_EMAIL routes it elsewhere. No
+  // customer Reply-To (from you, to you, reply to a stranger reads as a spoof);
+  // the customer's address is a mailto link in the body instead.
   await sendEmail(context.env, {
     from: "National Closet Co. Bookings <hello@nationalclosetco.com>",
-    to: env?.STAFF_EMAIL || "hello@nationalclosetco.com",
+    to: context.env.STAFF_EMAIL || "hello@nationalclosetco.com",
     subject: `New booking · ${body.name} · ${fmtPretty(startAt)}`,
     html: brandedEmail({
       title: "New consultation booked.",
       body: `
         <p><strong>${escapeHtml(body.name)}</strong></p>
-        <p>${escapeHtml(body.email)} · ${escapeHtml(body.phone || "")}</p>
+        <p><a href="mailto:${escapeHtml(body.email)}">${escapeHtml(body.email)}</a> · ${escapeHtml(body.phone || "")}</p>
         <p><strong>When:</strong> ${escapeHtml(fmtPretty(startAt))}</p>
         ${body.address ? `<p><strong>Where:</strong> ${escapeHtml(formatAddress(body.address))}</p>` : ""}
         ${body.rooms ? `<p><strong>Rooms:</strong> ${escapeHtml(body.rooms)}</p>` : ""}
@@ -149,7 +151,6 @@ export async function onRequestPost(context) {
         <p><a href="${SITE_URL}/crm/calendar.html">Open the calendar →</a></p>
       `,
     }),
-    replyTo: body.email,
   });
 
   return json({ ok: true, id: r.id, cancel_token: cancelToken });

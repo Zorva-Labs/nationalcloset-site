@@ -13,6 +13,67 @@ import { getGoogleAccessToken, googleConfigured, impersonationUser, base64url } 
 const DEFAULT_FROM = "National Closet Company <hello@nationalclosetco.com>";
 const DEFAULT_REPLY = "hello@nationalclosetco.com";
 
+// ── Deliverability guard ─────────────────────────────────────────────
+// A three-month-old domain has no reputation to spend, and every bounce spends
+// some. Two things produced bounces in 2026-08: acknowledgments to example.com
+// test submissions, and to bot-typed addresses whose domains do not exist. So
+// before anything goes out, each external recipient's domain is checked for a
+// mail server. Workers have no DNS API; the lookup goes over DNS-over-HTTPS.
+//
+// The rule is deliberately narrow: reserved/documentation domains, NXDOMAIN, a
+// null MX, or no MX *and* no A/AAAA record. A lookup that merely fails (timeout,
+// HTTP error) never withholds mail.
+const OWN_DOMAIN = "nationalclosetco.com";
+const RESERVED_DOMAIN = /(^|\.)(example\.(com|net|org)|test|invalid|localhost|local)$/i;
+const MX_TTL_MS = 6 * 60 * 60 * 1000;
+const mxCache = new Map(); // domain → { ok, at } (per isolate; a cheap memo, not a source of truth)
+
+async function doh(name, type) {
+  const res = await fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=${type}`, {
+    headers: { accept: "application/dns-json" },
+    signal: AbortSignal.timeout(2500),
+  });
+  if (!res.ok) throw new Error("doh_http_" + res.status);
+  return res.json();
+}
+
+export async function domainAcceptsMail(domain) {
+  const d = String(domain || "").trim().toLowerCase().replace(/\.$/, "");
+  if (!d || !d.includes(".")) return false;        // "a@localhost", "a@b" — not a real mailbox
+  if (d === OWN_DOMAIN) return true;
+  if (RESERVED_DOMAIN.test(d)) return false;
+  const hit = mxCache.get(d);
+  if (hit && Date.now() - hit.at < MX_TTL_MS) return hit.ok;
+  let ok = true;
+  try {
+    const mx = await doh(d, "MX");
+    const mxAns = (mx.Answer || []).filter((a) => a.type === 15);
+    if (mxAns.length) {
+      // RFC 7505 null MX ("0 .") is the domain saying it takes no mail at all.
+      ok = !mxAns.every((a) => /^0\s+\.?$/.test(String(a.data || "").trim()));
+    } else if (mx.Status === 3) {
+      ok = false;                                     // NXDOMAIN — the domain does not exist
+    } else {
+      // No MX: RFC 5321 falls back to the A/AAAA record. Neither means no mailbox.
+      const a = await doh(d, "A");
+      ok = (a.Answer || []).some((x) => x.type === 1);
+      if (!ok) {
+        const aaaa = await doh(d, "AAAA");
+        ok = (aaaa.Answer || []).some((x) => x.type === 28);
+      }
+    }
+  } catch (e) {
+    ok = true;                                        // lookup trouble is never a reason to withhold mail
+    console.warn("[email] mail-server lookup failed for", d, e?.message || e);
+  }
+  mxCache.set(d, { ok, at: Date.now() });
+  return ok;
+}
+
+// "Name <a@b>" or "a@b" → "a@b"; and its domain.
+export const addrOf = (s) => { const m = String(s || "").match(/<([^>]+)>/); return (m ? m[1] : String(s || "")).trim().toLowerCase(); };
+export const domainOf = (s) => addrOf(s).split("@")[1] || "";
+
 // Best-effort mail send. Never throws. Returns { status, json, messageId } on
 // success or { skipped, error } on failure. messageId is the RFC 5322 header
 // value we generated for this send — callers use it for threading.
@@ -38,6 +99,36 @@ export async function sendEmail(env, opts) {
     return { skipped: true, reason: "no_transport", messageId: opts.messageId || makeMessageId() };
   }
 
+  // Drop recipients whose domain cannot receive mail (see domainAcceptsMail).
+  const dropped = [];
+  const keep = async (list) => {
+    const out = [];
+    for (const a of list) (await domainAcceptsMail(domainOf(a))) ? out.push(a) : dropped.push(a);
+    return out;
+  };
+  const toOk = await keep(toList), ccOk = await keep(ccList), bccOk = await keep(bccList);
+  if (dropped.length) console.warn("[email] no mail server for:", dropped.map(addrOf).join(", "));
+  if (toOk.length === 0) {
+    return {
+      skipped: true, reason: "undeliverable_domain",
+      error: `no mail server for ${[...new Set(dropped.map(domainOf))].join(", ")}`,
+      messageId: opts.messageId || makeMessageId(),
+    };
+  }
+
+  // A message from hello@ to hello@ whose Reply-To points somewhere else is the
+  // shape of a spoof ("from you, to you, reply to a stranger"), and Gmail junks
+  // it. Staff alerts used to do exactly that so "Reply" reached the customer;
+  // they now carry a reply link in the body instead, and this is the safety net
+  // for any caller that reintroduces the pattern.
+  const fromHeader = opts.from || env.MAIL_FROM || DEFAULT_FROM;
+  let replyTo = opts.replyTo || env.MAIL_DEFAULT_REPLY || DEFAULT_REPLY;
+  const selfAddressed = [...toOk, ...ccOk, ...bccOk].every((a) => addrOf(a) === addrOf(fromHeader));
+  if (selfAddressed && replyTo && domainOf(replyTo) !== domainOf(fromHeader)) {
+    console.warn("[email] dropping foreign Reply-To on a self-addressed message:", addrOf(replyTo));
+    replyTo = env.MAIL_DEFAULT_REPLY || DEFAULT_REPLY;
+  }
+
   // Always populate BOTH alternative parts. If a caller sends text only (e.g. a
   // plain-text CRM reply), we must still emit real HTML — an empty text/html part
   // renders as a BLANK email in HTML-preferring clients (they pick the richest
@@ -45,12 +136,12 @@ export async function sendEmail(env, opts) {
   const text = opts.text || (opts.html ? htmlToText(opts.html) : "");
   const html = opts.html || (text ? textToHtml(text) : "");
   const msg = {
-    to: toList, cc: ccList, bcc: bccList,
+    to: toOk, cc: ccOk, bcc: bccOk,
     subject: opts.subject,
     html,
     text,
-    reply: opts.replyTo || env.MAIL_DEFAULT_REPLY || DEFAULT_REPLY,
-    from: opts.from || env.MAIL_FROM || DEFAULT_FROM,
+    reply: replyTo,
+    from: fromHeader,
     messageId: opts.messageId || makeMessageId(),
     inReplyTo: opts.inReplyTo,
     references: opts.references,

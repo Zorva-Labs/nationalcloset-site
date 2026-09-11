@@ -3,15 +3,12 @@
 // Workspace; see _lib/email.js). DB save is the source of truth — a mail
 // failure logs but never blocks the customer response.
 
-import { sendEmail, brandedEmail, makeMessageId } from "../_lib/email.js";
+import { sendEmail, sendStaffAlert, brandedEmail, makeMessageId } from "../_lib/email.js";
 import { upsertContact } from "../_lib/db.js";
 import { genToken } from "../_lib/tokens.js";
 import { logOutboundEmail } from "../_lib/email-log.js";
 import { spamReason, botReason, turnstileReason } from "../_lib/spam.js";
 
-// Staff alerts go here. Set STAFF_EMAIL (a Pages variable) to route them to a
-// different mailbox or a Google Group; until then they land in hello@.
-const TO_ADDRESS = "hello@nationalclosetco.com";
 
 export async function onRequestPost({ request, env }) {
   // NOTE on mail delivery: we keep mail send best-effort. The lead is ALWAYS
@@ -65,9 +62,9 @@ export async function onRequestPost({ request, env }) {
     // obvious bot spam out), but we still email the team so a misclassified real
     // customer is visible and recoverable. Best-effort — never blocks the response.
     try {
-      await sendEmail(env, {
-        from: "National Closet Co. Website <hello@nationalclosetco.com>",
-        to: env.STAFF_EMAIL || TO_ADDRESS,
+      await sendStaffAlert(env, {
+        label: "National Closet Co. Website",
+        replyTo: /^\S+@\S+\.\S+$/.test(email) ? email : undefined,
         subject: `[Filtered — please review] Website submission from ${name || "(no name)"}`,
         text:
 `A website form submission was auto-filtered as possible spam (reason: ${spam}) and was NOT saved to the CRM.
@@ -222,17 +219,14 @@ https://nationalclosetco.com/crm/
     console.error("contact.js: env.DB is not configured");
   }
 
-  // 2) Fire-and-forget mail send via Gmail. sendEmail never throws — a mail
-  // failure just logs to the Pages function console. The customer is told
-  // their lead was captured (it was) regardless of email delivery.
-  //
-  // No customer Reply-To on this alert. The Gmail API can only send as the
-  // mailbox it impersonates, so the alert is hello@ → hello@, and a message
-  // from you to you with a stranger's Reply-To is the shape of a spoof — Gmail
-  // junks it. The body carries a "Reply to <name>" link instead.
-  await sendEmail(env, {
-    from: "National Closet Co. Website <hello@nationalclosetco.com>",
-    to: env.STAFF_EMAIL || TO_ADDRESS,
+  // 2) Fire-and-forget staff alert via Gmail, sent as crm@ to hello@ (see
+  // sendStaffAlert). sendEmail never throws — a mail failure just logs to the
+  // Pages function console. The customer is told their lead was captured (it
+  // was) regardless of email delivery. Reply-To is the customer, so hitting
+  // Reply in hello@ answers the lead directly and the CRM's Sent sync logs it.
+  await sendStaffAlert(env, {
+    label: "National Closet Co. Website",
+    replyTo: email,
     subject,
     text: textBody,
     html: htmlBody,

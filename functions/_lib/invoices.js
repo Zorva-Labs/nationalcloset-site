@@ -3,7 +3,7 @@
 // the customer a branded pay link. Stripe PaymentIntents are created lazily on
 // the public pay page; here we just create the invoice record + notify.
 import { genToken, nextSequence, formatDocNumber } from "./tokens.js";
-import { sendEmail, makeMessageId, brandedEmail } from "./email.js";
+import { sendEmail, sendStaffAlert, staffInbox, makeMessageId, brandedEmail } from "./email.js";
 import { retrievePaymentIntent } from "./stripe.js";
 import { logOutboundEmail } from "./email-log.js";
 import { recordActivity } from "./db.js";
@@ -25,11 +25,10 @@ function methodLabel(m) {
   return m || "card";
 }
 
-// Email the office (STAFF_EMAIL) on EVERY payment event — when an ACH/async
+// Email the office (sendStaffAlert → STAFF_EMAIL) on EVERY payment event — when an ACH/async
 // payment starts processing, when any payment clears, and if a payment fails.
 // kind is "processing" | "paid" | "failed".
 async function notifyStaffPayment(env, { invoice, project, kind, method, amountCents }) {
-  const to = env.STAFF_EMAIL || "hello@nationalclosetco.com";
   const who = project?.contact_name || "A customer";
   const proj = project?.name || "their project";
   const ml = methodLabel(method);
@@ -60,9 +59,9 @@ async function notifyStaffPayment(env, { invoice, project, kind, method, amountC
   // Internal staff alert (to == hello@), sent as hello@ via the Gmail API. This is
   // an authenticated self-send (not an external relay spoofing our domain), so
   // Gmail delivers it to the inbox normally — no separate sender address needed.
-  const res = await sendEmail(env, { from: "National Closet Co. · Payments <hello@nationalclosetco.com>", to, subject, html, text, messageId }).catch(() => null);
+  const res = await sendStaffAlert(env, { label: "National Closet Co. · Payments", subject, html, text, messageId }).catch(() => null);
   await logOutboundEmail(env, {
-    to, subject, html, text, messageId,
+    to: staffInbox(env), subject, html, text, messageId,
     projectId: invoice.project_id, contactId: project?.contact_id || null,
     templateKind: `payment_${kind}_staff`,
     status: (res?.skipped || res?.error) ? "failed" : "sent",

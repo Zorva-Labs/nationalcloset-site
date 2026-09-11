@@ -1,17 +1,24 @@
-// Transactional mail transport — Gmail API (Google Workspace,
-// hello@nationalclosetco.com) via a service account with domain-wide
-// delegation (see _lib/google-auth.js). Workers can't do reliable SMTP, so we
-// build a raw RFC 822 MIME message and POST it to Gmail. Everything the CRM
-// sends — customer mail and internal staff alerts alike — goes out as hello@.
+// Transactional mail transport — Gmail API (Google Workspace) via a service
+// account with domain-wide delegation (see _lib/google-auth.js). Workers can't
+// do reliable SMTP, so we build a raw RFC 822 MIME message and POST it to
+// Gmail. Customer mail goes out as hello@. Internal staff alerts go out as the
+// CRM's own mailbox (crm@) TO hello@, so they are never self-addressed — see
+// sendStaffAlert().
 //
-// Env vars (Cloudflare Pages secrets):
+// Env vars (Cloudflare Pages secrets / [vars]):
 //   GOOGLE_SA_EMAIL / GOOGLE_SA_PRIVATE_KEY / GOOGLE_WORKSPACE_USER
 //   MAIL_FROM          — optional From override (default hello@nationalclosetco.com)
 //   MAIL_DEFAULT_REPLY — optional Reply-To (default hello@nationalclosetco.com)
+//   STAFF_EMAIL        — where internal alerts are delivered (default hello@)
+//   ALERT_FROM_USER    — the Workspace user internal alerts are sent as (default crm@)
 import { getGoogleAccessToken, googleConfigured, impersonationUser, base64url } from "./google-auth.js";
 
 const DEFAULT_FROM = "National Closet Company <hello@nationalclosetco.com>";
 const DEFAULT_REPLY = "hello@nationalclosetco.com";
+const DEFAULT_ALERT_FROM = "crm@nationalclosetco.com";
+
+export const staffInbox = (env) => env.STAFF_EMAIL || DEFAULT_REPLY;
+export const alertSender = (env) => env.ALERT_FROM_USER || DEFAULT_ALERT_FROM;
 
 // ── Deliverability guard ─────────────────────────────────────────────
 // A three-month-old domain has no reputation to spend, and every bounce spends
@@ -86,6 +93,11 @@ export const domainOf = (s) => addrOf(s).split("@")[1] || "";
 //   inReplyTo         — parent Message-ID, sets In-Reply-To + References headers
 //   references        — full References chain (whitespace separated)
 //   from              — full From header (defaults to MAIL_FROM env)
+//   sendAs            — Workspace user to impersonate for this send (default
+//                       GOOGLE_WORKSPACE_USER). Gmail keeps From consistent with
+//                       the authenticated mailbox, so `from` should carry the
+//                       same address. Falls back to the default user if Google
+//                       refuses the impersonation.
 //   attachments       — [{ filename, content (b64), content_type }]
 export async function sendEmail(env, opts) {
   const { to, cc, bcc } = opts;
@@ -116,18 +128,8 @@ export async function sendEmail(env, opts) {
     };
   }
 
-  // A message from hello@ to hello@ whose Reply-To points somewhere else is the
-  // shape of a spoof ("from you, to you, reply to a stranger"), and Gmail junks
-  // it. Staff alerts used to do exactly that so "Reply" reached the customer;
-  // they now carry a reply link in the body instead, and this is the safety net
-  // for any caller that reintroduces the pattern.
   const fromHeader = opts.from || env.MAIL_FROM || DEFAULT_FROM;
-  let replyTo = opts.replyTo || env.MAIL_DEFAULT_REPLY || DEFAULT_REPLY;
-  const selfAddressed = [...toOk, ...ccOk, ...bccOk].every((a) => addrOf(a) === addrOf(fromHeader));
-  if (selfAddressed && replyTo && domainOf(replyTo) !== domainOf(fromHeader)) {
-    console.warn("[email] dropping foreign Reply-To on a self-addressed message:", addrOf(replyTo));
-    replyTo = env.MAIL_DEFAULT_REPLY || DEFAULT_REPLY;
-  }
+  const replyTo = opts.replyTo || env.MAIL_DEFAULT_REPLY || DEFAULT_REPLY;
 
   // Always populate BOTH alternative parts. If a caller sends text only (e.g. a
   // plain-text CRM reply), we must still emit real HTML — an empty text/html part
@@ -141,7 +143,9 @@ export async function sendEmail(env, opts) {
     html,
     text,
     reply: replyTo,
+    defaultReply: env.MAIL_DEFAULT_REPLY || DEFAULT_REPLY,
     from: fromHeader,
+    sendAs: opts.sendAs || null,
     messageId: opts.messageId || makeMessageId(),
     inReplyTo: opts.inReplyTo,
     references: opts.references,
@@ -151,13 +155,72 @@ export async function sendEmail(env, opts) {
   return sendViaGmail(env, msg);
 }
 
+// ── Internal alerts ──────────────────────────────────────────────────
+// Website leads, bookings, signed contracts, payments: sent AS the CRM's own
+// mailbox (crm@) TO the staff inbox (hello@). Two reasons. A message from hello@
+// to hello@ with a customer's Reply-To is the shape of a spoof and Gmail junks
+// it; and hello@ already holds the sent copy of anything it sends itself, so
+// Gmail treats the inbound copy as a duplicate (which is also why forwarding
+// crm@ back to hello@ can never work). With a second sender, "Reply" in hello@
+// reaches the customer and the reply is captured by the CRM's Sent sync.
+export async function sendStaffAlert(env, { label = "National Closet Co. CRM", subject, html, text, replyTo, attachments, messageId }) {
+  const sender = alertSender(env);
+  return sendEmail(env, {
+    from: `${label} <${sender}>`,
+    sendAs: sender,
+    to: staffInbox(env),
+    subject, html, text, replyTo, attachments, messageId,
+  });
+}
+
+// Keep the display name, swap the address: "Name <a@b>" → "Name <c@d>".
+function withAddr(from, addr) {
+  const mm = String(from || "").match(/^\s*(.*?)\s*<[^>]+>\s*$/);
+  return mm && mm[1] ? `${mm[1]} <${addr}>` : addr;
+}
+
+// A message from X to X whose Reply-To points at another domain is the shape
+// of a spoof ("from you, to you, reply to a stranger"), and Gmail junks it.
+// Applied against the sender that is actually used, after any fallback.
+function guardReplyTo(m) {
+  const all = [...m.to, ...m.cc, ...m.bcc];
+  const selfAddressed = all.length > 0 && all.every((a) => addrOf(a) === addrOf(m.from));
+  if (selfAddressed && m.reply && domainOf(m.reply) !== domainOf(m.from)) {
+    console.warn("[email] dropping foreign Reply-To on a self-addressed message:", addrOf(m.reply));
+    m.reply = m.defaultReply;
+  }
+}
+
 // ── Gmail API transport ─────────────────────────────────────────────
 async function sendViaGmail(env, m) {
+  const primary = impersonationUser(env);
+  let user = m.sendAs || primary;
+  let token;
+  try {
+    token = await getGoogleAccessToken(env, user);
+  } catch (e) {
+    if (user === primary) {
+      console.error("[email] Google token failed:", e?.message || e);
+      return { skipped: true, error: e?.message || "google_token_failed", messageId: m.messageId };
+    }
+    // The alert mailbox is not a user the service account may impersonate (not
+    // created yet, a group, or an alias). Send as the primary mailbox instead —
+    // self-addressed, but delivered — and say so loudly in the logs.
+    console.error(`[email] cannot send as ${user} (${e?.message || e}); falling back to ${primary}`);
+    user = primary;
+    m.from = withAddr(m.from, primary);
+    try {
+      token = await getGoogleAccessToken(env, user);
+    } catch (e2) {
+      console.error("[email] Google token failed:", e2?.message || e2);
+      return { skipped: true, error: e2?.message || "google_token_failed", messageId: m.messageId };
+    }
+  }
+  guardReplyTo(m);
   const raw = buildMime(m);
   const rawB64 = base64url(new TextEncoder().encode(raw));
   try {
-    const token = await getGoogleAccessToken(env, impersonationUser(env));
-    // "me" resolves to the impersonated mailbox (hello@), which is also the From.
+    // "me" resolves to the impersonated mailbox, which is also the From.
     const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -169,7 +232,8 @@ async function sendViaGmail(env, m) {
       console.error("[email] Gmail send failed:", res.status, body.slice(0, 240));
       return { skipped: true, status: res.status, error: json?.error?.message || ("gmail_http_" + res.status), json, messageId: m.messageId };
     }
-    return { status: res.status, json, messageId: m.messageId, gmailId: json?.id };
+    console.log(`[email] sent as ${user} → ${m.to.map(addrOf).join(", ")}: ${String(m.subject || "").slice(0, 60)}`);
+    return { status: res.status, json, messageId: m.messageId, gmailId: json?.id, sentAs: user };
   } catch (e) {
     console.error("[email] Gmail send threw:", e?.message || e);
     return { skipped: true, error: e?.message || "gmail_failed", messageId: m.messageId };

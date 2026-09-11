@@ -13,7 +13,11 @@ IMAP_HOST = "imap.purelymail.com"
 IMAP_PORT = "993"
 MAIL_FROM = "National Closet Company <hello@nationalclosetco.com>"
 MAIL_DEFAULT_REPLY = "hello@nationalclosetco.com"
-STAFF_EMAIL = "crm@nationalclosetco.com"
+# Internal alerts: delivered TO hello@ (STAFF_EMAIL), sent AS crm@ (ALERT_FROM_USER,
+# a real Workspace user the service account impersonates) so they are never
+# self-addressed. See functions/_lib/email.js sendStaffAlert().
+STAFF_EMAIL = "hello@nationalclosetco.com"
+ALERT_FROM_USER = "crm@nationalclosetco.com"
 # Flat markup baked into every customer quote (proposals + estimates). Fraction:
 # 0.03 = 3%. Clamped 0–25%. Change here and redeploy to adjust — no code change.
 # Set to 0: prices are entered with any markup already included (no auto-markup).

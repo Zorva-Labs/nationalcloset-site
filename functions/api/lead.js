@@ -3,13 +3,11 @@
 // via the shared sendEmail() wrapper (Gmail API — Google Workspace).
 
 import { spamReason, botReason, turnstileReason } from "../_lib/spam.js";
-import { sendEmail } from "../_lib/email.js";
+import { sendStaffAlert } from "../_lib/email.js";
 
-const TO = "hello@nationalclosetco.com";
 // Internal alert delivered to hello@, sent as hello@ via the Gmail API — an
 // authenticated self-send, so Gmail delivers it to the inbox normally. Reply-To
 // is set to the lead below so hitting Reply answers the customer directly.
-const FROM = "National Closet Co. Website <hello@nationalclosetco.com>";
 
 const esc = (s) =>
   String(s == null ? "" : s)
@@ -88,9 +86,9 @@ export async function onRequestPost({ request, env }) {
     `New website lead — National Closet Company\n\n` +
     rows.map(([k, v]) => `${k}: ${v}`).join("\n");
 
-  const res = await sendEmail(env, {
-    from: FROM,
-    to: env.STAFF_EMAIL || TO,
+  const res = await sendStaffAlert(env, {
+    label: "National Closet Co. Website",
+    replyTo: email || undefined,
     subject: `New website lead — ${name}${project ? " · " + project : ""}`,
     html,
     text,

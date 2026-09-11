@@ -12,8 +12,9 @@
 //        https://www.googleapis.com/auth/gmail.send
 //        https://www.googleapis.com/auth/gmail.readonly
 //
-// All CRM mail (customer + internal) sends as hello@, so no send-as alias is
-// needed — the impersonated mailbox is always the authenticated From.
+// Customer mail sends as hello@. Internal staff alerts send as crm@ (see
+// email.js sendStaffAlert) — delegation covers every user in the domain, so
+// no send-as alias is needed; the impersonated mailbox is always the From.
 //
 // Secrets (wrangler pages secret put --project-name=nationalcloset):
 //   GOOGLE_SA_EMAIL        — svc-acct email (…@….iam.gserviceaccount.com)

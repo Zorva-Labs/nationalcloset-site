@@ -5,7 +5,7 @@ import { json, hashIp } from "../../../_lib/auth.js";
 import { trackView, recordActivity } from "../../../_lib/db.js";
 import { createContractFromProposalTier, syncLeadQuotedFromProposal } from "../../../_lib/lifecycle.js";
 import { createInvoice } from "../../../_lib/invoices.js";
-import { sendEmail, brandedEmail, escapeHtml } from "../../../_lib/email.js";
+import { sendStaffAlert, brandedEmail, escapeHtml } from "../../../_lib/email.js";
 
 // A proposal is expired once its 2-day window has passed and it hasn't been
 // accepted/declined. Computed live so the customer sees the expired state the
@@ -75,7 +75,6 @@ export async function onRequestPost(context) {
       actorKind: "customer", actorName: p.contact_name || null,
       details: { ip_hash: ipHash, message: note || null },
     });
-    const staff = context.env.STAFF_EMAIL || "hello@nationalclosetco.com";
     const adminUrl = `https://nationalclosetco.com/crm/proposal.html?id=${p.id}`;
     const html = brandedEmail({
       title: "A customer wants an updated proposal.",
@@ -88,8 +87,8 @@ export async function onRequestPost(context) {
       ctaUrl: adminUrl,
       signature: false,
     });
-    // Internal alert to hello@ — sent as hello@ via Gmail (authenticated self-send).
-    await sendEmail(context.env, { from: "National Closet Co. <hello@nationalclosetco.com>", to: staff, subject: `Updated proposal requested — ${p.number}`, html }).catch(() => {});
+    // Internal alert — sent as crm@ to hello@ (see sendStaffAlert).
+    await sendStaffAlert(context.env, { replyTo: p.contact_email || undefined, subject: `Updated proposal requested — ${p.number}`, html }).catch(() => {});
     return json({ ok: true });
   }
   if (expired && (body.action === "select_tier" || body.action === "accept")) {

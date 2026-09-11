@@ -2,7 +2,7 @@
 import { json, hashIp } from "../../_lib/auth.js";
 import { genToken } from "../../_lib/tokens.js";
 import { upsertContact, recordActivity } from "../../_lib/db.js";
-import { sendEmail, brandedEmail, escapeHtml } from "../../_lib/email.js";
+import { sendEmail, sendStaffAlert, brandedEmail, escapeHtml } from "../../_lib/email.js";
 import { buildIcs } from "../../_lib/ical.js";
 import { fmtPretty } from "../../_lib/dates.js";
 import { bumpLeadStatusForward } from "../../_lib/lifecycle.js";
@@ -131,13 +131,11 @@ export async function onRequestPost(context) {
     }],
   });
 
-  // Notify the team. The Gmail API can only send as the mailbox it impersonates,
-  // so this is hello@ → hello@ unless STAFF_EMAIL routes it elsewhere. No
-  // customer Reply-To (from you, to you, reply to a stranger reads as a spoof);
-  // the customer's address is a mailto link in the body instead.
-  await sendEmail(context.env, {
-    from: "National Closet Co. Bookings <hello@nationalclosetco.com>",
-    to: context.env.STAFF_EMAIL || "hello@nationalclosetco.com",
+  // Notify the team — sent as crm@ to hello@ (see sendStaffAlert), Reply-To the
+  // customer so Reply in hello@ answers them directly.
+  await sendStaffAlert(context.env, {
+    label: "National Closet Co. Bookings",
+    replyTo: body.email,
     subject: `New booking · ${body.name} · ${fmtPretty(startAt)}`,
     html: brandedEmail({
       title: "New consultation booked.",

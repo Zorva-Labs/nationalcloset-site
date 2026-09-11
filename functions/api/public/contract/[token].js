@@ -3,7 +3,7 @@
 import { json, hashIp } from "../../../_lib/auth.js";
 import { sha256Hex } from "../../../_lib/tokens.js";
 import { trackView, recordActivity } from "../../../_lib/db.js";
-import { sendEmail, brandedEmail, escapeHtml } from "../../../_lib/email.js";
+import { sendEmail, sendStaffAlert, brandedEmail, escapeHtml } from "../../../_lib/email.js";
 import { markProjectBooked } from "../../../_lib/lifecycle.js";
 import { sendStageEmail } from "../../../_lib/stage-emails.js";
 import { createInvoice } from "../../../_lib/invoices.js";
@@ -132,8 +132,8 @@ export async function onRequestPost(context) {
   }).catch((e) => console.error("[contract/client-copy]", String(e)));
 
   // Notify the team
-  await sendEmail(context.env, {
-    to: context.env.STAFF_EMAIL || "hello@nationalclosetco.com",
+  await sendStaffAlert(context.env, {
+    replyTo: body.signer_email || undefined,
     subject: depositPending ? `✍️ Contract signed — awaiting deposit (${k.number})` : `🎉 Job booked — ${k.number}`,
     html: brandedEmail({
       title: depositPending ? "Contract signed — awaiting deposit." : "A new job was just booked.",

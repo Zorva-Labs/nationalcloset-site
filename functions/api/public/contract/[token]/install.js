@@ -3,7 +3,7 @@
 import { json, hashIp } from "../../../../_lib/auth.js";
 import { genToken } from "../../../../_lib/tokens.js";
 import { recordActivity } from "../../../../_lib/db.js";
-import { sendEmail, brandedEmail, escapeHtml } from "../../../../_lib/email.js";
+import { sendEmail, sendStaffAlert, brandedEmail, escapeHtml } from "../../../../_lib/email.js";
 import { buildIcs } from "../../../../_lib/ical.js";
 import { fmtPretty } from "../../../../_lib/dates.js";
 
@@ -140,8 +140,8 @@ export async function onRequestPost(context) {
   });
 
   // Staff notify
-  await sendEmail(context.env, {
-    to: context.env.STAFF_EMAIL || "hello@nationalclosetco.com",
+  await sendStaffAlert(context.env, {
+    replyTo: k.contact_email || undefined,
     subject: `Install booked: ${k.contact_name} · ${fmtPretty(startAt)} · ${k.number}`,
     html: brandedEmail({
       title: "Install on the calendar.",

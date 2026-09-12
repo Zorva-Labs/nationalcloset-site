@@ -295,13 +295,31 @@
     });
   };
   window.__onTS = function () { window.__renderTS(); };
-  if (document.querySelector("form[data-lead]") && !window.__tsLoad) {
+  // Load the Turnstile API only once a lead form is near the viewport or
+  // focused — on the paid landing pages the form sits a screen down, and
+  // loading it at page start cost the hero its paint (LCP). The server fails
+  // open on a missing token, so a lightning-fast submit is never blocked.
+  window.__loadTS = function () {
+    if (window.__tsLoad) return;
     window.__tsLoad = true;
     var _ts = document.createElement("script");
     _ts.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=__onTS&render=explicit";
     _ts.async = true; _ts.defer = true;
     document.head.appendChild(_ts);
-  }
+  };
+  (function () {
+    var forms = document.querySelectorAll("form[data-lead]");
+    if (!forms.length) return;
+    forms.forEach(function (form) { form.addEventListener("focusin", window.__loadTS, { once: true }); });
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (entries) {
+        if (entries.some(function (e) { return e.isIntersecting; })) { window.__loadTS(); io.disconnect(); }
+      }, { rootMargin: "600px 0px" });
+      forms.forEach(function (form) { io.observe(form); });
+    } else {
+      window.addEventListener("load", function () { setTimeout(window.__loadTS, 2500); });
+    }
+  })();
 
   function gaCookie(re) { try { var m = document.cookie.match(re); return m ? m[1] : ""; } catch (e) { return ""; } }
   document.querySelectorAll("form[data-lead]").forEach(function (form) {

@@ -33,9 +33,9 @@
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};
 if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-n.queue=[];t=b.createElement(e);t.async=!0;
+n.queue=[];var l=function(){t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];
-s.parentNode.insertBefore(t,s)}(window, document,'script',
+s.parentNode.insertBefore(t,s)};if(b.readyState==='complete')setTimeout(l,1200);else f.addEventListener('load',function(){setTimeout(l,1200)})}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
 fbq('init', '904015652453670');
 fbq('track', 'PageView');

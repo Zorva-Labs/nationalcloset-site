@@ -656,7 +656,7 @@
   // Cost estimator. Ranges mirror the published cost guide; size picks a slice of
   // the range and finish scales it. Rounded to $100. Never a quote — the copy says
   // the designer confirms the exact price at the free in-home design.
-  var RANGES = { reachin: [1000, 3000], walkin: [2500, 10000], pantry: [1500, 5000], garage: [2500, 8000], office: [2000, 7000], laundry: [1500, 6000] };
+  var RANGES = { reachin: [1000, 3000], walkin: [2000, 10000], pantry: [1000, 5000], garage: [2500, 8000], office: [2000, 7000], laundry: [1500, 6000] };
   var SIZE = { small: [0, 0.34], medium: [0.25, 0.7], large: [0.6, 1] };
   var FINISH = { standard: 1, wood: 1.12, premium: 1.3 };
   document.querySelectorAll("[data-estimator]").forEach(function (est) {
@@ -665,14 +665,14 @@
     if (!type || !out) return;
     function pick(group) { var on = est.querySelector('[data-est="' + group + '"] .on'); return on ? on.getAttribute("data-v") : null; }
     function money(n) { n = Math.round(n / 100) * 100; return "$" + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
-    function perMonth(n) { return "$" + String(Math.ceil(n / 24)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+    function half(n) { return "$" + String(Math.round(n / 2)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
     function calc() {
       var rg = RANGES[type.value] || RANGES.walkin, s = SIZE[pick("size")] || SIZE.medium, f = FINISH[pick("finish")] || 1;
       var span = rg[1] - rg[0];
       var lo = Math.round((rg[0] + span * s[0]) * f / 100) * 100, hi = Math.round((rg[0] + span * s[1]) * f / 100) * 100;
       out.textContent = money(lo) + " – " + money(hi) + (hi > rg[1] ? "+" : "");
       var moEl = est.querySelector('[data-est="monthly"]');
-      if (moEl) moEl.textContent = "Or about " + perMonth(lo) + " – " + perMonth(hi) + " a month over 24 months before interest, with Klarna at checkout.";
+      if (moEl) moEl.textContent = "Paid in three: about " + half(lo) + " – " + half(hi) + " at signing, then 25% when your install is scheduled and 25% on install day.";
       try { if (typeof gtag === "function") gtag("event", "estimate", { space: type.value, size: pick("size"), finish: pick("finish"), low: lo, high: hi }); } catch (e) {}
     }
     est.querySelectorAll(".est__chips button").forEach(function (b) {
@@ -708,7 +708,7 @@
   // The hero card: two taps for a typical installed range, then a name and a
   // phone number to see it — the estimate is the hook, the phone is the lead.
   // Same ranges as the full estimator further down the page.
-  var RANGES = { reachin: [1000, 3000], walkin: [2500, 10000], pantry: [1500, 5000], garage: [2500, 8000], office: [2000, 7000], laundry: [1500, 6000] };
+  var RANGES = { reachin: [1000, 3000], walkin: [2000, 10000], pantry: [1000, 5000], garage: [2500, 8000], office: [2000, 7000], laundry: [1500, 6000] };
   var SIZE = { small: [0, 0.34], medium: [0.25, 0.7], large: [0.6, 1] };
   var LABEL = { reachin: "Reach-In Closet", walkin: "Walk-In Closet", pantry: "Pantry", garage: "Garage Storage", office: "Home Office", laundry: "Laundry / Mudroom" };
   var PLURAL = { reachin: "Reach-in closets", walkin: "Walk-in closets", pantry: "Pantries", garage: "Garage systems", office: "Home offices", laundry: "Laundry rooms" };
@@ -725,7 +725,7 @@
       var range = money(lo) + " – " + money(hi) + (hi >= rg[1] ? "+" : "");
       if (from) { from.textContent = PLURAL[type] + " start at " + money(rg[0]) + " installed, design included."; from.hidden = false; }
       form.setAttribute("data-bp-range", range);
-      form.setAttribute("data-bp-mo", "or about $" + Math.ceil(lo / 24) + " – $" + Math.ceil(hi / 24) + " a month over 24 months before interest, with Klarna at checkout");
+      form.setAttribute("data-bp-mo", "Paid in three: about $" + String(lo / 2).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " – $" + String(hi / 2).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " at signing, then 25% when your install is scheduled and 25% on install day");
       if (proj) proj.value = LABEL[type];
       if (msg) msg.value = "Ballpark request from the homepage: " + LABEL[type] + ", " + size + " — typical range " + range + ".";
       if (step2) step2.hidden = false;

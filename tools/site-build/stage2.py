@@ -102,8 +102,8 @@ pricing = f'''<!-- ================= PRICING + ESTIMATOR ================= -->
     </div>
     <div class="price-tiles" data-reveal>
       <div><span>Reach-in closet</span><b>from $1,000</b></div>
-      <div><span>Walk-in closet</span><b>from $2,500</b></div>
-      <div><span>Custom pantry</span><b>from $1,500</b></div>
+      <div><span>Walk-in closet</span><b>from $2,000</b></div>
+      <div><span>Custom pantry</span><b>from $1,000</b></div>
       <div><span>Garage storage</span><b>from $2,500</b></div>
       <div><span>Home office</span><b>from $2,000</b></div>
       <div><span>Laundry / mudroom</span><b>from $1,500</b></div>

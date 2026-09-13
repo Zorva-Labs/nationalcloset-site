@@ -3,7 +3,7 @@ head template, FAQ item, and the new site navigation. Everything is lifted from 
 live city page so new pages match the rest of the site exactly."""
 import re, html, json, os
 ROOT = '/Users/zeus/nationalcloset-site'
-PIN = 'ncc123'
+PIN = 'ncc125'
 SITE = 'https://nationalclosetco.com'
 PHONE = '629-298-8241'; TEL = 'tel:+16292988241'
 SMS = 'sms:+16292988241?&body=' + 'Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F'
@@ -156,7 +156,7 @@ def estimator(compact=False):
   </div>
   <div class="est__out" aria-live="polite">
     <span class="est__lead">Typically</span>
-    <span class="est__range" data-est="range">$2,500 – $7,000</span>
+    <span class="est__range" data-est="range">$2,000 – $7,000</span>
     <span class="est__note">installed, design included. Your designer confirms an exact price at your free in-home design.</span>
   </div>
   <div class="est__actions">

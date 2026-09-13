@@ -9,7 +9,7 @@ const TERMS_BY_TYPE = {
 <p>All custom closets and storage systems listed in this agreement are made-to-order. Manufacturer lead times typically run two to six weeks from order placement. We will keep you informed of any changes to the schedule.</p>
 
 <h3>Deposit &amp; Payment</h3>
-<p>A deposit is due at signing to release the order to our manufacturing partners. The deposit covers materials, shipping and applicable taxes; the remaining balance is due at the completion of installation. You can also pay in full at any time. We accept card, bank transfer (ACH), digital wallets and Klarna online, plus check or cash in person, with no added processing fee.</p>
+<p>The total contract price is paid in three installments: 50% at signing (the deposit — or, if greater, the amount required to cover materials, shipping and payment-processing fees for the order), which releases the order to our manufacturing partners; 25% when all materials have arrived and the installation date is set; and 25% on the day of installation. You may pay in full at signing or at any point afterward, and you may pay any installment early, with no penalty or added fee. We accept card, bank transfer (ACH) and digital wallets online, plus check or cash in person, with no added processing fee.</p>
 
 <h3>Measurement &amp; Fit</h3>
 <p>National Closet Company measures every space on-site and is responsible for the fit of any system we build from those measurements. Measurements are taken to the sixteenth of an inch and recorded in this agreement.</p>
@@ -38,7 +38,7 @@ const TERMS_BY_TYPE = {
 <p>If a customer-supplied product is damaged or defective when unboxed, National Closet Company will document the damage and assist with the return claim, but is not responsible for replacement or refund. The retailer's return policy applies.</p>
 
 <h3>Payment</h3>
-<p>No deposit is required for install-only service. Payment in full is due upon completion of installation. We accept card, bank transfer (ACH), digital wallets and Klarna online, plus check, cash, Venmo and Cash App in person, with no added processing fee.</p>
+<p>No deposit is required for install-only service. Payment in full is due upon completion of installation. We accept card, bank transfer (ACH) and digital wallets online, plus check, cash, Venmo and Cash App in person, with no added processing fee.</p>
 
 <h3>Workmanship Warranty</h3>
 <p>Our installation work is warranted for <strong>ninety (90) days</strong> against defects in workmanship. If a bracket, shelf pin, rod or drawer slide we installed fails within that window, we will return and make it right at no charge. Customer-supplied products carry only their own manufacturer warranty.</p>

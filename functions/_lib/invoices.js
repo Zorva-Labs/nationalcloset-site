@@ -340,7 +340,7 @@ export async function sendInvoiceEmail(env, invoice, project) {
       </table>
       <p>${invoice.description}.</p>
       ${note}
-      <p>You can pay securely online using the button below — pay by card, bank, digital wallet or Klarna.</p>
+      <p>You can pay securely online using the button below — pay by card, bank or digital wallet.</p>
     `,
     ctaLabel: `Pay ${money(invoice.amount_cents)}`,
     ctaUrl: payUrl,

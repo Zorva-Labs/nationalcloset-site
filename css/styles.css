@@ -681,7 +681,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .est__note { flex-basis: 100%; font-size: .9rem; color: var(--muted); }
 .est__actions { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1rem; }
 .price-tiles { display: grid; gap: .8rem; }
-.price-tiles div { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.2rem; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.price-tiles div { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.2rem; display: grid; grid-template-columns: 1fr auto; align-items: baseline; align-content: start; column-gap: 1rem; row-gap: .2rem; }
 .price-tiles b { font-size: 1.3rem; color: var(--clay-deep); white-space: nowrap; }
 @media (min-width: 760px) { .price-tiles { grid-template-columns: repeat(3, 1fr); } }
 .filters { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.2rem 0 1.6rem; }
@@ -737,8 +737,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .form-note { display: block; line-height: 1.5; }
 .form-note a { white-space: nowrap; }
 /* ---- financing figures (Sept 2026) ---- */
-.price-tiles div, .lp-price div { flex-wrap: wrap; }
-.tile__mo { flex-basis: 100%; font-size: .84rem; color: var(--muted); margin-top: .15rem; }
+.tile__mo { grid-column: 1 / -1; font-size: .84rem; color: var(--muted); }
 .fin-note { font-size: .82rem; color: var(--muted); margin-top: .9rem; line-height: 1.5; max-width: 70ch; }
 .est__mo { flex-basis: 100%; font-size: .92rem; font-weight: 700; color: var(--ink-soft); margin-top: .2rem; }
 .bp__mo { font-size: .95rem; font-weight: 700; color: var(--ink-soft); margin: .3rem 0 0; }

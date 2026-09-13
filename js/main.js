@@ -749,6 +749,7 @@
     a.className = "photo"; a.href = SMS_URL; a.textContent = "📷 Text a photo";
     var q = bar.querySelector(".quote");
     if (q) bar.insertBefore(a, q); else bar.appendChild(a);
+    bar.classList.add("mobicta--3");
   }
   if (!document.querySelector(".txtpill") && !/^\/(crm|book)(\/|$)/.test(location.pathname)) {
     var pill = document.createElement("a");

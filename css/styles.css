@@ -439,8 +439,8 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .mobicta a.call { background: var(--ink); color: #fff; }
 .mobicta a.quote { background: var(--clay); color: #fff; }
 .mobicta a.photo { background: #fff; color: var(--ink); }
-.mobicta:has(a.photo) { grid-template-columns: 1fr 1.15fr 1fr; }
-.mobicta:has(a.photo) a { font-size: 0.86rem; padding: 0.9rem 0.4rem; }
+.mobicta--3, .mobicta:has(a.photo) { grid-template-columns: 1fr 1.15fr 1fr; }
+.mobicta--3 a, .mobicta:has(a.photo) a { font-size: 0.86rem; padding: 0.9rem 0.4rem; }
 
 /* ---------- Page hero (interior pages) ---------- */
 .phero { padding-top: calc(var(--nav-h) + 3rem); padding-bottom: var(--sp-5); background: var(--fog); position: relative; overflow: hidden; }
@@ -734,3 +734,5 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .txtpill small { display: block; font-size: .74rem; color: rgba(255,255,255,.72); line-height: 1.2; }
 @media (min-width: 940px) { .txtpill { display: inline-flex; } }
 @media (prefers-reduced-motion: reduce) { .txtpill { transition: none; } }
+.form-note { display: block; line-height: 1.5; }
+.form-note a { white-space: nowrap; }

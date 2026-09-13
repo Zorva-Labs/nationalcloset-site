@@ -736,3 +736,9 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 @media (prefers-reduced-motion: reduce) { .txtpill { transition: none; } }
 .form-note { display: block; line-height: 1.5; }
 .form-note a { white-space: nowrap; }
+/* ---- financing figures (Sept 2026) ---- */
+.price-tiles div, .lp-price div { flex-wrap: wrap; }
+.tile__mo { flex-basis: 100%; font-size: .84rem; color: var(--muted); margin-top: .15rem; }
+.fin-note { font-size: .82rem; color: var(--muted); margin-top: .9rem; line-height: 1.5; max-width: 70ch; }
+.est__mo { flex-basis: 100%; font-size: .92rem; font-weight: 700; color: var(--ink-soft); margin-top: .2rem; }
+.bp__mo { font-size: .95rem; font-weight: 700; color: var(--ink-soft); margin: .3rem 0 0; }

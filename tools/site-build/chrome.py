@@ -3,7 +3,7 @@ head template, FAQ item, and the new site navigation. Everything is lifted from 
 live city page so new pages match the rest of the site exactly."""
 import re, html, json, os
 ROOT = '/Users/zeus/nationalcloset-site'
-PIN = 'ncc121'
+PIN = 'ncc122'
 SITE = 'https://nationalclosetco.com'
 PHONE = '629-298-8241'; TEL = 'tel:+16292988241'
 SMS = 'sms:+16292988241?&body=' + 'Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F'
@@ -172,7 +172,7 @@ COMPARE_ROWS = [
   ('Design', 'Free in-home design with a photorealistic 3D rendering', 'Varies; often a sketch, with 3D as a follow-up'),
   ('Quotes', 'Two quotes: prep-it-yourself or fully turnkey', 'Usually one'),
   ('Installation', 'Our own team, most closets in a single day', 'Varies by location'),
-  ('Warranty', 'One-year workmanship guarantee plus manufacturer coverage', 'Varies'),
+  ('Warranty', 'Lifetime system warranty, one-year workmanship guarantee', 'Varies'),
 ]
 def compare_table(title='How we compare'):
     rows = ''.join(f'<tr><th scope="row">{a}</th><td class="cmp__us">{b}</td><td>{c}</td></tr>' for a, b, c in COMPARE_ROWS)

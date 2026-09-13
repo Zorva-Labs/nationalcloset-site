@@ -37,3 +37,9 @@ database_id = "f5787ce4-29f9-43be-bf0e-cb486f1ec8e9"
 [[r2_buckets]]
 binding = "FILES"
 bucket_name = "nationalcloset-files"
+
+# Text messages (review requests) switch on when three secrets exist:
+#   wrangler pages secret put TWILIO_ACCOUNT_SID --project-name=nationalcloset
+#   wrangler pages secret put TWILIO_AUTH_TOKEN  --project-name=nationalcloset
+#   wrangler pages secret put TWILIO_FROM        --project-name=nationalcloset   (E.164, e.g. +16295550123)
+# then redeploy. Without them the sweep sends email only. See functions/_lib/sms.js.

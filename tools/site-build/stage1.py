@@ -183,7 +183,7 @@ about_body = phero([('Home', '/#top'), ('About', None)], 'Family-owned · Gallat
       </div>
     </div>
     <div class="proof-chips" style="margin-top:1.6rem">
-      <span>Family-owned since 2012</span><span>Based in Gallatin, TN</span><span>14″ shelves standard</span><span>Most closets installed in one day</span><span>One-year workmanship guarantee</span>
+      <span>Family-owned since 2012</span><span>Based in Gallatin, TN</span><span>14″ shelves standard</span><span>Most closets installed in one day</span><span>Lifetime system warranty</span>
     </div>
   </div>
 </section>
@@ -203,7 +203,7 @@ about_body = phero([('Home', '/#top'), ('About', None)], 'Family-owned · Gallat
           <li><strong>Two quotes, always.</strong> Prep the space yourself for the lowest price, or go fully turnkey and we remove, patch, paint and install.</li>
           <li><strong>Deeper shelves.</strong> 14″ standard where the national brands install 12″, so hangers and bins actually fit.</li>
           <li><strong>Our own installers.</strong> No subcontractors. Most closets in a single day, spotless cleanup.</li>
-          <li><strong>Warranty.</strong> A one-year workmanship guarantee on every install, plus the manufacturer's warranty on components. <a href="/warranty" style="color:var(--clay-deep);font-weight:700">Read the warranty →</a></li>
+          <li><strong>Warranty.</strong> A lifetime warranty on the system, plus a one-year guarantee on our installation workmanship. <a href="/warranty" style="color:var(--clay-deep);font-weight:700">Read the warranty →</a></li>
         </ul>
         <p style="margin-top:1.2rem">{rating_badge()}</p>
       </div>

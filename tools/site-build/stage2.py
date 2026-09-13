@@ -16,7 +16,7 @@ hero = sec[0]
 old_lead = re.search(r'<p class="lead hero__sub" style="margin-top:1.1rem">.*?</p>', hero, re.S).group(0)
 hero = hero.replace(old_lead, '<p class="lead hero__sub" style="margin-top:1.1rem"><strong>Custom closets, pantries, garages &amp; home offices</strong> — designed free in your home, installed by our own team, at a price normal families can afford.</p>')
 old_ul = re.search(r'<ul class="hero__sub".*?</ul>', hero, re.S).group(0)
-hero = hero.replace(old_ul, '<p class="hero__sub proof-chips" style="margin-top:1rem"><span>Reach-ins from $1,000</span><span>Walk-ins from $2,500</span><span>Free in-home 3D design</span><span>1-year workmanship guarantee</span></p>')
+hero = hero.replace(old_ul, '<p class="hero__sub proof-chips" style="margin-top:1rem"><span>Reach-ins from $1,000</span><span>Walk-ins from $2,500</span><span>Free in-home 3D design</span><span>Lifetime system warranty</span></p>')
 old_sa = re.search(r'<p class="hero__sub" style="margin-top:\.7rem;font-size:\.95rem">.*?</p>', hero, re.S).group(0)
 hero = hero.replace(old_sa, '')
 hero = hero.replace('<a class="btn btn--ghost" href="#services">Explore Services</a>', '<a class="btn btn--ghost" href="/our-work">See Real Projects</a>')

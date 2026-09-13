@@ -12,16 +12,16 @@ const TERMS_BY_TYPE = {
 <p>A deposit is due at signing to release the order to our manufacturing partners. The deposit covers materials, shipping and applicable taxes; the remaining balance is due at the completion of installation. You can also pay in full at any time. We accept card, bank transfer (ACH), digital wallets and Klarna online, plus check or cash in person, with no added processing fee.</p>
 
 <h3>Measurement &amp; Fit</h3>
-<p>National Closet Company will measure all windows on-site and is responsible for the fit of any product we manufacture from those measurements. All windows are measured to the sixteenth of an inch and recorded in this agreement.</p>
+<p>National Closet Company measures every space on-site and is responsible for the fit of any system we build from those measurements. Measurements are taken to the sixteenth of an inch and recorded in this agreement.</p>
 
 <h3>Cancellation</h3>
 <p>Custom orders are non-returnable once released to the manufacturer. The customer may cancel within 72 hours of signing without penalty. After 72 hours, the deposit is non-refundable to the extent it covers materials already ordered. National Closet Company reserves the right to cancel and refund the deposit if the project becomes unworkable.</p>
 
 <h3>Warranty</h3>
-<p>All products carry the original manufacturer warranty (typically 5–25 years depending on product line). Our installation work is warranted for ninety (90) days against defects in workmanship — we will return and repair at no charge for any install defect reported within that window.</p>
+<p>National Closet Company warrants the closet and storage system components it supplies (panels, shelving, drawer boxes, rods, brackets, hinges, slides and hardware) against defects in materials and manufacturing for as long as the original customer owns the home, and warrants its installation workmanship to be free from defects for one (1) year from the date of installation. During the first year, covered repairs and replacement parts are provided at no charge; after the first year, replacement parts for covered defects remain free of charge and a standard service-call fee covers the trip and labor to install them. This warranty does not cover normal wear and tear, cosmetic scratches, misuse, abuse, overloading beyond rated capacity, alteration, relocation, water or fire damage, or work performed by anyone other than National Closet Company, and it is not transferable.</p>
 
 <h3>Site Access &amp; Conditions</h3>
-<p>The customer is responsible for providing reasonable site access at the scheduled install time and a working environment safe for our installers (clear paths to windows, pets contained, hazards disclosed). Postponements due to inaccessible sites may incur a re-scheduling fee.</p>
+<p>The customer is responsible for providing reasonable site access at the scheduled install time and a working environment safe for our installers (clear paths to the work area, pets contained, hazards disclosed). Postponements due to inaccessible sites may incur a re-scheduling fee.</p>
 
 <h3>Photography</h3>
 <p>National Closet Company may photograph completed installations for portfolio and marketing use. Customers who prefer not to have their home photographed should note this here or notify us before install day.</p>
@@ -29,7 +29,7 @@ const TERMS_BY_TYPE = {
 
   install_only: `
 <h3>Scope of Service</h3>
-<p>This is an <strong>install-only</strong> agreement. National Closet Company will install closets and storage systems that the customer has purchased separately from another retailer (e.g. Lowes, Home Depot, Costco, Blinds.com, IKEA, Amazon, manufacturer-direct, or builder leftovers). National Closet Company does <em>not</em> supply or warrant the products themselves — only the labor and workmanship of the installation.</p>
+<p>This is an <strong>install-only</strong> agreement. National Closet Company will install closets and storage systems that the customer has purchased separately from another retailer (e.g. IKEA, The Container Store, Lowe's, Home Depot, Costco, Amazon, manufacturer-direct, or builder leftovers). National Closet Company does <em>not</em> supply or warrant the products themselves — only the labor and workmanship of the installation.</p>
 
 <h3>Customer-Supplied Products</h3>
 <p>The customer is responsible for ordering the correct quantity, dimensions, mount type, and finishes. National Closet Company will verify dimensions against the openings before drilling. If a product is the wrong size, the customer is responsible for the return / re-order; a service-call fee will apply if National Closet Company must return after the corrected product arrives.</p>
@@ -41,7 +41,7 @@ const TERMS_BY_TYPE = {
 <p>No deposit is required for install-only service. Payment in full is due upon completion of installation. We accept card, bank transfer (ACH), digital wallets and Klarna online, plus check, cash, Venmo and Cash App in person, with no added processing fee.</p>
 
 <h3>Workmanship Warranty</h3>
-<p>Our installation work is warranted for <strong>ninety (90) days</strong> against defects in workmanship. If a bracket pulls out, a headrail loses its level, or a motor we programmed loses its limits within 90 days of install, we will return and correct the issue at no charge. This warranty does <em>not</em> cover the product itself, which is governed by its original manufacturer warranty (please retain the retailer's documentation).</p>
+<p>Our installation work is warranted for <strong>ninety (90) days</strong> against defects in workmanship. If a bracket, shelf pin, rod or drawer slide we installed fails within that window, we will return and make it right at no charge. Customer-supplied products carry only their own manufacturer warranty.</p>
 
 <h3>Specialty Hardware</h3>
 <p>For installs requiring atypical hardware (toggle anchors in plaster, stud-finder verification, custom shims for out-of-square frames), National Closet Company will provide all standard hardware. Specialty hardware costing over $25 will be itemized separately.</p>
@@ -50,7 +50,7 @@ const TERMS_BY_TYPE = {
 <p>The customer is responsible for providing reasonable site access at the scheduled install time, having all product boxes on site and unopened, and a working environment safe for our installers. Postponements due to inaccessible sites, missing products, or unsafe conditions may incur a re-scheduling fee.</p>
 
 <h3>Cancellation</h3>
-<p>The customer may cancel up to 24 hours before the scheduled install window with no penalty. Same-day cancellations are subject to a service-call charge equal to one window install fee.</p>
+<p>The customer may cancel up to 24 hours before the scheduled install window with no penalty. Same-day cancellations are subject to a service-call charge equal to our standard service-call fee.</p>
 `,
 
   repair: `

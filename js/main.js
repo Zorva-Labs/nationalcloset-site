@@ -361,6 +361,8 @@
           if (form.hasAttribute("data-ballpark")) {
             var out = success.querySelector("[data-bp-out]");
             if (out) out.textContent = form.getAttribute("data-bp-range") || "";
+            var moOut = success.querySelector("[data-bp-mo]");
+            if (moOut) moOut.textContent = form.getAttribute("data-bp-mo") || "";
           }
           if (token) mountDetailsStep(success, token, payload);
         }
@@ -663,11 +665,14 @@
     if (!type || !out) return;
     function pick(group) { var on = est.querySelector('[data-est="' + group + '"] .on'); return on ? on.getAttribute("data-v") : null; }
     function money(n) { n = Math.round(n / 100) * 100; return "$" + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+    function perMonth(n) { return "$" + String(Math.ceil(n / 24)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
     function calc() {
       var rg = RANGES[type.value] || RANGES.walkin, s = SIZE[pick("size")] || SIZE.medium, f = FINISH[pick("finish")] || 1;
       var span = rg[1] - rg[0];
       var lo = Math.round((rg[0] + span * s[0]) * f / 100) * 100, hi = Math.round((rg[0] + span * s[1]) * f / 100) * 100;
       out.textContent = money(lo) + " – " + money(hi) + (hi > rg[1] ? "+" : "");
+      var moEl = est.querySelector('[data-est="monthly"]');
+      if (moEl) moEl.textContent = "Or about " + perMonth(lo) + " – " + perMonth(hi) + " a month over 24 months before interest, with Klarna at checkout.";
       try { if (typeof gtag === "function") gtag("event", "estimate", { space: type.value, size: pick("size"), finish: pick("finish"), low: lo, high: hi }); } catch (e) {}
     }
     est.querySelectorAll(".est__chips button").forEach(function (b) {
@@ -720,6 +725,7 @@
       var range = money(lo) + " – " + money(hi) + (hi >= rg[1] ? "+" : "");
       if (from) { from.textContent = PLURAL[type] + " start at " + money(rg[0]) + " installed, design included."; from.hidden = false; }
       form.setAttribute("data-bp-range", range);
+      form.setAttribute("data-bp-mo", "or about $" + Math.ceil(lo / 24) + " – $" + Math.ceil(hi / 24) + " a month over 24 months before interest, with Klarna at checkout");
       if (proj) proj.value = LABEL[type];
       if (msg) msg.value = "Ballpark request from the homepage: " + LABEL[type] + ", " + size + " — typical range " + range + ".";
       if (step2) step2.hidden = false;

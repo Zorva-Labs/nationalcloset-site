@@ -315,6 +315,14 @@ let mode = "today"; // "today" | "all"
 <div class="card" style="margin-bottom:16px">
       <div class="card-head"><h2>Traffic channels · where visitors come from</h2>
 <p class="panel-help">Where visitors were immediately before they arrived. <strong>Organic Search</strong> means they found you on Google without an ad.</p><a class="more" href="/crm/leads.html">Lead sources →</a></div>
+      <div id="tf-view" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:4px 0 10px;font-size:12px">
+        <span style="display:inline-flex;border:1px solid var(--line-soft);border-radius:6px;overflow:hidden">
+          <button type="button" id="tv-humans" class="on" style="font:inherit;padding:.3rem .7rem;border:0;background:var(--accent);color:#fff;cursor:pointer">Real visitors</button>
+          <button type="button" id="tv-all" style="font:inherit;padding:.3rem .7rem;border:0;background:transparent;color:var(--ink);cursor:pointer">All requests</button>
+        </span>
+        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="tv-tn"> Tennessee only</label>
+        <span id="tv-note" class="muted" style="font-size:11px"></span>
+      </div>
       <div id="tf-channels" style="margin-top:6px"></div>
     </div>
 <div class="card" style="margin-bottom:16px">
@@ -431,6 +439,9 @@ let mode = "today"; // "today" | "all"
   `;
   el("tg-today").onclick = () => setMode("today");
   el("tg-all").onclick = () => setMode("all");
+  el("tv-humans").onclick = () => setView("humans");
+  el("tv-all").onclick = () => setView("all");
+  el("tv-tn").onchange = (e) => { tnOnly = !!e.target.checked; refresh(); };
   refresh();
 })();
 
@@ -442,8 +453,15 @@ function setMode(m) {
   refresh();
 }
 
+// "Real visitors" = pages that fired the on-page beacon (only a browser running
+// our script does); "All requests" = every HTML hit the edge logged, bots
+// included. Tennessee only = the visitors who can actually buy.
+let view = "humans", tnOnly = false;
+function setView(v) { view = v; el("tv-humans").classList.toggle("on", v === "humans"); el("tv-all").classList.toggle("on", v === "all");
+  el("tv-humans").style.background = v === "humans" ? "var(--accent)" : "transparent"; el("tv-humans").style.color = v === "humans" ? "#fff" : "var(--ink)";
+  el("tv-all").style.background = v === "all" ? "var(--accent)" : "transparent"; el("tv-all").style.color = v === "all" ? "#fff" : "var(--ink)"; refresh(); }
 async function refresh() {
-  const qs = mode === "today" ? "today=1" : "days=30";
+  const qs = (mode === "today" ? "today=1" : "days=30") + "&view=" + view + (tnOnly ? "&tn=1" : "");
   const label = mode === "today" ? "today" : "last 30 days";
   ["tf-stats", "tf-daily", "tf-channels", "tf-pages", "tf-country", "tf-hourly"].forEach((id) => { const e = el(id); if (e) e.innerHTML = box("Loading…"); });
   let edge, owned;
@@ -801,7 +819,7 @@ function renderOwned(data, label) {
         <span style="font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);min-width:40px;text-align:right">${N(c.n)}</span>
         <span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:40px;text-align:right;font-size:12px">${Math.round((c.n / chTotal) * 100)}%</span>
       </div>`), "channels") +
-      `<p class="muted" style="font-size:12px;margin:12px 0 0">Acquisition channel for <strong>${N(data.entries)}</strong> visitor entries ${label} — where <em>all</em> visitors came from, not just those who filled out a form.</p>`;
+      `<p class="muted" style="font-size:12px;margin:12px 0 0">${data.view === "all" ? `Every HTML request the edge logged ${label}, <strong>${N(data.entries)}</strong> session entries — bots included, so "Direct" runs high.` : `<strong>${N(data.entries)}</strong> real visitor entries ${label}${data.tn ? ", Tennessee only" : ""} — counted from the on-page beacon that only a real browser fires. ${data.since ? "Channels have been recorded this way since " + SSCrm.esc(String(data.since).slice(0, 10)) + "." : ""}`}</p>`;
   }
 
   const engByPath = (data && data.engByPath) || {};

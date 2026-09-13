@@ -1,8 +1,13 @@
 // POST /api/pv-time — first-party engagement beacon (from js/main.js).
-// Records how many active seconds a visitor spent on a page. Public + no auth
-// (it's a visitor beacon), same-origin so ad blockers don't touch it. Always
-// answers 204 — the browser's sendBeacon ignores the body. Input is validated
-// and /crm + /api paths are ignored so only real page time is stored.
+// Records how many active seconds a visitor spent on a page, plus — because a
+// beacon only ever comes from a real browser running our script — the signals
+// that make it the honest visitor count: whether this was a session entry, the
+// acquisition channel (same classifier as the edge log) and the visitor's
+// state. Public + no auth (it's a visitor beacon), same-origin so ad blockers
+// don't touch it. Always answers 204 — the browser's sendBeacon ignores the
+// body. Input is validated and /crm + /api paths are ignored.
+import { classifyChannel } from "../_lib/channel.js";
+
 export async function onRequestPost(context) {
   try {
     const raw = await context.request.text().catch(() => "");
@@ -16,18 +21,27 @@ export async function onRequestPost(context) {
     if (!path || path.startsWith("/crm") || path.startsWith("/api")) return new Response(null, { status: 204 });
     if (!Number.isFinite(secs) || secs < 1 || secs > 3600) return new Response(null, { status: 204 });
 
-    const country = (context.request.cf && context.request.cf.country) || "";
+    const cf = context.request.cf || {};
+    const country = (cf.country || "").toString().slice(0, 4) || null;
+    const region = (cf.regionCode || "").toString().slice(0, 8) || null;
+    // Entry + channel, from what the page itself saw (referrer, utm, click id).
+    const isEntry = body.e === 0 || body.e === "0" ? 0 : 1;
+    const refHost = String(body.r || "").slice(0, 120).toLowerCase();
+    const utmSource = String(body.u || "").slice(0, 80) || null;
+    const gclid = body.g === 1 || body.g === "1" ? "1" : null;
+    const channel = isEntry ? classifyChannel(utmSource, gclid, refHost) : "Internal";
+
     const db = context.env && context.env.DB;
     if (db) {
       // The beacon reports the running total several times per visit; keep the
       // MAX for each page instance so an early "tab hidden" doesn't undercount
-      // someone who stays. Rows with no pvid (legacy) just insert.
+      // someone who stays. The acquisition columns are set once, on insert.
       context.waitUntil(
         db.prepare(
-          "INSERT INTO page_engagement (pvid, path, seconds, country) VALUES (?1,?2,?3,?4) " +
+          "INSERT INTO page_engagement (pvid, path, seconds, country, channel, is_entry, region) VALUES (?1,?2,?3,?4,?5,?6,?7) " +
           "ON CONFLICT(pvid) DO UPDATE SET seconds = excluded.seconds " +
           "WHERE excluded.seconds > page_engagement.seconds"
-        ).bind(pvid, path, secs, country.slice(0, 4) || null).run().catch(() => {})
+        ).bind(pvid, path, secs, country, channel, isEntry, region).run().catch(() => {})
       );
     }
   } catch (e) { /* never surface an error to a beacon */ }

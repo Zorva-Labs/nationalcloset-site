@@ -1,171 +1,359 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Book Your Free Consultation · National Closet Company</title>
-  <meta name="description" content="Pick a time for your free in-home window-treatment consultation. We measure every window, sample every product, and leave you a written quote on the visit." />
-  <link rel="canonical" href="https://nationalclosetco.com/book/" />
-  <meta name="robots" content="noindex, nofollow" />
-  <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=blog10" />
-  <style>
-    .book-wrap { max-width: 920px; margin: 0 auto; padding: clamp(80px, 14vw, 160px) clamp(20px, 4vw, 40px) 80px; }
-    .book-eyebrow { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--color-brass); }
-    .book-h1 { font-family: var(--font-display); font-size: clamp(2.2rem, 4vw, 3.2rem); font-weight: 400; letter-spacing: -0.02em; margin: 16px 0 12px; line-height: 1.05; }
-    .book-h1 em { color: var(--color-brass); font-weight: 400; }
-    .book-lead { font-family: var(--font-display); font-style: italic; font-size: 1.15rem; line-height: 1.55; color: var(--color-ink-soft); max-width: 56ch; margin-bottom: 36px; }
-    .book-grid { display: grid; grid-template-columns: 360px 1fr; gap: 32px; }
-    @media (max-width: 760px) { .book-grid { grid-template-columns: 1fr; } }
-    .day-block { background: #fff; border: 1px solid var(--color-line-soft); padding: 18px 20px; margin-bottom: 10px; }
-    .day-block h3 { font-family: var(--font-display); font-weight: 500; font-size: 1.15rem; margin: 0 0 12px; color: var(--color-ink); }
-    .slot-row { display: flex; flex-wrap: wrap; gap: 8px; }
-    .slot-btn { padding: 8px 14px; background: var(--color-bg); border: 1px solid var(--color-line); cursor: pointer; font: inherit; font-size: 0.88rem; color: var(--color-ink); transition: all 150ms ease; border-radius: 2px; }
-    .slot-btn:hover { border-color: var(--color-brass); background: #fff; }
-    .slot-btn.is-selected { background: var(--color-ink); color: var(--color-bg); border-color: var(--color-ink); }
-    .book-form { background: #fff; border: 1px solid var(--color-line-soft); padding: 28px; }
-    .book-form h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.4rem; margin: 0 0 6px; color: var(--color-ink); }
-    .book-form .selected-time { font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-brass); margin-bottom: 22px; text-transform: uppercase; letter-spacing: 0.16em; }
-    .book-form label { display: block; margin-bottom: 14px; font-size: 0.88rem; }
-    .book-form label span { display: block; color: var(--color-ink-soft); font-size: 0.78rem; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.12em; }
-    .book-form input, .book-form textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--color-line); font: inherit; font-size: 0.95rem; color: var(--color-ink); background: var(--color-bg); }
-    .book-form .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .book-form .row-3 { display: grid; grid-template-columns: 2fr 1fr 1.4fr; gap: 12px; }
-    .book-cta { width: 100%; padding: 14px; background: var(--color-ink); color: var(--color-bg); border: 0; font: inherit; font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.22em; text-transform: uppercase; cursor: pointer; margin-top: 6px; }
-    .book-cta:hover { background: var(--color-espresso-2); }
-    .book-cta:disabled { opacity: 0.5; cursor: not-allowed; }
-    .book-success { background: var(--color-espresso); color: var(--color-bg); padding: 44px 32px; text-align: center; }
-    .book-success h2 { font-family: var(--font-display); font-weight: 400; font-size: 2rem; color: var(--color-bg); margin: 0 0 14px; }
-    .book-success p { color: rgba(247,242,234,.82); font-family: var(--font-display); font-style: italic; font-size: 1.1rem; line-height: 1.55; max-width: 38ch; margin: 0 auto; }
-  </style>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-EJEDXZZWJN"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Book Your Free Design Visit | National Closet Company</title>
+<meta name="description" content="Pick a time for your free in-home closet design visit. A designer measures your space, shows it in 3D and leaves you one honest installed price. No obligation." />
+<link rel="canonical" href="https://nationalclosetco.com/book/" />
+<meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#16140f" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="National Closet Company" />
+<meta property="og:title" content="Book Your Free Design Visit | National Closet Company" />
+<meta property="og:description" content="Pick a time for your free in-home closet design visit. A designer measures your space, shows it in 3D and leaves you one honest installed price. No obligation." />
+<meta property="og:url" content="https://nationalclosetco.com/book/" />
+<meta property="og:image" content="https://nationalclosetco.com/img/hero-closet-og.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta name="twitter:image" content="https://nationalclosetco.com/img/hero-closet-og.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+<noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
+<link rel="icon" type="image/png" href="/img/favicon-ncc.png" />
+<link rel="apple-touch-icon" href="/img/favicon-ncc.png" />
+<link rel="stylesheet" href="/css/styles.css?v=ncc117" />
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "@id": "https://nationalclosetco.com/book/#webpage", "url": "https://nationalclosetco.com/book/", "name": "Book a Free Design Visit", "description": "Pick a time for your free in-home closet design visit with National Closet Company.", "isPartOf": {"@id": "https://nationalclosetco.com/#website"}, "about": {"@id": "https://nationalclosetco.com/#org"}, "primaryImageOfPage": "https://nationalclosetco.com/img/hero-closet-og.jpg"}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://nationalclosetco.com/"}, {"@type": "ListItem", "position": 2, "name": "Book a free design visit", "item": "https://nationalclosetco.com/book/"}]}</script>
+<script>(function(){var l=function(){var s=document.createElement("script");s.async=true;s.src="https://www.googletagmanager.com/gtag/js?id=G-EJEDXZZWJN";document.head.appendChild(s)};if(document.readyState==="complete")l();else window.addEventListener("load",l)})();</script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-EJEDXZZWJN');</script>
+<!-- Meta Pixel Code -->
 <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-EJEDXZZWJN');
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];var l=function(){t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)};if(b.readyState==='complete')setTimeout(l,1200);else f.addEventListener('load',function(){setTimeout(l,1200)})}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '904015652453670');
+fbq('track', 'PageView');
 </script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+<style>
+
+.book-grid { display: grid; gap: 1.6rem; }
+@media (min-width: 900px) { .book-grid { grid-template-columns: 1.05fr .95fr; align-items: start; } .book-side { position: sticky; top: calc(var(--nav-h) + 1rem); } }
+.day-block { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem; margin-bottom: .7rem; }
+.day-block h3 { font-family: var(--display); font-weight: 800; font-size: 1.02rem; margin: 0 0 .6rem; }
+.slot-row { display: flex; flex-wrap: wrap; gap: .45rem; }
+.slot-btn { font: inherit; font-weight: 700; font-size: .9rem; padding: .55rem .85rem; border-radius: 100px; border: 1px solid var(--line); background: var(--fog); color: var(--ink); cursor: pointer; }
+.slot-btn:hover { border-color: var(--clay); background: #fff; }
+.slot-btn.is-selected { background: var(--ink); color: #fff; border-color: var(--ink); }
+.book-what { margin-top: 1rem; }
+.book-when { display: inline-block; margin: .2rem 0 1rem; padding: .45rem .8rem; border-radius: 10px; background: var(--clay-wash); color: var(--clay-deep); font-weight: 800; }
+.book-fallback { max-width: 640px; margin: 2.2rem auto 0; }
+.book-success { text-align: center; padding: 2.4rem 1.6rem; }
+.book-success .check { width: 64px; height: 64px; border-radius: 50%; background: var(--clay-wash); color: var(--clay-deep); display: grid; place-items: center; font-size: 1.8rem; font-weight: 800; margin: 0 auto 1rem; }
+.book-note { font-size: .85rem; color: var(--muted); margin-top: .8rem; }
+.book-note a { color: var(--clay-deep); font-weight: 700; }
+
+</style>
 </head>
-<body>
-<main class="book-wrap">
-  <span class="book-eyebrow">Free Consultation · No Obligation</span>
-  <h1 class="book-h1">Book your <em>free in-home consultation.</em></h1>
-  <p class="book-lead">Pick a 60-minute slot below. We come to you with samples for every product line, measure every window, and leave a written quote on the visit. No pressure, no travel fee within 90 miles of Gallatin.</p>
-  <div class="book-grid">
-    <div id="slots"><p style="color:var(--color-ink-soft)">Loading available times…</p></div>
-    <div id="form-host"></div>
+<body id="top">
+<header class="nav">
+  <div class="nav__top">
+    <div class="nav__top-inner">
+      <span class="nav__top-msg">Family-owned · Serving Nashville &amp; all of Middle TN</span>
+      <div class="nav__top-right">
+        <a class="nav__phone" href="tel:+16292988241" aria-label="Call or text 629-298-8241">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.68 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.32 1.85.55 2.81.68A2 2 0 0 1 22 16.92z"/></svg>
+        629-298-8241
+      </a>
+        <a class="nav__social" href="https://www.facebook.com/NationalClosetCompany/" target="_blank" rel="noopener" aria-label="National Closet Company on Facebook"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.85c0-2.5 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12z"/></svg></a>
+        <a class="nav__social" href="https://www.instagram.com/nationalclosetcompany" target="_blank" rel="noopener" aria-label="National Closet Company on Instagram"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.2c3.2 0 3.6 0 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.25.07 1.65.07 4.85s0 3.6-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.25.06-1.65.07-4.85.07s-3.6 0-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 0 1-1.38-.9 3.7 3.7 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.21 15.6 2.2 15.2 2.2 12s0-3.6.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.4 2.21 8.8 2.2 12 2.2zm0 1.8c-3.15 0-3.52.01-4.76.07-.9.04-1.39.2-1.71.32-.43.17-.74.37-1.06.69-.32.32-.52.63-.69 1.06-.12.32-.28.81-.32 1.71C3.4 8.48 3.4 8.85 3.4 12s0 3.52.06 4.76c.04.9.2 1.39.32 1.71.17.43.37.74.69 1.06.32.32.63.52 1.06.69.32.12.81.28 1.71.32 1.24.06 1.61.07 4.76.07s3.52 0 4.76-.07c.9-.04 1.39-.2 1.71-.32.43-.17.74-.37 1.06-.69.32-.32.52-.63.69-1.06.12-.32.28-.81.32-1.71.06-1.24.07-1.61.07-4.76s0-3.52-.07-4.76c-.04-.9-.2-1.39-.32-1.71a2.86 2.86 0 0 0-.69-1.06 2.86 2.86 0 0 0-1.06-.69c-.32-.12-.81-.28-1.71-.32C15.52 4.01 15.15 4 12 4zm0 3.06A4.94 4.94 0 1 1 12 17a4.94 4.94 0 0 1 0-9.88zm0 1.8a3.14 3.14 0 1 0 0 6.28 3.14 3.14 0 0 0 0-6.28zm5.13-.84a1.15 1.15 0 1 1 0 2.3 1.15 1.15 0 0 1 0-2.3z"/></svg></a>
+      </div>
+    </div>
   </div>
-</main>
+  <div class="nav__inner">
+    <a href="/#top" class="brand" aria-label="National Closet Company — home">
+      <span class="brand__mark"><img src="/img/ncc-logo-nc.png" alt="National Closet Company NC monogram logo" width="62" height="38" /></span><span>National Closet Co.<small>Custom Closets &amp; Pantries</small></span>
+    </a>
+
+    <nav class="nav__links" aria-label="Primary"><a class="nav__link" href="/gallery">Gallery</a><a class="nav__link" href="/our-work">Our Work</a><a class="nav__link" href="/custom-closet-cost-nashville">Pricing</a><a class="nav__link" href="/about">About</a><a class="nav__link" href="/reviews">Reviews</a><a class="nav__link" href="/closet-cases">Closet Cases</a></nav>
+
+    <div class="nav__cta">
+
+      
+      <a class="btn btn--primary" href="/book/">Free Design <span class="arr">→</span></a>
+    </div>
+
+    <button class="hamburger" aria-label="Open menu" aria-controls="drawer" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+<div class="drawer" id="drawer">
+  <a class="drawer__link" href="/#top"><span>Home</span><span class="n">01</span></a>
+  <a class="drawer__link" href="/gallery"><span>Gallery</span><span class="n">02</span></a>
+  <a class="drawer__link" href="/our-work"><span>Our Work</span><span class="n">03</span></a>
+  <a class="drawer__link" href="/custom-closet-cost-nashville"><span>Pricing</span><span class="n">04</span></a>
+  <a class="drawer__link" href="/about"><span>About</span><span class="n">05</span></a>
+  <a class="drawer__link" href="/reviews"><span>Reviews</span><span class="n">06</span></a>
+  <a class="drawer__link" href="/closet-cases"><span>Closet Cases</span><span class="n">07</span></a>
+<div class="drawer__foot">
+    <div class="drawer__contact">
+      <a href="tel:+16292988241">📞 629-298-8241</a>
+      <a href="mailto:hello@nationalclosetco.com">✉️ hello@nationalclosetco.com</a>
+      <a href="https://www.facebook.com/NationalClosetCompany/" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.85c0-2.5 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12z"/></svg>Facebook</a>
+      <a href="https://www.instagram.com/nationalclosetcompany" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.2c3.2 0 3.6 0 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.25.07 1.65.07 4.85s0 3.6-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.25.06-1.65.07-4.85.07s-3.6 0-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 0 1-1.38-.9 3.7 3.7 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.21 15.6 2.2 15.2 2.2 12s0-3.6.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.4 2.21 8.8 2.2 12 2.2zm0 1.8c-3.15 0-3.52.01-4.76.07-.9.04-1.39.2-1.71.32-.43.17-.74.37-1.06.69-.32.32-.52.63-.69 1.06-.12.32-.28.81-.32 1.71C3.4 8.48 3.4 8.85 3.4 12s0 3.52.06 4.76c.04.9.2 1.39.32 1.71.17.43.37.74.69 1.06.32.32.63.52 1.06.69.32.12.81.28 1.71.32 1.24.06 1.61.07 4.76.07s3.52 0 4.76-.07c.9-.04 1.39-.2 1.71-.32.43-.17.74-.37 1.06-.69.32-.32.52-.63.69-1.06.12-.32.28-.81.32-1.71.06-1.24.07-1.61.07-4.76s0-3.52-.07-4.76c-.04-.9-.2-1.39-.32-1.71a2.86 2.86 0 0 0-.69-1.06 2.86 2.86 0 0 0-1.06-.69c-.32-.12-.81-.28-1.71-.32C15.52 4.01 15.15 4 12 4zm0 3.06A4.94 4.94 0 1 1 12 17a4.94 4.94 0 0 1 0-9.88zm0 1.8a3.14 3.14 0 1 0 0 6.28 3.14 3.14 0 0 0 0-6.28zm5.13-.84a1.15 1.15 0 1 1 0 2.3 1.15 1.15 0 0 1 0-2.3z"/></svg>Instagram</a>
+    </div>
+    <a class="btn btn--primary btn--block" href="/book/">Book my free design visit <span class="arr">→</span></a>
+  </div>
+</div>
+<section class="phero">
+  <div class="wrap">
+    <p class="crumb"><a href="/">Home</a> /&nbsp;Book a free design visit</p>
+    <span class="eyebrow">Free in-home design visit · no obligation</span>
+    <h1 style="margin-top:1rem">Pick a time for your free design visit.</h1>
+    <p class="lead">Choose a 60-minute slot. A designer comes to you, measures the space, shows your closet in a photorealistic 3D design and leaves you one honest installed price. No pressure, no obligation.</p>
+    <p class="proof-chips" style="margin-top:1.1rem"><span>Free in-home 3D design</span><span>Walk-ins from $2,500 installed</span><span>Most closets done in a day</span><span>Pay over time with Klarna</span></p>
+  </div>
+</section>
+
+<section class="section section--tight" id="book">
+  <div class="wrap">
+    <div class="book-grid">
+      <div>
+        <h2 class="h3" style="margin-bottom:.5rem">1 · Choose a time</h2>
+        <p class="muted" style="font-size:.9rem;margin-bottom:1rem">Central Time. Need something sooner than tomorrow? Call or text <a href="tel:+16292988241" style="color:var(--clay-deep);font-weight:700">629-298-8241</a>.</p>
+        <div id="slots"><p class="muted">Loading available times…</p></div>
+      </div>
+      <div id="form-host">
+        <div class="form-card book-side">
+          <h2 class="h3">2 · Confirm your visit</h2>
+          <p class="muted" style="margin-top:.4rem">Pick a time on the left and we'll take your details here.</p>
+          <ul class="checks book-what">
+            <li>We measure the space and talk through how you actually use it</li>
+            <li>You see your closet in a photorealistic 3D design</li>
+            <li>You get one honest installed price, in writing, before we leave</li>
+          </ul>
+          <p style="margin-top:1rem"><a class="gbadge" href="https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE" target="_blank" rel="noopener"><span class="stars">★★★★★</span> <b>5.0</b> from 6 Google reviews</a></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="book-fallback">
+      <div class="form-card">
+        <form data-lead>
+            <h2 class="h3" style="margin:.3rem 0 .3rem">Can't find a time that works?</h2>
+            <p class="muted" style="margin-bottom:1rem">Leave your name and number and we'll text you to find one.</p>
+            <div class="form-grid">
+              <div class="field--row">
+                <div class="field">
+                  <label for="lf1-name">Name</label>
+                  <input id="lf1-name" name="name" type="text" autocomplete="name" placeholder="Jane Doe" required />
+                </div>
+                <div class="field">
+                  <label for="lf1-phone">Phone / text</label>
+                  <input id="lf1-phone" name="phone" type="tel" autocomplete="tel" placeholder="(629) 298-8241" required />
+                </div>
+              </div>
+              <button class="btn btn--ink btn--block" type="submit">Request a call back <span class="arr">→</span></button>
+              <p class="form-note">🔒 No spam. Or text us a photo of the space: <a href="sms:+16292988241?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F">629-298-8241</a></p>
+            </div>
+          </form>
+        <div class="form-success" role="status" aria-live="polite">
+            <div class="check">✓</div>
+            <h3 class="h3">Got it — we'll text you.</h3>
+            <p class="muted" style="margin-top:.5rem">A designer will reach out within one business day to find a time that works.</p>
+          </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <script>
-let selected = null;
-let slotsData = null;
+(function () {
+  var SMS = 'sms:+16292988241?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F';
+  var selected = null, slotsData = null, lead = null;
+  try { lead = JSON.parse(sessionStorage.getItem("ncc_lead") || "null"); } catch (e) {}
+  if (lead && lead.ts && Date.now() - lead.ts > 6 * 3600 * 1000) lead = null;
+  var host = document.getElementById("form-host"), slotsEl = document.getElementById("slots");
 
-(async () => {
-  const cancelToken = new URLSearchParams(location.search).get("cancel");
-  if (cancelToken) return showCancel(cancelToken);
-  try {
-    slotsData = await (await fetch("/api/public/slots", { credentials: "same-origin" })).json();
-    renderSlots();
-  } catch (e) {
-    document.getElementById("slots").innerHTML = `<p style="color:#B85450">Couldn't load times. Please call us at 629-298-8241.</p>`;
+  var cancelToken = new URLSearchParams(location.search).get("cancel");
+  if (cancelToken) { showCancel(cancelToken); return; }
+  fetch("/api/public/slots", { credentials: "same-origin" })
+    .then(function (r) { return r.json(); })
+    .then(function (d) { slotsData = d; renderSlots(); })
+    .catch(function () { slotsEl.innerHTML = '<p style="color:#991B1B">Couldn’t load times. Please call or text <a href="tel:+16292988241">629-298-8241</a>.</p>'; });
+
+  function renderSlots() {
+    var dates = Object.keys(slotsData.slots || {}).sort();
+    if (!dates.length) { slotsEl.innerHTML = '<p class="muted">No open times in the next two weeks. Call or text <a href="tel:+16292988241">629-298-8241</a> and we’ll find one.</p>'; return; }
+    slotsEl.innerHTML = dates.map(function (d) {
+      return '<div class="day-block"><h3>' + prettyDate(d) + '</h3><div class="slot-row">' +
+        slotsData.slots[d].map(function (s) { return '<button type="button" class="slot-btn" data-start="' + s.start + '" data-end="' + s.end + '">' + prettyTime(s.start) + '</button>'; }).join("") +
+        '</div></div>';
+    }).join("");
+    slotsEl.querySelectorAll(".slot-btn").forEach(function (b) { b.addEventListener("click", function () { pick(b); }); });
   }
+
+  function pick(btn) {
+    slotsEl.querySelectorAll(".slot-btn").forEach(function (b) { b.classList.remove("is-selected"); });
+    btn.classList.add("is-selected");
+    selected = { start: btn.getAttribute("data-start"), end: btn.getAttribute("data-end") };
+    renderForm();
+    if (window.matchMedia("(max-width: 899px)").matches) host.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function inp(id, name, type, ac, ph, req, val) {
+    return '<div class="field"><label for="' + id + '">' + name + (req ? '' : ' <span style="text-transform:none;font-weight:500;color:var(--muted)">(optional)</span>') + '</label>' +
+      '<input id="' + id + '" type="' + type + '" autocomplete="' + ac + '" placeholder="' + ph + '"' + (req ? ' required' : '') + ' value="' + esc(val || "") + '" /></div>';
+  }
+  function renderForm() {
+    host.innerHTML = '<div class="form-card book-side">' +
+      '<h2 class="h3">2 · Confirm your visit</h2>' +
+      '<p class="book-when">' + prettyDate(selected.start.slice(0, 10)) + ' · ' + prettyTime(selected.start) + ' Central</p>' +
+      '<div class="form-grid">' +
+        inp("b-name", "Name", "text", "name", "Jane Doe", true, lead && lead.name) +
+        '<div class="field--row">' + inp("b-phone", "Phone / text", "tel", "tel", "(629) 298-8241", true, lead && lead.phone) + inp("b-email", "Email (for your confirmation)", "email", "email", "you@email.com", true, lead && lead.email) + '</div>' +
+        inp("b-street", "Street address", "text", "street-address", "So we can plan the drive", false, "") +
+        '<div class="field--csz">' + inp("b-city", "City", "text", "address-level2", "Nashville", false, "") + inp("b-state", "State", "text", "address-level1", "TN", false, "TN") + inp("b-zip", "ZIP", "text", "postal-code", "37203", false, "") + '</div>' +
+        '<div class="field"><label for="b-notes">Anything we should know? <span style="text-transform:none;font-weight:500;color:var(--muted)">(optional)</span></label><textarea id="b-notes" rows="2" placeholder="Walk-in closet, about 8 by 10 feet…"></textarea></div>' +
+        '<button class="btn btn--primary btn--block" type="button" id="book-btn">Confirm my free visit <span class="arr">→</span></button>' +
+        '<p class="form-note">🔒 No obligation. We email a confirmation and a calendar invite.</p>' +
+      '</div></div>';
+    document.getElementById("book-btn").addEventListener("click", submit);
+    document.getElementById("b-name").focus({ preventScroll: true });
+  }
+
+  function submit() {
+    var btn = document.getElementById("book-btn");
+    var name = g("b-name"), phone = g("b-phone"), email = g("b-email");
+    if (!name || !phone || !email) { alert("Please add your name, phone and email so we can confirm the visit."); return; }
+    btn.disabled = true; btn.textContent = "Booking…";
+    var body = {
+      start_at: selected.start, duration_min: 60, name: name, phone: phone, email: email,
+      address: (g("b-street") || g("b-city") || g("b-zip")) ? { street: g("b-street"), city: g("b-city"), state: g("b-state"), zip: g("b-zip") } : null,
+      notes: g("b-notes") || null, lead_token: (lead && lead.token) || null
+    };
+    fetch("/api/public/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || "Couldn’t book that slot."); return d; }); })
+      .then(function () {
+        try { if (typeof gtag === "function") gtag("event", "booked_consultation", { method: "web", value: 1.0, currency: "USD" }); } catch (e) {}
+        try { if (typeof fbq === "function") fbq("track", "Schedule"); } catch (e) {}
+        try { sessionStorage.removeItem("ncc_lead"); } catch (e) {}
+        document.getElementById("book").querySelector(".wrap").innerHTML =
+          '<div class="form-card book-success"><div class="check">✓</div><h2 class="h2">You’re booked.</h2>' +
+          '<p class="lead" style="margin-top:.6rem">' + prettyDate(selected.start.slice(0, 10)) + ' at ' + prettyTime(selected.start) + ' Central. A confirmation and calendar invite are on their way to <strong>' + esc(email) + '</strong>.</p>' +
+          '<p class="book-note">Want a head start? <a href="' + SMS + '">Text us a photo of the space</a> and we’ll come with ideas. Need to change the time? The link is in your confirmation email.</p></div>';
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      })
+      .catch(function (e) { alert(e.message); btn.disabled = false; btn.innerHTML = 'Confirm my free visit <span class="arr">→</span>'; });
+  }
+
+  function showCancel(token) {
+    document.getElementById("book").querySelector(".wrap").innerHTML =
+      '<div class="form-card" style="max-width:560px;margin:0 auto"><h2 class="h3">Need to change that visit?</h2>' +
+      '<p class="muted" style="margin:.5rem 0 1.2rem">No problem. Cancel below, or call/text <a href="tel:+16292988241" style="color:var(--clay-deep);font-weight:700">629-298-8241</a> if you’d rather reschedule.</p>' +
+      '<button type="button" class="btn btn--ink" id="cancel-btn">Cancel my appointment</button></div>';
+    document.getElementById("cancel-btn").addEventListener("click", function () {
+      if (!confirm("Cancel your design visit?")) return;
+      fetch("/api/public/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: token }) })
+        .then(function (r) { if (!r.ok) throw new Error("Cancel failed"); document.getElementById("book").querySelector(".wrap").innerHTML = '<div class="form-card book-success"><div class="check">✓</div><h2 class="h2">Cancelled.</h2><p class="lead" style="margin-top:.6rem">Hope to see you another time. Call or text 629-298-8241 whenever you’d like to rebook.</p></div>'; })
+        .catch(function (e) { alert(e.message); });
+    });
+  }
+
+  function g(id) { var e = document.getElementById(id); return e ? e.value.trim() : ""; }
+  function esc(s) { return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function prettyDate(d) {
+    var dt = new Date(d + "T12:00:00Z");
+    var today = new Date(Date.now() - 5 * 3600 * 1000).toISOString().slice(0, 10), tom = new Date(Date.now() + 19 * 3600 * 1000).toISOString().slice(0, 10);
+    var label = dt.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
+    return d === today ? "Today, " + label : d === tom ? "Tomorrow, " + label : label;
+  }
+  function prettyTime(iso) { var t = iso.split("T")[1]; var h = parseInt(t.split(":")[0], 10), m = parseInt(t.split(":")[1], 10); return (((h + 11) % 12) + 1) + ":" + String(m).padStart(2, "0") + " " + (h < 12 ? "am" : "pm"); }
 })();
-
-function renderSlots() {
-  const dates = Object.keys(slotsData.slots).sort();
-  if (!dates.length) {
-    document.getElementById("slots").innerHTML = `<p style="color:var(--color-ink-soft)">No times available in the next 14 days. Please call <a href="tel:+16292988241">629-298-8241</a> to book directly.</p>`;
-    return;
-  }
-  document.getElementById("slots").innerHTML = dates.map((d) => `
-    <div class="day-block">
-      <h3>${prettyDate(d)}</h3>
-      <div class="slot-row">${slotsData.slots[d].map((s) => `
-        <button class="slot-btn" data-start="${s.start}" data-end="${s.end}" onclick="pick(this)">${prettyTime(s.start)}</button>
-      `).join("")}</div>
-    </div>
-  `).join("");
-}
-
-function pick(btn) {
-  document.querySelectorAll(".slot-btn").forEach((b) => b.classList.remove("is-selected"));
-  btn.classList.add("is-selected");
-  selected = { start: btn.dataset.start, end: btn.dataset.end };
-  renderForm();
-}
-
-function renderForm() {
-  document.getElementById("form-host").innerHTML = `
-    <div class="book-form">
-      <h2>Confirm your visit</h2>
-      <div class="selected-time">${prettyDate(selected.start.slice(0, 10))} · ${prettyTime(selected.start)} Central</div>
-      <label><span>Full name</span><input id="b-name" required autocomplete="name"/></label>
-      <div class="row">
-        <label><span>Phone</span><input id="b-phone" type="tel" required autocomplete="tel"/></label>
-        <label><span>Email</span><input id="b-email" type="email" required autocomplete="email"/></label>
-      </div>
-      <label><span>Street address</span><input id="b-street" required autocomplete="street-address"/></label>
-      <div class="row-3">
-        <label><span>City</span><input id="b-city" required/></label>
-        <label><span>State</span><input id="b-state" required maxlength="2" value="TN"/></label>
-        <label><span>ZIP</span><input id="b-zip" required maxlength="10" inputmode="numeric"/></label>
-      </div>
-      <label><span>Rooms / scope (optional)</span><input id="b-rooms" placeholder="Living, primary BR, 2 baths"/></label>
-      <label><span>Anything we should know (optional)</span><textarea id="b-notes" rows="2"></textarea></label>
-      <button class="book-cta" id="book-btn" onclick="submit()">Confirm Booking</button>
-    </div>
-  `;
-}
-
-async function submit() {
-  const btn = document.getElementById("book-btn");
-  btn.disabled = true; btn.textContent = "Booking…";
-  const body = {
-    start_at: selected.start, duration_min: 60,
-    name: g("b-name"), phone: g("b-phone"), email: g("b-email"),
-    address: { street: g("b-street"), city: g("b-city"), state: g("b-state"), zip: g("b-zip") },
-    rooms: g("b-rooms") || null, notes: g("b-notes") || null,
-  };
-  try {
-    const res = await fetch("/api/public/book", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Couldn't book that slot.");
-    document.querySelector(".book-wrap").innerHTML = `
-      <div class="book-success">
-        <h2>You're booked.</h2>
-        <p>We've sent a confirmation + calendar invite to <strong style="color:var(--color-champagne)">${esc(g("b-email"))}</strong>. See you ${prettyDate(selected.start.slice(0, 10))} at ${prettyTime(selected.start)}.</p>
-      </div>`;
-  } catch (e) {
-    alert(e.message);
-    btn.disabled = false; btn.textContent = "Confirm Booking";
-  }
-}
-
-function showCancel(token) {
-  document.querySelector(".book-wrap").innerHTML = `
-    <span class="book-eyebrow">Reschedule or cancel</span>
-    <h1 class="book-h1">Need to change <em>that visit?</em></h1>
-    <p class="book-lead">No problem. Click below to cancel — or call/text 629-298-8241 if you'd rather reschedule.</p>
-    <button class="book-cta" style="max-width:240px" onclick="doCancel('${token}')">Cancel my appointment</button>
-  `;
-}
-async function doCancel(t) {
-  if (!confirm("Cancel your consultation?")) return;
-  try {
-    const res = await fetch("/api/public/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: t }) });
-    if (!res.ok) throw new Error("Cancel failed");
-    document.querySelector(".book-wrap").innerHTML = `<div class="book-success"><h2>Cancelled.</h2><p>Hope to see you another time. Call 629-298-8241 whenever you'd like to rebook.</p></div>`;
-  } catch (e) { alert(e.message); }
-}
-
-function g(id) { return document.getElementById(id).value.trim(); }
-function esc(s) { return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-function prettyDate(d) { const dt = new Date(d + "T12:00:00Z"); const today = new Date().toISOString().slice(0, 10); const tom = new Date(Date.now() + 86400000).toISOString().slice(0, 10); if (d === today) return "Today, " + dt.toLocaleDateString(undefined, { month: "long", day: "numeric" }); if (d === tom) return "Tomorrow, " + dt.toLocaleDateString(undefined, { month: "long", day: "numeric" }); return dt.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }); }
-function prettyTime(iso) { const [, t] = iso.split("T"); const [h, m] = t.split(":").map((n) => parseInt(n, 10)); const ap = h < 12 ? "am" : "pm"; return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${ap}`; }
 </script>
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer__top">
+      <div class="footer__brand">
+        <a href="/#top" class="footer__logo" aria-label="National Closet Company — home">
+          <img src="/img/favicon-nc.png" alt="National Closet Company NC monogram logo" width="64" height="39" />
+          <span>National Closet Co.<small>Custom Closets &amp; Pantries</small></span>
+        </a>
+        <p style="max-width:36ch">Beautiful custom-designed closets at a price normal families can afford — designed, built and installed around the way you live.</p>
+        <div class="footer__contact" style="margin-top:1.2rem">
+          <a href="tel:+16292988241">📞 629-298-8241</a>
+          <a href="mailto:hello@nationalclosetco.com">✉️ hello@nationalclosetco.com</a>
+      <a href="https://www.facebook.com/NationalClosetCompany/" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.85c0-2.5 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12z"/></svg>Facebook</a>
+      <a href="https://www.instagram.com/nationalclosetcompany" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.2c3.2 0 3.6 0 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.25.07 1.65.07 4.85s0 3.6-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.25.06-1.65.07-4.85.07s-3.6 0-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 0 1-1.38-.9 3.7 3.7 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.21 15.6 2.2 15.2 2.2 12s0-3.6.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.4 2.21 8.8 2.2 12 2.2zm0 1.8c-3.15 0-3.52.01-4.76.07-.9.04-1.39.2-1.71.32-.43.17-.74.37-1.06.69-.32.32-.52.63-.69 1.06-.12.32-.28.81-.32 1.71C3.4 8.48 3.4 8.85 3.4 12s0 3.52.06 4.76c.04.9.2 1.39.32 1.71.17.43.37.74.69 1.06.32.32.63.52 1.06.69.32.12.81.28 1.71.32 1.24.06 1.61.07 4.76.07s3.52 0 4.76-.07c.9-.04 1.39-.2 1.71-.32.43-.17.74-.37 1.06-.69.32-.32.52-.63.69-1.06.12-.32.28-.81.32-1.71.06-1.24.07-1.61.07-4.76s0-3.52-.07-4.76c-.04-.9-.2-1.39-.32-1.71a2.86 2.86 0 0 0-.69-1.06 2.86 2.86 0 0 0-1.06-.69c-.32-.12-.81-.28-1.71-.32C15.52 4.01 15.15 4 12 4zm0 3.06A4.94 4.94 0 1 1 12 17a4.94 4.94 0 0 1 0-9.88zm0 1.8a3.14 3.14 0 1 0 0 6.28 3.14 3.14 0 0 0 0-6.28zm5.13-.84a1.15 1.15 0 1 1 0 2.3 1.15 1.15 0 0 1 0-2.3z"/></svg>Instagram</a>
+              <a href="https://g.page/r/Calj4533P4lBEBM/review" target="_blank" rel="noopener" aria-label="Leave National Closet Company a Google review"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 10.2v3.9h5.5c-.24 1.45-1.66 4.25-5.5 4.25-3.31 0-6.01-2.74-6.01-6.12S8.69 6.1 12 6.1c1.88 0 3.14.8 3.86 1.49l2.63-2.53C16.83 3.5 14.62 2.6 12 2.6 6.92 2.6 2.8 6.72 2.8 11.8s4.12 9.2 9.2 9.2c5.31 0 8.82-3.73 8.82-8.98 0-.6-.07-1.06-.15-1.52L12 10.2z"/></svg>Review us on Google</a>
+        </div>
+        <a class="btn btn--primary" href="/book/" style="margin-top:1.4rem">Book my free design visit <span class="arr">→</span></a>
+      </div>
+
+      <div class="footer__cols">
+        <div class="footer__col">
+          <h4>Services</h4>
+          <a href="/#services">Custom Walk-In Closets</a>
+          <a href="/#services">Reach-In Closet Systems</a>
+          <a href="/#services">Home Offices</a>
+          <a href="/#services">Garage Storage</a>
+          <a href="/custom-pantry-nashville">Pantries</a>
+          <a href="/#services">Murphy &amp; Wall Beds</a>
+        </div>
+        <div class="footer__col">
+          <h4>Company</h4>
+          <a href="/#top">Home</a>
+          <a href="/#work">Inspiration</a>
+          <a href="/#process">Our Process</a>
+          <a href="/closet-cases">Closet Cases Blog</a>
+          <a href="/work-with-us">Work With Us</a>
+          <a href="/warranty">Warranty</a>
+          <a href="/#faq">FAQ</a>
+          <a href="/book/">Book a free design visit</a>
+        </div>
+        <div class="footer__col">
+          <h4>Get Started</h4>
+          <a href="/book/">Book a free design visit</a>
+          <a href="tel:+16292988241">Call or Text Us</a>
+          <a href="mailto:hello@nationalclosetco.com">Email Us</a>
+          <p style="margin-top:.8rem;font-size:.9rem;line-height:1.5">💳 <strong>Buy now, pay later with <span style="color:#EB5A9C">Klarna</span></strong> — split your custom closet project into flexible, 0% interest payments at checkout, subject to Klarna approval.</p>
+          <p style="margin-top:.6rem;font-size:.9rem">Mon–Fri 8–6 · Sat 9–4<br>Serving Gallatin, Nashville &amp; Middle TN</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer__areas">
+      <h4>Areas We Serve — Custom Closets Across Middle Tennessee</h4>
+      <p>Proudly serving every city within about 90 miles of Gallatin, TN — including custom closets in
+      Gallatin, Hendersonville, Nashville, Goodlettsville, Mount Juliet, Lebanon, Brentwood, Franklin,
+      Murfreesboro, Smyrna, La Vergne, Nolensville, Belle Meade, Green Hills, Hermitage, Old Hickory, Spring Hill, Columbia, Springfield, Portland, White House,
+      Clarksville, Dickson, Cookeville, Shelbyville and Bowling Green, KY, plus the surrounding communities. <a href="/service-areas">See all service areas &rarr;</a></p>
+    </div>
+
+    <div class="footer__bottom">
+      <p>© <span data-year>2026</span> National Closet Company. All rights reserved. · Custom Closets &amp; Closet Systems · Gallatin, TN.</p>
+      <p class="zorva"><a href="https://nashvilleswebdesign.com" target="_blank" rel="noopener">Web Design and SEO by Nashville's Web Design</a></p>
+    </div>
+  </div>
+</footer>
+<div class="mobicta">
+  <a class="call" href="tel:+16292988241">📞 Call</a>
+  <a class="photo" href="sms:+16292988241?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F">📷 Text a photo</a>
+  <a class="quote" href="/book/">✨ Book a visit</a>
+</div>
+<script src="/js/main.js?v=ncc117" defer></script>
 </body>
 </html>

@@ -123,51 +123,54 @@
     }
   }
 
-  /* ---------- Step 2: service address ----------
-     The form asks for name/phone/email/project only — on a paid click every
-     extra field costs conversions. The lead is saved and the conversion has
-     already fired by the time this renders, so the address is a bonus: skipping
-     it costs us nothing, and we'd have had to ask on the phone anyway. */
-  function mountAddressStep(success, token) {
+  /* ---------- Step 2: pick a time, then optional details ----------
+     The form asks for a name and a phone number only — on a paid click every
+     extra field costs conversions, and fifteen of twenty visitors who tapped
+     the button abandoned the four-field version. The lead is saved and the
+     conversion has fired by the time this renders, so everything here is a
+     bonus: the booking calendar first (a confirmed visit beats a call-back),
+     then email / project / address behind a disclosure. Skipping it costs us
+     nothing — we'd ask on the phone anyway. */
+  var SMS_URL = "sms:+16292988241?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F";
+  function rememberLead(lead, token) {
+    try { sessionStorage.setItem("ncc_lead", JSON.stringify({ name: lead.name || "", phone: lead.phone || "", email: lead.email || "", token: token || "", ts: Date.now() })); } catch (e) {}
+  }
+  function mountDetailsStep(success, token, lead) {
     if (success.querySelector(".addr-step")) return;
+    rememberLead(lead, token);
+    var inp = 'style="width:100%;min-width:0;padding:11px 13px;border:1.5px solid var(--line,#E4E1DA);border-radius:8px;font:inherit;font-size:15px;background:#fff"';
     var box = document.createElement("div");
     box.className = "addr-step";
-    box.style.cssText = "margin-top:20px;padding-top:18px;border-top:1px solid var(--line,#E4E1DA);text-align:left";
     box.innerHTML =
-      '<p style="margin:0 0 12px;font-size:.95rem;color:var(--ink-soft,#3A362F)">' +
-        '<strong>One quick thing</strong> — what address is the project at? It helps us plan your visit. ' +
-        '<span style="color:var(--muted,#6C665B)">Totally optional.</span></p>' +
-      '<div style="display:flex;flex-direction:column;gap:8px">' +
-        '<input class="addr-street" type="text" autocomplete="address-line1" placeholder="123 Main St" style="width:100%;padding:11px 13px;border:1.5px solid var(--line,#E4E1DA);border-radius:8px;font:inherit;font-size:15px;box-sizing:border-box"/>' +
-        '<div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1.2fr);gap:8px">' +
-          '<input class="addr-city" type="text" autocomplete="address-level2" placeholder="Nashville" style="min-width:0;padding:11px 13px;border:1.5px solid var(--line,#E4E1DA);border-radius:8px;font:inherit;font-size:15px;box-sizing:border-box"/>' +
-          '<input class="addr-state" type="text" autocomplete="address-level1" placeholder="TN" maxlength="2" style="min-width:0;padding:11px 13px;border:1.5px solid var(--line,#E4E1DA);border-radius:8px;font:inherit;font-size:15px;box-sizing:border-box"/>' +
-          '<input class="addr-zip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="37203" style="min-width:0;padding:11px 13px;border:1.5px solid var(--line,#E4E1DA);border-radius:8px;font:inherit;font-size:15px;box-sizing:border-box"/>' +
+      (location.pathname.indexOf("/book") === 0 ? '<p class="addr-step__or">We\u2019ll text you within one business day to find a time.</p>' :
+        '<a class="btn btn--primary btn--block addr-step__book" href="/book/">Pick my visit time now <span class="arr">→</span></a>' +
+        '<p class="addr-step__or">or we’ll text you within one business day to set it up.</p>') +
+      '<details class="addr-step__more"><summary>Add a few details (optional)</summary>' +
+        '<div class="addr-step__fields">' +
+          (lead.email ? '' : '<input class="addr-email" type="email" autocomplete="email" placeholder="Email (for your design and quote)" ' + inp + '>') +
+          '<select class="addr-project" ' + inp + '><option value="">What space? (optional)</option><option>Walk-In Closet</option><option>Reach-In Closet</option><option>Pantry</option><option>Garage Storage</option><option>Home Office</option><option>Laundry / Mudroom</option><option>Murphy / Wall Bed</option><option>Media / Wall Unit</option><option>Multiple Spaces</option></select>' +
+          '<input class="addr-street" type="text" autocomplete="address-line1" placeholder="Street address" ' + inp + '>' +
+          '<div class="addr-step__csz"><input class="addr-city" type="text" autocomplete="address-level2" placeholder="City" ' + inp + '><input class="addr-state" type="text" autocomplete="address-level1" placeholder="TN" maxlength="2" ' + inp + '><input class="addr-zip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="ZIP" ' + inp + '></div>' +
+          '<textarea class="addr-msg" rows="2" placeholder="Anything we should know about the space?" ' + inp + '></textarea>' +
+          '<button type="button" class="btn btn--ink btn--block addr-save">Save details</button>' +
         '</div>' +
-        '<button type="button" class="addr-save" style="margin-top:4px;padding:12px 18px;border:0;border-radius:8px;background:var(--clay,#D2683F);color:#fff;font:inherit;font-weight:700;font-size:15px;cursor:pointer">Add address</button>' +
-      '</div>';
+      '</details>';
     success.appendChild(box);
-
     var btn = box.querySelector(".addr-save");
     btn.addEventListener("click", function () {
-      var payload = {
-        token: token,
-        address_street: box.querySelector(".addr-street").value.trim(),
-        address_city: box.querySelector(".addr-city").value.trim(),
-        address_state: box.querySelector(".addr-state").value.trim(),
-        address_zip: box.querySelector(".addr-zip").value.trim()
-      };
-      if (!payload.address_street && !payload.address_city && !payload.address_zip) { fadeOut("No problem — we'll grab it when we call."); return; }
+      var q = function (c) { var e = box.querySelector(c); return e ? e.value.trim() : ""; };
+      var payload = { token: token, email: q(".addr-email"), interest: q(".addr-project"), message: q(".addr-msg"),
+        address_street: q(".addr-street"), address_city: q(".addr-city"), address_state: q(".addr-state"), address_zip: q(".addr-zip") };
+      if (!payload.email && !payload.interest && !payload.message && !payload.address_street && !payload.address_city && !payload.address_zip) { fadeOut("No problem — we’ll grab it when we call."); return; }
       btn.disabled = true; btn.textContent = "Saving…";
-      fetch("/api/contact-address", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
-      }).then(function (r) {
-        // The lead is already safe either way, so never alarm them about this.
-        fadeOut(r.ok ? "Got it — thank you!" : "Thanks! We'll confirm the address when we call.");
-      }).catch(function () { fadeOut("Thanks! We'll confirm the address when we call."); });
+      if (payload.email) { lead.email = payload.email; rememberLead(lead, token); }
+      fetch("/api/contact-address", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+        .then(function (r) { fadeOut(r.ok ? "Got it — thank you!" : "Thanks! We’ll confirm the details when we call."); })
+        .catch(function () { fadeOut("Thanks! We’ll confirm the details when we call."); });
     });
     function fadeOut(msg) {
-      box.innerHTML = '<p style="margin:0;font-size:.95rem;color:var(--ink-soft,#3A362F)">' + msg + "</p>";
+      var d = box.querySelector(".addr-step__more");
+      if (d) d.innerHTML = '<p style="margin:0;font-size:.95rem;color:var(--ink-soft,#3A362F)">' + msg + "</p>";
     }
   }
 
@@ -355,7 +358,11 @@
           form.style.display = "none";
           success.classList.add("show");
           success.scrollIntoView({ behavior: "smooth", block: "center" });
-          if (token) mountAddressStep(success, token);
+          if (form.hasAttribute("data-ballpark")) {
+            var out = success.querySelector("[data-bp-out]");
+            if (out) out.textContent = form.getAttribute("data-bp-range") || "";
+          }
+          if (token) mountDetailsStep(success, token, payload);
         }
       }
       // Only reached if the lead truly fails to save — surface it so the
@@ -571,6 +578,16 @@
     // the server keeps the MAX, so an early tab-switch can't lock in a tiny time.
     var pvid = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
     var activeMs = 0, last = Date.now(), visible = !document.hidden, lastSent = 0;
+    // What the page saw on arrival: is this a session entry, and where from?
+    // The server classifies it with the same rules as the edge log, which is
+    // what lets the dashboard count real visitors instead of every request.
+    var meta = {};
+    try {
+      var refHost = ""; if (document.referrer) refHost = new URL(document.referrer).hostname.replace(/^www\./, "").toLowerCase();
+      var ourHost = location.hostname.replace(/^www\./, "").toLowerCase();
+      var q = new URLSearchParams(location.search);
+      meta = { e: (refHost && refHost === ourHost) ? 0 : 1, r: refHost.slice(0, 120), u: (q.get("utm_source") || "").slice(0, 80), m: (q.get("utm_medium") || "").slice(0, 80), g: (q.get("gclid") || q.get("wbraid") || q.get("gbraid")) ? 1 : 0 };
+    } catch (e) {}
 
     function accrue() { if (visible) { var now = Date.now(); activeMs += now - last; last = now; } }
     function send() {
@@ -579,7 +596,7 @@
       if (secs < 1 || secs > 3600 || secs <= lastSent) return;   // only send growth
       lastSent = secs;
       try {
-        var body = JSON.stringify({ p: path, s: secs, id: pvid });
+        var body = JSON.stringify({ p: path, s: secs, id: pvid, e: meta.e, r: meta.r, u: meta.u, m: meta.m, g: meta.g });
         if (navigator.sendBeacon) navigator.sendBeacon("/api/pv-time", body);
         else fetch("/api/pv-time", { method: "POST", body: body, keepalive: true });
       } catch (e) {}
@@ -677,4 +694,70 @@
       });
     });
   });
+})();
+
+/* ---------- Homepage ballpark card + the always-on "text a photo" button (Sept 2026) ---------- */
+(function () {
+  var SMS_URL = "sms:+16292988241?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F";
+
+  // The hero card: two taps for a typical installed range, then a name and a
+  // phone number to see it — the estimate is the hook, the phone is the lead.
+  // Same ranges as the full estimator further down the page.
+  var RANGES = { reachin: [1000, 3000], walkin: [2500, 10000], pantry: [1500, 5000], garage: [2500, 8000], office: [2000, 7000], laundry: [1500, 6000] };
+  var SIZE = { small: [0, 0.34], medium: [0.25, 0.7], large: [0.6, 1] };
+  var LABEL = { reachin: "Reach-In Closet", walkin: "Walk-In Closet", pantry: "Pantry", garage: "Garage Storage", office: "Home Office", laundry: "Laundry / Mudroom" };
+  var PLURAL = { reachin: "Reach-in closets", walkin: "Walk-in closets", pantry: "Pantries", garage: "Garage systems", office: "Home offices", laundry: "Laundry rooms" };
+  function money(n) { n = Math.round(n / 100) * 100; return "$" + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+  document.querySelectorAll("form[data-ballpark]").forEach(function (form) {
+    var type = null, size = "medium";
+    var from = form.querySelector("[data-bp-from]"), step2 = form.querySelector("[data-bp-step2]"), step3 = form.querySelector("[data-bp-step3]");
+    var proj = form.querySelector('input[name="project"]'), msg = form.querySelector('input[name="msg"]');
+    function update() {
+      if (!type) return;
+      var rg = RANGES[type], sz = SIZE[size];
+      var span = rg[1] - rg[0];
+      var lo = Math.round((rg[0] + span * sz[0]) / 100) * 100, hi = Math.round((rg[0] + span * sz[1]) / 100) * 100;
+      var range = money(lo) + " – " + money(hi) + (hi >= rg[1] ? "+" : "");
+      if (from) { from.textContent = PLURAL[type] + " start at " + money(rg[0]) + " installed, design included."; from.hidden = false; }
+      form.setAttribute("data-bp-range", range);
+      if (proj) proj.value = LABEL[type];
+      if (msg) msg.value = "Ballpark request from the homepage: " + LABEL[type] + ", " + size + " — typical range " + range + ".";
+      if (step2) step2.hidden = false;
+      if (step3) step3.hidden = false;
+    }
+    form.querySelectorAll('[data-bp="type"] button').forEach(function (b) {
+      b.addEventListener("click", function () {
+        b.parentNode.querySelectorAll("button").forEach(function (x) { x.classList.remove("on"); });
+        b.classList.add("on"); type = b.getAttribute("data-v"); update();
+        try { if (typeof gtag === "function") gtag("event", "ballpark_space", { space: type }); } catch (e) {}
+      });
+    });
+    form.querySelectorAll('[data-bp="size"] button').forEach(function (b) {
+      b.addEventListener("click", function () {
+        b.parentNode.querySelectorAll("button").forEach(function (x) { x.classList.remove("on"); });
+        b.classList.add("on"); size = b.getAttribute("data-v"); update();
+      });
+    });
+  });
+
+  // "Text us a photo" is the most distinctive thing the site offers and it
+  // lived in one button on one section. On phones it joins the bottom action
+  // bar; on desktop it is a small fixed pill (Messages on a Mac handles sms:).
+  var bar = document.querySelector(".mobicta");
+  if (bar && !bar.querySelector(".photo")) {
+    var a = document.createElement("a");
+    a.className = "photo"; a.href = SMS_URL; a.textContent = "📷 Text a photo";
+    var q = bar.querySelector(".quote");
+    if (q) bar.insertBefore(a, q); else bar.appendChild(a);
+  }
+  if (!document.querySelector(".txtpill") && !/^\/(crm|book)(\/|$)/.test(location.pathname)) {
+    var pill = document.createElement("a");
+    pill.className = "txtpill"; pill.href = SMS_URL;
+    pill.innerHTML = '<span class="txtpill__ico" aria-hidden="true">📷</span><span><b>Text us a photo of your closet</b><small>629-298-8241 · we reply with a ballpark</small></span>';
+    document.body.appendChild(pill);
+  }
+  document.addEventListener("click", function (e) {
+    var a = e.target && e.target.closest && e.target.closest('a[href^="sms:"]');
+    if (a && typeof gtag === "function") { try { gtag("event", "contact", { method: "sms", link_url: "sms" }); } catch (err) {} }
+  }, true);
 })();

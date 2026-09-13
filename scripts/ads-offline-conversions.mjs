@@ -39,6 +39,7 @@ function d1(sql) {
 const rows = d1(`SELECT a.id AS appointment_id, a.lead_id, a.created_at, l.ga_client_id, l.ga_session_id, l.gclid
   FROM appointments a JOIN leads l ON l.id = a.lead_id
   WHERE a.type = 'consultation' AND a.status != 'cancelled'
+    AND COALESCE(a.source, '') != 'web'   -- self-booked visits fire booked_consultation in the browser (book/index.html)
     AND l.ga_client_id IS NOT NULL AND l.ga_client_id != ''
     AND a.created_at >= datetime('now', '-70 hours')
     AND a.id NOT IN (SELECT appointment_id FROM ads_conversion_uploads)

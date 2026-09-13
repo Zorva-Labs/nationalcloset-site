@@ -3,7 +3,7 @@ head template, FAQ item, and the new site navigation. Everything is lifted from 
 live city page so new pages match the rest of the site exactly."""
 import re, html, json, os
 ROOT = '/Users/zeus/nationalcloset-site'
-PIN = 'ncc117'
+PIN = 'ncc120'
 SITE = 'https://nationalclosetco.com'
 PHONE = '629-298-8241'; TEL = 'tel:+16292988241'
 SMS = 'sms:+16292988241?&body=' + 'Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F'
@@ -65,7 +65,10 @@ def head(slug, title, desc, og_image, schemas, robots='index, follow, max-image-
     h = h.replace('/img/hero-closet-og.jpg', og_image)
     h = re.sub(r'<script type="application/ld\+json">.*?</script>\s*', '', h, flags=re.S)
     ld = ''.join('<script type="application/ld+json">' + json.dumps(s, ensure_ascii=False) + '</script>\n' for s in schemas)
-    h = h.replace('<script async src="https://www.googletagmanager.com', ld + '<script async src="https://www.googletagmanager.com', 1)
+    # The analytics loader was made non-blocking in Sept 2026; anchor on whichever form the source page carries.
+    anchor = '<script async src="https://www.googletagmanager.com' if '<script async src="https://www.googletagmanager.com' in h else '<script>(function(){var l=function(){var s=document.createElement("script");s.async=true;s.src="https://www.googletagmanager.com/gtag/js?id=G-EJEDXZZWJN"'
+    assert anchor in h
+    h = h.replace(anchor, ld + anchor, 1)
     h = re.sub(r'styles\.css\?v=ncc\d+', f'styles.css?v={PIN}', h)
     if extra_css: h = h.replace('</head>', f'<style>\n{extra_css}\n</style>\n</head>')
     assert 'ld+json' in h and 'G-EJEDXZZWJN' in h

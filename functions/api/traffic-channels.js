@@ -1,43 +1,54 @@
-// GET /api/traffic-channels?days=N — real visitor analytics from the
-// server-side pageview log (functions/_middleware.js). Blocker-proof and
-// GA-independent, and already excludes /crm, bots and non-US traffic.
-//   channels : entries grouped by acquisition channel (is_entry = 1)
-//   pages    : every pageview grouped by path (true per-page traffic)
-//   visits   : total pageviews;  entries: session-starting hits
+// GET /api/traffic-channels?days=N&view=humans|all&tn=1 — visitor analytics
+// from our own first-party logs. Two views of the same site:
+//   view=humans (default): pages that fired the on-page engagement beacon.
+//     Only a real browser running our script does that, so crawlers and the
+//     edge-level bot hits that inflate "Direct" never appear. Carries the same
+//     channel as the edge log and the visitor's state (since 2026-09-13).
+//   view=all: every HTML request the edge logged (functions/_middleware.js).
+//     Blocker-proof, but it counts every bot Cloudflare let through.
+//   tn=1 restricts both to visitors Cloudflare placed in Tennessee — the only
+//     ones who can actually buy a closet.
 import { requireAuth, json } from "../_lib/auth.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const url = new URL(context.request.url);
   const today = url.searchParams.get("today") === "1";
+  const view = url.searchParams.get("view") === "all" ? "all" : "humans";
+  const tn = url.searchParams.get("tn") === "1";
   let span = parseInt(url.searchParams.get("days") || "30", 10);
   if (!Number.isFinite(span) || span < 1) span = 30;
   span = Math.min(span, 90);
   const DB = context.env.DB;
 
   // Today = since CENTRAL midnight (created_at is UTC; date('now') would use the
-  // UTC day, which flips at 7pm Central and makes "today" look empty). Central
-  // midnight in UTC = now → Central wall-clock → start of day → back to UTC.
+  // UTC day, which flips at 7pm Central and makes "today" look empty).
   const TF = today
     ? "created_at >= datetime('now', '-5 hours', 'start of day', '+5 hours')"
     : "created_at >= datetime('now', ?1)";
+  const REGION = tn ? " AND region = 'TN'" : "";
   const binds = today ? [] : [`-${span} days`];
   const q = (sql) => { const st = DB.prepare(sql); return (binds.length ? st.bind(...binds) : st).all().catch(() => ({ results: [] })); };
 
-  const [channelsR, pagesR, totalsR, engPageR, engAllR] = await Promise.all([
-    q(`SELECT channel, COUNT(*) AS n FROM pageviews
-        WHERE ${TF} AND is_entry = 1
+  const src = view === "all" ? "pageviews" : "page_engagement";
+  const entryCol = view === "all" ? "is_entry = 1" : "is_entry = 1 AND channel IS NOT NULL";
+  const [channelsR, pagesR, totalsR, engPageR, engAllR, sinceR] = await Promise.all([
+    q(`SELECT channel, COUNT(*) AS n FROM ${src}
+        WHERE ${TF}${REGION} AND ${entryCol}
         GROUP BY channel ORDER BY n DESC`),
-    q(`SELECT path, COUNT(*) AS n FROM pageviews
-        WHERE ${TF}
+    q(`SELECT path, COUNT(*) AS n FROM ${src}
+        WHERE ${TF}${REGION}
         GROUP BY path ORDER BY n DESC LIMIT 15`),
-    q(`SELECT COUNT(*) AS visits, SUM(is_entry) AS entries FROM pageviews
-        WHERE ${TF}`),
+    q(`SELECT COUNT(*) AS visits, SUM(COALESCE(is_entry, 1)) AS entries FROM ${src}
+        WHERE ${TF}${REGION}`),
     // Avg engagement seconds per page (from the first-party beacon).
     q(`SELECT path, ROUND(AVG(seconds)) AS avg_s, COUNT(*) AS samples FROM page_engagement
-        WHERE ${TF} GROUP BY path`),
+        WHERE ${TF}${REGION} GROUP BY path`),
     q(`SELECT ROUND(AVG(seconds)) AS avg_s, COUNT(*) AS samples FROM page_engagement
-        WHERE ${TF}`),
+        WHERE ${TF}${REGION}`),
+    // The beacon started carrying channel + region on 2026-09-13; the humans
+    // view is blank before that, and the dashboard says so.
+    q(`SELECT MIN(created_at) AS since FROM page_engagement WHERE channel IS NOT NULL`),
   ]);
 
   const channels = channelsR.results || [];
@@ -46,8 +57,10 @@ export async function onRequestGet(context) {
   const engByPath = {};
   for (const r of (engPageR.results || [])) engByPath[r.path] = r.avg_s || 0;
   const eng = (engAllR.results || [])[0] || {};
+  const since = ((sinceR.results || [])[0] || {}).since || null;
 
   return json({
+    view, tn, since,
     channels,
     pages,
     engByPath,

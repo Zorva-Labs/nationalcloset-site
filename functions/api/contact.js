@@ -4,6 +4,7 @@
 // failure logs but never blocks the customer response.
 
 import { sendEmail, sendStaffAlert, brandedEmail, makeMessageId } from "../_lib/email.js";
+import { sendLeadAck } from "../_lib/lead-ack.js";
 import { upsertContact } from "../_lib/db.js";
 import { genToken } from "../_lib/tokens.js";
 import { logOutboundEmail } from "../_lib/email-log.js";
@@ -80,10 +81,17 @@ Message: ${message || "(none)"}
     return json({ ok: true });
   }
 
-  if (!name || !phone || !email) {
-    return json({ error: "Name, phone, and email are required." }, 400);
+  // Two fields are all a lead needs: a name and a phone number. Email is
+  // welcome but optional (the confirmation step asks again) — every required
+  // field on a paid click costs conversions, and fifteen of the twenty visitors
+  // who tapped the button in the last three weeks abandoned the four-field form.
+  if (!name || !phone) {
+    return json({ error: "Name and phone are required." }, 400);
   }
-  if (!/^\S+@\S+\.\S+$/.test(email)) {
+  if (phone.replace(/\D/g, "").length < 7) {
+    return json({ error: "That phone number looks incomplete." }, 400);
+  }
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) {
     return json({ error: "That email address looks invalid." }, 400);
   }
 
@@ -101,7 +109,7 @@ Source form: ${source}
 
 Name:        ${name}
 Phone:       ${phone}
-Email:       ${email}
+Email:       ${email || "(not given — ask on the call)"}
 Address:     ${addressStreet}
              ${addressCity}, ${addressState} ${addressZip}
 Considering: ${interest || "(not specified)"}
@@ -109,7 +117,7 @@ Considering: ${interest || "(not specified)"}
 Message:
 ${message || "(no message)"}
 
-Reply to the customer: ${email}
+${email ? "Reply to the customer: " + email : "No email yet — text or call the number above."}
 
 View this lead in the CRM:
 https://nationalclosetco.com/crm/
@@ -122,13 +130,13 @@ https://nationalclosetco.com/crm/
   <table style="border-collapse: collapse; width: 100%; margin: 0 0 24px;">
     <tr><td style="padding: 8px 12px 8px 0; color: #3A362F; width: 130px;">Name</td><td style="padding: 8px 0;"><strong>${esc(name)}</strong></td></tr>
     <tr><td style="padding: 8px 12px 8px 0; color: #3A362F;">Phone</td><td style="padding: 8px 0;"><a href="tel:${esc(phone)}" style="color: #D2683F;">${esc(phone)}</a></td></tr>
-    <tr><td style="padding: 8px 12px 8px 0; color: #3A362F;">Email</td><td style="padding: 8px 0;"><a href="mailto:${esc(email)}" style="color: #D2683F;">${esc(email)}</a></td></tr>
+    <tr><td style="padding: 8px 12px 8px 0; color: #3A362F;">Email</td><td style="padding: 8px 0;">${email ? `<a href="mailto:${esc(email)}" style="color: #D2683F;">${esc(email)}</a>` : "(not given — ask on the call)"}</td></tr>
     <tr><td style="padding: 8px 12px 8px 0; color: #3A362F; vertical-align: top;">Address</td><td style="padding: 8px 0;"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${addressStreet}, ${addressCity}, ${addressState} ${addressZip}`)}" style="color: #D2683F;">${esc(addressStreet)}<br/>${esc(addressCity)}, ${esc(addressState)} ${esc(addressZip)}</a></td></tr>
     <tr><td style="padding: 8px 12px 8px 0; color: #3A362F;">Considering</td><td style="padding: 8px 0;">${esc(interest || "(not specified)")}</td></tr>
   </table>
   <p style="margin: 0 0 8px; color: #3A362F;">Message:</p>
   <div style="background: #FAF9F6; border-left: 2px solid #D2683F; padding: 14px 18px; white-space: pre-wrap;">${esc(message || "(no message)")}</div>
-  <p style="margin: 28px 0 0;"><a href="mailto:${esc(email)}?subject=${encodeURIComponent(`Re: your closet consultation request — National Closet Company`)}" style="display: inline-block; padding: 10px 18px; background: #D2683F; color: #FAF9F6; text-decoration: none; font-family: 'Montserrat','Helvetica Neue',Arial,sans-serif; font-size: 13px; font-weight: 700; border-radius: 6px;">Reply to ${esc(name)}</a></p>
+  ${email ? `<p style="margin: 28px 0 0;"><a href="mailto:${esc(email)}?subject=${encodeURIComponent(`Re: your closet consultation request — National Closet Company`)}" style="display: inline-block; padding: 10px 18px; background: #D2683F; color: #FAF9F6; text-decoration: none; font-family: 'Montserrat','Helvetica Neue',Arial,sans-serif; font-size: 13px; font-weight: 700; border-radius: 6px;">Reply to ${esc(name)}</a></p>` : ""}
   <p style="margin: 28px 0 0;"><a href="https://nationalclosetco.com/crm/" style="display: inline-block; padding: 10px 18px; background: #16140F; color: #FAF9F6; text-decoration: none; font-family: 'Montserrat','Helvetica Neue',Arial,sans-serif; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; border-radius: 2px;">Open in CRM →</a></p>
   <p style="margin: 28px 0 0; font-size: 12px; color: #8B7F6F;">Sent from the National Closet Company website. This lead has been saved to the CRM automatically.</p>
 </div>`;
@@ -180,7 +188,7 @@ https://nationalclosetco.com/crm/
       // customer, second inquiry, etc.) we re-use that row instead of
       // creating a duplicate.
       try {
-        contactId = await upsertContact(env.DB, {
+        if (email) contactId = await upsertContact(env.DB, {
           name, email, phone,
           address: { street: addressStreet, city: addressCity, state: addressState, zip: addressZip },
         });
@@ -200,7 +208,7 @@ https://nationalclosetco.com/crm/
          RETURNING id`
       )
         .bind(
-          name, phone, email,
+          name, phone, email || "",
           addressStreet, addressCity, addressState, addressZip, fullAddress,
           interest || null, message || null,
           source,
@@ -226,42 +234,17 @@ https://nationalclosetco.com/crm/
   // Reply in hello@ answers the lead directly and the CRM's Sent sync logs it.
   await sendStaffAlert(env, {
     label: "National Closet Co. Website",
-    replyTo: email,
+    replyTo: email || undefined,
     subject,
     text: textBody,
     html: htmlBody,
   });
 
-  // 2b) Send the customer a branded acknowledgment AND log it to the CRM so the
-  // lead's Messages timeline reflects the conversation from the very first touch.
-  // Best-effort — never blocks the customer response. (Leaves the lead in "New";
-  // it advances to "Contacted" when a team member personally emails them.)
+  // 2b) Welcome email, when we have an address to send it to (the two-field
+  // form makes email optional; /api/contact-address sends this instead if the
+  // email arrives on the confirmation step). Logged to the lead's timeline.
   if (dbOk && email) {
-    try {
-      const first = (name || "there").split(" ")[0];
-      const ackSubject = `Thanks for reaching out to National Closet Company, ${first}`;
-      const ackHtml = brandedEmail({
-        title: "Thanks for reaching out!",
-        body: `
-          <p>Hi ${esc(first)},</p>
-          <p>Thank you for contacting National Closet Company${interest ? ` about your ${esc(String(interest).toLowerCase())}` : ""}. We've received your request, and a member of our family-owned team will reach out within one business day to schedule your <strong>free in-home design</strong>.</p>
-          <p>If you'd like to talk sooner, just call or text us at <strong>629-298-8241</strong>.</p>
-          <p>We look forward to helping you build a beautiful custom space at a price that makes sense.</p>
-          <p>Warmly,<br>Michael Blair<br>National Closet Company</p>`,
-      });
-      const ackText = `Hi ${first},\n\nThank you for contacting National Closet Company. We've received your request and will reach out within one business day to schedule your free in-home design.\n\nCall or text us anytime at 629-298-8241.\n\nWarmly,\nMichael Blair\nNational Closet Company`;
-      const ackMsgId = makeMessageId();
-      const ackTo = name ? `${name} <${email}>` : email;
-      const res = await sendEmail(env, { to: ackTo, subject: ackSubject, html: ackHtml, text: ackText, messageId: ackMsgId });
-      const failed = res?.skipped || res?.error || (res?.status && res.status >= 400);
-      await logOutboundEmail(env, {
-        to: ackTo, subject: ackSubject, html: ackHtml, text: ackText, messageId: ackMsgId,
-        leadId, contactId, templateKind: "lead_ack", status: failed ? "failed" : "sent",
-        errorCode: failed ? (res?.reason || null) : null, errorMessage: failed ? (res?.error || null) : null,
-      });
-    } catch (e) {
-      console.error("[contact.js] lead acknowledgment failed:", e?.message || e);
-    }
+    await sendLeadAck(env, { name, email, interest, leadId, contactId }).catch((e) => console.error("[contact.js] lead acknowledgment failed:", e?.message || e));
   }
 
   // 3) Surface the outcome. A lead that didn't save is truly lost, so we NEVER

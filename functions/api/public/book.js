@@ -40,6 +40,13 @@ export async function onRequestPost(context) {
     .bind(endAt, startAt).first();
   if (blocks) return json({ error: "Slot is unavailable." }, 409);
 
+  const leadToken = (body.lead_token || "").toString().trim();
+  const matchingLead = (leadToken.length >= 16
+    ? await DB.prepare(`SELECT id, contact_id, email FROM leads WHERE update_token = ?1`).bind(leadToken).first().catch(() => null)
+    : null)
+    || await DB.prepare(`SELECT id, contact_id, email FROM leads WHERE LOWER(email)=?1 ORDER BY id DESC LIMIT 1`)
+      .bind(body.email.toLowerCase()).first().catch(() => null);
+
   // Upsert contact
   const contactId = await upsertContact(DB, {
     name: body.name,
@@ -80,10 +87,12 @@ export async function onRequestPost(context) {
   });
 
   // If this booking came from someone who already submitted a lead form,
-  // auto-advance their pipeline status to "consult". Match by email.
-  const matchingLead = await DB.prepare(`SELECT id FROM leads WHERE LOWER(email)=?1 ORDER BY id DESC LIMIT 1`)
-    .bind(body.email.toLowerCase()).first().catch(() => null);
+  // link the appointment to that lead and auto-advance the pipeline status to
+  // "consult". The form hands the browser an update token; fall back to email.
   if (matchingLead) {
+    await DB.prepare(`UPDATE appointments SET lead_id = ?1 WHERE id = ?2`).bind(matchingLead.id, r.id).run().catch(() => {});
+    if (!matchingLead.contact_id) await DB.prepare(`UPDATE leads SET contact_id = ?1 WHERE id = ?2`).bind(contactId, matchingLead.id).run().catch(() => {});
+    if (!matchingLead.email) await DB.prepare(`UPDATE leads SET email = ?1 WHERE id = ?2`).bind(body.email, matchingLead.id).run().catch(() => {});
     await bumpLeadStatusForward(DB, matchingLead.id, "consult", { actor: { kind: "customer", name: body.name } });
   }
 
@@ -91,7 +100,7 @@ export async function onRequestPost(context) {
   const ics = buildIcs({
     uid: `appt-${r.id}@nationalclosetco.com`,
     start: startAt, end: endAt,
-    summary: `National Closet Company · In-Home Consultation`,
+    summary: `National Closet Company · Free Design Visit`,
     description: `Free consultation with National Closet Company.\\n\\nQuestions? Call 629-298-8241.\\n\\nReschedule or cancel: ${SITE_URL}/book/?cancel=${cancelToken}`,
     location: formatAddress(body.address) || "Your home",
     organizer: "hello@nationalclosetco.com",
@@ -122,7 +131,7 @@ export async function onRequestPost(context) {
       `Reschedule/cancel: ${SITE_URL}/book/?cancel=${cancelToken}\n` +
       `Questions: 629-298-8241\n`,
     attachments: [{
-      filename: "stately-shades-consultation.ics",
+      filename: "ncc-design-visit.ics",
       contentType: "text/calendar; method=REQUEST",
       // UTF-8 → bytes → base64. Plain btoa(ics) throws InvalidCharacterError
       // when the ics contains em-dashes, smart quotes, accented chars, or

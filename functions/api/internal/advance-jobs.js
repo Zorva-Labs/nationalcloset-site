@@ -12,6 +12,7 @@ import { requireAuth, json } from "../../_lib/auth.js";
 import { recordActivity } from "../../_lib/db.js";
 import { sendStageEmail } from "../../_lib/stage-emails.js";
 import { sweepConsultationReminders } from "../../_lib/appointment-reminders.js";
+import { sweepReviewRequests } from "../../_lib/review-requests.js";
 import { createInvoice } from "../../_lib/invoices.js";
 
 async function authenticate(context) {
@@ -75,7 +76,14 @@ async function advance(context) {
     return { reminded: 0 };
   });
 
-  return json({ ok: true, advanced: due.length, ids: due.map((p) => p.id), balancesBilled, reminded: reminders.reminded });
+  // Google-review requests — the morning after an install, two days after a
+  // design visit. Same tick, same idempotency pattern as the reminders.
+  const reviews = await sweepReviewRequests(context.env).catch((e) => {
+    console.error("[advance-jobs] review-request sweep failed:", e?.message || e);
+    return { installs: 0, visits: 0 };
+  });
+
+  return json({ ok: true, advanced: due.length, ids: due.map((p) => p.id), balancesBilled, reminded: reminders.reminded, reviews });
 }
 
 export const onRequestPost = advance;

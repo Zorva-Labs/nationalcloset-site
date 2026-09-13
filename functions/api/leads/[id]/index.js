@@ -1,5 +1,6 @@
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { deleteLeadCascade } from "../../../_lib/cascade.js";
+import { upsertContact } from "../../../_lib/db.js";
 
 const ALLOWED_STATUSES = new Set([
   "new",
@@ -69,6 +70,19 @@ export async function onRequestPatch(context) {
   )
     .bind(...binds)
     .run();
+
+  // A lead captured by the two-field form arrives without an email, so it has
+  // no contact row yet. The moment staff add one, create and link the contact
+  // so proposals, bookings and the timeline all work as usual.
+  if (patch.email) {
+    try {
+      const cur = await context.env.DB.prepare(`SELECT id, contact_id, name, phone, email FROM leads WHERE id = ?1`).bind(id).first();
+      if (cur && !cur.contact_id && cur.email) {
+        const cid = await upsertContact(context.env.DB, { name: cur.name, email: cur.email, phone: cur.phone, address: null });
+        await context.env.DB.prepare(`UPDATE leads SET contact_id = ?1 WHERE id = ?2`).bind(cid, id).run();
+      }
+    } catch (e) { console.error("[lead patch] contact link failed:", e?.message || e); }
+  }
 
   const lead = await context.env.DB.prepare(`SELECT * FROM leads WHERE id = ?1`).bind(id).first();
   return json({ lead });

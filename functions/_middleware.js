@@ -1,3 +1,4 @@
+import { classifyChannel } from "./_lib/channel.js";
 // Geo-gate: the public site is reachable only from the United States.
 //
 // Always allowed regardless of country:
@@ -72,6 +73,11 @@ export async function onRequest(context) {
   //    page; never serve them. Checked before the CRM bypass on purpose.
   if (REPO_INTERNAL.test(url.pathname)) {
     return new Response("Not found", { status: 404, headers: { "Cache-Control": "no-store", "X-Robots-Tag": "noindex" } });
+  }
+
+  // 0b) Short link printed on the review cards and used in the review emails.
+  if (url.pathname === "/review" || url.pathname === "/review/") {
+    return Response.redirect("https://g.page/r/Calj4533P4lBEBM/review", 302);
   }
 
   // 1) Owner / machine surfaces are never geo-blocked.
@@ -151,45 +157,18 @@ function logPageview(context, url, country) {
     if (!db) return;
     context.waitUntil(
       db.prepare(
-        "INSERT INTO pageviews (path, channel, referrer_host, utm_source, utm_medium, gclid, country, is_entry) VALUES (?1,?2,?3,?4,?5,?6,?7,?8)"
+        "INSERT INTO pageviews (path, channel, referrer_host, utm_source, utm_medium, gclid, country, is_entry, region) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)"
       ).bind(
         p.slice(0, 300), channel, refHost.slice(0, 120) || null,
         (utmSource || "").slice(0, 80) || null, (utmMedium || "").slice(0, 80) || null,
-        gclid ? 1 : 0, (country || "").slice(0, 4) || null, isEntry ? 1 : 0
+        gclid ? 1 : 0, (country || "").slice(0, 4) || null, isEntry ? 1 : 0,
+        (((req.cf && req.cf.regionCode) || "").toString().slice(0, 8)) || null
       ).run().catch(() => {})
     );
   } catch (e) { /* never break the request over analytics */ }
 }
 
-// Map an entry to a marketing channel, most-specific first.
-function classifyChannel(utmSource, gclid, refHost) {
-  if (gclid) return "Google Ads";
-  const s = (utmSource || "").toLowerCase();
-  if (s) {
-    if (s.includes("google")) return "Google Ads";
-    // Facebook/Meta dynamic {{site_source_name}} placement codes.
-    if (s === "an") return "Facebook Audience Network";
-    if (s === "ig" || s.includes("insta")) return "Instagram";
-    if (s === "msg" || s.includes("messenger")) return "Messenger";
-    if (s === "fb" || s.includes("face") || s.includes("meta")) return "Facebook";
-    if (s.includes("bing")) return "Bing";
-    return utmSource;
-  }
-  const h = (refHost || "").toLowerCase();
-  if (!h) return "Direct";
-  if (h.includes("google")) return "Google (organic)";
-  if (h.includes("bing")) return "Bing";
-  if (h.includes("duckduckgo")) return "DuckDuckGo";
-  if (h.includes("yahoo")) return "Yahoo";
-  if (h.includes("facebook") || h.startsWith("fb.") || h.includes("instagram")) return "Facebook/Instagram";
-  if (h.includes("chatgpt") || h.includes("openai") || h.includes("perplexity") || h.includes("claude") || h.includes("gemini") || h.includes("copilot")) return "AI search";
-  if (h.includes("houzz")) return "Houzz";
-  if (h.includes("yelp")) return "Yelp";
-  if (h.includes("nextdoor")) return "Nextdoor";
-  if (h.includes("t.co") || h.includes("twitter") || h.includes("x.com")) return "X/Twitter";
-  return h; // any other referral host
-}
-
+// classifyChannel() lives in ./_lib/channel.js so the engagement beacon uses the same rules.
 function blockedPage() {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>

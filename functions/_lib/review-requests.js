@@ -14,7 +14,6 @@ import { sendEmail, makeMessageId, brandedEmail } from "./email.js";
 import { buildEmailContext, renderTemplate } from "./email-vars.js";
 import { logOutboundEmail } from "./email-log.js";
 import { recordActivity } from "./db.js";
-import { sendSms, smsConfigured } from "./sms.js";
 
 const CT_OFFSET_HOURS = 5; // Central Daylight Time, same convention as the rest of the CRM
 
@@ -67,7 +66,7 @@ export async function sweepReviewRequests(env) {
   const tplInstall = await template(db, "review_request");
   if (tplInstall) {
     const due = (await db.prepare(
-      `SELECT p.id, p.contact_id, p.lead_id, c.name AS contact_name, c.email, c.phone
+      `SELECT p.id, p.contact_id, p.lead_id, c.name AS contact_name, c.email
          FROM projects p JOIN contacts c ON c.id = p.contact_id
         WHERE p.status = 'completed' AND p.review_requested_at IS NULL
           AND c.email IS NOT NULL AND c.email != '' AND c.email NOT LIKE '%@nationalclosetco.com'
@@ -83,7 +82,6 @@ export async function sweepReviewRequests(env) {
       await db.prepare(`UPDATE projects SET review_requested_at = datetime('now') WHERE id = ?1`).bind(p.id).run();
       const ok = await sendTemplate(env, tplInstall, { contactId: p.contact_id, projectId: p.id, leadId: p.lead_id, fallbackName: p.contact_name, email: p.email, kind: "review_request" }).catch(() => false);
       if (ok) installs++;
-      await textReviewRequest(env, { entityType: "project", entityId: p.id, name: p.contact_name, phone: p.phone, visit: false });
       await recordActivity(db, {
         entityType: "project", entityId: p.id, action: ok ? "review-request-sent" : "review-request-failed",
         actorKind: "system", actorId: null, actorName: "auto-reviews", details: { to: p.email },
@@ -95,7 +93,7 @@ export async function sweepReviewRequests(env) {
   const tplVisit = await template(db, "review_request_visit");
   if (tplVisit) {
     const due = (await db.prepare(
-      `SELECT a.id, a.contact_id, a.lead_id, a.name, a.email, a.phone
+      `SELECT a.id, a.contact_id, a.lead_id, a.name, a.email
          FROM appointments a
         WHERE LOWER(COALESCE(a.type, 'consultation')) IN ('consultation', 'measure')
           AND LOWER(COALESCE(a.status, '')) IN ('confirmed', 'completed', 'done')
@@ -119,7 +117,6 @@ export async function sweepReviewRequests(env) {
       asked.add(a.contact_id || a.email);
       const ok = await sendTemplate(env, tplVisit, { contactId: a.contact_id, leadId: a.lead_id, fallbackName: a.name, email: a.email, kind: "review_request_visit" }).catch(() => false);
       if (ok) visits++;
-      await textReviewRequest(env, { entityType: "appointment", entityId: a.id, name: a.name, phone: a.phone, visit: true });
       await recordActivity(db, {
         entityType: "appointment", entityId: a.id, action: ok ? "review-request-sent" : "review-request-failed",
         actorKind: "system", actorId: null, actorName: "auto-reviews", details: { to: a.email },
@@ -127,19 +124,4 @@ export async function sweepReviewRequests(env) {
     }
   }
   return { installs, visits };
-}
-
-// The text that rides alongside the email — only when Twilio is configured
-// (see ./sms.js); otherwise a silent no-op. Logged to the activity timeline.
-async function textReviewRequest(env, { entityType, entityId, name, phone, visit }) {
-  if (!smsConfigured(env) || !phone) return;
-  const first = (name || "there").trim().split(/\s+/)[0];
-  const body = visit
-    ? `Hi ${first}, it's Michael with National Closet Co. Thanks for having us out! If the visit was helpful, a quick Google review means a lot to our family business: https://nationalclosetco.com/review — thank you!`
-    : `Hi ${first}, it's Michael with National Closet Co. We hope you're loving the new space! A quick Google review would mean the world to us: https://nationalclosetco.com/review — thank you!`;
-  const r = await sendSms(env, { to: phone, body }).catch(() => ({ skipped: true }));
-  await recordActivity(env.DB, {
-    entityType, entityId, action: r && r.ok ? "review-text-sent" : "review-text-skipped",
-    actorKind: "system", actorId: null, actorName: "auto-reviews", details: { to: phone, reason: r && r.reason ? r.reason : (r && r.error) || null },
-  }).catch(() => {});
 }

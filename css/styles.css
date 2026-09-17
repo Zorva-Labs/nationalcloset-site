@@ -441,7 +441,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .footer__areas p { font-size: 0.9rem; line-height: 1.7; max-width: 82ch; color: #b6b1a7; margin: 0; }
 .footer__bottom { padding-top: 1.8rem; display: flex; flex-direction: column; gap: 0.8rem; font-size: 0.85rem; }
 .footer__bottom a { text-decoration: underline; text-underline-offset: 2px; }
-.zorva { color: #cfcabf; }
+.credit { color: #cfcabf; }
 
 /* ---------- Sticky mobile CTA ---------- */
 .mobicta {

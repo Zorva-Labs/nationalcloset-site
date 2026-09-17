@@ -19,6 +19,7 @@ import re, os, json, glob, html
 ROOT = '/Users/zeus/nationalcloset-site'
 os.chdir(ROOT)
 
+PIN = re.search(r"PIN = '(ncc\d+)'", open('tools/site-build/chrome.py').read()).group(1)
 BCI = 'https://blaircustominteriors.com'
 BCI_A = f'<a href="{BCI}" target="_blank" rel="noopener">Blair Custom Interiors</a>'
 PARENT_ORG = {"@type": "Organization", "name": "Blair Custom Interiors", "url": BCI + "/"}
@@ -118,9 +119,34 @@ def sweep(path):
     s = s.replace(f, f2)
     # schema + cache pin
     s = add_parent_org(s)
-    s = re.sub(r'(styles\.css|main\.js)\?v=ncc\d+', r'\1?v=ncc126', s)
+    s = re.sub(r'(styles\.css|main\.js)\?v=ncc\d+', r'\1?v=' + PIN, s)
     if s != o: open(path, 'w', encoding='utf-8').write(s)
     return s != o
+
+def sweep_credit():
+    """The footer credit sentence lives in chrome.BUILDER; every page carries it as one followed
+    link, and the homepage WebSite node names the agency as creator, provider and maintainer."""
+    import sys; sys.path.insert(0, 'tools/site-build')
+    from chrome import BUILDER
+    credit = f'<p class="credit"><a href="{BUILDER["url"]}" target="_blank" rel="noopener">{BUILDER["credit"]}</a></p>'
+    n = 0
+    for p in sorted(p for p in glob.glob('**/*.html', recursive=True) if not p.startswith(('crm/', 'tools/', 'node_modules/'))):
+        s = open(p, encoding='utf-8').read(); o = s
+        s = re.sub(r'<p class="(?:zorva|credit)"><a href="https://nashvilleswebdesign\.com"[^>]*>[^<]*</a></p>', credit, s)
+        if p == 'index.html':
+            def fix(m):
+                d = json.loads(m.group(1))
+                if '@graph' not in d: return m.group(0)
+                for node in d['@graph']:
+                    if node.get('@type') == 'WebSite':
+                        agency = {"@type": "Organization", "@id": BUILDER['id'], "name": BUILDER['name'], "url": BUILDER['url']}
+                        node['creator'] = agency
+                        node['provider'] = {"@type": "Organization", "name": BUILDER['name'], "url": BUILDER['url']}
+                        node['maintainer'] = {"@id": BUILDER['id']}
+                return '<script type="application/ld+json">' + json.dumps(d, ensure_ascii=False) + '</script>'
+            s = re.sub(r'<script type="application/ld\+json">(.*?)</script>', fix, s, count=1, flags=re.S)
+        if s != o: open(p, 'w', encoding='utf-8').write(s); n += 1
+    print('credit sweep:', n, 'pages')
 
 def sync_inline_css():
     """index.html inlines styles.css; keep it identical, with the self-hosted @font-face rules in front."""
@@ -137,6 +163,7 @@ if __name__ == '__main__':
     pages = sorted(p for p in glob.glob('**/*.html', recursive=True) if not p.startswith(('crm/', 'tools/', 'node_modules/')))
     done = [p for p in pages if sweep(p)]
     print('chrome sweep:', len(done), 'pages')
+    sweep_credit()
     sync_inline_css(); print('homepage inline CSS re-synced')
 
 
@@ -444,8 +471,8 @@ def update_sitemap_llms_forms():
         open(p, 'w', encoding='utf-8').write(s); print('main.js updated')
 
 def part2():
-    import sys; sys.path.insert(0, 'tools/site-build')
-    import chrome as C
+    import sys, importlib; sys.path.insert(0, 'tools/site-build')
+    import chrome as C; C = importlib.reload(C)   # the sweeps above rewrote the source page chrome.py lifts from
     global CONSULT
     CONSULT = block(C.BODY, r'<section class="section section--fog" id="consult">').replace('Book your free Nashville design', 'Book your free in-home design').replace('to book your free Nashville design', 'to book your free in-home design')
     build_cabinets_page(C)
@@ -624,8 +651,8 @@ def build_about_page(C):
     print('rebuilt about.html', len(out))
 
 def part3():
-    import sys; sys.path.insert(0, 'tools/site-build')
-    import chrome as C
+    import sys, importlib; sys.path.insert(0, 'tools/site-build')
+    import chrome as C; C = importlib.reload(C)   # the sweeps above rewrote the source page chrome.py lifts from
     global CONSULT
     CONSULT = block(C.BODY, r'<section class="section section--fog" id="consult">').replace('Book your free Nashville design', 'Book your free in-home design').replace('to book your free Nashville design', 'to book your free in-home design')
     build_about_page(C)

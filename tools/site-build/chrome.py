@@ -3,9 +3,13 @@ head template, FAQ item, and the new site navigation. Everything is lifted from 
 live city page so new pages match the rest of the site exactly."""
 import re, html, json, os
 ROOT = '/Users/zeus/nationalcloset-site'
-PIN = 'ncc126'
+PIN = 'ncc127'
 SITE = 'https://nationalclosetco.com'
 PHONE = '629-298-8241'; TEL = 'tel:+16292988241'
+# Who built and hosts the site. The footer credit is the whole sentence as one followed link;
+# the homepage WebSite node names the agency as creator, provider and maintainer.
+BUILDER = dict(name="Nashville's Web Design", url='https://nashvilleswebdesign.com', id='https://nashvilleswebdesign.com/#organization',
+               credit="Web Design, SEO and Hosting by Nashville's Web Design")
 SMS = 'sms:+16292988241?&body=' + 'Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F'
 
 SRC = open(f'{ROOT}/custom-closets-nashville.html', encoding='utf-8').read()

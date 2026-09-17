@@ -431,6 +431,17 @@ function confirmDialog(msg) {
 // ============================================================
 // Status taxonomies
 // ============================================================
+// What a lead can be interested in — the same list the website's post-submit "What space?"
+// picker offers (js/main.js), so imported, quick-added and web leads all use one vocabulary.
+// Free text is still allowed: the inputs use a <datalist>, not a <select>.
+const SERVICES = [
+  "Walk-In Closet", "Reach-In Closet", "Custom Cabinets", "Kitchen Cabinets", "Bathroom Vanity", "Pantry",
+  "Garage Storage", "Home Office", "Laundry / Mudroom", "Murphy / Wall Bed", "Media / Wall Unit", "Multiple Spaces",
+];
+function serviceDatalist(id = "service-options") {
+  return `<datalist id="${id}">${SERVICES.map((s) => `<option value="${esc(s)}"></option>`).join("")}</datalist>`;
+}
+
 const PROJECT_STATUSES = [
   { key: "new",            label: "New" },
   { key: "scheduled",      label: "Consult Booked" },
@@ -633,7 +644,7 @@ async function quickAddLead() {
             <label><span>Phone</span><input id="ql-phone" type="tel"/></label>
             <label><span>Email <span class="muted" style="font-weight:400">(optional)</span></span><input id="ql-email" type="email"/></label>
           </div>
-          <label><span>Interested in <span class="muted" style="font-weight:400">(optional)</span></span><input id="ql-interest" placeholder="e.g. Walk-in closet, pantry, garage"/></label>
+          <label><span>Interested in <span class="muted" style="font-weight:400">(optional)</span></span><input id="ql-interest" list="ql-service-options" placeholder="e.g. Walk-in closet, custom cabinets, pantry"/></label>${serviceDatalist("ql-service-options")}
           <label><span>Address <span class="muted" style="font-weight:400">(optional)</span></span><input id="ql-address" placeholder="Street, city, state ZIP"/></label>
           <label><span>Notes <span class="muted" style="font-weight:400">(optional)</span></span><textarea id="ql-message" rows="2" placeholder="What did they ask for?"></textarea></label>
         </div>
@@ -1223,5 +1234,5 @@ window.SSCrm = {
   pickContact, pickJob, openModal, recordPayment,
   quickAddLead, quickAddContact, quickAddJob, quickAddAppointment, quickAddEstimate, quickAddProposal, quickAddContract,
   composeEmail, renderEmailTimeline,
-  PROJECT_STATUSES,
+  PROJECT_STATUSES, SERVICES, serviceDatalist,
 };

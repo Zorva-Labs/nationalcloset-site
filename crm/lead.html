@@ -164,7 +164,7 @@ function renderOverviewTab() {
           <label><span>State</span><input id="f-state" value="${SSCrm.esc(l.address_state || "")}" maxlength="2"/></label>
           <label><span>ZIP</span><input id="f-zip" value="${SSCrm.esc(l.address_zip || "")}"/></label>
         </div>
-        <label><span>Considering / interest</span><input id="f-interest" value="${SSCrm.esc(l.interest || "")}" placeholder="e.g. Walk-in closet, pantry"/></label>
+        <label><span>Considering / interest</span><input id="f-interest" list="f-service-options" value="${SSCrm.esc(l.interest || "")}" placeholder="e.g. Walk-in closet, custom cabinets, pantry"/></label>${SSCrm.serviceDatalist("f-service-options")}
         <label><span>Their message</span><textarea id="f-message" rows="3">${SSCrm.esc(l.message || "")}</textarea></label>
         ${quotedField}
         <div class="form-actions">

@@ -79,7 +79,7 @@ const mkPct = () => Math.round(MK_RATE * 100);
 function lineRow(l, i) {
   const total = mkq((Number(l.quantity || 1)) * (l.unit_price_cents || 0));
   return `<tr data-i="${i}" data-product-id="${l.product_id || ""}" data-base="${l.base_price_cents || 0}">
-    <td><input data-f="description" value="${SSCrm.esc(l.description || "")}" placeholder="Walk-In Closet System — Master"/></td>
+    <td><input data-f="description" value="${SSCrm.esc(l.description || "")}" placeholder="Walk-In Closet System — Master / Kitchen Cabinets — Island"/></td>
     <td><input data-f="room" value="${SSCrm.esc(l.room || "")}" placeholder="Master"/></td>
     <td><input class="num" data-f="quantity" value="${l.quantity || 1}" type="number" step="1" min="1" onchange="recalc(this)"/></td>
     <td><input class="num" data-f="unit" value="${l.unit_price_cents ? "$" + (l.unit_price_cents / 100).toFixed(2) : ""}" placeholder="$0.00" onchange="recalc(this)"/></td>

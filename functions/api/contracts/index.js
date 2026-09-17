@@ -6,7 +6,7 @@ import { depositForTotal } from "../../_lib/financials.js";
 const TERMS_BY_TYPE = {
   custom_order: `
 <h3>Materials &amp; Manufacture</h3>
-<p>All custom closets and storage systems listed in this agreement are made-to-order. Manufacturer lead times typically run two to six weeks from order placement. We will keep you informed of any changes to the schedule.</p>
+<p>All custom closets, cabinetry and storage systems listed in this agreement are made-to-order. Manufacturer lead times typically run two to six weeks from order placement. We will keep you informed of any changes to the schedule.</p>
 
 <h3>Deposit &amp; Payment</h3>
 <p>The total contract price is paid in three installments: 50% at signing (the deposit — or, if greater, the amount required to cover materials, shipping and payment-processing fees for the order), which releases the order to our manufacturing partners; 25% when all materials have arrived and the installation date is set; and 25% on the day of installation. You may pay in full at signing or at any point afterward, and you may pay any installment early, with no penalty or added fee. We accept card, bank transfer (ACH) and digital wallets online, plus check or cash in person, with no added processing fee.</p>
@@ -29,7 +29,7 @@ const TERMS_BY_TYPE = {
 
   install_only: `
 <h3>Scope of Service</h3>
-<p>This is an <strong>install-only</strong> agreement. National Closet Company will install closets and storage systems that the customer has purchased separately from another retailer (e.g. IKEA, The Container Store, Lowe's, Home Depot, Costco, Amazon, manufacturer-direct, or builder leftovers). National Closet Company does <em>not</em> supply or warrant the products themselves — only the labor and workmanship of the installation.</p>
+<p>This is an <strong>install-only</strong> agreement. National Closet Company will install closets, cabinetry and storage systems that the customer has purchased separately from another retailer (e.g. IKEA, The Container Store, Lowe's, Home Depot, Costco, Amazon, manufacturer-direct, or builder leftovers). National Closet Company does <em>not</em> supply or warrant the products themselves — only the labor and workmanship of the installation.</p>
 
 <h3>Customer-Supplied Products</h3>
 <p>The customer is responsible for ordering the correct quantity, dimensions, mount type, and finishes. National Closet Company will verify dimensions against the openings before drilling. If a product is the wrong size, the customer is responsible for the return / re-order; a service-call fee will apply if National Closet Company must return after the corrected product arrives.</p>
@@ -145,7 +145,7 @@ export async function onRequestPost(context) {
     tplScope = tpl.scope_html || "";
   } else {
     const fallbacks = {
-      custom_order:   { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the supply and installation of custom closets and storage systems at the project address listed.", window: "Weeks 4–6 from contract execution" },
+      custom_order:   { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the supply and installation of custom closets, cabinetry and storage systems at the project address listed.", window: "Weeks 4–6 from contract execution" },
       install_only:   { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the professional installation of closets and storage systems supplied by the customer at the project address listed.", window: "Scheduled within 1–2 weeks of customer-supplied products arriving on site" },
       repair:         { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the repair service detailed in the scope of work below.", window: "Single visit, typically within 1 week" },
       service_call:   { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the service call detailed below.", window: "Single visit, scheduled at signing" },

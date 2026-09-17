@@ -28,9 +28,9 @@ const FALLBACK_TERMS = {
 };
 
 const FALLBACK_INTROS = {
-  custom_order: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the supply and installation of custom closets and storage systems at the project address listed.",
-  wallprep: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the supply and installation of custom closets and storage systems at the project address listed, and includes wall repair and painting of the immediate installation area before the new system is installed.",
-  install_only: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the professional installation of closets and storage systems supplied by the customer at the project address listed.",
+  custom_order: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the supply and installation of custom closets, cabinetry and storage systems at the project address listed.",
+  wallprep: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the supply and installation of custom closets, cabinetry and storage systems at the project address listed, and includes wall repair and painting of the immediate installation area before the new system is installed.",
+  install_only: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the professional installation of closets, cabinetry and storage systems supplied by the customer at the project address listed.",
   repair: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the repair service detailed in the scope of work below.",
 };
 

@@ -1,0 +1,117 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Zorva-Labs/fleet/main/schema/site.schema.json",
+  "kind": "app",
+  "services": [
+    "website",
+    "hosting",
+    "seo",
+    "crm",
+    "email",
+    "google-ads",
+    "meta-ads"
+  ],
+  "platform": "cloudflare-pages",
+  "generator": "python",
+  "canonicalHost": "nationalclosetco.com",
+  "previewHost": "nationalcloset.pages.dev",
+  "cloudflare": {
+    "zoneId": "1d51a379abcf889e1f8a5445f6ed9b93",
+    "d1": {
+      "DB": "nationalcloset-crm"
+    },
+    "r2": {
+      "FILES": "nationalcloset-files"
+    },
+    "workers": [
+      "nationalcloset-email-cron"
+    ],
+    "secrets": [
+      "GOOGLE_SA_EMAIL",
+      "GOOGLE_SA_PRIVATE_KEY",
+      "GOOGLE_WORKSPACE_USER",
+      "CRON_SECRET",
+      "CALENDAR_FEED_TOKEN",
+      "TURNSTILE_SECRET",
+      "CF_ANALYTICS_EMAIL",
+      "CF_ANALYTICS_KEY",
+      "STRIPE keys"
+    ],
+    "vars": {
+      "MAIL_FROM": "National Closet Company <hello@nationalclosetco.com>",
+      "MAIL_DEFAULT_REPLY": "hello@nationalclosetco.com",
+      "STAFF_EMAIL": "hello@nationalclosetco.com",
+      "ALERT_FROM_USER": "crm@nationalclosetco.com",
+      "QUOTE_MARKUP_RATE": "0"
+    }
+  },
+  "traffic": {
+    "path": "/crm/traffic",
+    "passwordEnv": "NCC_CRM_PASSWORD",
+    "kit": "bespoke (crm/traffic.html, /api/traffic, /api/traffic-channels?view=humans|all&tn=1, functions/api/traffic-rankings.js)"
+  },
+  "crm": {
+    "path": "/crm",
+    "passwordEnv": "NCC_CRM_PASSWORD",
+    "notes": "admin hello@nationalclosetco.com; ~60 endpoints in functions/; funnel pages book/ estimate/ proposal/ contract/ portal/ thanks/; change password with node crm/setup-admin.mjs <email> [pw]"
+  },
+  "forms": {
+    "transport": "crm",
+    "to": "hello@nationalclosetco.com",
+    "activated": null,
+    "notes": "/api/contact → D1 leads + email; two-field forms (name + phone), optional details via /api/contact-address; Turnstile sitekey 0x4AAAAAAEeAHgFn213WJdnQ + hp_url honeypot + hp_ms; bot drops answer 200 {ok:true}, only success:true fires tags"
+  },
+  "mail": {
+    "transport": "gmail-service-account",
+    "from": "National Closet Company <hello@nationalclosetco.com>",
+    "notes": "SA ncc-mail@ncc-mail.iam.gserviceaccount.com (client id 113325869227023086119), DWD scopes gmail.send + gmail.readonly, impersonates hello@; inbound sync via /api/internal/email-sync (bearer NCC_CRON_SECRET) every 3 min from the cron Worker; DKIM valid since 2026-09-10, DMARC p=reject"
+  },
+  "google": {
+    "ga4Property": "539664920",
+    "ga4Measurement": "G-EJEDXZZWJN",
+    "gsc": "sc-domain:nationalclosetco.com",
+    "adsCustomerId": "8968122786",
+    "adsConversionId": "AW-18306256681",
+    "businessProfile": "ChIJhxwNszEGaqwRqWPjnfc_iUE",
+    "notes": "GA4 property lives under the Elopements Inc account (readable with the NWD OAuth token); Ads account is NOT under the Elopements manager — login-customer-id 8968122786; conversion labels: form UnZvCNvcxMwcEKmejZlE, click-to-call rm_UCOCV2_AcEKmejZlE, calls-from-ads 7752567517; key events booked_consultation/generate_lead/contact; MP secret NCC_GA4_MP_SECRET"
+  },
+  "meta": {
+    "pixelId": "904015652453670",
+    "adAccountId": null,
+    "notes": "Lead event fires on a real form save; the July–Aug 2026 paid campaign (83% of sessions, zero leads) has ended"
+  },
+  "billing": {
+    "stripeCustomer": null,
+    "stripeSubscription": null,
+    "plan": null,
+    "notes": ""
+  },
+  "geo": "US",
+  "launched": "2026-06",
+  "built": "2026-05-31",
+  "updated": "2026-09-17",
+  "notes": "Stripe keys for the CRM invoices are NCC_STRIPE_* in ~/.env. Design \"Crisp Architectural\": white/charcoal/terracotta, Archivo + Hanken Grotesk, self-hosted Montserrat + Caveat. Blog is \"Closet Cases\".",
+  "name": "National Closet Company",
+  "slug": "nationalcloset",
+  "status": "live",
+  "domain": "nationalclosetco.com",
+  "repo": "Zorva-Labs/nationalcloset-site",
+  "localPath": "~/nationalcloset-site",
+  "project": "nationalcloset",
+  "client": {
+    "name": "National Closet Company (a division of Blair Custom Interiors)",
+    "contact": "Michael Blair & Noah Blair",
+    "email": "hello@nationalclosetco.com",
+    "phone": "(629) 298-8241",
+    "notes": "Custom closets, pantries, garage storage, cabinets — Nashville; Google Workspace; 5.0/6 Google reviews; lifetime system warranty; 50/25/25 payment terms"
+  },
+  "build": {
+    "command": null,
+    "output": ".",
+    "check": null
+  },
+  "deploy": {
+    "command": "npx wrangler pages deploy . --project-name=nationalcloset --branch=main --commit-dirty=true",
+    "auth": "CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL (unset CLOUDFLARE_API_TOKEN)",
+    "notes": "root deploy; pages are built/synced by tools/site-build/stage4.py (chrome sweep + page builds) — run it, review, deploy"
+  }
+}

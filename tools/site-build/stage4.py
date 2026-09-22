@@ -184,7 +184,7 @@ CITY_LINKS = [('Nashville', '/custom-closets-nashville'), ('Gallatin', '/custom-
 
 # Every image is described by its look, never as a project.
 CAB_ROOMS = [
-  ('/img/cab-island.webp',  'Kitchen cabinets &amp; islands', 'Walnut kitchen island with a fluted end panel, a brass toe rail and a honed marble top', 'Full kitchens, replacement cabinet runs, islands, pantry walls and coffee bars.'),
+  ('/img/cab-kitchen-run.webp',  'Kitchen cabinets &amp; islands', 'Walnut kitchen cabinet run with raised-panel doors, brass pulls, a built-in coffee bar and tall pantry cabinets', 'Full kitchens, replacement cabinet runs, islands, pantry walls and coffee bars.'),
   ('/img/cab-hutch.webp',   'Built-in hutches &amp; dining storage', 'Built-in dining hutch painted warm cream with glass upper doors, brass latches and a walnut counter', 'Glass-front uppers, a serving counter and closed storage below, sized to the wall.'),
   ('/img/cab-mudroom.webp', 'Mudroom lockers &amp; benches', 'Mudroom with cream painted lockers, a walnut bench seat, brass hooks and cubbies with baskets', 'A locker per person, a bench with a drawer, hooks at kid height and cubbies for shoes.'),
   ('/img/cab-laundry.webp', 'Laundry room cabinets', 'Laundry room with sage cabinetry, a walnut folding counter over the washer and dryer and a brass hanging rod', 'Uppers over the machines, a folding counter, a hanging rod and a tall cabinet for the vacuum.'),

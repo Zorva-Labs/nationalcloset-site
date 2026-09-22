@@ -87,7 +87,7 @@ def cat_of(src, alt):
     if 'laundry' in s: return 'laundry', 'Laundry & mudroom'
     if 'pantry' in s: return 'pantry', 'Pantry'
     if 'office' in s: return 'office', 'Home office'
-    if 'reachin' in s or 'feat-island' in s or 'reach-in' in a: return 'reachin', 'Reach-in closet'
+    if 'reachin' in s or 'reach-in' in a: return 'reachin', 'Reach-in closet'
     return 'walkin', 'Walk-in closet'
 REAL = [
   ('/img/blog-fraley-closet.webp', 'walkin', "The Fraleys' master walk-in closet", "Real project · wire shelving to custom", '/blog/fraley-pantry-master-closet-makeover'),

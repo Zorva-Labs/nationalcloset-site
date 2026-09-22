@@ -2,7 +2,7 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md` and in `~/fleet/docs/archive`.
 
-## 2026-09-22
+## 2026-09-22 (night)
 - **Google Ads stopped** (Michael: "NCC will no longer be advertising"). Campaign 24052252978 "NCC Search Campaign" paused through the API. Closets, pantries, garage and laundry are now advertised from Blair Custom Interiors' account (390-380-7644, landing pages on blaircustominteriors.com/free-design/) — the two are affiliated and must never bid on the same terms at once. The daily launchd job `com.zorvalabs.ncc-ads-conversions` is left running: it still uploads booked consultations for past ad clicks, and its guard only pauses things, so it cannot restart the campaign. Unload it once the last clicks are past the conversion window if Michael confirms the stop is permanent.
 
 ## 2026-09-22 (evening)

@@ -260,7 +260,8 @@ async function openAppt(id) {
             ${a.site_address ? `<div><strong>Where</strong> · <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.site_address)}" target="_blank" rel="noopener">${SSCrm.esc(a.site_address)} ↗</a></div>` : ""}
             ${a.rooms ? `<div><strong>Rooms</strong> · ${SSCrm.esc(a.rooms)}</div>` : ""}
             ${a.notes ? `<div><strong>Notes</strong> · ${SSCrm.esc(a.notes)}</div>` : ""}
-            <div><strong>Going</strong> · ${SSCrm.assigneeChips(crew)}</div>
+            <div><strong>Going</strong> · ${SSCrm.assigneeChips(crew)} <button class="btn ghost sm" data-assign style="margin-left:4px">${crew.length ? "Change" : "Assign"}</button></div>
+            <div data-assign-host hidden></div>
             ${isVisit ? `<div class="muted" style="font-size:12px">${a.team_brief_sent_at
               ? `Crew brief sent ${fmtStampUtc(a.team_brief_sent_at)}.`
               : `The crew brief goes out automatically on the morning of the visit.`}</div>` : ""}
@@ -277,6 +278,27 @@ async function openAppt(id) {
       </div>`;
     bg.querySelector("[data-close]").onclick = () => bg.remove();
     bg.querySelector("[data-edit]").onclick = renderEdit;
+    // Assign straight from the view — the picker used to live only under Edit,
+    // where nobody looked for it. A crew-only PATCH is valid on the API.
+    bg.querySelector("[data-assign]").onclick = async (ev) => {
+      const host = bg.querySelector("[data-assign-host]");
+      ev.currentTarget.hidden = true;
+      host.innerHTML = `${await SSCrm.assigneePicker({ selected: crew, label: "Who's going" })}
+        <div style="display:flex;gap:8px;margin-top:8px"><button class="btn primary sm" data-assign-save>Save crew</button><button class="btn ghost sm" data-assign-cancel>Cancel</button></div>`;
+      host.hidden = false;
+      SSCrm.wireAssigneePicker(host);
+      host.querySelector("[data-assign-cancel]").onclick = renderView;
+      const saveCrew = host.querySelector("[data-assign-save]");
+      saveCrew.onclick = async () => {
+        saveCrew.disabled = true;
+        try {
+          const r = await SSCrm.fetchJSON("/api/appointments/" + id, { method: "PATCH", body: JSON.stringify({ assignee_ids: SSCrm.readAssigneePicker(host) || [] }) });
+          if (r && r.assignees) crew = r.assignees;
+          SSCrm.toast("Crew saved", "success");
+          renderView(); render();
+        } catch (err) { SSCrm.toast(err.message || "Could not save", "error"); saveCrew.disabled = false; }
+      };
+    };
     bg.querySelectorAll("[data-status]").forEach((b) => b.onclick = async () => {
       try { await SSCrm.fetchJSON("/api/appointments/" + id, { method: "PATCH", body: JSON.stringify({ status: b.dataset.status }) }); SSCrm.toast("Updated", "success"); bg.remove(); render(); }
       catch (e) { SSCrm.toast(e.message, "error"); }

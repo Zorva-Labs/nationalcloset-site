@@ -61,6 +61,32 @@ export function fmtDay(startAt) {
   return `${weekdays[new Date(Date.UTC(Y, Mo - 1, D)).getUTCDay()]}, ${months[Mo - 1]} ${D}`;
 }
 
+// How the visit's day reads relative to the day the brief is sent. The sweep
+// only ever sends on the day itself, but "Send crew brief" in the calendar can
+// go out days early — a Tuesday send for a Friday visit must not say "Today".
+//   day_word     "Today" | "Tomorrow" | "Friday" | "Friday, October 2"
+//   day_relative "today" | "tomorrow" | "on Friday" | "on Friday, October 2"
+export function dayWords(startAt, todayIso) {
+  const day = String(startAt || "").slice(0, 10);
+  const today = String(todayIso || "").slice(0, 10);
+  const toUtc = (d) => { const [Y, M, D] = d.split("-").map(Number); return Date.UTC(Y, M - 1, D); };
+  const full = fmtDay(startAt);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !/^\d{4}-\d{2}-\d{2}$/.test(today) || !full) {
+    return { day_word: full || DASH, day_relative: full ? `on ${full}` : "" };
+  }
+  const diff = Math.round((toUtc(day) - toUtc(today)) / 86400000);
+  if (diff === 0) return { day_word: "Today", day_relative: "today" };
+  if (diff === 1) return { day_word: "Tomorrow", day_relative: "tomorrow" };
+  const weekday = full.split(",")[0];
+  const word = diff > 1 && diff < 7 ? weekday : full;
+  return { day_word: word, day_relative: `on ${word}` };
+}
+
+// "Morning" is only true before noon Central.
+export function greetingWord(hour) {
+  return hour < 12 ? "Morning" : hour < 17 ? "Afternoon" : "Evening";
+}
+
 // "(629) 298-8241" → "+16292988241" for the tel: href. Anything that isn't a
 // US 10/11-digit number is passed through with its punctuation stripped.
 function telHref(phone) {
@@ -139,6 +165,7 @@ export async function briefContext(db, appt) {
   const { recipients, assigned } = await briefRecipients(db, appt.id);
   const tpl = await loadTemplate(db);
   const address = await resolveAddress(db, appt);
+  const now = centralNow();
   const going = assigned
     ? nameList(recipients)
     : `Nobody assigned yet — ${nameList(recipients)} all got this`;
@@ -152,6 +179,8 @@ export async function briefContext(db, appt) {
       client_phone_href: telHref(appt.phone) || "",
       client_email: appt.email || "No email on file",
       appointment_date: fmtDay(appt.start_at) || DASH,
+      ...dayWords(appt.start_at, now.date),
+      greeting: greetingWord(now.hour),
       appointment_time: fmtTime(appt.start_at) || DASH,
       duration: `${appt.duration_min || 60} min`,
       address: address || "No address on file",
@@ -188,7 +217,7 @@ export function renderBrief(tpl, vars, member) {
   const subject = stripUnfilled(renderTemplate(tpl.subject || FALLBACK.subject, all), "subject");
   const text = stripUnfilled(renderTemplate(tpl.body_text || FALLBACK.body_text, all), "plain-text body");
   const html = brandedEmail({
-    title: `Today ${all.appointment_time} · ${all.client_name}`,
+    title: `${all.day_word} ${all.appointment_time} · ${all.client_name}`,
     preheader: `${all.visit_type} at ${all.appointment_time} — ${all.city_or_address}.`,
     body: stripUnfilled(renderTemplate(tpl.body_html || FALLBACK.body_html, htmlVars), "HTML body"),
     signature: false,
@@ -274,13 +303,14 @@ export async function sweepConsultBriefs(env) {
 }
 
 // The seeded template, duplicated here so the sweep still sends when the D1 row
-// is missing. Keep in sync with crm/migrations/0070_team_assignments.sql.
+// is missing. Keep in sync with crm/migrations/0070_team_assignments.sql
+// as amended by 0071_consult_brief_day_words.sql.
 const FALLBACK = {
   id: null,
-  subject: "Today {{appointment_time}}: {{client_name}} — {{city_or_address}}",
-  body_text: `Morning {{team_first_name}},
+  subject: "{{day_word}} {{appointment_time}}: {{client_name}} — {{city_or_address}}",
+  body_text: `{{greeting}} {{team_first_name}},
 
-Today's {{visit_type}} is at {{appointment_time}}.
+Your {{visit_type}} is {{day_relative}} at {{appointment_time}}.
 
 CLIENT     {{client_name}}
 PHONE      {{client_phone}}
@@ -295,8 +325,8 @@ GOING      {{team_list}}
 Open the consult in the CRM: {{crm_link}}
 
 Call or text the client if you are running late — {{client_phone}}.`,
-  body_html: `<p style="margin:0 0 14px">Morning {{team_first_name}},</p>
-<p style="margin:0 0 4px">Today's <strong>{{visit_type}}</strong> is at <strong>{{appointment_time}}</strong>. Everything you need is below.</p>
+  body_html: `<p style="margin:0 0 14px">{{greeting}} {{team_first_name}},</p>
+<p style="margin:0 0 4px">Your <strong>{{visit_type}}</strong> is {{day_relative}} at <strong>{{appointment_time}}</strong>. Everything you need is below.</p>
 <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:20px 0 6px;font-size:15px">
   <tr><td style="padding:10px 0;border-bottom:1px solid #E3E1DC;color:#6C665B;width:104px;vertical-align:top">Client</td><td style="padding:10px 0;border-bottom:1px solid #E3E1DC;color:#16140F;font-weight:700">{{client_name}}</td></tr>
   <tr><td style="padding:10px 0;border-bottom:1px solid #E3E1DC;color:#6C665B;vertical-align:top">Phone</td><td style="padding:10px 0;border-bottom:1px solid #E3E1DC"><a href="tel:{{client_phone_href}}" style="color:#D2683F;text-decoration:none;font-weight:700">{{client_phone}}</a></td></tr>

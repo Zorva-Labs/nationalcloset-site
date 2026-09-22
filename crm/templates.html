@@ -40,7 +40,7 @@ const EMAIL_KINDS = [
 // Kinds whose merge fields aren't the customer set — the note under the body
 // box has to name the right ones or the owner edits in tokens that never fill.
 const KIND_FIELDS = {
-  consult_brief: "{{team_first_name}}, {{visit_type}}, {{client_name}}, {{client_phone}}, {{client_email}}, " +
+  consult_brief: "{{greeting}}, {{team_first_name}}, {{visit_type}}, {{day_word}}, {{day_relative}}, {{client_name}}, {{client_phone}}, {{client_email}}, " +
     "{{appointment_date}}, {{appointment_time}}, {{duration}}, {{address}}, {{city_or_address}}, {{maps_link}}, " +
     "{{rooms}}, {{notes}}, {{team_list}}, {{crm_link}}",
 };

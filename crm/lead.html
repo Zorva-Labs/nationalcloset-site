@@ -465,6 +465,7 @@ async function bookFromLead() {
   const bg = document.createElement("div");
   bg.className = "modal-bg";
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const crewHtml = await SSCrm.assigneePicker({ selected: [], label: "Who's going" });
   bg.innerHTML = `
     <div class="modal" style="max-width:520px">
       <div class="modal-head">Book consultation for ${SSCrm.esc(l.name)}</div>
@@ -479,6 +480,8 @@ async function bookFromLead() {
             <label><span>Type</span><select id="bk-type"><option value="consultation">Consultation</option><option value="measure">Measure</option></select></label>
           </div>
           <label><span>Notes (optional)</span><textarea id="bk-notes" rows="2"></textarea></label>
+          ${crewHtml}
+          <p class="muted" style="font-size:12px;margin:-2px 0 0">Whoever is ticked gets the crew brief — client, phone, address and notes — on the morning of the visit. Nobody ticked: it goes to the whole team.</p>
         </div>
       </div>
       <div class="modal-foot">
@@ -487,6 +490,7 @@ async function bookFromLead() {
       </div>
     </div>`;
   document.body.appendChild(bg);
+  SSCrm.wireAssigneePicker(bg);
   bg.querySelector("[data-cancel]").onclick = () => bg.remove();
   bg.addEventListener("click", (e) => { if (e.target === bg) bg.remove(); });
   bg.querySelector("[data-save]").onclick = async () => {
@@ -505,6 +509,7 @@ async function bookFromLead() {
         site_address: addrParts.join(", ") || null,
         notes: bg.querySelector("#bk-notes").value.trim() || null,
         status: "confirmed", source: "admin",
+        assignee_ids: SSCrm.readAssigneePicker(bg) || [],
       })});
       bg.remove();
       SSCrm.toast("Consultation booked", "success");

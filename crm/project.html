@@ -9,11 +9,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc110" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc112" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc108"></script>
+<script src="/crm/crm-app.js?v=ncc110"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -110,6 +110,7 @@ async function render() {
             ${project.contact_phone ? ` · ${SSCrm.esc(project.contact_phone)}` : ""}
             ${project.site_address ? ` · ${SSCrm.esc(project.site_address)}` : ""}
           </div>
+          <div style="margin-top:8px">${SSCrm.assigneeChips(state.assignees, { empty: "No crew assigned" })}</div>
         </div>
         <div class="job__status-actions">
           ${SSCrm.pill(project.status)}
@@ -313,6 +314,7 @@ function switchTab(tab) {
   if (tab === "overview") {
     body.innerHTML = renderOverview(state);
     loadFinancials();
+    loadJobCrew();
   }
   else if (tab === "messages") {
     body.innerHTML = `<div id="email-timeline"></div>`;
@@ -711,6 +713,7 @@ function renderOverview(s) {
                   <div>
                     <strong style="color:var(--ink)">${typeLabel}</strong>
                     <span class="muted" style="margin-left:8px">${fmtDateTime(a.start_at)}</span>
+                    ${(a.assignees && a.assignees.length) ? `<div style="margin-top:5px">${SSCrm.assigneeChips(a.assignees, { empty: "" })}</div>` : ""}
                   </div>
                   <span class="muted" style="font-size:11px">${e(a.status)}</span>
                 </div>`;
@@ -774,6 +777,7 @@ function renderOverview(s) {
             <label><span>Site address</span><input id="p-addr" value="${e(project.site_address || "")}"/></label>
             <label><span>PO number <span class="muted" style="font-weight:400;font-size:11px">· optional</span></span><input id="p-po" value="${e(project.po_number || "")}" placeholder="e.g. PO-10482"/></label>
             <label><span>Description</span><textarea id="p-desc" rows="3">${e(project.description || "")}</textarea></label>
+            <div id="job-crew"></div>
             <div class="form-actions"><button class="btn primary" onclick="saveProject()">Save</button></div>
           </div>
         </div>
@@ -1301,6 +1305,15 @@ function renderDocTab(docs, kind, prefix, addFn) {
 }
 
 
+// The crew picker inside the Job details form. Its own async pass because the
+// roster is a fetch and the rest of the tab renders synchronously.
+async function loadJobCrew() {
+  const host = document.getElementById("job-crew");
+  if (!host) return;
+  host.innerHTML = await SSCrm.assigneePicker({ selected: state.assignees || [], label: "Assigned to" });
+  SSCrm.wireAssigneePicker(host);
+}
+
 async function saveProject() {
   try {
     await SSCrm.fetchJSON("/api/projects/" + id, { method: "PATCH", body: JSON.stringify({
@@ -1309,6 +1322,7 @@ async function saveProject() {
       site_address: document.getElementById("p-addr").value.trim(),
       po_number: document.getElementById("p-po").value.trim(),
       description: document.getElementById("p-desc").value.trim(),
+      assignee_ids: SSCrm.readAssigneePicker(document.getElementById("job-crew")) || [],
     })});
     SSCrm.toast("Saved", "success");
     await render();

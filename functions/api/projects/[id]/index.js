@@ -3,6 +3,7 @@ import { sendStageEmail, STAGE_EMAIL_KIND } from "../../../_lib/stage-emails.js"
 import { createInvoice, getProjectBilling } from "../../../_lib/invoices.js";
 import { deleteProjectCascade } from "../../../_lib/cascade.js";
 import { todayCentral } from "../../../_lib/dates.js";
+import { getAssignees, getAssigneeMap, setAssignees } from "../../../_lib/team.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -95,7 +96,13 @@ export async function onRequestGet(context) {
     paid_in_full: billTotal > 0 && billPaid >= billTotal,
   };
 
-  return json({ project, windows, estimates, proposals, contracts, appointments, lead, lead_notes: leadNotes, email_count: emailCount, drawings, job_notes: jobNotes, notes: projectNotes, billing });
+  // Who is on this job — and who is on each of its consults, so the Visits
+  // list can say who went out without a request per row.
+  const assignees = await getAssignees(context.env.DB, "project", id);
+  const apptCrew = await getAssigneeMap(context.env.DB, "appointment", appointments.map((a) => a.id));
+  for (const a of appointments) a.assignees = apptCrew[a.id] || [];
+
+  return json({ project, windows, estimates, proposals, contracts, appointments, lead, lead_notes: leadNotes, email_count: emailCount, drawings, job_notes: jobNotes, notes: projectNotes, billing, assignees });
 }
 
 export async function onRequestPatch(context) {
@@ -116,7 +123,18 @@ export async function onRequestPatch(context) {
   for (const [k, col] of Object.entries(stampCols)) {
     if (body[k] !== undefined) fields.push(`${col}=${body[k] ? "datetime('now')" : "NULL"}`);
   }
-  if (!fields.length) return json({ error: "Nothing to update" }, 400);
+  // Who is on the job. Its own table, so it is saved apart from the columns —
+  // and changing only the crew is a valid save.
+  let assignees;
+  if (Array.isArray(body.assignee_ids)) {
+    assignees = await setAssignees(context.env.DB, "project", id, body.assignee_ids,
+      { kind: "admin", id: auth.id, name: auth.email });
+  }
+
+  if (!fields.length) {
+    if (assignees) return json({ ok: true, assignees });
+    return json({ error: "Nothing to update" }, 400);
+  }
 
   // Capture the previous status + install date so the stage email and the
   // milestone invoices only fire on a real transition (not a no-op re-save).
@@ -185,7 +203,7 @@ export async function onRequestPatch(context) {
     })();
     if (context.waitUntil) context.waitUntil(chain); else await chain;
   }
-  return json({ ok: true });
+  return json({ ok: true, assignees });
 }
 
 // DELETE /api/projects/[id]?purge=1

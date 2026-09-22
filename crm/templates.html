@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Templates · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc110"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc112"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc108"></script>
+<script src="/crm/crm-app.js?v=ncc110"></script>
 <script>
 const TABS = [
   { key: "email",      label: "Email" },
@@ -33,9 +33,18 @@ let editingKind = null;   // "email" or "document"
 // Email template kinds — the keys we drive from the lead/contact/project pages.
 // Keep in sync with the seed data in migration 0017.
 const EMAIL_KINDS = [
-  "lead_new", "lead_facebook", "consult_confirm", "proposal_followup", "contract_followup", "lead_lost",
-  "install_scheduled", "post_install_thanks", "review_request", "referral_credit", "touch_base",
+  "lead_new", "lead_facebook", "consult_confirm", "consult_brief", "proposal_followup", "contract_followup", "lead_lost",
+  "install_scheduled", "post_install_thanks", "review_request", "review_request_visit", "referral_credit", "touch_base",
 ];
+
+// Kinds whose merge fields aren't the customer set — the note under the body
+// box has to name the right ones or the owner edits in tokens that never fill.
+const KIND_FIELDS = {
+  consult_brief: "{{team_first_name}}, {{visit_type}}, {{client_name}}, {{client_phone}}, {{client_email}}, " +
+    "{{appointment_date}}, {{appointment_time}}, {{duration}}, {{address}}, {{city_or_address}}, {{maps_link}}, " +
+    "{{rooms}}, {{notes}}, {{team_list}}, {{crm_link}}",
+};
+const DEFAULT_FIELDS = "{{first_name}}, {{interest}}, {{address}}, {{quoted_amount}}, {{proposal_link}}, {{contract_link}}, {{appointment_date}}, {{appointment_time}}";
 
 async function loadAll() {
   const [emails, docs] = await Promise.all([
@@ -122,9 +131,13 @@ function renderEditor() {
           </label>
         </div>
         <label><span>Subject</span><input id="e-subj" value="${SSCrm.esc(t.subject)}"/></label>
-        <label><span>Body (plain text; use {{first_name}}, {{interest}}, {{address}}, {{quoted_amount}}, {{proposal_link}}, {{contract_link}}, {{appointment_date}}, {{appointment_time}})</span>
+        <label><span>Body (plain text; use ${SSCrm.esc(KIND_FIELDS[t.kind] || DEFAULT_FIELDS)})</span>
           <textarea id="e-body" rows="14" style="font-family:var(--font-mono);font-size:12px">${SSCrm.esc(t.body_text || "")}</textarea>
         </label>
+        ${t.body_html != null ? `
+          <label><span>HTML body <span class="muted" style="font-weight:400;font-size:11px">· this is what most people see — edit it too, or the plain-text change won't show up in their inbox</span></span>
+            <textarea id="e-html" rows="16" style="font-family:var(--font-mono);font-size:12px">${SSCrm.esc(t.body_html || "")}</textarea>
+          </label>` : ""}
         <div class="row">
           <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input id="e-default" type="checkbox" ${t.is_default ? "checked" : ""}/> <span>Default for this kind</span></label>
           <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input id="e-active" type="checkbox" ${t.is_active ? "checked" : ""}/> <span>Active (shown in Compose)</span></label>
@@ -208,11 +221,13 @@ async function newTemplate() {
 
 async function saveEmail(id) {
   try {
+    const htmlBox = document.getElementById("e-html");   // only rendered for templates that have an HTML body
     await SSCrm.fetchJSON("/api/email-templates/" + id, { method: "PATCH", body: JSON.stringify({
       name:      document.getElementById("e-name").value.trim(),
       kind:      document.getElementById("e-kind").value,
       subject:   document.getElementById("e-subj").value.trim(),
       body_text: document.getElementById("e-body").value,
+      ...(htmlBox ? { body_html: htmlBox.value } : {}),
       is_default: document.getElementById("e-default").checked ? 1 : 0,
       is_active:  document.getElementById("e-active").checked ? 1 : 0,
     })});

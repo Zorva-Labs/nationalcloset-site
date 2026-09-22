@@ -908,3 +908,68 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
 .tnav__brand-logo { height: 30px; width: auto; display: block; flex: none; }
 .tnav__brand { gap: 9px; font-family: var(--font); font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
 .tnav__brand:hover { color: var(--accent); }
+
+/* ============================================================
+   Team — who is going out on a consult or a job
+   Chips are read-only (calendar, job header, visit list); the picker is the
+   checkbox row inside the appointment / job forms.
+
+   --crew-deep is a deeper terracotta than --accent-ink on purpose: measured as
+   painted, --accent-ink (#B9542F) on --accent-soft is 3.96:1 and white on
+   --accent (#D2683F) is 3.63:1, both under WCAG AA for text this size. The
+   value below clears 4.5:1 both ways (4.79 and 5.81) and still reads as the
+   same terracotta, so a crew name stays legible on a phone in a truck.
+   ============================================================ */
+:root { --crew-deep: #A8481F; }
+
+.crew-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 9px 3px 3px; margin: 0 5px 3px 0;
+  background: var(--accent-soft); color: var(--crew-deep);
+  border-radius: 999px; font-size: 11.5px; font-weight: 600; line-height: 1.6;
+  white-space: nowrap; vertical-align: middle;
+}
+.crew-chip > i {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 19px; height: 19px; border-radius: 50%;
+  background: var(--crew-deep); color: #fff;
+  font-size: 9px; font-weight: 700; font-style: normal; letter-spacing: 0.02em;
+}
+.crew-chip--none {
+  background: var(--bg-soft); color: var(--ink-muted);
+  padding: 3px 10px; font-weight: 500;
+}
+
+.crew-picker { display: block; }
+.crew-picker > span {
+  display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-soft); margin-bottom: 7px;
+}
+.crew-picker__opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.crew-opt {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 13px 7px 8px; border: 1px solid var(--line);
+  border-radius: 999px; background: var(--bg); cursor: pointer;
+  font-size: 13px; font-weight: 500; color: var(--ink);
+  /* Tap target stays 44px on a phone — the owners assign from the truck. */
+  min-height: 44px;
+  transition: border-color .12s, background .12s, color .12s;
+}
+.crew-opt:hover { border-color: var(--line-strong); background: var(--bg-hover); }
+.crew-opt input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.crew-opt > i {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--bg-soft); color: var(--ink-soft);
+  font-size: 10px; font-weight: 700; font-style: normal;
+}
+.crew-opt.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--crew-deep); }
+.crew-opt.is-on > i { background: var(--crew-deep); color: #fff; }
+
+/* Calendar month cell — the crew is one initial per person, right-aligned,
+   so a day with three events still fits. */
+.cal-event .crew-dot {
+  display: inline-block; margin-left: 4px; padding: 0 4px;
+  border-radius: 4px; background: var(--accent-soft); color: var(--crew-deep);
+  font-size: 9px; font-weight: 700; letter-spacing: 0.04em;
+}

@@ -4,6 +4,7 @@ import { genToken } from "../../_lib/tokens.js";
 import { recordActivity, upsertContact } from "../../_lib/db.js";
 import { bumpLeadStatusForward } from "../../_lib/lifecycle.js";
 import { sendAppointmentConfirmation, isClientVisit } from "../../_lib/appointment-emails.js";
+import { getAssigneeMap, setAssignees } from "../../_lib/team.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context);
@@ -48,6 +49,13 @@ export async function onRequestGet(context) {
       project_name: p.project_name || null,
     }));
   }
+
+  // Who is going. One query for the whole window rather than one per row, so
+  // the month view can show initials without 40 round-trips.
+  const apptCrew = await getAssigneeMap(DB, "appointment", rows.map((r) => r.id));
+  const jobCrew = await getAssigneeMap(DB, "project", installEvents.map((e) => e.project_id));
+  for (const r of rows) r.assignees = apptCrew[r.id] || [];
+  for (const e of installEvents) e.assignees = jobCrew[e.project_id] || [];
 
   const all = [...rows, ...installEvents].sort((a, b) => (a.start_at || "").localeCompare(b.start_at || ""));
   return json({ appointments: all });
@@ -104,6 +112,13 @@ export async function onRequestPost(context) {
   }
   if (leadIdForBump && (body.type || "consultation") === "consultation") {
     await bumpLeadStatusForward(DB, leadIdForBump, "consult", { actor: { kind: "admin", id: auth.id, name: auth.email } });
+  }
+
+  // Who is going out on this one. Saved before the response so the CRM never
+  // shows a booking that briefly has nobody on it.
+  if (Array.isArray(body.assignee_ids)) {
+    await setAssignees(DB, "appointment", r.id, body.assignee_ids, { kind: "admin", id: auth.id, name: auth.email })
+      .catch((e) => console.error("[appointments] assign failed:", e?.message || e));
   }
 
   await recordActivity(DB, {

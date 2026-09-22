@@ -12,6 +12,7 @@ import { requireAuth, json } from "../../_lib/auth.js";
 import { recordActivity } from "../../_lib/db.js";
 import { sendStageEmail } from "../../_lib/stage-emails.js";
 import { sweepConsultationReminders } from "../../_lib/appointment-reminders.js";
+import { sweepConsultBriefs } from "../../_lib/consult-brief.js";
 import { sweepReviewRequests } from "../../_lib/review-requests.js";
 import { createInvoice } from "../../_lib/invoices.js";
 
@@ -76,6 +77,14 @@ async function advance(context) {
     return { reminded: 0 };
   });
 
+  // Morning-of crew briefs — the client's details, the address and a Maps link
+  // to whoever is assigned to today's consults. Same tick, same 7am-Central
+  // gate and same stamp-first idempotency as the customer reminder above.
+  const briefs = await sweepConsultBriefs(context.env).catch((e) => {
+    console.error("[advance-jobs] consult-brief sweep failed:", e?.message || e);
+    return { briefed: 0 };
+  });
+
   // Google-review requests — the morning after an install, two days after a
   // design visit. Same tick, same idempotency pattern as the reminders.
   const reviews = await sweepReviewRequests(context.env).catch((e) => {
@@ -83,7 +92,7 @@ async function advance(context) {
     return { installs: 0, visits: 0 };
   });
 
-  return json({ ok: true, advanced: due.length, ids: due.map((p) => p.id), balancesBilled, reminded: reminders.reminded, reviews });
+  return json({ ok: true, advanced: due.length, ids: due.map((p) => p.id), balancesBilled, reminded: reminders.reminded, briefed: briefs.briefed, reviews });
 }
 
 export const onRequestPost = advance;

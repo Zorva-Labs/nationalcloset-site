@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Team · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc112"/></head>
+<body>
+<script src="/crm/crm-app.js?v=ncc110"></script>
+<script>
+let roster = [];
+
+(async () => {
+  const user = await SSCrm.mount({
+    title: "Team",
+    subtitle: "Who can be assigned to a consult or a job — and where their brief is sent",
+    actions: `<button class="btn primary" onclick="addMember()">+ Add team member</button>`,
+  });
+  if (!user) return;
+  await load();
+})();
+
+async function load() {
+  try {
+    const r = await SSCrm.fetchJSON("/api/team?all=1");
+    roster = r.team || [];
+  } catch (e) { SSCrm.toast(e.message || "Could not load the team", "error"); roster = []; }
+  render();
+}
+
+function render() {
+  const active = roster.filter((m) => m.active);
+  const former = roster.filter((m) => !m.active);
+  document.getElementById("page").innerHTML = `
+    <div class="card" style="margin-bottom:14px">
+      <p class="muted" style="font-size:13px;line-height:1.6;margin:0">
+        Assign people to a consult on the <a href="/crm/calendar.html">Calendar</a> and to a job on its Overview tab.
+        On the morning of a consult, everyone assigned is emailed the client's name, phone, email, address
+        (linked to Google Maps), rooms, notes and the time. Nobody assigned? The whole active team gets it,
+        so a visit never goes out unannounced. The wording is
+        <a href="/crm/templates.html?tab=email">Templates → Consult brief</a>.
+      </p>
+    </div>
+
+    ${active.length ? `<div class="card">
+      <div class="card-head"><h3>On the team</h3></div>
+      ${memberTable(active)}
+    </div>` : `<div class="card"><p class="muted" style="text-align:center;padding:30px">
+      Nobody on the team yet. <button class="btn primary sm" onclick="addMember()" style="margin-left:10px">+ Add team member</button>
+    </p></div>`}
+
+    ${former.length ? `<div class="card" style="margin-top:14px">
+      <div class="card-head"><h3>No longer active</h3></div>
+      <p class="muted" style="font-size:12px;margin:0 0 10px">Kept so past jobs still show who went out. They can't be assigned new work.</p>
+      ${memberTable(former)}
+    </div>` : ""}
+  `;
+  wire();
+}
+
+function memberTable(list) {
+  return `<div class="tbl"><table><thead><tr>
+      <th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th style="text-align:right">&nbsp;</th>
+    </tr></thead><tbody>
+    ${list.map((m) => `<tr>
+      <td style="font-weight:600">${SSCrm.esc(m.name)}</td>
+      <td><a href="mailto:${SSCrm.esc(m.email)}">${SSCrm.esc(m.email)}</a></td>
+      <td>${m.phone ? `<a href="tel:${SSCrm.esc(m.phone)}">${SSCrm.esc(m.phone)}</a>` : `<span class="muted">—</span>`}</td>
+      <td class="muted">${SSCrm.esc(m.role || "—")}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn ghost sm" data-edit="${m.id}">Edit</button>
+        ${m.active
+          ? `<button class="btn ghost sm" data-off="${m.id}">Deactivate</button>`
+          : `<button class="btn ghost sm" data-on="${m.id}">Reactivate</button>`}
+      </td>
+    </tr>`).join("")}
+  </tbody></table></div>`;
+}
+
+function wire() {
+  document.querySelectorAll("[data-edit]").forEach((b) => b.onclick = () => editMember(parseInt(b.dataset.edit, 10)));
+  document.querySelectorAll("[data-off]").forEach((b) => b.onclick = () => setActive(parseInt(b.dataset.off, 10), false));
+  document.querySelectorAll("[data-on]").forEach((b) => b.onclick = () => setActive(parseInt(b.dataset.on, 10), true));
+}
+
+function memberForm(m = {}) {
+  return `<div class="form">
+    <label><span>Name</span><input id="t-name" value="${SSCrm.esc(m.name || "")}" autofocus/></label>
+    <label><span>Email <span class="muted" style="font-weight:400;font-size:11px">· where their consult brief is sent</span></span>
+      <input id="t-email" type="email" value="${SSCrm.esc(m.email || "")}"/></label>
+    <div class="row">
+      <label><span>Phone <span class="muted" style="font-weight:400;font-size:11px">· optional</span></span><input id="t-phone" type="tel" value="${SSCrm.esc(m.phone || "")}"/></label>
+      <label><span>Role <span class="muted" style="font-weight:400;font-size:11px">· optional</span></span>
+        <input id="t-role" value="${SSCrm.esc(m.role || "")}" placeholder="owner, designer, installer" list="role-list"/>
+        <datalist id="role-list"><option>owner</option><option>designer</option><option>installer</option></datalist>
+      </label>
+    </div>
+  </div>`;
+}
+
+function readForm(bg) {
+  return {
+    name: bg.querySelector("#t-name").value.trim(),
+    email: bg.querySelector("#t-email").value.trim(),
+    phone: bg.querySelector("#t-phone").value.trim(),
+    role: bg.querySelector("#t-role").value.trim(),
+  };
+}
+
+function modal({ head, bodyHtml, saveLabel, onSave }) {
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `<div class="modal" style="max-width:480px">
+    <div class="modal-head">${head}</div>
+    <div class="modal-body">${bodyHtml}</div>
+    <div class="modal-foot">
+      <button class="btn ghost" data-cancel>Cancel</button>
+      <button class="btn primary" data-save>${saveLabel}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(bg);
+  bg.querySelector("[data-cancel]").onclick = () => bg.remove();
+  bg.addEventListener("click", (e) => { if (e.target === bg) bg.remove(); });
+  const btn = bg.querySelector("[data-save]");
+  btn.onclick = async () => {
+    btn.disabled = true; const was = btn.textContent; btn.textContent = "Saving…";
+    try { await onSave(bg); bg.remove(); await load(); }
+    catch (e) { SSCrm.toast(e.message || "Could not save", "error"); btn.disabled = false; btn.textContent = was; }
+  };
+  return bg;
+}
+
+function addMember() {
+  modal({
+    head: "Add team member", bodyHtml: memberForm(), saveLabel: "Add",
+    onSave: async (bg) => {
+      const body = readForm(bg);
+      if (!body.name || !body.email) throw new Error("Name and email are both required");
+      await SSCrm.fetchJSON("/api/team", { method: "POST", body: JSON.stringify(body) });
+      SSCrm.toast(body.name + " added to the team", "success");
+    },
+  });
+}
+
+function editMember(id) {
+  const m = roster.find((x) => x.id === id);
+  if (!m) return;
+  modal({
+    head: "Edit " + SSCrm.esc(m.name), bodyHtml: memberForm(m), saveLabel: "Save changes",
+    onSave: async (bg) => {
+      const body = readForm(bg);
+      if (!body.name || !body.email) throw new Error("Name and email are both required");
+      await SSCrm.fetchJSON("/api/team/" + id, { method: "PATCH", body: JSON.stringify(body) });
+      SSCrm.toast("Saved", "success");
+    },
+  });
+}
+
+async function setActive(id, active) {
+  const m = roster.find((x) => x.id === id);
+  if (!active) {
+    const ok = await SSCrm.confirmDialog(
+      `Deactivate ${m ? m.name : "this person"}? They come off anything still scheduled and can't be assigned new work. Past jobs keep the record of who went out.`
+    );
+    if (!ok) return;
+  }
+  try {
+    if (active) await SSCrm.fetchJSON("/api/team/" + id, { method: "PATCH", body: JSON.stringify({ active: 1 }) });
+    else await SSCrm.fetchJSON("/api/team/" + id, { method: "DELETE" });
+    SSCrm.toast(active ? "Back on the team" : "Deactivated", "success");
+    await load();
+  } catch (e) { SSCrm.toast(e.message || "Could not update", "error"); }
+}
+</script></body></html>

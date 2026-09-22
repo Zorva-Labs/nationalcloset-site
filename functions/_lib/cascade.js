@@ -101,8 +101,16 @@ export async function deleteProjectCascade(DB, projectId, opts = {}) {
   await run(DB, `DELETE FROM documents WHERE project_id=?1`, projectId);
   await run(DB, `DELETE FROM communications WHERE project_id=?1`, projectId);
 
+  // Who was assigned to this job. The schema says ON DELETE CASCADE, which D1
+  // never fires (see the note at the top), so it is deleted by hand.
+  await run(DB, `DELETE FROM assignments WHERE entity_type='project' AND entity_id=?1`, projectId);
+
   // Appointments + emails: keep the records but unlink, unless purging.
   if (purge) {
+    // An appointment that is about to be deleted takes its crew with it.
+    await run(DB,
+      `DELETE FROM assignments WHERE entity_type='appointment'
+         AND entity_id IN (SELECT id FROM appointments WHERE project_id=?1)`, projectId);
     await run(DB, `DELETE FROM appointments WHERE project_id=?1`, projectId);
     await run(DB, `DELETE FROM email_messages WHERE project_id=?1`, projectId);
   } else {
@@ -123,6 +131,9 @@ export async function deleteLeadCascade(DB, leadId, opts = {}) {
   }
   await run(DB, `DELETE FROM lead_notes WHERE lead_id=?1`, leadId);
   if (purge) {
+    await run(DB,
+      `DELETE FROM assignments WHERE entity_type='appointment'
+         AND entity_id IN (SELECT id FROM appointments WHERE lead_id=?1)`, leadId);
     await run(DB, `DELETE FROM appointments WHERE lead_id=?1`, leadId);
     await run(DB, `DELETE FROM email_messages WHERE lead_id=?1`, leadId);
   } else {

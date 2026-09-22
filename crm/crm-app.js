@@ -18,6 +18,7 @@ const NAV = [
   { href: "/crm/contracts.html", label: "Contracts", icon: iconDoc() },
   { href: "/crm/invoices.html", label: "Invoices", icon: iconInvoice() },
   { href: "/crm/expenses.html", label: "Expenses / Bills", icon: iconExpense() },
+  { href: "/crm/team.html", label: "Team", icon: iconUsers() },
   { href: "/crm/templates.html", label: "Templates", icon: iconMail() },
   { href: "/crm/activity.html", label: "Activity", icon: iconActivity() },
   { href: "/crm/reports.html", label: "Reports", icon: iconReports() },
@@ -58,7 +59,7 @@ const NAV_GROUPS = [
   { label: "Sales", items: ["/crm/estimates.html", "/crm/proposals.html", "/crm/contracts.html", "/crm/invoices.html", "/crm/expenses.html"] },
   { label: "Operations", items: ["/crm/calendar.html", "/crm/availability.html"] },
   { label: "Insights", items: ["/crm/reports.html", "/crm/traffic.html"] },
-  { label: "Setup", items: ["/crm/templates.html", "/crm/activity.html"] },
+  { label: "Setup", items: ["/crm/team.html", "/crm/templates.html", "/crm/activity.html"] },
 ];
 
 // JS actions — no nav, opens an inline modal that creates the entity and routes to its page on success
@@ -700,6 +701,9 @@ async function quickAddAppointment(prefill = {}) {
   const defaultDate = tomorrow.toISOString().slice(0, 10);
   // Links carried onto the appointment so it ties back to the contact / lead / job.
   const link = { contact_id: prefill.contact_id || null, lead_id: prefill.lead_id || null, project_id: prefill.project_id || null };
+  // Who is going. Rendered before the modal is inserted so the checkboxes are
+  // there on first paint rather than popping in a beat later.
+  const crewHtml = await assigneePicker({ selected: prefill.assignee_ids || [], label: "Assigned to" });
   bg.innerHTML = `
     <div class="modal" style="max-width:520px">
       <div class="modal-head">Book appointment</div>
@@ -724,6 +728,8 @@ async function quickAddAppointment(prefill = {}) {
           </div>
           <label><span>Site address (optional)</span><input id="qa-addr" value="${esc(prefill.site_address || "")}"/></label>
           <label><span>Rooms (optional)</span><input id="qa-rooms" placeholder="Living, primary BR, 2 baths"/></label>
+          ${crewHtml}
+          <p class="muted" style="font-size:12px;margin:-2px 0 0">Whoever is ticked gets the brief — client, phone, address and notes — on the morning of the visit.</p>
         </div>
       </div>
       <div class="modal-foot">
@@ -733,6 +739,7 @@ async function quickAddAppointment(prefill = {}) {
     </div>
   `;
   document.body.appendChild(bg);
+  wireAssigneePicker(bg);
   const close = () => bg.remove();
   bg.querySelector("[data-cancel]").onclick = close;
   bg.addEventListener("click", (e) => { if (e.target === bg) close(); });
@@ -771,6 +778,7 @@ async function quickAddAppointment(prefill = {}) {
       contact_id: link.contact_id,
       lead_id: link.lead_id,
       project_id: link.project_id,
+      assignee_ids: readAssigneePicker(bg) || [],
     };
     if (!body.name || !body.email) { toast("Name + email required", "error"); return; }
     try {
@@ -1229,10 +1237,78 @@ function recordPayment(doc, opts = {}) {
   });
 }
 
+// ============================================================
+// Team — the roster, the assignee picker, and the chips that show
+// who is going out. Used by the calendar, the job page and quick-add.
+// ============================================================
+let _teamCache = null;
+
+// The roster, fetched once per page. Never rejects: a CRM screen that can't
+// reach /api/team should still render the appointment it was asked for.
+async function team() {
+  if (_teamCache) return _teamCache;
+  _teamCache = fetchJSON("/api/team").then((r) => r.team || []).catch(() => []);
+  return _teamCache;
+}
+
+function initialsOf(name) {
+  return String(name || "").trim().split(/\s+/).slice(0, 2).map((w) => w[0] || "").join("").toUpperCase();
+}
+
+// "Michael B." — enough to tell the two owners apart without eating a column.
+function shortName(name) {
+  const parts = String(name || "").trim().split(/\s+/);
+  return parts.length > 1 ? `${parts[0]} ${parts[1][0]}.` : (parts[0] || "");
+}
+
+// Read-only chips: who is on this consult / job. `empty` is what shows when
+// nobody is assigned — pass "" to render nothing at all.
+function assigneeChips(members, { empty = "Unassigned" } = {}) {
+  const list = members || [];
+  if (!list.length) return empty ? `<span class="crew-chip crew-chip--none">${esc(empty)}</span>` : "";
+  return list.map((m) => `<span class="crew-chip" title="${esc(m.name)} · ${esc(m.email || "")}"><i>${esc(initialsOf(m.name))}</i>${esc(shortName(m.name))}</span>`).join("");
+}
+
+// The picker itself — a checkbox per active team member. Render it into a
+// container, then read the result back with readAssigneePicker(el).
+async function assigneePicker({ selected = [], label = "Assigned to" } = {}) {
+  const roster = await team();
+  const chosen = new Set((selected || []).map((m) => (typeof m === "object" ? m.id : m)));
+  if (!roster.length) {
+    return `<div class="crew-picker" data-crew><span>${esc(label)}</span>
+      <p class="muted" style="font-size:12px;margin:4px 0 0">Nobody on the team yet — add people on the Team page.</p></div>`;
+  }
+  return `<div class="crew-picker" data-crew>
+    <span>${esc(label)}</span>
+    <div class="crew-picker__opts">
+      ${roster.map((m) => `<label class="crew-opt${chosen.has(m.id) ? " is-on" : ""}">
+        <input type="checkbox" value="${m.id}" ${chosen.has(m.id) ? "checked" : ""}/>
+        <i>${esc(initialsOf(m.name))}</i><span>${esc(m.name)}</span>
+      </label>`).join("")}
+    </div>
+  </div>`;
+}
+
+// The ids ticked inside a rendered picker. Returns [] when nobody is ticked —
+// which is a real value (unassign everyone), not "leave it alone".
+function readAssigneePicker(root) {
+  const host = (root || document).querySelector("[data-crew]");
+  if (!host) return null;
+  return [...host.querySelectorAll('input[type="checkbox"]:checked')].map((i) => parseInt(i.value, 10));
+}
+
+// Keep the chip highlight in step with the checkbox.
+function wireAssigneePicker(root) {
+  (root || document).querySelectorAll("[data-crew] .crew-opt input").forEach((i) => {
+    i.onchange = () => i.closest(".crew-opt").classList.toggle("is-on", i.checked);
+  });
+}
+
 window.SSCrm = {
   fetchJSON, mount, fmtMoney, fmtMoneyShort, parseMoney, fmtDate, fmtDay, fmtDateTime, fmtTime, esc, pill, logout, toast, confirmDialog,
   pickContact, pickJob, openModal, recordPayment,
   quickAddLead, quickAddContact, quickAddJob, quickAddAppointment, quickAddEstimate, quickAddProposal, quickAddContract,
   composeEmail, renderEmailTimeline,
+  team, assigneePicker, readAssigneePicker, wireAssigneePicker, assigneeChips, initialsOf, shortName,
   PROJECT_STATUSES, SERVICES, serviceDatalist,
 };

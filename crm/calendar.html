@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Calendar · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc110"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc112"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc108"></script>
+<script src="/crm/crm-app.js?v=ncc110"></script>
 <script>
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DOW_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -23,7 +23,25 @@ let viewYear, viewMonth;  // 0-indexed month
   viewYear = now.getFullYear();
   viewMonth = now.getMonth();
   await render();
+  // ?appt=N — the link the morning crew brief carries. Move the month view to
+  // that consult (it may not be in the month we just drew), then open it.
+  const deep = parseInt(new URLSearchParams(location.search).get("appt") || "", 10);
+  if (Number.isFinite(deep)) await openApptDeepLink(deep);
 })();
+
+// Open the appointment named in ?appt=, scrolling the month view to it first.
+// A bad or deleted id is not worth a scary error — just leave the month up.
+async function openApptDeepLink(id) {
+  try {
+    const { appointment } = await SSCrm.fetchJSON("/api/appointments/" + id);
+    const [Y, M] = (appointment.start_at || "").slice(0, 7).split("-").map((n) => parseInt(n, 10));
+    if (Y && M && (Y !== viewYear || M - 1 !== viewMonth)) {
+      viewYear = Y; viewMonth = M - 1;
+      await render();
+    }
+    await openAppt(id);
+  } catch (_) { /* gone, or not ours — the calendar is still useful */ }
+}
 
 async function render() {
   // Fetch ALL appointments in the visible window (which may extend slightly into prev/next month)
@@ -114,7 +132,7 @@ function renderCell(c, byDate, todayStr) {
   const more = events.length - shown.length;
   return `<div class="${classes.join(" ")}" data-date="${iso}">
     <div class="cal-day-num">${c.date.getUTCDate()}</div>
-    ${shown.map((a) => `<div class="cal-event" data-id="${a.id}" data-type="${SSCrm.esc(a.type || "consultation")}" data-s="${SSCrm.esc(a.status)}"${a.is_install ? ` data-project="${a.project_id}"` : ""} title="${SSCrm.esc(a.name)} — ${a.is_install ? "Install" : SSCrm.esc(a.type)}">${a.is_install ? "🔧 " : ""}<span class="cal-event-time">${prettyTime(a.start_at)}</span> ${SSCrm.esc((a.name || "").split(" ")[0])}</div>`).join("")}
+    ${shown.map((a) => `<div class="cal-event" data-id="${a.id}" data-type="${SSCrm.esc(a.type || "consultation")}" data-s="${SSCrm.esc(a.status)}"${a.is_install ? ` data-project="${a.project_id}"` : ""} title="${SSCrm.esc(a.name)} — ${a.is_install ? "Install" : SSCrm.esc(a.type)}${crewTitle(a.assignees)}">${a.is_install ? "🔧 " : ""}<span class="cal-event-time">${prettyTime(a.start_at)}</span> ${SSCrm.esc((a.name || "").split(" ")[0])}${crewDots(a.assignees)}</div>`).join("")}
     ${more > 0 ? `<div class="cal-more">+${more} more</div>` : ""}
   </div>`;
 }
@@ -132,6 +150,29 @@ function goToday() {
   viewYear = now.getFullYear();
   viewMonth = now.getMonth();
   render();
+}
+
+// team_brief_sent_at is stamped with SQLite datetime('now'), which is UTC —
+// unlike start_at and the rest of the appointment datetimes, which are naive
+// Central wall-clock. Mark it as UTC so the browser renders it in the owner's
+// own time instead of showing a 10am send as 3pm.
+function fmtStampUtc(s) {
+  if (!s) return "";
+  const d = new Date(String(s).replace(" ", "T") + "Z");
+  return isNaN(d.getTime())
+    ? String(s)
+    : d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+// Who is going, compressed to initials for the month grid — a day with three
+// events still has to fit in the cell.
+function crewDots(assignees) {
+  if (!assignees || !assignees.length) return "";
+  return `<span class="crew-dot">${assignees.map((m) => SSCrm.esc(SSCrm.initialsOf(m.name))).join(" ")}</span>`;
+}
+function crewTitle(assignees) {
+  if (!assignees || !assignees.length) return " — unassigned";
+  return ` — ${assignees.map((m) => m.name).join(", ")}`;
 }
 
 function isoToday() { return new Date().toISOString().slice(0, 10); }
@@ -157,12 +198,14 @@ async function openDay(iso) {
             <div style="font-weight:600;color:#B45309;font-size:13px">🔧 Install day${a.start_at.slice(0,10) ? "" : ""}</div>
             <div style="margin-top:4px;font-weight:600">${SSCrm.esc(a.name)}</div>
             <div style="font-size:12px;color:var(--ink-soft)">${SSCrm.esc(a.project_name || "Custom closet project")}</div>
+            <div style="margin-top:6px">${SSCrm.assigneeChips(a.assignees)}</div>
             <div style="margin-top:6px">${SSCrm.pill(a.status)}</div>
           </div>` : `
           <div style="border:1px solid var(--line);border-radius:var(--r-sm);padding:12px;cursor:pointer" onclick="openAppt(${a.id})">
             <div style="font-weight:600;color:var(--accent);font-size:13px">${prettyTime(a.start_at)} — ${prettyTime(a.end_at)}</div>
             <div style="margin-top:4px;font-weight:600">${SSCrm.esc(a.name)}</div>
             <div style="font-size:12px;color:var(--ink-soft)">${SSCrm.esc(a.type)} · ${a.duration_min}m${a.phone ? " · " + SSCrm.esc(a.phone) : ""}</div>
+            <div style="margin-top:6px">${SSCrm.assigneeChips(a.assignees)}</div>
             ${a.site_address ? `<div style="font-size:12px;color:var(--ink-soft);margin-top:2px"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.site_address)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:inherit;text-decoration:underline">${SSCrm.esc(a.site_address)} ↗</a></div>` : ""}
             <div style="margin-top:6px">${SSCrm.pill(a.status)}</div>
           </div>`).join("")}</div>` : `<p class="muted" style="text-align:center;padding:24px 0">Nothing scheduled this day.</p>`}
@@ -196,6 +239,8 @@ function apptEnd(dateStr, timeStr, mins) {
 async function openAppt(id) {
   const data = await SSCrm.fetchJSON("/api/appointments/" + id);
   const a = data.appointment;
+  let crew = data.assignees || [];
+  const isVisit = ["consultation", "measure"].includes((a.type || "").toLowerCase());
   const bg = document.createElement("div");
   bg.className = "modal-bg";
   document.body.appendChild(bg);
@@ -215,12 +260,17 @@ async function openAppt(id) {
             ${a.site_address ? `<div><strong>Where</strong> · <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.site_address)}" target="_blank" rel="noopener">${SSCrm.esc(a.site_address)} ↗</a></div>` : ""}
             ${a.rooms ? `<div><strong>Rooms</strong> · ${SSCrm.esc(a.rooms)}</div>` : ""}
             ${a.notes ? `<div><strong>Notes</strong> · ${SSCrm.esc(a.notes)}</div>` : ""}
+            <div><strong>Going</strong> · ${SSCrm.assigneeChips(crew)}</div>
+            ${isVisit ? `<div class="muted" style="font-size:12px">${a.team_brief_sent_at
+              ? `Crew brief sent ${fmtStampUtc(a.team_brief_sent_at)}.`
+              : `The crew brief goes out automatically on the morning of the visit.`}</div>` : ""}
           </div>
         </div>
         <div class="modal-foot" style="flex-wrap:wrap;gap:8px">
           <button class="btn ghost" data-close>Close</button>
           <button class="btn primary" data-edit>✎ Edit</button>
-          ${(a.email && ["consultation", "measure"].includes((a.type || "").toLowerCase())) ? `<button class="btn secondary" data-confirm>✉ Send confirmation</button>` : ""}
+          ${(a.email && isVisit) ? `<button class="btn secondary" data-confirm>✉ Send confirmation</button>` : ""}
+          ${isVisit ? `<button class="btn secondary" data-brief title="Email the client's details, address and map link to the crew now">✉ Send crew brief</button>` : ""}
           ${a.status !== "completed" ? `<button class="btn secondary" data-status="completed">Mark completed</button>` : ""}
           ${a.status !== "cancelled" ? `<button class="btn danger" data-status="cancelled">Cancel Consult</button>` : ""}
         </div>
@@ -231,6 +281,18 @@ async function openAppt(id) {
       try { await SSCrm.fetchJSON("/api/appointments/" + id, { method: "PATCH", body: JSON.stringify({ status: b.dataset.status }) }); SSCrm.toast("Updated", "success"); bg.remove(); render(); }
       catch (e) { SSCrm.toast(e.message, "error"); }
     });
+    const briefBtn = bg.querySelector("[data-brief]");
+    if (briefBtn) briefBtn.onclick = async () => {
+      briefBtn.disabled = true; briefBtn.textContent = "Sending…";
+      try {
+        const r = await SSCrm.fetchJSON("/api/appointments/" + id, { method: "POST", body: JSON.stringify({ action: "send_team_brief" }) });
+        SSCrm.toast(`Brief sent to ${(r.sent_to || []).join(", ")}${r.assigned ? "" : " (nobody assigned — sent to the whole team)"}`, "success");
+        briefBtn.textContent = "✓ Brief sent";
+      } catch (e) {
+        SSCrm.toast(e.message || "Could not send the brief", "error");
+        briefBtn.disabled = false; briefBtn.textContent = "✉ Send crew brief";
+      }
+    };
     const confirmBtn = bg.querySelector("[data-confirm]");
     if (confirmBtn) confirmBtn.onclick = async () => {
       confirmBtn.disabled = true; confirmBtn.textContent = "Sending…";
@@ -245,7 +307,8 @@ async function openAppt(id) {
     };
   }
 
-  function renderEdit() {
+  async function renderEdit() {
+    const crewHtml = await SSCrm.assigneePicker({ selected: crew, label: "Assigned to" });
     const start = (a.start_at || "").slice(0, 16);       // YYYY-MM-DDTHH:MM
     const date = start.slice(0, 10);
     const time = start.slice(11, 16) || "09:00";
@@ -272,12 +335,15 @@ async function openAppt(id) {
           <label><span>Site address</span><input id="e-addr" value="${SSCrm.esc(a.site_address || "")}"/></label>
           <label><span>Rooms</span><input id="e-rooms" value="${SSCrm.esc(a.rooms || "")}"/></label>
           <label><span>Notes</span><textarea id="e-notes" rows="3">${SSCrm.esc(a.notes || "")}</textarea></label>
+          ${crewHtml}
+          <p class="muted" style="font-size:12px;margin:-2px 0 0">Whoever is ticked gets the brief — client, phone, address and notes — on the morning of the visit.</p>
         </div></div>
         <div class="modal-foot">
           <button class="btn ghost" data-cancel>Cancel</button>
           <button class="btn primary" data-save>Save changes</button>
         </div>
       </div>`;
+    SSCrm.wireAssigneePicker(bg);
     bg.querySelector("[data-cancel]").onclick = renderView;
     bg.querySelector("[data-save]").onclick = async () => {
       const g = (i) => bg.querySelector("#e-" + i).value;
@@ -289,11 +355,13 @@ async function openAppt(id) {
         type: g("type"), status: g("status"),
         start_at: startAt, end_at: apptEnd(dateV, timeV, dur), duration_min: dur,
         site_address: g("addr").trim() || null, rooms: g("rooms").trim() || null, notes: g("notes").trim() || null,
+        assignee_ids: SSCrm.readAssigneePicker(bg) || [],
       };
       if (!body.name) { SSCrm.toast("Name is required", "error"); return; }
       const saveBtn = bg.querySelector("[data-save]"); saveBtn.disabled = true; saveBtn.textContent = "Saving…";
       try {
-        await SSCrm.fetchJSON("/api/appointments/" + id, { method: "PATCH", body: JSON.stringify(body) });
+        const r = await SSCrm.fetchJSON("/api/appointments/" + id, { method: "PATCH", body: JSON.stringify(body) });
+        if (r && r.assignees) crew = r.assignees;
         SSCrm.toast("Appointment updated", "success");
         bg.remove(); render();
       } catch (e) {

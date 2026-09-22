@@ -178,9 +178,6 @@ export const IMAGES = [
     subject: 'A living room media wall of walnut built-in cabinetry with fluted paneled doors, antique brass bar pulls, solid open display shelves with LED lighting holding books and ceramics, a recessed television flanked by closed cabinets, a stone hearth below. Walnut-stained floor.',
     alt: 'Living room media wall in walnut built-ins with fluted paneled doors, brass pulls, lit display shelves and a recessed television' },
 
-  { file: 'svc-murphy', ar: '1:1', w: 1024, h: 1024,
-    subject: 'A guest room wall bed closed flat into cream painted built-in cabinetry with raised-panel doors and polished nickel knobs, flanked by tall closed cabinets and solid open shelves with books and baskets, a run of drawers below. White oak floor.',
-    alt: 'Wall bed closed into cream painted built-ins with raised-panel doors, nickel knobs, tall cabinets and open shelves' },
 
   { file: 'svc-cabinets', ar: '3:2', w: 1024, h: 640,
     subject: 'A tight three-quarter view of a run of custom sage green painted inset cabinetry filling the whole frame, beaded face frames, unlacquered brass cup pulls and knobs, one dovetailed drawer standing open to show fitted walnut dividers, a solid white oak open shelf above holding plain ceramics, a soapstone counter. Cabinetry fills the frame edge to edge with no empty wall.',

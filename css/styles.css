@@ -528,6 +528,11 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
   .hero__inner { grid-template-columns: 1.05fr 0.95fr; align-items: center; gap: 3rem; }
   .hero { padding-bottom: var(--sp-7); }
   .svc-grid { grid-template-columns: repeat(3, 1fr); }
+  /* The grid paints its own hairlines, so a short last row would show as a grey
+     block. Let the last tile stretch across whatever is left of that row. */
+  .svc-grid > .svc:last-child:nth-child(3n + 2) { grid-column: span 2; }
+  /* twice as wide, so halve the image's ratio to keep the row the same height */
+  .svc-grid > .svc:last-child:nth-child(3n + 2) .svc__img { aspect-ratio: 32 / 10; }
   .stats { grid-template-columns: repeat(4, 1fr); }
   .split { grid-template-columns: 1fr 1fr; gap: 3.5rem; }
   .split--rev .split__media { order: 2; }

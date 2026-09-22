@@ -148,7 +148,7 @@
       '<details class="addr-step__more"><summary>Add a few details (optional)</summary>' +
         '<div class="addr-step__fields">' +
           (lead.email ? '' : '<input class="addr-email" type="email" autocomplete="email" placeholder="Email (for your design and quote)" ' + inp + '>') +
-          '<select class="addr-project" ' + inp + '><option value="">What space? (optional)</option><option>Walk-In Closet</option><option>Reach-In Closet</option><option>Custom Cabinets</option><option>Pantry</option><option>Garage Storage</option><option>Home Office</option><option>Laundry / Mudroom</option><option>Murphy / Wall Bed</option><option>Media / Wall Unit</option><option>Multiple Spaces</option></select>' +
+          '<select class="addr-project" ' + inp + '><option value="">What space? (optional)</option><option>Walk-In Closet</option><option>Reach-In Closet</option><option>Custom Cabinets</option><option>Pantry</option><option>Garage Storage</option><option>Home Office</option><option>Laundry / Mudroom</option><option>Media / Wall Unit</option><option>Multiple Spaces</option></select>' +
           '<input class="addr-street" type="text" autocomplete="address-line1" placeholder="Street address" ' + inp + '>' +
           '<div class="addr-step__csz"><input class="addr-city" type="text" autocomplete="address-level2" placeholder="City" ' + inp + '><input class="addr-state" type="text" autocomplete="address-level1" placeholder="TN" maxlength="2" ' + inp + '><input class="addr-zip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="ZIP" ' + inp + '></div>' +
           '<textarea class="addr-msg" rows="2" placeholder="Anything we should know about the space?" ' + inp + '></textarea>' +

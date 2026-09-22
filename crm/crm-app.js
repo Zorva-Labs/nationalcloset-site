@@ -437,7 +437,7 @@ function confirmDialog(msg) {
 // Free text is still allowed: the inputs use a <datalist>, not a <select>.
 const SERVICES = [
   "Walk-In Closet", "Reach-In Closet", "Custom Cabinets", "Kitchen Cabinets", "Bathroom Vanity", "Pantry",
-  "Garage Storage", "Home Office", "Laundry / Mudroom", "Murphy / Wall Bed", "Media / Wall Unit", "Multiple Spaces",
+  "Garage Storage", "Home Office", "Laundry / Mudroom", "Media / Wall Unit", "Multiple Spaces",
 ];
 function serviceDatalist(id = "service-options") {
   return `<datalist id="${id}">${SERVICES.map((s) => `<option value="${esc(s)}"></option>`).join("")}</datalist>`;

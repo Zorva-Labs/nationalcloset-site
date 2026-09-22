@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Templates · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc112"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc118"/></head>
 <body>
 <script src="/crm/crm-app.js?v=ncc110"></script>
 <script>
@@ -80,7 +80,7 @@ function renderTemplatesList(templates, kind) {
     return `<p class="muted" style="text-align:center;padding:30px">No ${activeTab} templates yet. <button class="btn primary sm" onclick="newTemplate()" style="margin-left:10px">+ New template</button></p>`;
   }
   return `
-    <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start">
+    <div class="tpl-layout" style="display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start">
       <div>
         <button class="btn primary" onclick="newTemplate()" style="width:100%;margin-bottom:10px">+ New template</button>
         <div style="display:flex;flex-direction:column;gap:2px">
@@ -285,7 +285,7 @@ function mergeFieldsHelp() {
   return `
     <div style="background:var(--bg-soft);border-radius:var(--r);padding:14px 18px;margin-top:18px;font-size:12px">
       <strong style="display:block;margin-bottom:8px;color:var(--ink)">Merge fields available in email templates</strong>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px 14px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px">
         <div><code>{{contact.name}}</code></div><div><code>{{contact.first_name}}</code></div><div><code>{{contact.email}}</code></div>
         <div><code>{{project.name}}</code></div>
         <div><code>{{estimate.number}}</code></div><div><code>{{estimate.total}}</code></div><div><code>{{estimate.view_url}}</code></div>

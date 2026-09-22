@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc112" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc118" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
@@ -174,10 +174,10 @@ function renderJobPipeline(project) {
 // Inline install-date picker — set or change the date right here; it saves the
 // moment a date is chosen (no modal), and moves the job forward automatically.
 function installDateField(project) {
-  return `<label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft);font-weight:600">
+  return `<label style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:8px;max-width:100%;font-size:13px;color:var(--ink-soft);font-weight:600">
     📅 Install date
     <input type="date" value="${project.install_date || ""}" onchange="setInstallDate(this.value)"
-      style="padding:7px 10px;border:2px solid var(--line);border-radius:8px;font:inherit;color:var(--ink)"/>
+      style="padding:7px 10px;border:2px solid var(--line);border-radius:8px;font:inherit;color:var(--ink);max-width:100%;min-width:0"/>
   </label>`;
 }
 
@@ -660,7 +660,7 @@ function renderOverview(s) {
             <h3>Customer</h3>
             <a class="btn ghost sm" href="/crm/contact.html?id=${project.contact_id}">Open contact →</a>
           </div>
-          <div style="display:grid;grid-template-columns:140px 1fr;gap:8px 14px;font-size:13px;color:var(--ink-soft)">
+          <div class="kv-grid" style="display:grid;grid-template-columns:140px minmax(0,1fr);gap:8px 14px;font-size:13px;color:var(--ink-soft)">
             <div class="muted">Name</div><div><strong style="color:var(--ink)">${e(project.contact_name)}</strong></div>
             <div class="muted">Email</div><div><a href="mailto:${e(project.contact_email)}">${e(project.contact_email)}</a></div>
             ${project.contact_phone ? `<div class="muted">Phone</div><div><a href="tel:${e(project.contact_phone)}">${e(project.contact_phone)}</a> · <a href="sms:${e(project.contact_phone)}">Text</a></div>` : ""}
@@ -729,7 +729,7 @@ function renderOverview(s) {
               <h3>Signed contract</h3>
               <span class="pill" data-s="${e(signedContract.status)}">${e(signedContract.status.replace(/_/g, " "))}</span>
             </div>
-            <div style="display:grid;grid-template-columns:140px 1fr;gap:8px 14px;font-size:13px;color:var(--ink-soft);margin-top:8px">
+            <div class="kv-grid" style="display:grid;grid-template-columns:140px minmax(0,1fr);gap:8px 14px;font-size:13px;color:var(--ink-soft);margin-top:8px">
               <div class="muted">Number</div><div><strong style="color:var(--ink)">${e(signedContract.number)}</strong></div>
               <div class="muted">Type</div><div>${e(signedContract.contract_type || "custom_order").replace(/_/g, " ")}</div>
               <div class="muted">Total</div><div class="money" style="font-size:15px">${fmtMoney(signedContract.total_cents)}</div>

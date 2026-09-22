@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Vendor · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc112"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc118"/>
 <style>
   .vendor-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
   @media (max-width: 1000px) { .vendor-grid { grid-template-columns: 1fr; } }
@@ -40,7 +40,7 @@ function render() {
     <div class="vendor-grid">
       <div>
         <div class="card" style="margin-bottom:14px">
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center">
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;text-align:center">
             <div><div style="font-size:26px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">${s.bill_count}</div><div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Bill${s.bill_count === 1 ? "" : "s"}</div></div>
             <div><div style="font-size:26px;font-weight:700;color:var(--money);font-variant-numeric:tabular-nums">${SSCrm.fmtMoney(s.paid_cents)}</div><div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Total paid</div></div>
             <div><div style="font-size:26px;font-weight:700;color:${s.outstanding_cents > 0 ? "#B91C1C" : "var(--ink)"};font-variant-numeric:tabular-nums">${SSCrm.fmtMoney(s.outstanding_cents)}</div><div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Outstanding</div></div>

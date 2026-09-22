@@ -2,7 +2,7 @@
 <html lang="en">
 <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Contact · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc112"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc118"/>
 <style>
   /* Contact-detail grid — collapses to one column under 900px so the side rail
      doesn't push the main column off-screen on narrow displays. */
@@ -53,7 +53,7 @@ function render() {
         <!-- Lifetime summary — jobs count, bookings count, total $ spent -->
         ${stats.project_count > 0 ? `
           <div class="card" style="margin-bottom:14px">
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center">
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;text-align:center">
               <div>
                 <div style="font-size:26px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">${stats.project_count}</div>
                 <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:0.06em">Job${stats.project_count === 1 ? "" : "s"} total</div>

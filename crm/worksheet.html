@@ -14,7 +14,11 @@
   .btn{font:inherit;font-weight:700;font-size:14px;padding:9px 16px;border-radius:8px;border:0;cursor:pointer;background:var(--ink);color:#fff;text-decoration:none;display:inline-block}
   .btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
   .tgl{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--soft);background:#fff;border:1.5px solid var(--line);padding:8px 12px;border-radius:8px;cursor:pointer}
-  .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;border-bottom:3px solid var(--ink);padding-bottom:14px;margin-bottom:20px}
+  .hd{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:20px;border-bottom:3px solid var(--ink);padding-bottom:14px;margin-bottom:20px}
+  /* On a phone the PO block sits under the title instead of beside it — at
+     375px the two side by side were 281px in a 267px row and the PO number
+     ran off the edge. Print is unaffected (print media is its own width). */
+  @media (max-width:700px){ .hd .po{text-align:left;white-space:normal} }
   .hd h1{font-size:26px;font-weight:900;letter-spacing:-.02em;line-height:1.05}
   .hd .sub{font-size:13px;color:var(--mute);font-weight:600;margin-top:3px}
   .hd .po{text-align:right;font-size:12px;color:var(--mute);font-weight:700;line-height:1.5;white-space:nowrap}

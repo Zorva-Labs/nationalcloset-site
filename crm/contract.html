@@ -6,7 +6,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc112" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc118" />
 <style>
   /* ── Printable contract document ────────────────────────────────────────
      The CRM screen shows an *editable* form (textareas, inputs) for admins.
@@ -152,12 +152,12 @@ function render() {
       </div>` : ""}
 
     <div class="no-print" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-      <div style="display:flex;gap:10px;align-items:center">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;min-width:0">
         ${SSCrm.pill(k.status)}
         <span class="pill" style="background:#F0FDFA;color:#0F766E;border-color:#CCFBF1">${contractTypeLabel(k.contract_type || "custom_order")}</span>
         <span class="muted" style="font-size:13px">${SSCrm.esc(k.project_name)} · <a href="/crm/contact.html?id=${k.contact_id}">${SSCrm.esc(k.contact_name)}</a></span>
       </div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${canSend ? `<button class="btn primary" onclick="sendContract()">Send to customer</button>` : ""}
         <button class="btn secondary" onclick="printContract()">🖨 Print / Save PDF</button>
         ${k.status !== "draft" ? `<a class="btn secondary" href="${customerUrl}" target="_blank">Customer link ↗</a>` : ""}
@@ -167,9 +167,9 @@ function render() {
 
     <div class="card">
       <div class="card-head"><h2>Scope &amp; line items</h2></div>
-      <table class="lines"><thead><tr>
+      <div class="lines-wrap"><table class="lines"><thead><tr>
         <th style="width:34%">Description</th><th>Room / Area</th><th class="num">Qty</th><th class="num">Unit $</th><th class="num">Total</th><th></th>
-      </tr></thead><tbody id="lines-body">${lines.length ? lines.map((l, i) => lineRow(l, i)).join("") : lineRow({}, 0)}</tbody></table>
+      </tr></thead><tbody id="lines-body">${lines.length ? lines.map((l, i) => lineRow(l, i)).join("") : lineRow({}, 0)}</tbody></table></div>
       <div class="add"><button onclick="addLine()">+ Line item</button></div>
 
       <div class="totals">

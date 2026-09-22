@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Availability · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc112"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc118"/></head>
 <body>
 <script src="/crm/crm-app.js?v=ncc110"></script>
 <script>
@@ -14,14 +14,14 @@ const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   document.getElementById("page").innerHTML = `
     <div class="card">
       <div class="card-head"><h2>Weekly hours</h2><span class="muted" style="font-size:12px">Times in 24h Central</span></div>
-      <table class="lines"><thead><tr><th>Day</th><th>Start</th><th>End</th><th>Active</th><th></th></tr></thead>
-      <tbody id="rules-body">${rules.length ? rules.map(ruleRow).join("") : ruleRow({ day_of_week: 1, start_minute: 540, end_minute: 1020, active: 1 })}</tbody></table>
+      <div class="lines-wrap"><table class="lines"><thead><tr><th>Day</th><th>Start</th><th>End</th><th>Active</th><th></th></tr></thead>
+      <tbody id="rules-body">${rules.length ? rules.map(ruleRow).join("") : ruleRow({ day_of_week: 1, start_minute: 540, end_minute: 1020, active: 1 })}</tbody></table></div>
       <div class="add"><button onclick="addRule()">+ Hours block</button></div>
     </div>
     <div class="card" style="margin-top:14px">
       <div class="card-head"><h2>Vacation / blocked times</h2></div>
-      <table class="lines"><thead><tr><th>Start</th><th>End</th><th>Reason</th><th></th></tr></thead>
-      <tbody id="blocks-body">${blocks.length ? blocks.map(blockRow).join("") : ""}</tbody></table>
+      <div class="lines-wrap"><table class="lines"><thead><tr><th>Start</th><th>End</th><th>Reason</th><th></th></tr></thead>
+      <tbody id="blocks-body">${blocks.length ? blocks.map(blockRow).join("") : ""}</tbody></table></div>
       <div class="add"><button onclick="addBlock()">+ Blocked range</button></div>
     </div>
     <div class="form-actions" style="margin-top:16px"><button class="btn primary" onclick="save()">Save availability</button></div>

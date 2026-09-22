@@ -309,7 +309,7 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 }
 .page-head h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
 .page-head .sub { color: var(--ink-soft); font-size: 13px; margin-top: 4px; }
-.page-head .actions { display: flex; gap: 8px; align-items: center; }
+.page-head .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 /* ============================================================
    Buttons
@@ -351,13 +351,20 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 .metric--money .metric__value { color: var(--money); }
 
 /* Dashboard grid */
-.dash { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
-@media (max-width: 900px) { .dash { grid-template-columns: 1fr; } }
+.dash { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 900px) { .dash { grid-template-columns: minmax(0, 1fr); } }
 
 /* ============================================================
    Data tables
    ============================================================ */
-.tbl { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+/* overflow-x:auto, not hidden — these tables run to 1600px on the Jobs list and
+   `hidden` meant the columns past the card edge simply could not be reached on a
+   phone. Any non-visible overflow still clips to the rounded corners. */
+.tbl {
+  width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r);
+  overflow-x: auto; overflow-y: hidden;
+  -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+}
 .tbl table { width: 100%; border-collapse: collapse; }
 .tbl th, .tbl td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--line-soft); font-size: 13px; vertical-align: middle; }
 .tbl thead th { background: var(--bg-soft); font-size: 11px; font-weight: 600; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.05em; }
@@ -456,7 +463,7 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
    Project page — tabbed workspace
    ============================================================ */
 .job { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
-.job__head { padding: 24px 28px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: start; }
+.job__head { padding: 24px 28px; border-bottom: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: start; }
 .job__title { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
 .job__customer { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
 .job__customer a { color: var(--ink); font-weight: 500; }
@@ -556,9 +563,9 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 .cal-month-head button { width: 32px; height: 32px; background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--r-sm); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: var(--ink); }
 .cal-month-head button:hover { background: var(--bg-hover); }
 .cal-month-head .today-btn { width: auto; padding: 0 14px; font-size: 13px; font-weight: 500; }
-.cal-dow-row { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--bg-soft); border-bottom: 1px solid var(--line); }
+.cal-dow-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); background: var(--bg-soft); border-bottom: 1px solid var(--line); }
 .cal-dow { padding: 8px 10px; font-size: 11px; font-weight: 600; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; }
-.cal-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.cal-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .cal-day { border-right: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); min-height: 120px; padding: 6px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; position: relative; transition: background 100ms ease; }
 .cal-day:hover { background: var(--bg-soft); }
 .cal-day:nth-child(7n) { border-right: 0; }
@@ -779,7 +786,7 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
 .app--wide .form { max-width: none; }
 
 @media (max-width: 900px) {
-  .lead-grid { grid-template-columns: 1fr; }
+  .lead-grid { grid-template-columns: minmax(0, 1fr); }
   .pipeline-step__label { display: none; }
   .pipeline-step { min-width: 0; padding: 8px 4px; }
 }
@@ -798,7 +805,7 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
 .room-windows { min-width: 0; width: 100%; overflow-x: auto; }
 
 @media (max-width: 780px) {
-  .room-body { grid-template-columns: 1fr; }
+  .room-body { grid-template-columns: minmax(0, 1fr); }
   .room-floorplan { max-width: 260px; }
 }
 
@@ -880,9 +887,12 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
   .tnav__quickadd-btn { width: 36px; height: 36px; }
   .tnav__user-btn { width: 36px; height: 36px; padding: 0; }
   .app { padding: 16px; margin-left: 0; }
-  .dash { grid-template-columns: 1fr; }
-  .job__head { grid-template-columns: 1fr; }
-  .job__status-actions { align-items: flex-start; flex-direction: row; }
+  /* minmax(0, …), not a bare 1fr: a bare `1fr` is minmax(auto, 1fr) and will not
+     shrink below its content's min-content width, so a wide card pushed the
+     whole column off the side of the screen with nothing to scroll. */
+  .dash { grid-template-columns: minmax(0, 1fr); }
+  .job__head { grid-template-columns: minmax(0, 1fr); }
+  .job__status-actions { align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
 }
 
 
@@ -972,4 +982,116 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
   display: inline-block; margin-left: 4px; padding: 0 4px;
   border-radius: 4px; background: var(--accent-soft); color: var(--crew-deep);
   font-size: 9px; font-weight: 700; letter-spacing: 0.04em;
+}
+
+/* ============================================================
+   Phones (≤700px) — nothing off-screen and unreachable
+   ------------------------------------------------------------
+   Audited every CRM page in a 375px viewport: 22 of them had content wider
+   than the screen that could not be scrolled to. Three causes, fixed here and
+   at the rules above:
+
+   1. `overflow: hidden` on the data-table card (fixed on .tbl above).
+   2. A `1fr` grid track is `minmax(auto, 1fr)` and will not shrink below its
+      content's min-content width — so a wide cell pushed the whole track past
+      the viewport. Fixed with `minmax(0, 1fr)` wherever a track holds free
+      content (.dash, .cal-month-grid, .job__head, .lead-grid below).
+   3. Pages that set `grid-template-columns` in an inline `style=` attribute
+      (reports, templates) beat the stylesheet's own media query, so the
+      two-column layout stayed two-column on a phone. Those need !important
+      here, or a class — both are used below.
+   ============================================================ */
+@media (max-width: 700px) {
+
+  /* ---- Data tables: scroll sideways, keep the first column in view --------
+     These lists run to 1600px. Scrolling reaches every column; pinning the
+     first one means you never lose track of which row you are reading. */
+  .tbl { position: relative; }
+  .tbl th, .tbl td { padding: 11px 12px; white-space: nowrap; }
+  .tbl th:first-child, .tbl td:first-child {
+    position: sticky; left: 0; z-index: 1;
+    /* An opaque background, or the scrolled columns show through the pinned one. */
+    background: var(--bg);
+    box-shadow: 1px 0 0 var(--line-soft);
+  }
+  .tbl thead th:first-child { background: var(--bg-soft); z-index: 2; }
+  .tbl tbody tr:hover td:first-child { background: var(--bg-hover); }
+  .tbl .empty { white-space: normal; }
+
+  /* ---- Page header: title over actions, actions wrap ---- */
+  .page-head { flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 18px; }
+  .page-head .actions { flex-wrap: wrap; }
+  .page-head .actions > * { flex: 1 1 auto; justify-content: center; text-align: center; }
+
+  /* ---- Two-column layouts stack. !important because reports.html and others
+     set grid-template-columns inline, which otherwise wins. ---- */
+  .lead-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .lead-grid__main, .lead-grid__side { min-width: 0; }
+
+  /* ---- Cards + job body: reclaim the side padding ---- */
+  .card { padding: 16px 14px; }
+  .job__head { padding: 18px 14px; }
+  .job__body { padding: 16px 14px; }
+  .job__tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .job__tabs::-webkit-scrollbar { display: none; }
+  .job__tab { white-space: nowrap; }
+
+  /* ---- Line-item editor (estimate / proposal / contract): let it scroll, and
+     stop the quantity box collapsing to 32px where nobody can tap it. ---- */
+  .lines-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+  .lines { min-width: 520px; }
+  .lines td, .lines th { padding: 6px 6px; }
+  .lines .num, .lines input.num { min-width: 64px; }
+  .lines input, .lines select, .lines textarea { min-height: 38px; font-size: 16px; }
+  .totals { max-width: none; margin-left: 0; }
+
+  /* ---- Long single-line values wrap rather than run off ---- */
+  .email-row__subject, .email-row__sub { white-space: normal; }
+  .activity__body { min-width: 0; overflow-wrap: anywhere; }
+  /* An email address or a long URL has no break opportunity, so it sets a
+     min-content width its container cannot go below — one long address was
+     enough to push a whole card off the screen. overflow-wrap is inherited, so
+     setting it on the containers covers everything inside them. */
+  .card, .job__head, .job__body, .kv-grid { overflow-wrap: anywhere; }
+  .kv-grid, .kv-grid > * { min-width: 0; }
+  /* Label-over-value on a phone: a fixed 140px label column plus a value is
+     wider than the card once the label column is a third of the screen. */
+  .kv-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 2px 0 !important; }
+  .kv-grid > :nth-child(odd) { font-weight: 600; color: var(--ink-soft); margin-top: 8px; }
+
+  /* ---- Forms: 16px inputs so iOS does not zoom on focus ---- */
+  .form input, .form select, .form textarea { font-size: 16px; }
+
+  /* ---- Month calendar: a dot per visit, not a squashed label --------------
+     Seven columns across 375px leaves each day ~48px — a text chip there was
+     rendering as "2:3…" and telling nobody anything. The colour already says
+     what kind of visit it is, and tapping the day opens the list with the full
+     details, so the grid shows a dot and the day view does the talking. */
+  .cal-day { flex-direction: row; flex-wrap: wrap; align-content: flex-start; gap: 3px; min-height: 58px; padding: 4px 3px; }
+  .cal-day-num { flex: 0 0 100%; }
+  .cal-event {
+    width: 8px; height: 8px; padding: 0; border-radius: 50%;
+    border-left: 0; font-size: 0; line-height: 0; flex: none;
+  }
+  .cal-event > * { display: none; }
+  .cal-more { flex: 0 0 100%; font-size: 10px; padding: 0 2px; }
+  .cal-legend { font-size: 11px; gap: 10px; }
+}
+
+/* A `1fr` track inside the reports grids has the same min-content floor as
+   .dash did; these are set inline on the page, so the width comes from here. */
+@media (max-width: 700px) {
+  .rpt-cards { grid-template-columns: minmax(0, 1fr) !important; }
+  .fnl-row { grid-template-columns: minmax(0, 1fr) auto !important; gap: 6px !important; }
+  .fnl-row > :nth-child(2) { grid-column: 1 / -1; }
+  /* Templates: the 300px template list sits above the editor instead of beside it. */
+  .tpl-layout { grid-template-columns: minmax(0, 1fr) !important; }
+
+  /* The report view/period switchers are segmented controls — a pill group that
+     cannot wrap without breaking its shape, so it scrolls sideways instead. */
+  .rpt-presets { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .rpt-presets::-webkit-scrollbar { display: none; }
+  .rpt-preset { white-space: nowrap; }
+  .rpt-bar > * { max-width: 100%; min-width: 0; }
+  .rpt-dates, .rpt-right { flex-wrap: wrap; }
 }

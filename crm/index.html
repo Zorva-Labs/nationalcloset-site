@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc118" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc121" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
@@ -157,7 +157,7 @@ function renderUpcoming(list) {
   return `<div class="tbl" style="border:0"><table>
     <tbody>${list.map((a) => `
       <tr class="clickable" onclick="location.href='/crm/calendar.html?focus=${a.id}'">
-        <td style="width:36px;color:var(--accent);font-weight:600">${SSCrm.esc((a.start_at || "").slice(8, 10))}</td>
+        <td style="width:36px;color:var(--accent-text);font-weight:600">${SSCrm.esc((a.start_at || "").slice(8, 10))}</td>
         <td>
           <div style="font-weight:600">${SSCrm.esc(a.name)}</div>
           <div style="font-size:12px;color:var(--ink-soft)">${SSCrm.fmtDateTime(a.start_at)} · ${SSCrm.esc(a.type)}</div>

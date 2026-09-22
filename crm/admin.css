@@ -441,7 +441,7 @@ button { font: inherit; cursor: pointer; }
   font-size: 2.6rem;
 }
 .login__brand .admin__brand-text strong { color: var(--color-ink); font-size: 1.2rem; }
-.login__brand .admin__brand-text span { color: var(--color-brass); }
+.login__brand .admin__brand-text span { color: var(--color-brass-text); }
 
 .login h1 {
   font-family: var(--font-display);
@@ -798,6 +798,12 @@ button { font: inherit; cursor: pointer; }
   --color-champagne: #F6E6DF;
   --color-brass: #D2683F;
   --color-brass-hot: #B9542F;
+  /* Same split as crm-app.css: #D2683F carries white at 3.63:1 and reads as
+     text at 3.44:1, both under WCAG AA. The brand colour is unchanged; these
+     two are what the login page uses where words are involved. */
+  --color-brass-fill: #B9542F;        /* white label on it: 4.80 */
+  --color-brass-fill-hover: #9C4420;  /* 6.44 */
+  --color-brass-text: #A8481F;        /* as text: 5.81 on white, 5.52 on --color-bg-2 */
   --color-espresso: #16140F;
   --color-espresso-2: #2B2622;
   --c-bg: var(--color-bg); --c-bg-2: var(--color-bg-2); --c-bg-3: var(--color-bg-3);
@@ -817,6 +823,6 @@ button { font: inherit; cursor: pointer; }
 .login label { font-family: var(--font-body); font-size: 0.68rem; letter-spacing: 0.09em; }
 .login input { font-family: var(--font-body); border-radius: 6px; }
 .login input:focus { outline: 1px solid var(--color-brass); border-color: var(--color-brass); }
-.login button { font-family: var(--font-body); background: var(--color-brass); color: #fff; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.02em; text-transform: none; border-radius: 6px; }
-.login button:hover { background: var(--color-brass-hot); }
+.login button { font-family: var(--font-body); background: var(--color-brass-fill); color: #fff; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.02em; text-transform: none; border-radius: 6px; }
+.login button:hover { background: var(--color-brass-fill-hover); }
 .login__card { border-radius: 10px; }

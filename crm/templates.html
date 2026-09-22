@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Templates · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc118"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc121"/></head>
 <body>
 <script src="/crm/crm-app.js?v=ncc110"></script>
 <script>
@@ -59,7 +59,7 @@ function render() {
   document.getElementById("page").innerHTML = `
     <div style="background:var(--bg);border:1px solid var(--line);border-radius:var(--r);overflow:hidden">
       <nav style="display:flex;border-bottom:1px solid var(--line);padding:0 14px">
-        ${TABS.map((t) => `<button class="tab-btn" data-tab="${t.key}" style="padding:14px 18px;font-size:13px;font-weight:${activeTab === t.key ? "600" : "500"};color:${activeTab === t.key ? "var(--accent)" : "var(--ink-soft)"};background:transparent;border:0;border-bottom:2px solid ${activeTab === t.key ? "var(--accent)" : "transparent"};cursor:pointer">${SSCrm.esc(t.label)}</button>`).join("")}
+        ${TABS.map((t) => `<button class="tab-btn" data-tab="${t.key}" style="padding:14px 18px;font-size:13px;font-weight:${activeTab === t.key ? "600" : "500"};color:${activeTab === t.key ? "var(--accent-text)" : "var(--ink-soft)"};background:transparent;border:0;border-bottom:2px solid ${activeTab === t.key ? "var(--accent)" : "transparent"};cursor:pointer">${SSCrm.esc(t.label)}</button>`).join("")}
       </nav>
       <div id="tab-content" style="padding:24px"></div>
     </div>
@@ -87,7 +87,7 @@ function renderTemplatesList(templates, kind) {
           ${templates.map((t) => `
             <button class="tpl-row" data-id="${t.id}" data-kind="${kind}" style="text-align:left;padding:10px 14px;border:0;border-radius:var(--r-sm);background:${editingId === t.id ? "var(--accent-soft)" : "transparent"};color:${editingId === t.id ? "var(--accent-ink)" : "var(--ink)"};cursor:pointer;font-size:13px">
               <strong>${SSCrm.esc(t.name)}</strong>
-              ${t.is_default ? `<span style="font-size:10px;color:var(--accent);font-weight:600;margin-left:6px">DEFAULT</span>` : ""}
+              ${t.is_default ? `<span style="font-size:10px;color:var(--accent-text);font-weight:600;margin-left:6px">DEFAULT</span>` : ""}
               ${t.subkind ? `<div style="font-size:11px;color:var(--ink-soft);font-weight:400;margin-top:2px">${SSCrm.esc(t.subkind)}</div>` : ""}
               ${kind === "email" ? `<div style="font-size:11px;color:var(--ink-soft);font-weight:400;margin-top:2px">${SSCrm.esc(t.category || "general")}</div>` : ""}
             </button>
@@ -150,7 +150,7 @@ function renderEditor() {
     if (!t) return;
     editor.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <h3 style="margin:0;font-size:15px">${SSCrm.esc(t.name)} ${t.is_default ? `<span style="font-size:11px;color:var(--accent);margin-left:8px">DEFAULT</span>` : ""}</h3>
+        <h3 style="margin:0;font-size:15px">${SSCrm.esc(t.name)} ${t.is_default ? `<span style="font-size:11px;color:var(--accent-text);margin-left:8px">DEFAULT</span>` : ""}</h3>
         <div style="display:flex;gap:8px">
           ${!t.is_default ? `<button class="btn secondary sm" onclick="makeDefault(${t.id})">Make default</button>` : ""}
           <button class="btn danger sm" onclick="delDoc(${t.id})">Delete</button>

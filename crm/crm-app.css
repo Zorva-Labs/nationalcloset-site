@@ -25,28 +25,42 @@
   --line-soft:    #EFF1F5;
   --line-strong:  #CBD5E1;    /* slate-300 */
 
-  /* Accent — single slate blue, Tave-ish */
-  --accent:       #2563EB;    /* blue-600 */
-  --accent-hover: #1D4ED8;    /* blue-700 */
-  --accent-soft:  #DBEAFE;    /* blue-100 */
-  --accent-ink:   #1E40AF;    /* blue-800 — for text on soft bg */
+  /* Accent — single slate blue, Tave-ish.
+     Three separate jobs, three tokens. A colour that reads well as a filled
+     background is usually too light to carry words on a pale one, so the accent
+     that fills a button is NOT the accent that writes a link. See the terracotta
+     block at the bottom of this file for the measured ratios that forced the split. */
+  --accent:            #2563EB;   /* brand fill, borders, focus rings, bars */
+  --accent-fill:       #1D4ED8;   /* a filled control carrying a white label */
+  --accent-fill-hover: #1E3A8A;   /* that control's hover */
+  --accent-text:       #1E40AF;   /* the accent as TEXT on a light surface */
+  --accent-text-hover: #172554;   /* link hover */
+  --accent-soft:       #DBEAFE;   /* blue-100 */
+  --accent-hover:      #1D4ED8;   /* legacy name, kept for anything still using it */
+  --accent-ink:        var(--accent-text);
 
   /* Pipeline status colors (slate-tinted, not garish) */
-  --s-new:        #64748B;
-  --s-booked:     #6366F1;    /* indigo-500 — consult booked */
-  --s-measured:   #06B6D4;    /* cyan-500 */
-  --s-quoted:     #F59E0B;    /* amber-500 */
-  --s-proposed:   #8B5CF6;    /* violet-500 */
-  --s-contracted: #2563EB;    /* blue-600 */
-  --s-installing: #14B8A6;    /* teal-500 */
-  --s-complete:   #10B981;    /* emerald-500 */
-  --s-lost:       #94A3B8;    /* slate-400 */
+  /* Every one of these is ONLY ever used as the TEXT of a status pill, on that
+     pill's own pale tint — so each is the hue taken down to clear 4.5:1 there
+     rather than the Tailwind-500 it started as. The amber pill measured 2.00:1
+     before this, which is why "proposal" was the hardest word in the CRM to read.
+     Ratios are against the tint each pill actually paints (see .pill below). */
+  --s-new:        #5D6B81;    /* was #64748B — 4.17 → 4.74 */
+  --s-booked:     #5457F0;    /* was #6366F1 — 3.99 → 4.70 */
+  --s-measured:   #047C91;    /* was #06B6D4 — 2.33 → 4.70 */
+  --s-quoted:     #9A6306;    /* was #F59E0B — 2.00 → 4.70 */
+  --s-proposed:   #7C47F5;    /* was #8B5CF6 — 3.86 → 4.70 */
+  --s-contracted: #2563EB;    /* blue-600 — 4.75, already clear */
+  --s-installing: #0E7E72;    /* was #14B8A6 — 2.39 → 4.74 */
+  --s-complete:   #0B7F59;    /* was #10B981 — 2.41 → 4.75 */
+  --s-lost:       #5B6E89;    /* was #94A3B8 — 2.34 → 4.75 */
 
   /* Money tone */
   --money:        #047857;    /* emerald-700 — for $ amounts */
 
   /* Danger */
-  --danger:       #DC2626;    /* red-600 */
+  --danger:       #DC2626;    /* red-600 — a FILL (the error toast); white on it is 4.83 */
+  --danger-text:  #C72020;    /* the same red as TEXT: 5.74 on white, 4.70 on --danger-soft */
   --danger-soft:  #FEE2E2;
 
   /* Type — system stack for max legibility, kept consistent w/ admin patterns */
@@ -78,8 +92,8 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 button, input, select, textarea { font: inherit; color: inherit; }
-a { color: var(--accent); text-decoration: none; }
-a:hover { color: var(--accent-hover); text-decoration: underline; text-underline-offset: 2px; }
+a { color: var(--accent-text); text-decoration: none; }
+a:hover { color: var(--accent-text-hover); text-decoration: underline; text-underline-offset: 2px; }
 h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink); }
 
 /* ============================================================
@@ -228,14 +242,14 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 .tnav__quickadd { position: relative; }
 .tnav__quickadd-btn {
   width: 100%; height: 38px;
-  background: var(--accent); color: #fff;
+  background: var(--accent-fill); color: #fff;
   border: 0; border-radius: var(--r-sm);
   display: flex; align-items: center; justify-content: center; gap: 6px;
   cursor: pointer; font-size: 13px; font-weight: 600;
   transition: background var(--dur) var(--ease);
 }
 .tnav__quickadd-btn::after { content: "New"; }
-.tnav__quickadd-btn:hover { background: var(--accent-hover); }
+.tnav__quickadd-btn:hover { background: var(--accent-fill-hover); }
 .tnav__quickadd-menu {
   position: absolute; left: 100%; bottom: 0; margin-left: 8px;
   min-width: 240px;
@@ -316,16 +330,16 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
    ============================================================ */
 .btn { font-size: 13px; font-weight: 500; padding: 8px 14px; border-radius: var(--r-sm); border: 1px solid transparent; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease); text-decoration: none; }
 .btn:hover { text-decoration: none; }
-.btn.primary { background: var(--accent); color: #fff; }
-.btn.primary:hover { background: var(--accent-hover); color: #fff; }
+.btn.primary { background: var(--accent-fill); color: #fff; }
+.btn.primary:hover { background: var(--accent-fill-hover); color: #fff; }
 .btn.secondary { background: var(--bg); color: var(--ink); border-color: var(--line-strong); }
 .btn.secondary:hover { background: var(--bg-hover); border-color: var(--line-strong); }
 .btn.ghost { background: transparent; color: var(--ink-soft); border-color: transparent; padding: 8px 12px; }
 .btn.ghost:hover { background: var(--bg-hover); color: var(--ink); }
-.btn.danger { background: transparent; color: var(--danger); border-color: var(--line); }
+.btn.danger { background: transparent; color: var(--danger-text); border-color: var(--line); }
 .btn.danger:hover { background: var(--danger-soft); border-color: var(--danger); }
-.btn.success { background: #059669; color: #fff; }
-.btn.success:hover { background: #047857; color: #fff; }
+.btn.success { background: #047857; color: #fff; }  /* was #059669 — white on it 3.77 → 5.48 */
+.btn.success:hover { background: #036B4E; color: #fff; }  /* 6.53 */
 .btn.lg { padding: 11px 20px; font-size: 14px; }
 .btn.sm { padding: 5px 10px; font-size: 12px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -338,7 +352,7 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 .card-head h2 { font-size: 15px; font-weight: 600; color: var(--ink); }
 .card-head h3 { font-size: 14px; font-weight: 600; color: var(--ink); }
 .card-head .more { font-size: 12px; color: var(--ink-soft); }
-.card-head .more:hover { color: var(--accent); }
+.card-head .more:hover { color: var(--accent-text); }
 
 /* Metric tiles */
 .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
@@ -411,7 +425,7 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 .pill[data-s="completed"],
 .pill[data-s="fully_executed"]     { color: var(--s-complete); background: #ECFDF5; border-color: #D1FAE5; }
 .pill[data-s="lost"], .pill[data-s="cancelled"], .pill[data-s="declined"], .pill[data-s="voided"] { color: var(--s-lost); background: #F1F5F9; }
-.pill[data-s="expired"]            { color: #B9542F; background: #F6E6DF; border-color: #EBC7B7; }
+.pill[data-s="expired"]            { color: var(--accent-text); background: #F6E6DF; border-color: #EBC7B7; }
 .pill[data-s="draft"]              { color: var(--ink-muted); background: var(--bg-soft); }
 
 /* Big-status banner (e.g. "Job Booked!" on project page) */
@@ -424,7 +438,10 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
   margin-bottom: 20px;
 }
 .banner--success { background: linear-gradient(135deg, #ECFDF5, #F0FDFA); border-color: #BBF7D0; }
-.banner__icon { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.7); display: inline-flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; }
+/* The icon is a mark, not a word, so its bar is 3:1 rather than 4.5:1 — but it
+   sits on a near-white disc, where --accent only reaches ~3.4:1. Using the text
+   shade costs nothing and gives it real margin. */
+.banner__icon { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.7); display: inline-flex; align-items: center; justify-content: center; color: var(--accent-text); flex-shrink: 0; }
 .banner--success .banner__icon { color: #059669; }
 .banner__body strong { display: block; font-size: 15px; color: var(--ink); font-weight: 600; }
 .banner__body span { font-size: 13px; color: var(--ink-soft); }
@@ -487,7 +504,7 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
   transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 .job__tab:hover { color: var(--ink); }
-.job__tab.is-active { color: var(--accent); border-bottom-color: var(--accent); }
+.job__tab.is-active { color: var(--accent-text); border-bottom-color: var(--accent); }
 .job__tab-count { background: var(--bg-soft); color: var(--ink-soft); font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-left: 6px; font-weight: 500; }
 .job__tab.is-active .job__tab-count { background: var(--accent-soft); color: var(--accent-ink); }
 
@@ -635,7 +652,7 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 .lines .rm:hover { color: var(--danger); }
 .lines .add { padding: 12px 0; }
 .lines .add button { font-size: 12px; padding: 7px 14px; background: var(--bg); border: 1px dashed var(--line-strong); border-radius: var(--r-sm); color: var(--ink-soft); cursor: pointer; }
-.lines .add button:hover { color: var(--accent); border-color: var(--accent); }
+.lines .add button:hover { color: var(--accent-text); border-color: var(--accent); }
 
 .totals { margin-top: 14px; margin-left: auto; max-width: 280px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; font-size: 13px; }
 .totals .r { display: flex; justify-content: space-between; padding: 4px 0; }
@@ -650,7 +667,7 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 .sig canvas { display: block; width: 100%; height: 160px; cursor: crosshair; touch-action: none; background: linear-gradient(transparent calc(100% - 1px), var(--line) calc(100% - 1px)); }
 .sig__bar { padding: 8px 12px; border-top: 1px solid var(--line-soft); display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--ink-soft); }
 .sig__bar button { background: transparent; border: 0; color: var(--ink-soft); font-size: 12px; cursor: pointer; }
-.sig__bar button:hover { color: var(--accent); }
+.sig__bar button:hover { color: var(--accent-text); }
 
 /* ============================================================
    Toasts + modals
@@ -758,7 +775,7 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
 .pipeline-step.done { color: var(--ink); }
 .pipeline-step.done .pipeline-step__dot { background: #BBF7D0; color: #166534; }
 .pipeline-step.current { background: var(--accent-soft); color: var(--accent-ink); }
-.pipeline-step.current .pipeline-step__dot { background: var(--accent); color: #fff; }
+.pipeline-step.current .pipeline-step__dot { background: var(--accent-fill); color: #fff; }
 .pipeline-step.future .pipeline-step__dot { background: var(--line); color: var(--ink-soft); }
 
 .pipeline-bar__terminal {
@@ -836,8 +853,13 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
 }
 .email-row__head:hover { background: var(--bg-soft); }
 .email-row__dir { font-size: 16px; color: var(--ink-soft); font-weight: 700; }
-.email-row--out .email-row__dir { color: #10B981; }
-.email-row--in  .email-row__dir { color: #6366F1; }
+/* The arrows are text characters carrying meaning (sent / received), so they
+   need 4.5:1 like any other word — the emerald-500 they used measured 2.54:1 on
+   white. They now reuse the status tokens, which are already solved and keep the
+   arrow the same hue as the pill it belongs with. The 3px left border above
+   stays the brighter original: it is a mark, not a word, and 3:1 is its bar. */
+.email-row--out .email-row__dir { color: var(--s-complete); }  /* 5.01 on white */
+.email-row--in  .email-row__dir { color: var(--s-booked); }    /* 5.25 on white */
 .email-row__meta { min-width: 0; }
 .email-row__subject { font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .email-row__sub { font-size: 12px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
@@ -909,40 +931,65 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
   --line: #E3E1DC;
   --line-soft: #EDECE8;
   --line-strong: #D8D6D0;
-  --accent: #D2683F;
-  --accent-hover: #B9542F;
-  --accent-soft: #F6E6DF;
-  --accent-ink: #B9542F;
+  /* ── The terracotta scale ──────────────────────────────────────────────
+     One hue, three jobs, and they cannot share a value: measured as painted,
+     #D2683F carries white at 3.63:1 and reads as text at 3.44–3.63:1, both
+     under the 4.5:1 WCAG AA needs at the sizes the CRM sets. The brand colour
+     itself is unchanged — it still fills, borders and rings everything that has
+     no words on top of it. What moved is the two shades that carry text.
+
+       --accent             the brand. Fills with nothing written on them,
+                            borders, focus rings, progress bars.
+       --accent-fill        a filled control that carries a white label.
+                            white on it 4.80.
+       --accent-fill-hover  that control's hover. white on it 6.44.
+       --accent-text        the accent as TEXT on any light surface here:
+                            white 5.81 · --bg-alt 5.52 · --bg-soft 5.10 ·
+                            --bg-hover 4.92 · --accent-soft 4.79.
+       --accent-text-hover  link hover. white 7.78 · --accent-soft 6.41.
+
+     Verified in the browser at 1280px and 375px, walking up for the real
+     painted background rather than trusting the declared one. */
+  --accent:            #D2683F;
+  --accent-fill:       #B9542F;
+  --accent-fill-hover: #9C4420;
+  --accent-text:       #A8481F;
+  --accent-text-hover: #8A3A1A;
+  --accent-soft:       #F6E6DF;
+  /* Aliases, not second answers. The pages carry `color:var(--accent-ink)` in
+     inline styles and --accent-hover predates the split; both resolve to the
+     right member of the scale so nothing is left behind. New code uses the
+     names above. */
+  --accent-hover: var(--accent-fill);
+  --accent-ink:   var(--accent-text);
   --font: "Montserrat", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 .tnav__brand-logo { height: 30px; width: auto; display: block; flex: none; }
 .tnav__brand { gap: 9px; font-family: var(--font); font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
-.tnav__brand:hover { color: var(--accent); }
+.tnav__brand:hover { color: var(--accent-text); }
 
 /* ============================================================
    Team — who is going out on a consult or a job
    Chips are read-only (calendar, job header, visit list); the picker is the
    checkbox row inside the appointment / job forms.
 
-   --crew-deep is a deeper terracotta than --accent-ink on purpose: measured as
-   painted, --accent-ink (#B9542F) on --accent-soft is 3.96:1 and white on
-   --accent (#D2683F) is 3.63:1, both under WCAG AA for text this size. The
-   value below clears 4.5:1 both ways (4.79 and 5.81) and still reads as the
-   same terracotta, so a crew name stays legible on a phone in a truck.
+   Colour comes from --accent-text (the shared accent-as-text token declared with
+   the theme above). This block used to carry its own --crew-deep for the same
+   value, because the shared tokens were below WCAG AA and fixing them was out
+   of scope at the time; they are fixed now, so there is one answer.
    ============================================================ */
-:root { --crew-deep: #A8481F; }
 
 .crew-chip {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 3px 9px 3px 3px; margin: 0 5px 3px 0;
-  background: var(--accent-soft); color: var(--crew-deep);
+  background: var(--accent-soft); color: var(--accent-text);
   border-radius: 999px; font-size: 11.5px; font-weight: 600; line-height: 1.6;
   white-space: nowrap; vertical-align: middle;
 }
 .crew-chip > i {
   display: inline-flex; align-items: center; justify-content: center;
   width: 19px; height: 19px; border-radius: 50%;
-  background: var(--crew-deep); color: #fff;
+  background: var(--accent-text); color: #fff;
   font-size: 9px; font-weight: 700; font-style: normal; letter-spacing: 0.02em;
 }
 .crew-chip--none {
@@ -973,14 +1020,14 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
   background: var(--bg-soft); color: var(--ink-soft);
   font-size: 10px; font-weight: 700; font-style: normal;
 }
-.crew-opt.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--crew-deep); }
-.crew-opt.is-on > i { background: var(--crew-deep); color: #fff; }
+.crew-opt.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
+.crew-opt.is-on > i { background: var(--accent-text); color: #fff; }
 
 /* Calendar month cell — the crew is one initial per person, right-aligned,
    so a day with three events still fits. */
 .cal-event .crew-dot {
   display: inline-block; margin-left: 4px; padding: 0 4px;
-  border-radius: 4px; background: var(--accent-soft); color: var(--crew-deep);
+  border-radius: 4px; background: var(--accent-soft); color: var(--accent-text);
   font-size: 9px; font-weight: 700; letter-spacing: 0.04em;
 }
 

@@ -9,12 +9,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc118" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc121" />
   <link rel="icon" href="/img/favicon-nc.png" />
   <style>
     .tf-tog{display:inline-flex;border:2px solid var(--line-soft,#e6e3dd);border-radius:999px;overflow:hidden;background:#fff}
     .tf-tog button{font-family:inherit;font-size:.85rem;font-weight:700;padding:7px 20px;border:0;background:transparent;color:var(--ink-soft);cursor:pointer}
-    .tf-tog button.on{background:var(--accent);color:#fff}
+    .tf-tog button.on{background:var(--accent-fill);color:#fff}
   .src-head{
   font-size:.78rem;text-transform:uppercase;letter-spacing:.09em;
   font-weight:700;margin:0 0 .3rem;
@@ -89,7 +89,7 @@
 
 .why{margin:0 0 .9rem}
 .why summary{display:inline-block;cursor:pointer;list-style:none;font-size:.75rem;font-weight:600;
-  color:var(--muted,#6b7684);border-bottom:1px dotted currentColor;padding:.1rem 0}
+  color:var(--muted,#656f7d);border-bottom:1px dotted currentColor;padding:.1rem 0}
 .why summary::-webkit-details-marker{display:none}
 .why summary:hover{color:var(--ink-2,#39424e)}
 .why[open] summary{margin-bottom:.5rem}
@@ -110,7 +110,7 @@
   border-radius:2px;padding:.7rem .8rem;
 }
 .tile-n{margin:0;font-size:1.35rem;font-weight:700;letter-spacing:-.02em;line-height:1.1}
-.tile-k{margin:.15rem 0 0;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted,#6b7684)}
+.tile-k{margin:.15rem 0 0;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted,#656f7d)}
 .src-ga .tile{background:rgba(255,255,255,.75);border-color:#c9dcf4}
 .src-gsc .tile{background:rgba(255,255,255,.75);border-color:#cfe6d6}
 
@@ -317,7 +317,7 @@ let mode = "today"; // "today" | "all"
 <p class="panel-help">Where visitors were immediately before they arrived. <strong>Organic Search</strong> means they found you on Google without an ad.</p><a class="more" href="/crm/leads.html">Lead sources →</a></div>
       <div id="tf-view" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:4px 0 10px;font-size:12px">
         <span style="display:inline-flex;border:1px solid var(--line-soft);border-radius:6px;overflow:hidden">
-          <button type="button" id="tv-humans" class="on" style="font:inherit;padding:.3rem .7rem;border:0;background:var(--accent);color:#fff;cursor:pointer">Real visitors</button>
+          <button type="button" id="tv-humans" class="on" style="font:inherit;padding:.3rem .7rem;border:0;background:var(--accent-fill);color:#fff;cursor:pointer">Real visitors</button>
           <button type="button" id="tv-all" style="font:inherit;padding:.3rem .7rem;border:0;background:transparent;color:var(--ink);cursor:pointer">All requests</button>
         </span>
         <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="tv-tn"> Tennessee only</label>

@@ -4,11 +4,25 @@
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Your Estimate · National Closet Company</title>
   <meta name="robots" content="noindex, nofollow"/>
-  <link rel="icon" type="image/svg+xml" href="/assets/images/favicon.svg"/>
+  <link rel="icon" type="image/png" href="/img/favicon-ncc.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/styles.css?v=blog10"/>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <!-- NCC's tokens, as on /contract/ (this page once expected them from a /styles.css that was never in this repo). -->
+  <style>
+    :root{
+      --color-bg:#FAF9F6; --color-bg-2:#EDECE8; --color-bg-3:#E3E1DC;
+      --color-ink:#16140F; --color-ink-2:#2B2622; --color-ink-soft:#3A362F; --color-muted:#6C665B;
+      --color-line:#E3E1DC; --color-line-soft:#EDECE8;
+      --color-brass:#D2683F; --color-brass-hot:#B9542F; --color-champagne:#F6E6DF;
+      --color-espresso:#16140F; --color-espresso-2:#000000;
+      --font-display:"Montserrat", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-body:"Montserrat", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-mono:"Montserrat", system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body { margin: 0; background: var(--color-bg); color: var(--color-ink); font-family: var(--font-body); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  </style>
   <style>
     .doc { max-width: 820px; margin: 0 auto; padding: clamp(60px, 10vw, 120px) clamp(20px, 4vw, 40px) 80px; }
     .doc-mast { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 28px; border-bottom: 1px solid var(--color-line); margin-bottom: 36px; }
@@ -71,7 +85,7 @@ function render(e, lines) {
   document.title = `${e.number} · Your Estimate · National Closet Company`;
   document.getElementById("root").innerHTML = `
     <div class="doc-mast">
-      <div class="doc-brand">National Closet Company<small>Blinds, Shutters &amp; Shades</small></div>
+      <div class="doc-brand">National Closet Company<small>Custom Closets &amp; Closet Systems</small></div>
       <div class="doc-num">${esc(e.number)}</div>
     </div>
 

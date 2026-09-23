@@ -76,7 +76,8 @@ for (const file of walk(OUT).filter((f) => /\.(html|css|json|webmanifest)$/.test
   ];
   for (let r of refs) {
     r = r.trim();
-    if (!r || /^[a-z][a-z0-9+.-]*:|^\/\/|[${}+<>\s]/i.test(r)) continue;
+    /* %23 is an encoded #: a fragment inside an inline SVG data URI, not a file. */
+    if (!r || /^[a-z][a-z0-9+.-]*:|^\/\/|^%23|[${}+<>\s]/i.test(r)) continue;
     const abs = r.startsWith('/') ? r : path.posix.join(at, r);
     if (abs.startsWith('/cdn-cgi/') || routes.some((p) => abs === p || abs.startsWith(`${p}/`))) continue;
     if (!served(abs)) missing.add(`${abs}  (${path.relative(OUT, file)})`);

@@ -110,8 +110,8 @@
     "check": null
   },
   "deploy": {
-    "command": "npx wrangler pages deploy . --project-name=nationalcloset --branch=main --commit-dirty=true",
+    "command": "npx wrangler pages deploy . --project-name=nationalcloset --branch=main --commit-dirty=true && node ~/site-kit/bin/site-kit.mjs submit",
     "auth": "CLOUDFLARE_API_KEY + CLOUDFLARE_EMAIL (unset CLOUDFLARE_API_TOKEN)",
-    "notes": "root deploy; pages are built/synced by tools/site-build/stage4.py (chrome sweep + page builds) — run it, review, deploy"
+    "notes": "root deploy; pages are built/synced by tools/site-build/stage4.py (chrome sweep + page builds) — run it, review, deploy; the last step submits the changes to IndexNow, Search Console and Bing — commit .indexnow.json after"
   }
 }

@@ -12,6 +12,7 @@ Marketing site + full CRM for National Closet Company (custom closets, pantries,
 set -a; . ~/.env; set +a; unset CLOUDFLARE_API_TOKEN   # credentials live in ~/.env, never in the repo
 git fetch origin && git rev-list --count HEAD..origin/main   # must print 0 before any build or deploy
 npx wrangler pages deploy . --project-name=nationalcloset --branch=main --commit-dirty=true
+node ~/site-kit/bin/site-kit.mjs submit   # IndexNow + Search Console + Bing, once the real domain serves the deploy; commit .indexnow.json after
 ```
 - root deploy; pages are built/synced by tools/site-build/stage4.py (chrome sweep + page builds) — run it, review, deploy
 - Or `node ~/fleet/bin/fleet.mjs deploy nationalcloset`, which does the same from `site.json` and refuses a checkout that is behind origin.

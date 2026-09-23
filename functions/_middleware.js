@@ -64,7 +64,20 @@ function isBot(ua) {
 
 const REPO_INTERNAL = /^\/(tools|scripts|migrations|functions|\.claude|\.wrangler|node_modules)(\/|$)|^\/crm\/migrations\/|^\/crm\/setup-admin\.mjs$|^\/(CLAUDE\.md|CHANGELOG\.md|site\.json|wrangler\.toml|build\.mjs|package(-lock)?\.json|\.gitignore|\.indexnow\.json|\.dev\.vars)$|\.(sql|toml|py|log)$/i;
 
+/* nationalcloset.pages.dev serves the same pages as nationalclosetco.com. It
+   must never be indexed as a duplicate of the real domain: every response on a
+   *.pages.dev host (deployment aliases included) leaves with noindex, whichever
+   path below produced it; it keeps being served (it is the preview copy).
+   Until 2026-09-23 it went out indexable, held back only by the canonical tag. */
 export async function onRequest(context) {
+  const res = await handle(context);
+  if (!new URL(context.request.url).hostname.endsWith(".pages.dev")) return res;
+  const out = new Response(res.body, res);
+  out.headers.set("X-Robots-Tag", "noindex, nofollow");
+  return out;
+}
+
+async function handle(context) {
   const { request, next } = context;
   const url = new URL(request.url);
 

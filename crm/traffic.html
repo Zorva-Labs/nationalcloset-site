@@ -261,6 +261,179 @@ html,body{max-width:100%;overflow-x:hidden}
 </head>
 <body>
 <script src="/crm/crm-app.js?v=ncc110"></script>
+<!-- bing: script -->
+<script>
+/* Section 4, Bing Webmaster Tools (/api/traffic/bing, filled daily by
+   gsc-ingest). Self-contained on purpose: every site's dashboard has drifted
+   from the template, so this block drops in whole (bin/add-bing.mjs) without
+   touching the page's own code. It follows the page's window by watching the
+   page ask /api/traffic/data for it, then asks /api/traffic/bing for the same
+   number of days — the range buttons and Refresh drive it with no hook into
+   the page. Runs before the page's module script so the watch is in place for
+   the first load. */
+(function () {
+  var realFetch = window.fetch.bind(window);
+  var seq = 0;
+  /* Which request to follow and where Bing's numbers are: attributes on the
+     section, so the same block serves the kit's /traffic (the defaults) and
+     the CRM traffic pages (/api/crm/traffic, /api/crm/traffic-bing). Read at
+     request time — the section comes later in the page than this script. */
+  function cfg(k, d) { var el = document.getElementById('bing'); return (el && el.getAttribute('data-' + k)) || d; }
+  window.fetch = function (input, init) {
+    var p = realFetch(input, init);
+    try {
+      var u = new URL(typeof input === 'string' ? input : input.url, location.href);
+      if (u.pathname === cfg('watch', '/api/traffic/data')) {
+        var d = parseInt(u.searchParams.get('days') || '30', 10) || 30;
+        p.then(function (r) { if (r && r.ok) load(d); }, function () {});
+      }
+    } catch (e) { /* never let the watch break the page's own request */ }
+    return p;
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function n(v) { return v == null ? '—' : Number(v).toLocaleString('en-US'); }
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  /* Parsed by hand, as the page's own chart does: a bare date string is read
+     differently across browsers, and the day must not be off by one. */
+  function short(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+    return m ? MON[+m[2] - 1] + ' ' + (+m[3]) : String(iso || '');
+  }
+  function long(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+    return m ? MON[+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1] : String(iso || '');
+  }
+  var PANELS = ['bing-queries-panel', 'bing-pages-panel', 'bing-crawl-panel'];
+  function panels(on) { PANELS.forEach(function (id) { var el = $(id); if (el) el.hidden = !on; }); }
+
+  function load(days) {
+    var my = ++seq;
+    realFetch(cfg('api', '/api/traffic/bing') + '?days=' + days, { credentials: 'same-origin', headers: { accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function (j) { if (my === seq) render(j.bing, days); })
+      .catch(function () { if (my === seq) render(undefined, days); });
+  }
+
+  /* A card in the same shape as the Google sections' (window.chart.statCard,
+     defined by the page), or a plain tile where a page predates it. */
+  function card(label, value, prev, series, color) {
+    if (window.chart && window.chart.statCard) {
+      return window.chart.statCard(label, value, prev, series, color, [value, prev]);
+    }
+    return '<div class="tile"><p class="tile-n">' + n(value) + '</p><p class="tile-k">' + esc(label) + '</p></div>';
+  }
+  function plain(label, text) {
+    return window.chart && window.chart.statCard
+      ? '<div class="stat-lead"><p class="stat-lead-k">' + esc(label) + '</p><div class="stat-lead-r"><span class="stat-lead-n">' + esc(text) + '</span></div></div>'
+      : '<div class="tile"><p class="tile-n">' + esc(text) + '</p><p class="tile-k">' + esc(label) + '</p></div>';
+  }
+
+  /* Bars are impressions; a bar that brought clicks is highlighted with the
+     count above it — the page's own chart, in teal. Past three months a bar
+     is a week, or the columns get too thin to read. */
+  function chart(rows) {
+    if (!rows || !rows.length) return '';
+    var data = rows;
+    if (rows.length > 92) {
+      var weeks = [];
+      rows.forEach(function (r, i) {
+        if (i % 7 === 0) weeks.push({ day: r.day, clicks: 0, impressions: 0 });
+        var w = weeks[weeks.length - 1];
+        w.clicks += r.clicks || 0; w.impressions += r.impressions || 0;
+      });
+      data = weeks;
+    }
+    var max = Math.max.apply(null, data.map(function (r) { return r.impressions || 0; }).concat([1]));
+    var step = Math.max(1, Math.ceil(data.length / 8));
+    var last = data.length - 1;
+    return '<p class="hint" style="margin-top:14px">Each bar is how often Bing showed the site that ' + (data === rows ? 'day' : 'week')
+      + '. A highlighted bar, with a number above it, brought clicks.</p><div class="chart">'
+      + data.map(function (r, i) {
+        var h = Math.max(2, Math.round(((r.impressions || 0) / max) * 148));
+        var label = i === last || (i % step === 0 && last - i >= Math.ceil(step / 2));
+        return '<div class="chart__col" title="' + esc(long(r.day)) + ' — shown ' + n(r.impressions) + ', ' + n(r.clicks) + ' click' + (r.clicks === 1 ? '' : 's') + '">'
+          + (r.clicks ? '<span class="chart__n">' + n(r.clicks) + '</span>' : '')
+          + '<div class="chart__bar' + (r.clicks ? ' hit' : '') + '" style="height:' + h + 'px"></div>'
+          + '<span class="chart__d">' + (label ? esc(short(r.day)) : '') + '</span></div>';
+      }).join('') + '</div>';
+  }
+
+  function table(rows, cols) {
+    if (!rows || !rows.length) return '<p class="empty">Nothing in this window.</p>';
+    return '<table class="mv"><thead><tr>' + cols.map(function (c) { return '<th class="' + (c.n ? 'n' : '') + '">' + c.h + '</th>'; }).join('')
+      + '</tr></thead><tbody>' + rows.map(function (r) {
+        return '<tr>' + cols.map(function (c) { return '<td class="' + (c.n ? 'n' : 'q') + '">' + c.f(r) + '</td>'; }).join('') + '</tr>';
+      }).join('') + '</tbody></table>';
+  }
+  function position(r) { return r.position == null ? '—' : Number(r.position).toFixed(1); }
+
+  function render(b, days) {
+    var asof = $('bing-asof');
+    if (!asof) return;
+    var tiles = $('bing-tiles'), box = $('bing-chart');
+    if (b === undefined) {
+      asof.textContent = 'Bing’s figures could not be loaded just now. Refresh to try again.';
+      tiles.innerHTML = ''; box.innerHTML = ''; panels(false); return;
+    }
+    if (!b) {
+      asof.textContent = 'This site is not in Bing Webmaster Tools yet. Once it is, Bing’s figures appear here within a day or two.';
+      tiles.innerHTML = ''; box.innerHTML = ''; panels(false); return;
+    }
+    if (b.empty) {
+      asof.textContent = 'Connected as ' + b.siteUrl + '. Bing has not reported anything for this site yet: it needs a day or two after a site is added, and a new site can take weeks to appear in Bing’s results.';
+      tiles.innerHTML = ''; box.innerHTML = ''; panels(false); return;
+    }
+
+    asof.textContent = 'Bing’s figures for the ' + days + ' days to ' + long(b.asOf) + ', its latest day; collected every morning.';
+    var t = b.totals || {}, pv = b.previous || {};
+    var daily = b.daily || [];
+    var ctr = t.impressions ? (t.clicks / t.impressions) * 100 : null;
+    tiles.innerHTML = card('Clicks', t.clicks || 0, pv.clicks || 0, daily.map(function (r) { return r.clicks; }), '#00897b')
+      + card('Impressions', t.impressions || 0, pv.impressions || 0, daily.map(function (r) { return r.impressions; }), '#5e35b1')
+      + plain('Click-through rate', ctr == null ? '—' : ctr.toFixed(1) + '%');
+    box.innerHTML = chart(daily);
+
+    $('bing-queries').innerHTML = table(b.queries, [
+      { h: 'Search', f: function (r) { return esc(r.query); } },
+      { h: 'Position', n: 1, f: position },
+      { h: 'Shown', n: 1, f: function (r) { return n(r.impressions); } },
+      { h: 'Clicks', n: 1, f: function (r) { return n(r.clicks); } },
+    ]);
+    $('bing-pages').innerHTML = table(b.pages, [
+      { h: 'Page', f: function (r) { return esc(r.path || r.page); } },
+      { h: 'Shown', n: 1, f: function (r) { return n(r.impressions); } },
+      { h: 'Clicks', n: 1, f: function (r) { return n(r.clicks); } },
+      { h: 'Position', n: 1, f: position },
+    ]);
+    /* A two-column table, not tiles: the panel is a third of the page wide
+       and three tiles side by side wrapped every label over four lines. */
+    var c = b.crawl;
+    $('bing-crawl').innerHTML = !c ? '<p class="empty">Bing has not reported a crawl yet.</p>'
+      : table([
+        ['Pages in Bing\u2019s index', c.inIndex],
+        ['Pages crawled', c.crawled],
+        ['Crawl errors', c.errors],
+        ['Missing pages (4xx)', c.code_4xx],
+        ['Server errors (5xx)', c.code_5xx],
+        ['Redirects followed', c.redirects],
+        ['Blocked by robots.txt', c.blocked],
+        ['Links in from other sites', c.inLinks],
+      ], [
+        { h: 'What Bing found', f: function (r) { return esc(r[0]); } },
+        { h: 'Count', n: 1, f: function (r) { return n(r[1]); } },
+      ]) + '<p class="hint" style="margin-top:10px">The index count and the links are as of ' + esc(long(c.asOf))
+        + '; the rest add up Bing\u2019s visits over the window. A missing page or a server error here is one Bing tried to read and could not.</p>';
+    panels(true);
+  }
+})();
+</script>
+<!-- /bing: script -->
 <script>
 // Wrapped in an IIFE so nothing leaks to the global scope — inline scripts
 // share globals with crm-app.js, which already defines fmtDay() etc.
@@ -300,7 +473,7 @@ let mode = "today"; // "today" | "all"
         <button type="button" id="tg-all">All time</button>
       </div>
     </div>
-    <nav class="src-nav"><a href="#edge">1 &middot; Our log</a><a href="#search-console">2 &middot; Search Console</a><a href="#analytics">3 &middot; Analytics</a></nav>
+    <nav class="src-nav"><a href="#edge">1 &middot; Our log</a><a href="#search-console">2 &middot; Search Console</a><a href="#analytics">3 &middot; Analytics</a><a href="#bing">4 &middot; Bing</a></nav>
 <div class="src src-edge" id="edge">
 <p class="src-head">1 &middot; Our own log, at the edge</p>
 <p class="src-lede">Our own count, logged before any script runs. <strong>This is the number we quote.</strong></p>
@@ -433,6 +606,71 @@ let mode = "today"; // "today" | "all"
 </div>
 </div>
 <!-- /src-ga -->
+<!-- bing: section -->
+<style>
+/* Section 4, Bing — teal, Bing's own, beside Google's green and blue. */
+.src-bing{background:#eef7f6;border-top-color:#00897b}
+.src-bing .src-head{color:#00695c}
+.src-bing .src-lede,.src-bing .src-note{color:#2e5f59}
+.src-bing .panel{border-color:#c5e4df}
+.src-bing .tile{background:rgba(255,255,255,.75);border-color:#c5e4df}
+/* The day chart and the tables carry their own rules, scoped here, so the
+   block looks the same on a page whose stylesheet lacks them (the CRM traffic
+   pages have neither) — on a traffic-kit page they restate what it has. */
+.src-bing .chart{display:flex;align-items:flex-end;gap:4px;height:180px;overflow-x:auto;padding-top:.6rem}
+.src-bing .chart__col{flex:1;min-width:10px;max-width:54px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px}
+.src-bing .chart__n{font-size:.66rem;font-weight:700;color:#00695c}
+.src-bing .chart__bar{width:100%;border-radius:3px 3px 0 0;min-height:3px;background:#b9dcd6}
+.src-bing .chart__bar.hit{background:#00897b}
+.src-bing .chart__d{font-size:.6rem;color:#6b7684;line-height:1;height:.7rem;white-space:nowrap}
+.src-bing table.mv{width:100%;border-collapse:collapse;font-size:.82rem}
+.src-bing .mv th{text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.07em;color:#6b7684;font-weight:600;padding:0 8px 6px 0;border-bottom:1px solid #e3e8ef}
+.src-bing .mv td{padding:7px 8px 7px 0;border-bottom:1px solid #e3e8ef;vertical-align:top}
+.src-bing .mv tr:last-child td{border-bottom:0}
+.src-bing .mv .q{overflow-wrap:anywhere}
+.src-bing .mv .n,.src-bing .mv th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.src-bing .hint{font-size:.78rem;color:#5c6773;line-height:1.5}
+.src-nav a[href="#bing"]{color:#00695c;border-color:#c5e4df}
+</style>
+<div class="src src-bing" id="bing" data-watch="/api/traffic" data-api="/api/traffic-bing">
+    <p class="src-head">4 &middot; Bing</p>
+    <p class="src-lede">How Bing&rsquo;s search results treat this site. Bing is also the index Copilot answers from and ChatGPT search draws on, so a page Bing has not seen is one those answers cannot mention.</p>
+    <details class="why"><summary>Why this differs from sections 1 and 2</summary><div class="src-note">
+      <strong>What this can and cannot tell you.</strong>
+      <ul>
+        <li>It covers searches on Bing only &mdash; Google is section 2, and visits from either are counted in section 1.</li>
+        <li>Bing runs a few days behind, so the window here ends on Bing&rsquo;s latest day rather than today. A site newly added to Bing shows nothing for its first day or two.</li>
+        <li>How often Copilot and Bing&rsquo;s AI answers cite the site is in Bing Webmaster Tools&rsquo; AI Performance report. Bing does not share that report with other tools yet, so it is not on this page.</li>
+      </ul>
+    </div></details>
+<div class="panels-wide">
+<div class="panel panel-wide" id="bing-panel">
+  <h2>Clicks and impressions from Bing</h2>
+  <p class="panel-help">How often Bing showed this site in its results (<strong>impressions</strong>) and how often someone clicked through (<strong>clicks</strong>), against the same number of days before.</p>
+  <p class="pg-sub" id="bing-asof">Loading&hellip;</p>
+  <div class="grid grid-3 gsc-lead" id="bing-tiles"></div>
+  <div id="bing-chart"></div>
+</div>
+</div>
+<div class="panels">
+<div class="panel" id="bing-queries-panel" hidden>
+  <h2>What people searched on Bing</h2>
+  <p class="panel-help">The searches Bing showed this site for, most clicks first. <strong>Position</strong> is where it sat on average; 1 is the top.</p>
+  <div id="bing-queries"></div>
+</div>
+<div class="panel" id="bing-pages-panel" hidden>
+  <h2>Pages Bing showed</h2>
+  <p class="panel-help">Which pages appeared in Bing&rsquo;s results, and which of them were clicked.</p>
+  <div id="bing-pages"></div>
+</div>
+<div class="panel" id="bing-crawl-panel" hidden>
+  <h2>What Bing has read</h2>
+  <p class="panel-help">How many of the site&rsquo;s pages Bing holds, and what its crawler found on its visits in this window.</p>
+  <div id="bing-crawl"></div>
+</div>
+</div>
+</div>
+<!-- /bing: section -->
 
     </div>
     <p class="muted" style="font-size:12px;margin:16px 2px 0;line-height:1.5">Counted at Cloudflare's edge and a first-party log — <strong>immune to ad blockers, GA filters and reporting lag</strong>. Edge totals include bots (upper bound); channels, pages &amp; time exclude bots, /crm and non-US.</p>

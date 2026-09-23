@@ -1,6 +1,6 @@
 name = "nationalcloset"
 compatibility_date = "2026-05-24"
-pages_build_output_dir = "."
+pages_build_output_dir = "dist"
 
 # Non-secret env vars MUST live here: with a wrangler.toml present, each
 # `wrangler pages deploy` treats [vars] as authoritative and clears any

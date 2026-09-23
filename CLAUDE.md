@@ -11,12 +11,13 @@ Marketing site + full CRM for National Closet Company (custom closets, pantries,
 ```bash
 set -a; . ~/.env; set +a; unset CLOUDFLARE_API_TOKEN   # credentials live in ~/.env, never in the repo
 git fetch origin && git rev-list --count HEAD..origin/main   # must print 0 before any build or deploy
-node ~/site-kit/bin/site-kit.mjs lastmod   # each sitemap date = the day that page last changed (and its dateModified); commit sitemap.xml after
-npx wrangler pages deploy . --project-name=nationalcloset --branch=main --commit-dirty=true
+node build.mjs   # dist/ = the allow-list of public files; ends with site-kit lastmod (the sitemap's real dates)
+npx wrangler pages deploy dist --project-name=nationalcloset --branch=main --commit-dirty=true
 node ~/site-kit/bin/site-kit.mjs submit   # IndexNow + Search Console + Bing, once the real domain serves the deploy; commit .indexnow.json after
 ```
-- root deploy; pages are built/synced by tools/site-build/stage4.py (chrome sweep + page builds) — run it, review, deploy
-- Or `node ~/fleet/bin/fleet.mjs deploy nationalcloset`, which does the same from `site.json` and refuses a checkout that is behind origin.
+- Pages are built/synced by tools/site-build/stage4.py (chrome sweep + page builds) — run it, review, then `node build.mjs` and deploy.
+- **Deploy `dist/`, never the repo root** — a root deploy publishes the repo: `CLAUDE.md`, `CHANGELOG.md`, `site.json`, `wrangler.toml`, `.indexnow.json`, `migrations/` and `.claude/` all answered 200 until 2026-09-23 (Pages never reads `.assetsignore`; `~/fleet/docs/gotchas.md`). `build.mjs` copies an allow-list — every root `.html` page, the named files and folders, the IndexNow key — and names any file a page links to that it did not copy; a new public file at the root goes on its list. It ends with `site-kit lastmod`, so `dist/sitemap.xml` carries each page's real last change (the root `sitemap.xml` carries no dates). Functions still ship: wrangler reads `./functions` and `wrangler.toml` from the repo root whatever it uploads. `crm/` ships its pages and scripts but never `schema.sql`, `setup-admin.mjs` or `migrations/`; `tools/` and `scripts/` stay home.
+- Or `node ~/fleet/bin/fleet.mjs deploy nationalcloset`, which runs build → deploy from `site.json` and refuses a checkout that is behind origin.
 - Pages binds secrets at deploy time — after any `wrangler pages secret put`, deploy again.
 
 ## How it works

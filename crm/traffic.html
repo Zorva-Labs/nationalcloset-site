@@ -309,8 +309,27 @@ html,body{max-width:100%;overflow-x:hidden}
     var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
     return m ? MON[+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1] : String(iso || '');
   }
-  var PANELS = ['bing-queries-panel', 'bing-pages-panel', 'bing-crawl-panel'];
-  function panels(on) { PANELS.forEach(function (id) { var el = $(id); if (el) el.hidden = !on; }); }
+  /* A D1 time ('YYYY-MM-DD HH:MM:SS', UTC) or a bare day, as the viewer's
+     calendar day, with the year only when it is not this one. */
+  function when(s) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}):(\d{2}))?/.exec(String(s || ''));
+    if (!m) return '';
+    var y = +m[1], mo = +m[2] - 1, d = +m[3];
+    if (m[4] != null) {
+      var t = new Date(Date.UTC(y, mo, d, +m[4], +m[5], +m[6]));
+      y = t.getFullYear(); mo = t.getMonth(); d = t.getDate();
+    }
+    return MON[mo] + ' ' + d + (y !== new Date().getFullYear() ? ', ' + y : '');
+  }
+  function plural(k, one, many) { return n(k) + ' ' + (k === 1 ? one : (many || one + 's')); }
+
+  /* The searches and pages need Bing's search figures. What Bing has read
+     and holds shows as soon as the site is connected, figures or not: a site
+     Bing is still taking in is when it matters most. */
+  var SEARCH = ['bing-queries-panel', 'bing-pages-panel'];
+  var HOLDS = ['bing-crawl-panel', 'bing-found-panel', 'bing-issues-panel'];
+  function show(ids, on) { ids.forEach(function (id) { var el = $(id); if (el) el.hidden = !on; }); }
+  function panels(on) { show(SEARCH, on); show(HOLDS, on); }
 
   function load(days) {
     var my = ++seq;
@@ -372,6 +391,105 @@ html,body{max-width:100%;overflow-x:hidden}
       }).join('') + '</tbody></table>';
   }
   function position(r) { return r.position == null ? '—' : Number(r.position).toFixed(1); }
+  /* A long list. A traffic-kit page trims every table to five rows with its
+     own "Show all" (window.capRows, defined by the page's module script
+     before any data arrives); a page without it (the CRM traffic pages) gets
+     the first twelve and a drawer for the rest. */
+  function listing(rows, cols, noun) {
+    if (window.capRows || !rows || rows.length <= 14) return '<div class="bing-list">' + table(rows, cols) + '</div>';
+    return '<div class="bing-list">' + table(rows.slice(0, 12), cols)
+      + '<details class="bing-more"><summary>The other ' + esc(plural(rows.length - 12, noun)) + '</summary>' + table(rows.slice(12), cols) + '</details></div>';
+  }
+
+  /* The sitemaps Bing holds, a line each: when it last read one, how many
+     pages it counted, and Bing's own word for anything but success. A
+     sitemap on another host than the site's is named with its host (Bing can
+     hold both the bare domain's and www's). */
+  function sitemaps(feeds, siteUrl) {
+    var home = ''; try { home = new URL(siteUrl).host; } catch (e) { /* no site URL: paths only */ }
+    function name(u) { try { var x = new URL(u); return (x.host === home ? '' : x.host) + x.pathname + x.search; } catch (e) { return String(u || ''); } }
+    if (feeds === null) return '<p class="bing-line"><strong>Sitemap:</strong> Bing\u2019s record of it arrives with the next nightly check.</p>';
+    if (!feeds || !feeds.length) {
+      return '<p class="bing-line"><strong>Sitemap:</strong> Bing has none for this site yet, so it can only find pages by following links.</p>';
+    }
+    return feeds.map(function (f) {
+      var what = !f.lastCrawled ? 'sent ' + when(f.submitted) + ', not read yet'
+        : 'read ' + when(f.lastCrawled) + ', ' + plural(f.urlCount || 0, 'page')
+          + (/^success$/i.test(f.status || '') ? ', no errors' : f.status ? '; Bing says \u201c' + f.status + '\u201d' : '');
+      return '<p class="bing-line"><strong>Sitemap</strong> ' + esc(name(f.url)) + ' \u2014 ' + esc(what) + '.</p>';
+    }).join('');
+  }
+
+  /* How many of the site's pages Bing holds, a bar a day (past three months
+     a bar a week, that week's last count: it is a level, not a sum). The
+     latest bar is solid; the counts at either end are under the dates. */
+  function indexChart(rows) {
+    if (!rows || !rows.length) return '';
+    var data = rows;
+    if (rows.length > 92) {
+      data = rows.filter(function (r, i) { return i % 7 === 6 || i === rows.length - 1; });
+    }
+    var max = Math.max.apply(null, data.map(function (r) { return r.inIndex || 0; }).concat([1]));
+    var lastI = data.length - 1;
+    return '<p class="hint" style="margin:0">Pages in Bing\u2019s index, ' + (data === rows ? 'day by day' : 'week by week') + '.</p>'
+      + '<div class="ichart">' + data.map(function (r, i) {
+        var h = Math.max(2, Math.round(((r.inIndex || 0) / max) * 56));
+        return '<div class="ichart__col" title="' + esc(long(r.day)) + ': ' + n(r.inIndex) + ' in the index">'
+          + '<div class="ichart__bar" style="height:' + h + 'px"></div></div>';
+      }).join('') + '</div>'
+      + '<div class="ichart-x"><span>' + esc(short(data[0].day)) + ': <strong>' + n(data[0].inIndex) + '</strong></span>'
+      + (lastI ? '<span>' + esc(short(data[lastI].day)) + ': <strong>' + n(data[lastI].inIndex) + '</strong></span>' : '') + '</div>';
+  }
+
+  /* Each page in the sitemap against Bing's record of it. The endpoint sorts
+     the ones to look at first: not found, then found but never read, then
+     the longest since Bing read them, and pages not asked about yet last. */
+  function coverage(cv, days) {
+    var note = cv && cv.problem ? ' The last check couldn\u2019t use the sitemap (' + cv.problem + '), so this list is from the one before.' : '';
+    if (!cv) return '<p class="empty">Bing hasn\u2019t been asked about the site\u2019s pages yet. The first check runs overnight.</p>';
+    if (!cv.checked) {
+      return '<p class="bing-sum">' + esc(plural(cv.listed, 'page')) + ' in the sitemap, none asked about yet. The first check runs overnight.</p>'
+        + (note ? '<p class="hint">' + esc(note.trim()) + '</p>' : '');
+    }
+    var all = cv.checked >= cv.listed;
+    var cols = [
+      { h: 'Page', f: function (r) { return esc(r.path); } },
+      { h: 'Found', n: 1, f: function (r) { return r.discovered ? esc(when(r.discovered)) : r.checkedAt ? '<span class="bing-no">Not yet</span>' : 'Not asked yet'; } },
+      { h: 'Last read', n: 1, f: function (r) { return r.crawled ? esc(when(r.crawled)) : '\u2014'; } },
+    ];
+    return '<p class="bing-sum">Bing has found <strong>' + n(cv.found) + '</strong> of '
+      + (all ? 'the site\u2019s ' + esc(plural(cv.listed, 'page')) : 'the ' + n(cv.checked) + ' pages asked about so far (' + n(cv.listed) + ' in the sitemap)')
+      + '. Its crawler read <strong>' + n(cv.readRecent) + '</strong> of them in the last ' + days + ' days.</p>'
+      + listing(cv.pages, cols, 'page')
+      + '<p class="hint" style="margin-top:10px">Bing is asked again about a page it hasn\u2019t found every three days, and about the rest every ten days'
+      + (cv.newestCheck ? '; last asked ' + esc(when(cv.newestCheck)) : '') + '.' + esc(note) + '</p>';
+  }
+
+  /* Bing's CrawlIssues flags in words: 4 = 4xx, 8 = 5xx, 16 = blocked by
+     robots.txt, 32 = malware, 64 = an important page blocked, 128 = DNS,
+     256 = timeout. Redirects (1, 2) are counted, not listed. */
+  function problem(r) {
+    var f = r.issues || 0, code = r.httpCode || 0, out = [];
+    if (f & 4) out.push(code === 404 ? 'Missing page (404)' : code === 410 ? 'Removed page (410)' : code ? 'Refused (' + code + ')' : 'Missing or refused (4xx)');
+    if (f & 8) out.push('Server error' + (code >= 500 ? ' (' + code + ')' : ''));
+    if (f & 64) out.push('An important page blocked by robots.txt');
+    else if (f & 16) out.push('Blocked by robots.txt');
+    if (f & 32) out.push('Flagged as malware');
+    if (f & 128) out.push('The address didn\u2019t resolve (DNS)');
+    if (f & 256) out.push('Timed out');
+    return out.join('; ') || 'Redirect';
+  }
+  function issues(list, redirects, asOf) {
+    if (list === null) return '<p class="empty">Bing\u2019s list arrives with the next nightly check.</p>';
+    return (!list || !list.length ? '<p class="empty">Bing hasn\u2019t reported a problem with any page.</p>'
+      : listing(list, [
+        { h: 'Page', f: function (r) { return esc(r.path); } },
+        { h: 'Problem', f: function (r) { return esc(problem(r)); } },
+        { h: 'Links to it', n: 1, f: function (r) { return n(r.inLinks); } },
+      ], 'address'))
+      + (redirects ? '<p class="hint" style="margin-top:10px">Bing also followed ' + esc(plural(redirects, 'redirect')) + ' from an old address to a new one. After a site moves that\u2019s expected, not a problem.</p>' : '')
+      + (asOf ? '<p class="hint" style="margin-top:6px">As of ' + esc(when(asOf)) + '.</p>' : '');
+  }
 
   function render(b, days) {
     var asof = $('bing-asof');
@@ -385,9 +503,33 @@ html,body{max-width:100%;overflow-x:hidden}
       asof.textContent = 'This site is not in Bing Webmaster Tools yet. Once it is, Bing’s figures appear here within a day or two.';
       tiles.innerHTML = ''; box.innerHTML = ''; panels(false); return;
     }
+    /* What Bing has read and holds, whether or not it has search figures. */
+    var c = b.crawl;
+    /* A two-column table, not tiles: the panel is a third of the page wide
+       and three tiles side by side wrapped every label over four lines. */
+    $('bing-crawl').innerHTML = sitemaps(b.feeds, b.siteUrl) + indexChart(b.index)
+      + (!c ? '<p class="empty">Bing hasn\u2019t reported a crawl yet.</p>'
+      : '<div class="bing-list">' + table([
+        ['Pages in Bing\u2019s index', c.inIndex],
+        ['Pages crawled', c.crawled],
+        ['Crawl errors', c.errors],
+        ['Missing pages (4xx)', c.code_4xx],
+        ['Server errors (5xx)', c.code_5xx],
+        ['Redirects followed', c.redirects],
+        ['Blocked by robots.txt', c.blocked],
+        ['Links in from other sites', c.inLinks],
+      ], [
+        { h: 'What Bing found', f: function (r) { return esc(r[0]); } },
+        { h: 'Count', n: 1, f: function (r) { return n(r[1]); } },
+      ]) + '</div><p class="hint" style="margin-top:10px">The index count and the links are as of ' + esc(long(c.asOf))
+        + '; the rest add up Bing\u2019s visits over the window. A missing page or a server error here is one Bing tried to read and could not.</p>');
+    $('bing-found').innerHTML = coverage(b.coverage, days);
+    $('bing-issues').innerHTML = issues(b.issues, b.redirects, b.updatedAt);
+    show(HOLDS, true);
+
     if (b.empty) {
-      asof.textContent = 'Connected as ' + b.siteUrl + '. Bing has not reported anything for this site yet: it needs a day or two after a site is added, and a new site can take weeks to appear in Bing’s results.';
-      tiles.innerHTML = ''; box.innerHTML = ''; panels(false); return;
+      asof.textContent = 'Connected as ' + b.siteUrl + '. Bing has no search figures for this site yet: they start a day or two after a site is added, and a new site can take weeks to appear in Bing’s results. What Bing has read so far is below.';
+      tiles.innerHTML = ''; box.innerHTML = ''; show(SEARCH, false); return;
     }
 
     asof.textContent = 'Bing’s figures for the ' + days + ' days to ' + long(b.asOf) + ', its latest day; collected every morning.';
@@ -411,25 +553,7 @@ html,body{max-width:100%;overflow-x:hidden}
       { h: 'Clicks', n: 1, f: function (r) { return n(r.clicks); } },
       { h: 'Position', n: 1, f: position },
     ]);
-    /* A two-column table, not tiles: the panel is a third of the page wide
-       and three tiles side by side wrapped every label over four lines. */
-    var c = b.crawl;
-    $('bing-crawl').innerHTML = !c ? '<p class="empty">Bing has not reported a crawl yet.</p>'
-      : table([
-        ['Pages in Bing\u2019s index', c.inIndex],
-        ['Pages crawled', c.crawled],
-        ['Crawl errors', c.errors],
-        ['Missing pages (4xx)', c.code_4xx],
-        ['Server errors (5xx)', c.code_5xx],
-        ['Redirects followed', c.redirects],
-        ['Blocked by robots.txt', c.blocked],
-        ['Links in from other sites', c.inLinks],
-      ], [
-        { h: 'What Bing found', f: function (r) { return esc(r[0]); } },
-        { h: 'Count', n: 1, f: function (r) { return n(r[1]); } },
-      ]) + '<p class="hint" style="margin-top:10px">The index count and the links are as of ' + esc(long(c.asOf))
-        + '; the rest add up Bing\u2019s visits over the window. A missing page or a server error here is one Bing tried to read and could not.</p>';
-    panels(true);
+    show(SEARCH, true);
   }
 })();
 </script>
@@ -630,6 +754,27 @@ let mode = "today"; // "today" | "all"
 .src-bing .mv .q{overflow-wrap:anywhere}
 .src-bing .mv .n,.src-bing .mv th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .src-bing .hint{font-size:.78rem;color:#5c6773;line-height:1.5}
+/* What Bing holds now (2026-09-24): the sitemap line, the index bars, the
+   page list and its "all pages" drawer. */
+.src-bing .bing-line{font-size:.84rem;line-height:1.5;margin:0 0 .75rem;color:#23403c}
+.src-bing .bing-line strong{color:#00695c}
+.src-bing .bing-sum{font-size:.9rem;line-height:1.5;margin:0 0 .8rem;color:#23403c}
+.src-bing .bing-no{color:#9a4a00;font-weight:600}
+.src-bing .ichart{display:flex;align-items:flex-end;gap:3px;height:72px;overflow-x:auto;padding-top:.5rem}
+.src-bing .ichart__col{flex:1;min-width:5px;max-width:40px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.src-bing .ichart__bar{width:100%;border-radius:2px 2px 0 0;min-height:2px;background:#9fd3cc}
+.src-bing .ichart__col:last-child .ichart__bar{background:#00897b}
+.src-bing .ichart-x{display:flex;justify-content:space-between;gap:8px;font-size:.7rem;color:#5c6773;margin:.3rem 0 1rem}
+.src-bing .ichart-x strong{color:#00695c}
+/* The page sets its tables display:block (to scroll on a phone), which
+   leaves a short-celled table narrower than its panel; these lists fill it.
+   The wrapper is also where the page's own "Show all" button lands. */
+.src-bing .bing-list > table.mv{display:table}
+.src-bing details.bing-more{margin-top:.25rem}
+.src-bing details.bing-more>summary{display:inline-flex;align-items:center;min-height:44px;cursor:pointer;list-style:none;font-size:.8rem;font-weight:600;color:#00695c}
+.src-bing details.bing-more>summary::-webkit-details-marker{display:none}
+.src-bing details.bing-more>summary::before{content:"+";display:inline-block;width:1.1em;font-weight:700}
+.src-bing details.bing-more[open]>summary::before{content:"\2212"}
 .src-nav a[href="#bing"]{color:#00695c;border-color:#c5e4df}
 </style>
 <div class="src src-bing" id="bing" data-watch="/api/traffic" data-api="/api/traffic-bing">
@@ -665,8 +810,18 @@ let mode = "today"; // "today" | "all"
 </div>
 <div class="panel" id="bing-crawl-panel" hidden>
   <h2>What Bing has read</h2>
-  <p class="panel-help">How many of the site&rsquo;s pages Bing holds, and what its crawler found on its visits in this window.</p>
+  <p class="panel-help">The sitemap Bing reads the site&rsquo;s pages from, how many of those pages it holds, and what its crawler found on its visits in this window.</p>
   <div id="bing-crawl"></div>
+</div>
+<div class="panel" id="bing-found-panel" hidden>
+  <h2>Pages Bing has found</h2>
+  <p class="panel-help">Each page in the site&rsquo;s sitemap, looked up in Bing&rsquo;s own records: when Bing first found it and when its crawler last read it. A page Bing hasn&rsquo;t found can&rsquo;t show in its results, or in the Copilot and ChatGPT answers drawn from them.</p>
+  <div id="bing-found"></div>
+</div>
+<div class="panel" id="bing-issues-panel" hidden>
+  <h2>Pages Bing couldn&rsquo;t read</h2>
+  <p class="panel-help">Addresses where Bing&rsquo;s crawler hit a problem, the most linked first. A missing page that other pages still link to is usually an old address that needs a redirect. Private addresses such as this dashboard are blocked from crawlers on purpose.</p>
+  <div id="bing-issues"></div>
 </div>
 </div>
 </div>

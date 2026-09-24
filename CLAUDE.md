@@ -9,7 +9,7 @@ Marketing site + full CRM for National Closet Company (custom closets, pantries,
 
 ## Build & deploy
 ```bash
-set -a; . ~/.env; set +a; unset CLOUDFLARE_API_TOKEN   # credentials live in ~/.env, never in the repo
+set -a; . ~/.env; set +a; unset CLOUDFLARE_API_KEY CLOUDFLARE_EMAIL   # the account token CLOUDFLARE_API_TOKEN (since 2026-09-23); credentials live in ~/.env, never in the repo
 git fetch origin && git rev-list --count HEAD..origin/main   # must print 0 before any build or deploy
 node build.mjs   # dist/ = the allow-list of public files; ends with site-kit lastmod (the sitemap's real dates)
 npx wrangler pages deploy dist --project-name=nationalcloset --branch=main --commit-dirty=true

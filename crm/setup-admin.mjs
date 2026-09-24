@@ -48,9 +48,11 @@ const res = await fetch(
   `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/d1/database/${DB_ID}/query`,
   {
     method: "POST",
+    // The account token since 2026-09-23 (the global key stopped working); the pair as fallback.
     headers: {
-      "X-Auth-Email": env.CLOUDFLARE_EMAIL,
-      "X-Auth-Key": env.CLOUDFLARE_API_KEY,
+      ...(env.CLOUDFLARE_API_TOKEN
+        ? { Authorization: `Bearer ${env.CLOUDFLARE_API_TOKEN}` }
+        : { "X-Auth-Email": env.CLOUDFLARE_EMAIL, "X-Auth-Key": env.CLOUDFLARE_API_KEY }),
       "Content-Type": "application/json",
     },
     body: JSON.stringify({

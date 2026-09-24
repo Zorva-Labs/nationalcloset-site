@@ -28,12 +28,23 @@ import path from 'node:path';
 const MEASUREMENT_ID = 'G-EJEDXZZWJN';
 const dry = process.argv.includes('--dry-run');
 const env = Object.fromEntries(fs.readFileSync(path.join(os.homedir(), '.env'), 'utf8').split('\n')
-  .filter((l) => /^(NCC_GA4_MP_SECRET|CLOUDFLARE_API_KEY|CLOUDFLARE_EMAIL)=/.test(l)).map((l) => { const i = l.indexOf('='); return [l.slice(0, i), l.slice(i + 1).replace(/^"|"$/g, '')]; }));
+  .filter((l) => /^(NCC_GA4_MP_SECRET|CLOUDFLARE_API_TOKEN|CLOUDFLARE_ACCOUNT_ID|CLOUDFLARE_API_KEY|CLOUDFLARE_EMAIL)=/.test(l)).map((l) => { const i = l.indexOf('='); return [l.slice(0, i), l.slice(i + 1).replace(/^"|"$/g, '')]; }));
 if (!env.NCC_GA4_MP_SECRET) { console.error('NCC_GA4_MP_SECRET missing from ~/.env — create a Measurement Protocol secret on the NCC Direct stream first (needs the property\'s User Data Collection Acknowledgement).'); process.exit(2); }
+
+/* wrangler auth: the account token since 2026-09-23 (the global key stopped
+   working), with the pair dropped so wrangler cannot try it first. */
+function wranglerEnv() {
+  const e = { ...process.env };
+  if (env.CLOUDFLARE_API_TOKEN) {
+    delete e.CLOUDFLARE_API_KEY; delete e.CLOUDFLARE_EMAIL;
+    return { ...e, CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID || e.CLOUDFLARE_ACCOUNT_ID };
+  }
+  return { ...e, CLOUDFLARE_API_KEY: env.CLOUDFLARE_API_KEY, CLOUDFLARE_EMAIL: env.CLOUDFLARE_EMAIL };
+}
 
 function d1(sql) {
   const out = execFileSync('npx', ['wrangler', 'd1', 'execute', 'nationalcloset-crm', '--remote', '--json', '--command', sql],
-    { cwd: path.resolve(path.dirname(new URL(import.meta.url).pathname), '..'), encoding: 'utf8', env: { ...process.env, CLOUDFLARE_API_KEY: env.CLOUDFLARE_API_KEY, CLOUDFLARE_EMAIL: env.CLOUDFLARE_EMAIL }, stdio: ['ignore', 'pipe', 'ignore'] });
+    { cwd: path.resolve(path.dirname(new URL(import.meta.url).pathname), '..'), encoding: 'utf8', env: wranglerEnv(), stdio: ['ignore', 'pipe', 'ignore'] });
   return JSON.parse(out)[0].results;
 }
 const rows = d1(`SELECT a.id AS appointment_id, a.lead_id, a.created_at, l.ga_client_id, l.ga_session_id, l.gclid

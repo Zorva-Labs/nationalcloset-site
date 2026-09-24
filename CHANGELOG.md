@@ -2,6 +2,11 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md` and in `~/fleet/docs/archive`.
 
+## 2026-09-24 (ad-review visits)
+- **Google's own ad-review visits are no longer counted as visitors.** Google loads ad landing pages from its own network with an ordinary browser user agent and a gclid, so this site's edge log counted each one as a person arriving from an ad. On Blair Custom Interiors, where it was found, that was 18 of the first 40 ad visits. `functions/_middleware.js` now carries traffic-kit's `adReviewBot()` block (the template's code, placed by hand because this middleware predates the kit). A request from Google's networks (AS15169, AS396982) with a click id is treated like the crawlers already are: served, never geo-blocked, and not logged. It matches by network number, so Google Fiber customers still count.
+- No backfill here. `pageviews` stores neither the ISP nor the network, so the earlier review visits cannot be told apart from people. National Closet stopped advertising on 2026-09-22, so few were logged.
+- Built, deployed, submitted (nothing changed).
+
 ## 2026-09-24
 - **Edge panel restored.** The /traffic edge panel (Cloudflare zone analytics over GraphQL) now authenticates with `CF_ANALYTICS_TOKEN` — the read-only account token "Traffic-API" (Zone Analytics: Read), `CF_ANALYTICS_TOKEN` in `~/.env` — and falls back to the old `CF_ANALYTICS_EMAIL` + `CF_ANALYTICS_KEY` pair, which held the global API key that stopped authenticating estate-wide on 2026-09-23 (traffic-kit, same change in every copy). This site's panel had been failing since 2026-09-23; the secret `CF_ANALYTICS_TOKEN` is set on the Pages project and this deploy binds it.
 

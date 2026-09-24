@@ -62,6 +62,36 @@ function isBot(ua) {
   return BOT_UA.some((b) => s.includes(b));
 }
 
+// This site does not log bots at all (below: bots skip the gate and the log), so a
+// match here is simply not counted. isBot() stands in for the kit's botName().
+// ad-review: Google's own review visits to ad landing pages (bin/add-ad-review.mjs patches this block into a site)
+/* Google loads an ad's landing page from its own network with an ordinary
+   browser user agent and a click id on the URL, when the ad is reviewed and
+   from time to time after. No "AdsBot" in the user agent, so botName() cannot
+   see it: on Blair Custom Interiors that was 18 of the first 40 click-id page
+   views (2026-09-23/24, "Google LLC", New York) against 21 billed clicks, and
+   the dashboard was counting Google's reviewer as ad traffic.
+   Deliberately narrow: Google's own networks AND a click id.
+     - By network number, never by name. AS16591 is Google Fiber, an ordinary
+       ISP with customers in Nashville, and its name starts with "Google" too.
+     - AS15169 (Google LLC) and AS396982 (Google Cloud). People do not browse
+       from these; the likely exception, Google's own VPN on a Pixel, is caught
+       only when it also arrived from an ad, and then it shows in the bot table
+       as one visit rather than disappearing.
+     - Only with gclid / wbraid / gbraid. Google-network page views without one
+       (renderers, and possibly Chrome's private prefetch proxy, which fetches
+       for a person) are left alone.
+   A match is a bot everywhere the caller uses the name: logged under it, given
+   no attribution cookie, and, like AdsBot, never geo-blocked, because a 403 to
+   Google's reviewer can cost the ad its approval. */
+const GOOGLE_ASNS = new Set([15169, 396982]);
+function adReviewBot(request, url) {
+  if (!GOOGLE_ASNS.has(Number(request?.cf?.asn))) return null;
+  const q = url.searchParams;
+  return q.get('gclid') || q.get('wbraid') || q.get('gbraid') ? 'Google ad review' : null;
+}
+// /ad-review
+
 const REPO_INTERNAL = /^\/(tools|scripts|migrations|functions|\.claude|\.wrangler|node_modules)(\/|$)|^\/crm\/migrations\/|^\/crm\/setup-admin\.mjs$|^\/(CLAUDE\.md|CHANGELOG\.md|site\.json|wrangler\.toml|build\.mjs|package(-lock)?\.json|\.gitignore|\.indexnow\.json|\.dev\.vars)$|\.(sql|toml|py|log)$/i;
 
 /* nationalcloset.pages.dev serves the same pages as nationalclosetco.com. It
@@ -99,7 +129,7 @@ async function handle(context) {
   if (isBypassPath(url.pathname)) return next();
 
   // 2) Search + AI crawlers are always allowed (any country).
-  if (isBot(request.headers.get("user-agent"))) return next();
+  if (isBot(request.headers.get("user-agent")) || adReviewBot(request, url)) return next();
 
   // 3) Country gate. Cloudflare reliably sets request.cf.country at the edge.
   //    A missing value means we're not behind the CF edge (local dev / preview)

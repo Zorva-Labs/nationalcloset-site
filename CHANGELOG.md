@@ -4,7 +4,7 @@ Newest first. One entry per session that changed this repo: what changed, why, w
 
 ## 2026-09-24 (/traffic section 4: what Bing holds now)
 - Michael: add four things from Bing to the traffic page on every dashboard: which of the site's pages Bing has found and when it last read each, the pages it couldn't read, pages in its index over time, and the sitemap's status. `add-bing.mjs --apply` (traffic-kit `cf8ef48`) refreshed section 4 and the page (the endpoint is ported by hand). The figures come from gsc-ingest's nightly Bing pull (`66f863c`). "What Bing has read" and the two new panels show even while Bing has no search figures.
-- What Bing holds for nationalclosetco.com today: two sitemaps: `/sitemap.xml` read 24 Sept, 63 pages, no errors; `www.nationalclosetco.com/sitemap.xml` read 23 Sept, 63 pages, no errors; no problem pages; the first checks of its pages run this evening and over the next nights.
+- What Bing holds for nationalclosetco.com today: two sitemaps: `/sitemap.xml` read 24 Sept, 63 pages, no errors; `www.nationalclosetco.com/sitemap.xml` read 23 Sept, 63 pages, no errors; no problem pages; its pages are asked about over the next nights. This evening's catch-up stopped before reaching it, when Bing throttled the account's page lookups.
 - The CRM page's block was refreshed with `add-bing --no-endpoint` (its section points at `/api/traffic` and `/api/traffic-bing`). The endpoint `functions/api/traffic-bing.js` is the template's, ported by hand as before: the header, `requireAuth` from `../_lib/auth.js`, and `context.env.DB`, since `/api` here has no directory middleware.
 - The page names the www sitemap with its host, so its two sitemap lines don't read the same.
 - Built, deployed (`4a5aa8f1`), submitted (nothing new to send).

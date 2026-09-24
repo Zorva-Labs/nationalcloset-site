@@ -34,7 +34,8 @@
       "TURNSTILE_SECRET",
       "CF_ANALYTICS_EMAIL",
       "CF_ANALYTICS_KEY",
-      "STRIPE keys"
+      "STRIPE keys",
+      "CF_ANALYTICS_TOKEN"
     ],
     "vars": {
       "MAIL_FROM": "National Closet Company <hello@nationalclosetco.com>",

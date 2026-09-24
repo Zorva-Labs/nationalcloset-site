@@ -8,12 +8,20 @@ import { requireAuth, json } from "../_lib/auth.js";
 const ZONE = "1d51a379abcf889e1f8a5445f6ed9b93"; // nationalclosetco.com
 const CT_OFFSET = 5; // Central Daylight Time = UTC-5 (Nashville / Middle TN)
 
+/* CF_ANALYTICS_TOKEN (an API token, Bearer) since 2026-09-24 — the global key
+   behind CF_ANALYTICS_EMAIL + CF_ANALYTICS_KEY stopped authenticating on
+   2026-09-23; the pair stays as the fallback. */
+function cfAnalyticsAuth(env) {
+  return env.CF_ANALYTICS_TOKEN
+    ? { Authorization: `Bearer ${env.CF_ANALYTICS_TOKEN}` }
+    : { "X-Auth-Email": env.CF_ANALYTICS_EMAIL, "X-Auth-Key": env.CF_ANALYTICS_KEY };
+}
+
 async function cfGraphQL(env, query) {
   const r = await fetch("https://api.cloudflare.com/client/v4/graphql", {
     method: "POST",
     headers: {
-      "X-Auth-Email": env.CF_ANALYTICS_EMAIL,
-      "X-Auth-Key": env.CF_ANALYTICS_KEY,
+      ...cfAnalyticsAuth(env),
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ query }),
@@ -24,7 +32,7 @@ async function cfGraphQL(env, query) {
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const { env } = context;
-  if (!env.CF_ANALYTICS_EMAIL || !env.CF_ANALYTICS_KEY) return json({ days: [], error: "not_configured" });
+  if (!env.CF_ANALYTICS_TOKEN && !(env.CF_ANALYTICS_EMAIL && env.CF_ANALYTICS_KEY)) return json({ days: [], error: "not_configured" });
 
   const url = new URL(context.request.url);
   const today = url.searchParams.get("today") === "1";

@@ -2,6 +2,13 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md` and in `~/fleet/docs/archive`.
 
+## 2026-09-25 (CSP: the rest of Google's hosts for the Ads tag)
+- Michael: add what the CSP was missing from Google's list for the Ads tag. This came out of a check of the Ads CSP on every site that runs Google Ads. The tag (`AW-18306256681`, loaded by `js/main.js` on every page) still runs, although the ads stopped on 9/22.
+- `_headers` (the `/*` policy), from Google's CSP guide for the Google tag (developers.google.com/tag-platform/security/guides/csp): `https://www.google.com` added to `script-src`, `https://pagead2.googlesyndication.com` to `connect-src` and `https://www.googletagmanager.com` to `frame-src`. Nothing else in the policy changed.
+- Nothing was being blocked. The check ran `/free-design` under the live policy and every Ads hit went through. Google lists these three hosts for the Ads tag but the tag didn't request them, so they are added in advance.
+- Checked locally before deploying. `dist/` was served with its `_headers`, with GA4 hits dropped and the Meta pixel stubbed, so nothing reached the site's accounts. The home page had no CSP violations and every Ads hit went through. Built (`node build.mjs`; this site has no check command), deployed (`e27c1ef9`), submitted (nothing changed). The live header has all three.
+- **Owed:** nothing.
+
 ## 2026-09-24 (Turnstile: a wrong secret no longer drops the lead)
 - `functions/_lib/spam.js` → `turnstileReason`: only a rejected token (`invalid-input-response`) counts as a bot now. Every other siteverify failure (`invalid-input-secret`, `missing-input-secret`, `bad-request`, `internal-error`, or no code at all) fails open and is logged as `[turnstile] siteverify error, not counted as a bot (check TURNSTILE_SECRET)`. Until today each of those dropped the lead silently with `{ok:true}`: no row, no email. So a mistyped or rotated `TURNSTILE_SECRET` would have lost every visitor who got a token, and a test without a token (the browser pane's) could never show it. `timeout-or-duplicate` still fails open; the honeypot and the time-trap are unchanged.
 - This site has `TURNSTILE_SECRET` set, so the fix protects its forms today. This `spam.js` carries its own comments, so the same logic as the model's (`~/nittanytax-site`) went in under them (`~/fleet/docs/gotchas.md` → Forms and leads).

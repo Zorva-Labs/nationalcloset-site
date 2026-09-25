@@ -5,6 +5,7 @@
 import { sendEmail, brandedEmail, escapeHtml, makeMessageId } from "./email.js";
 import { logOutboundEmail } from "./email-log.js";
 import { recordActivity } from "./db.js";
+import { centralNow } from "./dates.js";
 
 const SITE_URL = "https://nationalclosetco.com";
 
@@ -28,7 +29,10 @@ export async function sweepConsultationReminders(env) {
   if (!DB) return { reminded: 0 };
 
   // Central-time "today", the visit is still upcoming, and it's morning (>= 7am
-  // Central) so the reminder lands in the morning, not at UTC midnight.
+  // Central) so the reminder lands in the morning, not at UTC midnight. Central
+  // "now" comes from the IANA zone (UTC-5 in daylight time, UTC-6 in standard).
+  const now = centralNow();
+  if (now.hour < 7) return { reminded: 0 };
   const due = (await DB.prepare(
     `SELECT id, type, start_at, name, email, site_address, rooms, cancel_token,
             contact_id, project_id, lead_id
@@ -37,10 +41,9 @@ export async function sweepConsultationReminders(env) {
         AND LOWER(COALESCE(status,'')) NOT IN ('canceled','cancelled','no_show','completed','done')
         AND reminder_sent_at IS NULL
         -- start_at is stored in LOCAL CENTRAL time; compare against Central "now".
-        AND datetime(start_at) > datetime('now','-5 hours')
-        AND date(start_at) = date('now','-5 hours')
-        AND CAST(strftime('%H', datetime('now','-5 hours')) AS INTEGER) >= 7`
-  ).all()).results || [];
+        AND datetime(start_at) > datetime(?1)
+        AND date(start_at) = ?2`
+  ).bind(now.iso, now.date).all()).results || [];
 
   let reminded = 0;
   for (const a of due) {

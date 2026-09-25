@@ -14,12 +14,7 @@ import { sendEmail, makeMessageId, brandedEmail } from "./email.js";
 import { buildEmailContext, renderTemplate } from "./email-vars.js";
 import { logOutboundEmail } from "./email-log.js";
 import { recordActivity } from "./db.js";
-
-const CT_OFFSET_HOURS = 5; // Central Daylight Time, same convention as the rest of the CRM
-
-function centralHour() {
-  return new Date(Date.now() - CT_OFFSET_HOURS * 3600 * 1000).getUTCHours();
-}
+import { centralNow } from "./dates.js";
 
 async function template(db, kind) {
   return db.prepare(`SELECT * FROM email_templates WHERE kind = ?1 AND is_active = 1 ORDER BY is_default DESC, id LIMIT 1`).bind(kind).first();
@@ -56,7 +51,9 @@ async function sendTemplate(env, tpl, { contactId, projectId = null, leadId = nu
 export async function sweepReviewRequests(env) {
   const db = env && env.DB;
   if (!db) return { installs: 0, visits: 0 };
-  const hour = centralHour();
+  // Central wall clock from the IANA zone (UTC-5 in daylight time, UTC-6 in standard).
+  const now = centralNow();
+  const hour = now.hour;
   if (hour < 9 || hour >= 20) return { installs: 0, visits: 0, skipped: "outside_hours" };
 
   let installs = 0, visits = 0;
@@ -99,8 +96,9 @@ export async function sweepReviewRequests(env) {
           AND LOWER(COALESCE(a.status, '')) IN ('confirmed', 'completed', 'done')
           AND a.review_requested_at IS NULL
           AND a.email IS NOT NULL AND a.email != '' AND a.email NOT LIKE '%@nationalclosetco.com'
-          AND datetime(a.end_at) <= datetime('now', '-5 hours', '-2 days')
-          AND datetime(a.end_at) >= datetime('now', '-5 hours', '-30 days')
+          -- end_at is a LOCAL CENTRAL wall-clock string; ?1 is Central "now".
+          AND datetime(a.end_at) <= datetime(?1, '-2 days')
+          AND datetime(a.end_at) >= datetime(?1, '-30 days')
           AND NOT EXISTS (SELECT 1 FROM projects p WHERE p.contact_id = a.contact_id
                             AND p.status IN ('contracted', 'scheduled_install', 'installing', 'completed'))
           AND NOT EXISTS (SELECT 1 FROM leads l WHERE l.id = a.lead_id AND l.status = 'lost')
@@ -108,7 +106,7 @@ export async function sweepReviewRequests(env) {
                             AND m.template_kind IN ('review_request', 'review_request_visit')
                             AND m.created_at >= datetime('now', '-90 days'))
         ORDER BY a.end_at LIMIT 10`
-    ).all()).results || [];
+    ).bind(now.iso).all()).results || [];
     const asked = new Set();
     for (const a of due) {
       await db.prepare(`UPDATE appointments SET review_requested_at = datetime('now') WHERE id = ?1`).bind(a.id).run();

@@ -2,6 +2,36 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-09-25 (Central time from the zone in every sweep; the six missing posts in the sitemap)
+- Michael: "yes, fix the daylight saving bug and the sitemap". Both were owed in the manual-split entry below.
+- **Daylight saving.** The DB stores naive Central wall-clock strings, and four things read Central as a flat UTC-5, which is right only in daylight time. From 2026-11-01 (standard time, UTC-6) they would have been an hour off:
+  - the customer's reminder would have gone at 6am, not 7am;
+  - review requests would have run 8am–7pm instead of 9am–8pm;
+  - a job would have flipped to installing, and its balance would have been billed, at 11pm the evening before the install date;
+  - the traffic page's "today" would have started at 11pm the evening before, and its hour-of-day chart would have run an hour late.
+- **The fix:**
+  - `functions/_lib/dates.js` gains `centralAt(ms)`, `centralNow()` and `centralMidnightUtc(date)`, all through the IANA zone like `todayCentral()`. `centralNow()` moved from `consult-brief.js`, which re-exports it.
+  - `appointment-reminders.js` and `review-requests.js` bind Central "now" into their SQL. `internal/advance-jobs.js` binds `todayCentral()`. `traffic.js` dates "today" and each hour bucket through the zone.
+  - `traffic-channels.js` starts "today" at Central midnight in UTC (05:00 or 06:00), written into the SQL because that endpoint's last query takes no parameter.
+  - No flat offset is left in `functions/`.
+- **Checked:**
+  - The helpers at 14 instants: daylight time; the 2026-11-01 fall-back, including the 1:30am that happens twice; standard time; midnight on both changeover days of 2026–27.
+  - The real sweep code against a fake D1 with the clock pinned (10 checks):
+    - reminders: none at 6:30am CST, and at 7:30am CST the query carries `2026-11-02T07:30:00`;
+    - reviews: they run at 7:30pm CST, and not at 8:30pm or 8:30am;
+    - install day: at 11:30pm CST on Nov 2 the query asks for jobs due by 2026-11-02 (the old code said 11-03), and at midnight by 11-03;
+    - in daylight time, as today, every answer is the old code's.
+  - The two traffic endpoints the same way (7 checks), across the change too.
+  - SQLite reads the bound `YYYY-MM-DDTHH:MM:SS` form the same way as the stored datetimes.
+  - After the deploy, one run of `/api/internal/advance-jobs` on production, the cron's own sweep: HTTP 200, `ok:true`, nothing due.
+- **The sitemap.** Six posts had been live, indexable and linked from `/closet-cases` since 2026-08-19, but were never in `sitemap.xml`, so `site-kit submit` had never sent them: `best-closet-company`, `closet-installation-cost`, `contractor-cost-to-build-a-closet`, `custom-pantry-design`, `home-depot-lowes-closet-installation` and `what-closet-company-does-costco-use`. They're in it now (monthly, 0.7, like the other posts), for 69 URLs.
+- **Their dates.** `site-kit lastmod` dates a page new to the sitemap today, and none of the six changed today.
+  - First deploy (`8a226e1b`): IndexNow accepted the six, Search Console got the sitemap again, and Bing has it.
+  - Then each post's `changed` in `.indexnow.json` was set to 2026-09-17, the last commit that changed what it says. That came from `site-kit lastmod --history` into a scratch state; the later commits were header and footer sweeps. The same method gives the recorded date for all 63 pages already listed.
+  - Rebuilt and deployed again (`c8068a8f`). The live sitemap carries 2026-09-17 for the six, and `submit` found nothing new.
+- `docs/automations.md` and `docs/content.md` say so, and `CLAUDE.md` gains two rules: Central time comes from `_lib/dates.js`, and a new page or post goes into `sitemap.xml` the day it goes live.
+- **Owed:** nothing from this change. The other items owed in the entry below stand.
+
 ## 2026-09-25 (the manual split: CLAUDE.md under 14,000)
 - **`CLAUDE.md` went from 17,217 to 10,964 characters, under `fleet audit`'s 14,000** (Michael: "trim those five too"). It loads into every session, so it now keeps only what the site is, the rules for every change, build and deploy, a map, the accounts and the open items. The detail moved to `docs/`, one file per part, the way Blair Custom Interiors', Nittany Tax's and Zorva's manuals were split today:
   - `docs/content.md`: the pages, the page factory, the payment terms and the services, the service vocabulary.

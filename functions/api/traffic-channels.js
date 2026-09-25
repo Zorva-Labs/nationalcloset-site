@@ -9,6 +9,7 @@
 //   tn=1 restricts both to visitors Cloudflare placed in Tennessee — the only
 //     ones who can actually buy a closet.
 import { requireAuth, json } from "../_lib/auth.js";
+import { centralNow, centralMidnightUtc } from "../_lib/dates.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -22,9 +23,13 @@ export async function onRequestGet(context) {
   const DB = context.env.DB;
 
   // Today = since CENTRAL midnight (created_at is UTC; date('now') would use the
-  // UTC day, which flips at 7pm Central and makes "today" look empty).
+  // UTC day, which flips at 7pm Central and makes "today" look empty). Central
+  // midnight in UTC comes from the IANA zone: 05:00 in daylight time, 06:00 in
+  // standard. It is a timestamp we compute, written into the SQL rather than
+  // bound, because the last query below takes no parameter.
+  const midnightUtc = new Date(centralMidnightUtc(centralNow().date)).toISOString().slice(0, 19).replace("T", " ");
   const TF = today
-    ? "created_at >= datetime('now', '-5 hours', 'start of day', '+5 hours')"
+    ? `created_at >= '${midnightUtc}'`
     : "created_at >= datetime('now', ?1)";
   const REGION = tn ? " AND region = 'TN'" : "";
   const binds = today ? [] : [`-${span} days`];

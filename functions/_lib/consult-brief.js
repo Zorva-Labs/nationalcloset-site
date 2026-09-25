@@ -16,30 +16,16 @@ import { sendEmail, brandedEmail, escapeHtml, makeMessageId, alertSender } from 
 import { renderTemplate } from "./email-vars.js";
 import { recordActivity } from "./db.js";
 import { getAssignees, listTeam, nameList } from "./team.js";
+import { centralNow } from "./dates.js";
 
 const SITE_URL = "https://nationalclosetco.com";
 const DASH = "—";
 
 // ── Central time ─────────────────────────────────────────────────────
-// Every datetime in this CRM is a naive CENTRAL wall-clock string. Use the IANA
-// zone, not a fixed -5: Central is UTC-6 in winter, and a flat offset reports
-// the wrong date for the first hour of every daylight-saving day.
-export function centralNow() {
-  const p = Object.fromEntries(
-    new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Chicago", hour12: false,
-      year: "numeric", month: "2-digit", day: "2-digit",
-      hour: "2-digit", minute: "2-digit", second: "2-digit",
-    }).formatToParts(new Date()).filter((x) => x.type !== "literal").map((x) => [x.type, x.value])
-  );
-  // hourCycle h23 still renders midnight as "24" in some ICU builds.
-  const hour = parseInt(p.hour, 10) % 24;
-  return {
-    date: `${p.year}-${p.month}-${p.day}`,
-    hour,
-    iso: `${p.year}-${p.month}-${p.day}T${String(hour).padStart(2, "0")}:${p.minute}:${p.second}`,
-  };
-}
+// Every datetime in this CRM is a naive CENTRAL wall-clock string. centralNow()
+// (_lib/dates.js, shared with every sweep) reads the IANA zone, not a fixed -5:
+// Central is UTC-6 in winter. Re-exported for anything that imported it here.
+export { centralNow };
 
 // "2026-09-22T14:30:00" → "2:30 PM". Read the clock straight off the string —
 // running it through Date() would shift it by the runtime's offset.

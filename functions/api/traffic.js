@@ -4,9 +4,11 @@
 // doesn't expose referrers), and traffic by hour of day in Central Time.
 // Credentials are server-side Pages secrets — never sent to the browser.
 import { requireAuth, json } from "../_lib/auth.js";
+import { centralAt, centralMidnightUtc } from "../_lib/dates.js";
 
 const ZONE = "1d51a379abcf889e1f8a5445f6ed9b93"; // nationalclosetco.com
-const CT_OFFSET = 5; // Central Daylight Time = UTC-5 (Nashville / Middle TN)
+// Central time comes from the IANA zone (centralAt): UTC-5 in daylight time,
+// UTC-6 from November to March.
 
 /* CF_ANALYTICS_TOKEN (an API token, Bearer) since 2026-09-24 — the global key
    behind CF_ANALYTICS_EMAIL + CF_ANALYTICS_KEY stopped authenticating on
@@ -61,9 +63,8 @@ export async function onRequestGet(context) {
   // Central-time "today" boundary expressed in UTC. Cloudflare's daily buckets use
   // the UTC calendar date, so after 7pm Central (= next UTC day) the "today" bucket
   // looks empty. Compute "today" from hourly data over the Central calendar day.
-  const ctNow = new Date(now.getTime() - CT_OFFSET * 3600 * 1000);
-  const ctDate = ctNow.toISOString().slice(0, 10);
-  const ctMidnightUTC = Date.parse(ctDate + "T00:00:00Z") + CT_OFFSET * 3600 * 1000;
+  const ctDate = centralAt(now.getTime()).date;
+  const ctMidnightUTC = centralMidnightUtc(ctDate);
   const hStart = today ? (new Date(ctMidnightUTC).toISOString().slice(0, 19) + "Z") : isoDT(new Date(now.getTime() - 3 * DAY));
   const hourlyQ = `query { viewer { zones(filter: {zoneTag: "${ZONE}"}) {
     httpRequests1hGroups(limit: 200, filter: {datetime_geq: "${hStart}", datetime_leq: "${isoDT(now)}"}, orderBy: [datetime_ASC]) {
@@ -90,11 +91,9 @@ export async function onRequestGet(context) {
     let todayPV = 0, todayUniq = 0;
     const hourlyCAgg = {};
     for (const g of hourlyGroups) {
-      const utcHour = parseInt(String(g.dimensions.datetime).slice(11, 13), 10);
-      if (Number.isFinite(utcHour)) {
-        const local = ((utcHour - CT_OFFSET) % 24 + 24) % 24;
-        hours[local] += g.sum?.pageViews || 0;
-      }
+      // Each hour bucket's own Central hour, so a range across a clock change is right on both sides.
+      const bucketMs = Date.parse(String(g.dimensions.datetime));
+      if (Number.isFinite(bucketMs)) hours[centralAt(bucketMs).hour] += g.sum?.pageViews || 0;
       if (Date.parse(String(g.dimensions.datetime)) >= ctMidnightUTC) {
         todayPV += g.sum?.pageViews || 0;
         todayUniq += g.uniq?.uniques || 0;   // approx — hourly uniques can double-count a repeat visitor

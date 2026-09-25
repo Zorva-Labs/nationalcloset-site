@@ -51,6 +51,43 @@ export function todayCentral() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(new Date());
 }
 
+// The Central wall clock at a UTC instant (milliseconds), through the same IANA
+// zone: { date: "YYYY-MM-DD", hour, iso: "YYYY-MM-DDTHH:MM:SS" } — the iso in the
+// same naive Central form as every datetime in the DB, so SQL can compare the two.
+export function centralAt(ms) {
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Chicago", hour12: false,
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+    }).formatToParts(new Date(ms)).filter((x) => x.type !== "literal").map((x) => [x.type, x.value])
+  );
+  // hourCycle h23 still renders midnight as "24" in some ICU builds.
+  const hour = parseInt(p.hour, 10) % 24;
+  return {
+    date: `${p.year}-${p.month}-${p.day}`,
+    hour,
+    iso: `${p.year}-${p.month}-${p.day}T${pad2(hour)}:${p.minute}:${p.second}`,
+  };
+}
+
+// The Central wall clock now. Every sweep that runs "in the morning" or "on the
+// day" reads this, never a flat -5: Central is UTC-6 from November to March.
+export function centralNow() {
+  return centralAt(Date.now());
+}
+
+// The UTC instant (milliseconds) at which a Central calendar day begins: 05:00Z
+// in daylight time, 06:00Z in standard time. The clocks change at 2am, so the
+// offset at 06:00Z (midnight or 1am Central) is the one in force at midnight,
+// the two changeover days included.
+export function centralMidnightUtc(dateStr) {
+  const t = Date.parse(dateStr + "T00:00:00Z");
+  const probe = t + 6 * 3_600_000;
+  const offsetHours = Math.round((probe - Date.parse(centralAt(probe).iso + "Z")) / 3_600_000);
+  return t + offsetHours * 3_600_000;
+}
+
 // Pretty format for emails
 export function fmtPretty(iso) {
   const [date, time] = iso.split("T");

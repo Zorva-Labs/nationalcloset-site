@@ -15,6 +15,7 @@ import { sweepConsultationReminders } from "../../_lib/appointment-reminders.js"
 import { sweepConsultBriefs } from "../../_lib/consult-brief.js";
 import { sweepReviewRequests } from "../../_lib/review-requests.js";
 import { createInvoice } from "../../_lib/invoices.js";
+import { todayCentral } from "../../_lib/dates.js";
 
 async function authenticate(context) {
   const authHeader = context.request.headers.get("Authorization") || "";
@@ -32,15 +33,17 @@ async function advance(context) {
   if (!auth.ok) return json({ error: "Unauthorized" }, 401);
   const { DB } = context.env;
 
-  // Use US Central local date (CDT = UTC-5 right now) so a job flips to
-  // "installing" at the start of the install date in the customer's timezone,
-  // not prematurely at UTC midnight (which is the prior evening in Central).
+  // The US Central date, from the IANA zone (todayCentral), so a job flips to
+  // "installing", and its balance is billed, at the start of the install date
+  // in the customer's timezone: not at UTC midnight (the prior evening in
+  // Central), and not at 11pm the evening before, which a flat -5 did from
+  // November to March.
   const due = (await DB.prepare(
     `SELECT id, name, install_date FROM projects
       WHERE status = 'scheduled_install'
         AND install_date IS NOT NULL
-        AND install_date <= date('now','-5 hours')`
-  ).all()).results || [];
+        AND install_date <= ?1`
+  ).bind(todayCentral()).all()).results || [];
 
   let balancesBilled = 0;
   for (const p of due) {

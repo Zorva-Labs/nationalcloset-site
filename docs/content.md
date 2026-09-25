@@ -1,7 +1,7 @@
 # Content — the pages, the page factory and the words
 
 ## The pages
-- Hand-written HTML: 44 pages at the repo root and 29 posts in `blog/` (the list is in `CLAUDE.md` → What this is). 63 of them are in `sitemap.xml`; `404.html`, `calc.html`, `thank-you.html`, `free-design.html` and the customer's pages (`docs/crm.md`) are noindex.
+- Hand-written HTML: 44 pages at the repo root and 29 posts in `blog/` (the list is in `CLAUDE.md` → What this is). 69 of them are in `sitemap.xml`, every post among them. A new page or post goes in the day it goes live: `site-kit submit` sends only what the sitemap lists. Six posts went unsent from 2026-08-19 to 2026-09-25; `404.html`, `calc.html`, `thank-you.html`, `free-design.html` and the customer's pages (`docs/crm.md`) are noindex.
 - 19 city pages (`custom-closets-<town>.html`), 8 competitor "alternative" pages (`<brand>-alternative.html`: California Closets, Closet Factory, ClosetMaid, Closets by Design, Inspired Closets, Tailored Closet, The Closet Company, Up Closets), the pricing guide (`custom-closet-cost-nashville.html`), `warranty.html`, `service-areas.html`, `work-with-us.html` (for builders and designers).
 - The blog is "Closet Cases" (`closet-cases.html` + `blog/`).
 - `/review` is a 302 to the Google review link, answered by `functions/_middleware.js`: the short link printed on the review cards (`tools/review-card/`) and used in the review emails.

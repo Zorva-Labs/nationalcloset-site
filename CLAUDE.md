@@ -16,6 +16,8 @@ Marketing site + full CRM for National Closet Company: custom closets, pantries,
 - **200 means received, `success:true` means saved:** GA4, Ads and Meta fire on `success:true` only (`docs/tracking.md`).
 - **The CRM:** re-measure at 375px after adding a page, and as painted at 1280px and 375px after adding a color; never put text on `--accent`. Templates → Email edits the plain text and the HTML; the consult brief's wording and its fallback stay byte-identical (`docs/crm.md`, `docs/automations.md`).
 - **A preview deployment shares the live D1:** a form or CRM action there is real (`docs/tracking.md`).
+- **Central time comes from `functions/_lib/dates.js`** (`centralNow()`, `todayCentral()`, `centralAt()`, `centralMidnightUtc()`, the IANA zone), never a flat offset. The DB stores naive Central wall-clock strings, and Central is UTC-6 from November to March (`docs/automations.md`).
+- **A new page or post goes into `sitemap.xml` the day it goes live:** `site-kit submit` sends only what the sitemap lists (`docs/content.md`).
 
 ## The reference — read the one for the part you change
 - `docs/content.md` — the pages, the page factory, the payment terms and services, the service vocabulary.

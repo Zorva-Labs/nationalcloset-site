@@ -2,13 +2,13 @@
   "host": "nationalclosetco.com",
   "endpoint": "https://www.bing.com/indexnow",
   "version": 2,
-  "submitted": "2026-09-23T05:18:54.905Z",
+  "submitted": "2026-09-25T19:45:18.120Z",
   "google": {
     "property": "sc-domain:nationalclosetco.com",
     "sitemaps": [
       "https://nationalclosetco.com/sitemap.xml"
     ],
-    "submitted": "2026-09-23T13:53:52.005Z"
+    "submitted": "2026-09-25T19:45:19.619Z"
   },
   "bing": {
     "site": "https://nationalclosetco.com/",
@@ -269,6 +269,30 @@
     "https://nationalclosetco.com/faq": {
       "hash": "7129d20e2817fe19",
       "changed": "2026-09-22"
+    },
+    "https://nationalclosetco.com/blog/best-closet-company": {
+      "hash": "e7109d9a81a3ea30",
+      "changed": "2026-09-17"
+    },
+    "https://nationalclosetco.com/blog/closet-installation-cost": {
+      "hash": "4fe2fc7ea511441a",
+      "changed": "2026-09-17"
+    },
+    "https://nationalclosetco.com/blog/contractor-cost-to-build-a-closet": {
+      "hash": "7129ff34de849531",
+      "changed": "2026-09-17"
+    },
+    "https://nationalclosetco.com/blog/custom-pantry-design": {
+      "hash": "6d1f2c37cda89523",
+      "changed": "2026-09-17"
+    },
+    "https://nationalclosetco.com/blog/home-depot-lowes-closet-installation": {
+      "hash": "68f9c6da8e4f3559",
+      "changed": "2026-09-17"
+    },
+    "https://nationalclosetco.com/blog/what-closet-company-does-costco-use": {
+      "hash": "2e69963fd3b9e4ea",
+      "changed": "2026-09-17"
     }
   }
 }

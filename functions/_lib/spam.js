@@ -53,9 +53,10 @@ export function botReason(data) {
 }
 
 // Verify a Cloudflare Turnstile token server-side. Returns "turnstile_failed"
-// ONLY when Turnstile explicitly rejects the token (a real bot signal). FAILS
-// OPEN — returns null — on a missing secret, a missing token, or any network /
-// parse error, so a real lead is NEVER dropped because verification couldn't run.
+// ONLY when Turnstile rejects the token itself (invalid-input-response — a real
+// bot signal). FAILS OPEN — returns null — on a missing secret, a missing token,
+// any network / parse error, or a failure on our side, so a real lead is NEVER
+// dropped because verification couldn't run.
 export async function turnstileReason(env, token, ip) {
   const secret = env && env.TURNSTILE_SECRET;
   if (!secret) return null;   // not configured on this site yet
@@ -70,10 +71,15 @@ export async function turnstileReason(env, token, ip) {
     if (out && out.success === false) {
       // A stale or reused token (a real customer who idled on the form past the
       // ~5-min token lifetime) reports "timeout-or-duplicate" — that's NOT a bot,
-      // so fail open. Only other explicit failures count as a bot.
+      // so fail open.
       const codes = out["error-codes"] || [];
       if (codes.includes("timeout-or-duplicate")) return null;
-      return "turnstile_failed";
+      // Only a rejected token is a bot. Anything else (invalid-input-secret,
+      // missing-input-secret, bad-request, internal-error) is a fault on our
+      // side — a wrong or rotated TURNSTILE_SECRET — so fail open and log it.
+      if (codes.length && codes.every((c) => c === "invalid-input-response")) return "turnstile_failed";
+      console.warn("[turnstile] siteverify error, not counted as a bot (check TURNSTILE_SECRET):", codes.join(", ") || "no error code");
+      return null;
     }
     return null;
   } catch {

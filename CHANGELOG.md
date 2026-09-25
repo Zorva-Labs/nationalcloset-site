@@ -4,7 +4,7 @@ Newest first. One entry per session that changed this repo: what changed, why, w
 
 ## 2026-09-25 (/traffic: our own tools and Google's quiet fetchers are no longer visitors)
 - Michael asked for an audit of what `/traffic` counts as people (the full audit is in traffic-kit's CHANGELOG, 2026-09-25). Its middleware drops bots unlogged, so the needles went into `BOT_UA` and the "Google" check into `isBot()`: our tools and Google's fetchers are now simply not counted. Its `pageviews` keeps no bot columns, so there was nothing to count past rows by.
-- `functions/_middleware.js` (traffic-kit `bin/add-our-checks.mjs`, `467fe81`) now logs these by name, never as visits:
+- `functions/_middleware.js` (traffic-kit `bin/add-our-checks.mjs`, `467fe81`) now drops these unlogged, like every other bot here, so none of them is ever a visit:
   - our own tools, which have carried `NashvillesWebDesignCheck` in their user agent since today;
   - our scanners;
   - the desktop app's preview browser;

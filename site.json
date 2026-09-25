@@ -32,9 +32,8 @@
       "CRON_SECRET",
       "CALENDAR_FEED_TOKEN",
       "TURNSTILE_SECRET",
-      "CF_ANALYTICS_EMAIL",
-      "CF_ANALYTICS_KEY",
-      "STRIPE keys",
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET",
       "CF_ANALYTICS_TOKEN"
     ],
     "vars": {

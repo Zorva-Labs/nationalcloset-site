@@ -2,6 +2,13 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md` and in `~/fleet/docs/archive`.
 
+## 2026-09-25 (/traffic: scripts and hosting networks are not counted)
+- Michael, on the traffic audit's options: "go with your recommendation for the hosting networks" (traffic-kit CHANGELOG, 2026-09-25).
+- `functions/_middleware.js` (traffic-kit `bin/add-not-people.mjs`, `82b6a28`): a user agent with no browser engine (a script) or a request from a data-center network (741 networks, less the ones people browse through: iCloud Private Relay, WARP, office proxies, Google's own, Meta's) is not logged, since this middleware logs no bots. Those requests still pass the geo gate like anyone else. This table keeps no network number or user agent, so nothing was added to it.
+- Built, checked, deployed (`96417904`, production confirmed through the Pages API), submitted. A request with no browser engine to the new deployment: HTTP 200, not logged (this middleware logs no bots, and now none of these either).
+- Past rows are left as they are.
+- **Owed:** nothing.
+
 ## 2026-09-25 (/traffic: our own tools and Google's quiet fetchers are no longer visitors)
 - Michael asked for an audit of what `/traffic` counts as people (the full audit is in traffic-kit's CHANGELOG, 2026-09-25). Its middleware drops bots unlogged, so the needles went into `BOT_UA` and the "Google" check into `isBot()`: our tools and Google's fetchers are now simply not counted. Its `pageviews` keeps no bot columns, so there was nothing to count past rows by.
 - `functions/_middleware.js` (traffic-kit `bin/add-our-checks.mjs`, `467fe81`) now drops these unlogged, like every other bot here, so none of them is ever a visit:

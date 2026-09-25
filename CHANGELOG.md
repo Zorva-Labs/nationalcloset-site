@@ -2,6 +2,13 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md` and in `~/fleet/docs/archive`.
 
+## 2026-09-24 (/traffic: a Chrome prefetch is not Google's ad review)
+- Michael: roll out to every dashboard the fix first made on Blair Custom Interiors, where a lead from a Google ad came out "Unknown". Chrome fetches Google's results and ads before the click through Google's own proxy, so the fetch comes from Google's network with the ad's gclid on it. This morning's ad-review rule filed those fetches as "Google ad review", which gets no source cookie. An opened one was never counted as a visit, and its call or form lost where it came from.
+- **By hand** (this middleware skips bots before logging and has no source cookie, so `add-ad-review.mjs` cannot patch it): the `// ad-review:` block was refreshed from the template, so a prefetch is never ad review. A prefetch is also not logged (`&& !isPrefetch(request)` on the `logPageview` call), but it stays behind the country gate. There is no `pv-view.js` here: the default traffic view is `page_engagement`, written by `js/main.js`'s own beacon, which already counts an opened prefetch. `pageviews` also has no bot or device columns.
+- Deployed (`a73f830b`). Live test: a request with `Sec-Purpose: prefetch` was not logged, while an ordinary one was (the control row, 14133, was deleted).
+- No Google ads run here since 2026-09-22, and bots are never logged, so there was nothing to correct.
+- **Owed:** nothing.
+
 ## 2026-09-24 (/traffic section 4: what Bing holds now)
 - Michael: add four things from Bing to the traffic page on every dashboard: which of the site's pages Bing has found and when it last read each, the pages it couldn't read, pages in its index over time, and the sitemap's status. `add-bing.mjs --apply` (traffic-kit `cf8ef48`) refreshed section 4 and the page (the endpoint is ported by hand). The figures come from gsc-ingest's nightly Bing pull (`66f863c`). "What Bing has read" and the two new panels show even while Bing has no search figures.
 - What Bing holds for nationalclosetco.com today: two sitemaps: `/sitemap.xml` read 24 Sept, 63 pages, no errors; `www.nationalclosetco.com/sitemap.xml` read 23 Sept, 63 pages, no errors; no problem pages; its pages are asked about over the next nights. This evening's catch-up stopped before reaching it, when Bing throttled the account's page lookups.

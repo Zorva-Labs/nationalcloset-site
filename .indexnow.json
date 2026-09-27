@@ -2,13 +2,13 @@
   "host": "nationalclosetco.com",
   "endpoint": "https://www.bing.com/indexnow",
   "version": 2,
-  "submitted": "2026-09-27T03:41:30.932Z",
+  "submitted": "2026-09-27T21:32:46.980Z",
   "google": {
     "property": "sc-domain:nationalclosetco.com",
     "sitemaps": [
       "https://nationalclosetco.com/sitemap.xml"
     ],
-    "submitted": "2026-09-27T03:41:31.621Z"
+    "submitted": "2026-09-27T21:32:47.869Z"
   },
   "bing": {
     "site": "https://nationalclosetco.com/",
@@ -293,6 +293,10 @@
     "https://nationalclosetco.com/blog/what-closet-company-does-costco-use": {
       "hash": "57ded536e4420b3d",
       "changed": "2026-09-17"
+    },
+    "https://nationalclosetco.com/privacy": {
+      "hash": "7d5e1ef26cc2cb81",
+      "changed": "2026-09-27"
     }
   }
 }

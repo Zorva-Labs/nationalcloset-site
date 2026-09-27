@@ -2,6 +2,25 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-09-27 (a privacy page, linked from every page's footer)
+- **Why:** the estate's scanner (core 4.0, check `about-privacy`, rulebook rule 8) found no privacy policy linked from the home page, and `/privacy` answered 404. Michael asked for one on every site that lacked it: what the site's own forms and analytics keep, read from the repo, in the business's name.
+- **`/privacy` (`privacy.html`)**, built with the page factory (`tools/site-build/stage5_privacy.py`, which writes that page and nothing else; its docstring names the code each paragraph comes from). The phero, then the warranty page's `.prose`. What it says:
+  - the forms: name and phone, then optional email, space, address and note (`js/main.js`, `/api/contact-address`); the booking page's fields (`functions/api/public/book.js`); what a lead row keeps besides (source page, landing page, referrer, click id and UTM tags, user agent, the truncated SHA-256 of the IP, the GA4 client and session ids; `functions/api/contact.js`);
+  - the mail: from hello@ over Google Workspace (welcome, booking confirmation, the morning reminder, proposal, contract, invoices, review requests), the inbox sync that files mail to hello@ with the contact, and the team's consult brief (`docs/automations.md`);
+  - proposals, contracts, invoices: private links; what a signature records (name, email, drawn signature, time, user agent, IP hash); Stripe on the invoice page; project files on Cloudflare (R2);
+  - Google Analytics, the Google Ads tag and the Meta Pixel: what they're told (`track()`), the `user_data` handed to the Google tag on a saved request, and the booked consults sent to GA4 by `scripts/ads-offline-conversions.mjs`;
+  - the edge log (US page views: page, referrer, UTM, click id flag, state and country; no IP) and the seconds-on-page beacon;
+  - `ncc_attr` (localStorage, until cleared) and `ncc_lead` (sessionStorage, removed on booking);
+  - Cloudflare and Turnstile, Google Fonts (76 of 78 public pages load it), the "Text a photo" link;
+  - how to ask what we hold or have it corrected or deleted: hello@ or 629-298-8241.
+  No retention period is stated, since none is set.
+- Title "Privacy Policy | National Closet Company" (40), description 146, canonical, OG and Twitter image (`/img/hero-closet-og.jpg`, the factory's head), `WebPage` + `BreadcrumbList`. In `sitemap.xml` (yearly, 0.3).
+- **The footer link:** `stage4.py`'s chrome sweep gains one idempotent step, Privacy after FAQ in the footer's Company column, and was run over every page: 72 pages, one line each, nothing else changed. The pages with no footer: `404.html` gets it in its links row, the proposal's two footers and the invoice's footer line get it. The estimate and contract pages (no footer on screen), `/thanks/` and `calc.html` don't.
+- **Checked:** `node build.mjs` (272 files; lastmod: only `/privacy` new); `site-kit check` finds nothing on the new page (its 42 problems are the earlier titles, descriptions and schema items). In the browser pane at 375px: no sideways scroll, 20px gutters, one h1, the footer link.
+- **Deployed** `a2dcf4cb`; submitted (IndexNow 1 URL, 200; Search Console; Bing). Live `/privacy` 200.
+- **Scanner** (`--no-psi`): 96, `about-privacy` **pass**: "The home page links an About page (/about) and a privacy policy (/privacy)."
+- **Owed:** change the page with the code: a new tag, a form field, the ads coming back, `ncc_attr`'s rules.
+
 ## 2026-09-26 (the FAQ schema is the visible FAQ: one list, written by the build)
 - **The finding** (Michael): the live site served FAQPage JSON-LD its pages don't show. Every sitemap URL was fetched, and each Question's name and answer were looked for in the page's visible text. 64 pages carried a FAQPage, with 453 questions, and 52 didn't match:
   - `/faq`: 1 question not on the page ("Does National Closet Company have reviews?") and 32 answers not the page's;

@@ -112,6 +112,9 @@ def sweep(path):
         f2, n = re.subn(r'(<a href="/?#top" class="footer__logo".*?</a>)', lambda mm: mm.group(1) + FOOTER_PARENT, f2, count=1, flags=re.S); assert n == 1, path
     if '/custom-cabinets-nashville' not in f2:
         f2, n = re.subn(r'(<a href="/?#services">Reach-In Closet Systems</a>)', r'\1\n          <a href="/custom-cabinets-nashville">Custom Cabinets</a>', f2, count=1); assert n == 1, path
+    # the privacy policy in the Company column, after FAQ (2026-09-27; the page is stage5_privacy.py's)
+    if 'href="/privacy"' not in f2:
+        f2, n = re.subn(r'(<a href="/?#faq">FAQ</a>)', r'\1\n          <a href="/privacy">Privacy</a>', f2, count=1); assert n == 1, path
     assert COPY_OLD in f2 or 'a division of' in f2, path
     f2 = f2.replace(COPY_OLD, COPY_NEW)
     # the booking page's footer still carried the Klarna line

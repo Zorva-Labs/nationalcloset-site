@@ -14,3 +14,6 @@
 ## The CSP
 - `_headers` (`/*`) allows Google's hosts for the Google tag and the Ads tag (developers.google.com/tag-platform/security/guides/csp), the bare `analytics.google.com`, `ad.doubleclick.net` and `stats.g.doubleclick.net` included, plus Turnstile, Stripe, the Meta pixel and Cloudflare's beacon. `connect-src` still lists `https://purelymail.com`, a leftover of the old mail host.
 - The previews in `.claude/launch.json` are `python3 -m http.server`: `nationalcloset` on 4117 over the repo root, and `nationalcloset-dist` on 4118 over `dist/`, which is what deploys. Only `dist/` has each page's FAQPage and the sitemap's dates (`docs/content.md` → The FAQs). Neither sends `_headers` or runs functions, so a CSP change needs `dist/` served with its headers. A preview deployment has the functions, but it shares the live D1 (`DB` is bound to both environments), so a form sent there is a real lead.
+
+## The privacy page
+- `/privacy` (2026-09-27) says what the forms, the lead row, the mail, the tags, the edge log and the browser storage do. It is built by `tools/site-build/stage5_privacy.py`, whose docstring names the code behind each paragraph. A change to any of them (a new tag, a new field, the ads running again, `ncc_attr`) changes the script, then rerun it and deploy. The footer link is part of `stage4.py`'s sweep.

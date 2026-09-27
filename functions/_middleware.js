@@ -16,7 +16,7 @@ const ALLOWED_COUNTRIES = new Set(["US"]);
 // User-agent substrings (lowercase) for crawlers we always allow.
 const BOT_UA = [
   // our-checks: our own tools and checks, never counted (bin/add-our-checks.mjs keeps this block current)
-  "nashvilleswebdesigncheck", "nashvilleswebdesignscanner", "zorvalabsscanner", "zorvalabs", "zorva-labs", "claude/",
+  "nashvilleswebdesigncheck", "nashvilleswebdesignscanner", "zorvalabsscanner", "leadgendigitalscanner", "zorvalabs", "zorva-labs", "claude/",
   // /our-checks
   // google-fetchers: Google's fetchers that don't say bot, never counted (bin/add-our-checks.mjs keeps this block current)
   "google-adwords", "google-ads-creatives", "google-businesslinkverification", "google-read-aloud", "google-safety", "google-agent", "google-notebooklm", "google-gemininotebook", "google-site-verification", "google-cloudvertexbot", "google-cws", "google-pinpoint", "googleproducer", "googlemessages", "google-apps-script", "apps-spreadsheets", "appengine-google", "google favicon", "google web preview", "google wap proxy",

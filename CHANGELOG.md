@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-09-26 (/traffic: Lead Gen Digital Marketing's scanner is ours, never a visit)
+- leadgendigitalmarketing.com now runs a free scan. Its fetches carry `LeadGenDigitalScanner` in a Chrome user agent, and nothing here named it, so the middleware took the scanner for a person and logged a scan's first page as a visit. Michael asked for it on every site's own-checks list, beside our other two scanners.
+- `functions/_middleware.js`: the token joins the `// our-checks:` needles in `BOT_UA` (traffic-kit `bin/add-our-checks.mjs`, `ccf9c82`). This site drops bots unlogged, so a scan is now neither logged nor counted, and like any bot here it passes the geo gate.
+- Built, deployed (`218f0ad3`, production confirmed through the Pages API), submitted (nothing had changed). `traffic-kit check`: our checks ✓; its warning about opened prefetches was there before and is unrelated. Live: a request with the scanner's user agent to the new deployment got a 200 and left no page view, where a person's is logged on any host.
+- **Owed:** nothing.
+
 ## 2026-09-25 (Central time from the zone in every sweep; the six missing posts in the sitemap)
 - Michael: "yes, fix the daylight saving bug and the sitemap". Both were owed in the manual-split entry below.
 - **Daylight saving.** The DB stores naive Central wall-clock strings, and four things read Central as a flat UTC-5, which is right only in daylight time. From 2026-11-01 (standard time, UTC-6) they would have been an hour off:

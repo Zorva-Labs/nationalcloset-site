@@ -124,11 +124,12 @@ def sweep(path):
     return s != o
 
 def sweep_credit():
-    """The footer credit sentence lives in chrome.BUILDER; every page carries it as one followed
-    link, and the homepage WebSite node names the agency as creator, provider and maintainer."""
+    """The footer credit sentence lives in chrome.BUILDER; every page carries it as one nofollow
+    link (every credit in the estate is nofollow from 2026-09-19), and the homepage WebSite node
+    names the agency as creator, provider and maintainer."""
     import sys; sys.path.insert(0, 'tools/site-build')
     from chrome import BUILDER
-    credit = f'<p class="credit"><a href="{BUILDER["url"]}" target="_blank" rel="noopener">{BUILDER["credit"]}</a></p>'
+    credit = f'<p class="credit"><a href="{BUILDER["url"]}" target="_blank" rel="nofollow noopener">{BUILDER["credit"]}</a></p>'
     n = 0
     for p in sorted(p for p in glob.glob('**/*.html', recursive=True) if not p.startswith(('crm/', 'tools/', 'node_modules/'))):
         s = open(p, encoding='utf-8').read(); o = s
@@ -228,7 +229,7 @@ def build_cabinets_page(C):
   <div class="wrap">
     <p class="proof-chips" style="margin-bottom:1.6rem"><span>Free in-home 3D design</span><span>One honest price</span><span>Lifetime warranty</span><span>Installed by our own team</span><span>Pay in three installments</span></p>
     <div class="prose">
-      <figure><img src="/img/cab-kitchen-800.webp" srcset="/img/cab-kitchen-480.webp 480w, /img/cab-kitchen-800.webp 800w, /img/cab-kitchen.webp 1600w" sizes="(min-width: 900px) 720px, 100vw" alt="Cream shaker kitchen cabinets with a walnut island, honed marble counters and brushed brass hardware" width="1600" height="1066" fetchpriority="high" /><figcaption>Painted shaker cabinets, a walnut island and brass hardware — one of the looks we design in 3D before anything is built.</figcaption></figure>
+      <figure><img src="/img/cab-kitchen-800.webp" srcset="/img/cab-kitchen-480.webp 480w, /img/cab-kitchen-800.webp 800w, /img/cab-kitchen.webp 1600w" sizes="(min-width: 900px) 720px, 100vw" alt="Cream shaker kitchen cabinets with a walnut island, honed marble counters and brushed brass hardware" width="1600" height="1066" fetchpriority="high" /><figcaption>Painted shaker cabinets, a paneled range hood and brass hardware — one of the looks we design in 3D before anything is built.</figcaption></figure>
 
       <h2>Custom cabinets, built to your walls</h2>
       <p>Stock cabinets come in fixed widths, and the gaps get hidden with filler strips. <strong>Custom cabinets</strong> are drawn to your room — the out-of-square corner, the odd ceiling height, the window that isn\'t centered — so every inch works and the finished wall looks like it was always there. We measure in person, design the room in a photorealistic 3D rendering, price it honestly, and install it with our own team.</p>
@@ -296,8 +297,8 @@ def build_cabinets_page(C):
   </div>
 </section>
 ''' + CONSULT
-    faq_schema = {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [
-        {"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": strip_tags(a)}} for q, a in CAB_FAQ]}
+    # No FAQPage here: build.mjs writes it into dist/ from the accordion CAB_FAQ becomes above,
+    # word for word, and stops on a page that carries its own (2026-09-26).
     service = {"@context": "https://schema.org", "@type": "Service", "@id": CAB_URL + "#service", "serviceType": "Custom Cabinets",
                "name": "Custom Cabinets — Design, Build & Installation",
                "provider": {"@id": "https://nationalclosetco.com/#org"},
@@ -310,7 +311,7 @@ def build_cabinets_page(C):
                    ["Custom Kitchen Cabinets & Islands", "Bathroom Vanities", "Laundry Room Cabinets", "Mudroom Lockers & Benches", "Built-In Hutches & Bookcases", "Media Walls & Entertainment Centers", "Home Office Cabinetry", "Garage & Utility Cabinets"]]},
                "offers": {"@type": "Offer", "description": "Free in-home design consultation with a written price; 50% at signing, 25% when installation is scheduled, 25% on install day.", "priceCurrency": "USD", "availability": "https://schema.org/InStock"}}
     org_ref = {"@context": "https://schema.org", "@type": "Organization", "@id": "https://nationalclosetco.com/#org", "name": "National Closet Company", "url": "https://nationalclosetco.com/", "parentOrganization": PARENT_ORG}
-    schemas = [service, faq_schema, C.breadcrumb([('Home', 'https://nationalclosetco.com/'), ('Custom Cabinets', CAB_URL)]),
+    schemas = [service, C.breadcrumb([('Home', 'https://nationalclosetco.com/'), ('Custom Cabinets', CAB_URL)]),
                C.webpage('custom-cabinets-nashville', 'Custom Cabinets in Nashville, TN', html.unescape(desc), '/img/custom-cabinets-og.jpg'), org_ref]
     extra_css = '.cab-rooms figure img { aspect-ratio: 3/2; } .cab-rooms figcaption b { display: block; margin-bottom: .15rem; }'
     out = C.page('custom-cabinets-nashville', title, desc, '/img/custom-cabinets-og.jpg', body, schemas, extra_css=extra_css)
@@ -642,7 +643,7 @@ def build_about_page(C):
        "knowsAbout": ["Custom closets", "Custom cabinets", "Walk-in closet design", "Home storage systems"]},
       {"@context": "https://schema.org", "@type": "Person", "@id": SITE + "/#noah-blair", "name": "Noah Blair", "jobTitle": "Co-Owner", "worksFor": {"@id": SITE + "/#org"}, "url": SITE + "/about#noah-blair",
        "knowsAbout": ["Custom cabinets", "Custom closets", "Cabinetry", "Interior remodeling"]},
-      {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": strip_tags(a)}} for q, a in faq]},
+      # No FAQPage: build.mjs writes it into dist/ from the accordion `faq` becomes above (2026-09-26).
       C.breadcrumb([('Home', SITE + '/'), ('About', SITE + '/about')]),
       C.webpage('about', 'About National Closet Company', desc, '/img/ncc-truck-og.jpg'),
     ]

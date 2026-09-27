@@ -2,6 +2,59 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-09-26 (the FAQ schema is the visible FAQ: one list, written by the build)
+- **The finding** (Michael): the live site served FAQPage JSON-LD its pages don't show. Every sitemap URL was fetched, and each Question's name and answer were looked for in the page's visible text. 64 pages carried a FAQPage, with 453 questions, and 52 didn't match:
+  - `/faq`: 1 question not on the page ("Does National Closet Company have reviews?") and 32 answers not the page's;
+  - `/`: 6 answers;
+  - `/blog/closet-shelf-depth-12-vs-14`: 2 questions and 3 answers;
+  - `/blog/fake-discounts-65-percent-off`: 1 question and 4 answers;
+  - `/custom-pantry-nashville`: 1 question, whose name carried `&ldquo;`/`&rdquo;` as text;
+  - `/warranty` and `/work-with-us`: 1 answer each.
+
+  Google's FAQ rules want the markup to describe what the page shows, and ours say the visible FAQ and the schema come from one source.
+- **Where it came from.** Every page kept its own copy of its questions in its JSON-LD (64 standalone blocks, and one node in `/work-with-us`'s `@graph`), written apart from the accordion:
+  - The home page's copy has been a third-person, no-contraction version of its answers for as far back as this repo goes (2026-08-01). `/faq` was built on 2026-09-10 (`stage1.py`), with its accordion taken from the home page's FAQ section and its FAQPage from the old home page's head: that same copy. So it never matched, and it asked "Does National Closet Company have reviews?" over a visible "Do you have reviews I can read?".
+  - Both posts have carried a different FAQ in their schema from the one they show since they were published (2026-08-01 and 2026-08-02).
+  - The pantry question: the 2026-08-26 script that added the accordions escaped its quote marks twice, so since then the page itself has shown "&ldquo;custom&rdquo;" as text.
+  - `/warranty` and `/work-with-us` matched in the repo. Live, Cloudflare's Email Address Obfuscation (on for the zone, as on every estate zone) served the address in each answer as "[email protected]", while the schema carried it. `/faq`'s "How do I get started?" was the same.
+  - 25 more pages (the 19 city pages and six of the competitor pages) had `&ldquo;`/`&rdquo;` as text in 27 answers, where the page shows quote marks. Both checks drop entities, so they counted these as matching.
+- **The fix: the visible FAQ is the list** (the Harmony Tax and Nittany Tax fix of the same day).
+  - The FAQPage is gone from all 65 pages that had one (`/free-design` too). It was cut by its text span: every other JSON-LD block is byte-identical, and `/work-with-us`'s graph parses back to itself minus the node. The home page's `JSON-LD: FAQ` comment now says where the FAQPage comes from.
+  - `build.mjs` writes each page's FAQPage into `dist/` from what the page shows, word for word (`@id` = canonical + `#faq`). It reads the `.faq__item` accordion, or, on the 8 posts without one, the `<p><strong>Question?</strong><br>Answer</p>` paragraphs under "Frequently asked questions". Entity names are matched with their case (`&Prime;` is ″, `&prime;` is ′), because the discounts answer on `/` and three answers on `/faq` write 14″ as `14&Prime;`.
+  - The build stops on a page that carries its own FAQPage, an item it can't read, an entity it can't decode, or an email address in an answer outside `<!--email_off-->…<!--/email_off-->`. On a throwaway copy, each case stopped it (exit 1, no dated sitemap): a FAQPage put back on the home page, the warranty address unfenced, the pantry question escaped twice again, a post's list unreadable, a `<div>` in an answer, and an item the reader misses.
+  - `stage4.py`'s two builders (`/custom-cabinets-nashville`, `/about`) now write the accordion from their lists and no FAQPage.
+- **What visitors see changed in two places only:**
+  - The pantry question reads “custom” in quote marks.
+  - The three addresses are fenced with `<!--email_off-->`, so Cloudflare serves them as written. The fence closes after the punctuation that follows the address, so the words site-kit hashes don't move.
+
+  No wording changed. The two schema questions with nothing on their page were dropped rather than shown, because a visible item already answers each:
+  - the shelf-depth post's "Is 12-inch depth ever the right choice for a closet?": its visible "Does National Closet Company build 12-inch or 14-inch closets?" says when 12 inches is right;
+  - the fake-discounts post's "Are stacked closet discounts real?": its first answer and its FTC answer.
+
+  The schema now asks what the pages ask: "Do you have reviews I can read?", "Why do closet companies use 12-inch shelves?", "What does the FTC say about "regular price" claims?".
+- **Found on the way, in the page factory:** re-running `stage4.py` would have undone two live changes. Its credit sweep wrote the footer credit as a followed link on 72 pages (every credit is nofollow since 2026-09-19). It also put back "a walnut island" in the cabinets page's hero caption, under the 2026-09-22 picture of a paneled range hood. Both are fixed. Run on a scratch copy of this checkout, `stage4.py` and then `apply-alt.mjs` now rebuild every committed page byte for byte.
+- **The dates.** Moving the FAQPage out of the pages changed every page's structured data, so `site-kit lastmod` would have dated 64 pages today.
+  - 34 of them say exactly what they said. They have the same questions and answers, and the block is only re-serialized: at the end of `<head>`, with an `@id` and `upvoteCount`. Their new hashes went into `.indexnow.json` with their dates kept.
+  - The hashes came from site-kit's own `hashHtml`, lifted from its source at run time. It first reproduced all 69 recorded hashes from the pre-change build.
+  - The 30 whose schema text changed are dated today: the 4 with drifted words, and the 26 with entities as text (the pantry page among them).
+- **Checked:**
+  - `node build.mjs`: FAQPage written on 65 pages, 456 questions. `lastmod`: 39 dates kept, 30 dated 2026-09-26.
+  - `site-kit check .`: "every FAQPage question and answer is on its page (452 question(s) on 64 page(s))", down from 5 questions and 45 answers. The shelf-depth post's "fewer than four questions" warning is gone. It reports 43 problems, down from 51; the other 43 are the ones it reported before (titles and descriptions, the SearchAction, image licenses, robots groups, contrast, alt text, two stock phrases, a /traffic under another path).
+  - A strict audit of `dist/` (each schema item equal to the page's item): 456 of 456.
+  - In the browser pane, on `dist/` served locally (`nationalcloset-dist`, new in `.claude/launch.json`):
+    - the browser's own parser, on all 65 pages: schema = the rendered FAQ text, 456 of 456;
+    - the pantry question at 1280 and 375 wide, with no overflow;
+    - the three fenced answers read as before.
+- **Deployed** `53889979` (production).
+- **Submitted:** IndexNow took the 30 changed URLs (200), the sitemap was resubmitted to Search Console, and Bing has it.
+- **Verified live:**
+  - All 69 sitemap URLs fetched (200). 64 pages carry a FAQPage, with 452 questions; every question and answer is in the page's visible text, and each page's FAQ equals its schema, item for item.
+  - No answer shows "[email protected]".
+  - The sitemap dates 30 URLs 2026-09-26 and keeps the other 39 dates.
+  - nationalcloset.pages.dev is still `noindex, nofollow`.
+- `CLAUDE.md` (a rule), `docs/content.md` (The FAQs), `docs/tracking.md` (the two previews) and `tools/site-build/README.md` say so.
+- **Owed:** nothing for this. To add or change a question, edit it on the page; on `/custom-cabinets-nashville` and `/about`, edit it in `stage4.py` too. `chrome.py` and `stage4.py` still name the main checkout as `ROOT`, so run from a worktree they edit `~/nationalcloset-site`.
+
 ## 2026-09-26 (/traffic: Lead Gen Digital Marketing's scanner is ours, never a visit)
 - leadgendigitalmarketing.com now runs a free scan. Its fetches carry `LeadGenDigitalScanner` in a Chrome user agent, and nothing here named it, so the middleware took the scanner for a person and logged a scan's first page as a visit. Michael asked for it on every site's own-checks list, beside our other two scanners.
 - `functions/_middleware.js`: the token joins the `// our-checks:` needles in `BOT_UA` (traffic-kit `bin/add-our-checks.mjs`, `ccf9c82`). This site drops bots unlogged, so a scan is now neither logged nor counted, and like any bot here it passes the geo gate.

@@ -12,6 +12,18 @@
         "."
       ],
       "port": 4117
+    },
+    {
+      "name": "nationalcloset-dist",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4118",
+        "--directory",
+        "dist"
+      ],
+      "port": 4118
     }
   ]
 }

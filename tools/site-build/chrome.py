@@ -6,7 +6,7 @@ ROOT = '/Users/zeus/nationalcloset-site'
 PIN = 'ncc127'
 SITE = 'https://nationalclosetco.com'
 PHONE = '629-298-8241'; TEL = 'tel:+16292988241'
-# Who built and hosts the site. The footer credit is the whole sentence as one followed link;
+# Who built and hosts the site. The footer credit is the whole sentence as one nofollow link;
 # the homepage WebSite node names the agency as creator, provider and maintainer.
 BUILDER = dict(name="Nashville's Web Design", url='https://nashvilleswebdesign.com', id='https://nashvilleswebdesign.com/#organization',
                credit="Web Design, SEO and Hosting by Nashville's Web Design")

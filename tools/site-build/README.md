@@ -16,4 +16,12 @@ pattern; its chrome sweep is idempotent and can be re-run. They ran
 once; the generated HTML is what is committed. To add a page, import `page()` from
 `chrome.py` and follow the patterns in `stage1.py`.
 
-Run from anywhere: `python3 tools/site-build/stage1.py` (they `os.chdir` to the repo).
+FAQs: a page gets the accordion (`faq_item()`) and no FAQPage. `build.mjs` writes the
+FAQPage into `dist/` from the accordion and stops on a page that carries its own, so
+`stage4.py`'s two builders write none (2026-09-26); the FAQPage writers left in `stage1.py`
+and `stage2.py` are history. On 2026-09-26, `stage4.py` then `tools/images/apply-alt.mjs`
+rebuilt every committed page byte for byte.
+
+Run from anywhere: `python3 tools/site-build/stage1.py` (they `os.chdir` to the repo). The
+repo is `ROOT` in `chrome.py` and `stage4.py`, `/Users/zeus/nationalcloset-site`, so run
+from a worktree they edit the main checkout, not the worktree.

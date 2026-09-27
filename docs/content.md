@@ -12,6 +12,19 @@
 - Pages are built/synced by `stage4.py` (chrome sweep + page builds): run it (`python3 tools/site-build/stage4.py`, from anywhere), review, then `node build.mjs` and deploy. `stage1.py`–`stage3.py` ran once, in the September rebuild (`tools/site-build/README.md`); to add a page, import `page()` from `chrome.py` and follow `stage1.py`.
 - The home page's stylesheet is inline and is re-synced by the same script (`docs/design.md`).
 
+## The FAQs
+- **The visible FAQ is the list, and the schema is written from it.** No page carries a FAQPage. `build.mjs` writes one into each page in `dist/` from what the page shows, word for word (`@id` = the canonical + `#faq`). It reads either:
+  - the accordion (`.faq__item`: `button.faq__q` + `.faq__a-inner`, what `chrome.py`'s `faq_item()` writes), on the pages and 21 posts;
+  - or, on the 8 posts without one, the `<p><strong>Question?</strong><br>Answer</p>` paragraphs under their "Frequently asked questions" heading.
+- **To add or change a question,** edit it on the page. On `/custom-cabinets-nashville` and `/about`, edit `CAB_FAQ` or the `faq` list in `stage4.py` too, because a re-run rebuilds those two pages.
+- **The build stops** on any of these:
+  - a page that carries its own FAQPage;
+  - an FAQ item it can't read, such as a `<div>` inside an answer;
+  - an entity it can't decode, such as `&amp;ldquo;` (escaped twice, it shows as text);
+  - an email address in an answer outside `<!--email_off-->…<!--/email_off-->`. Cloudflare's Email Address Obfuscation is on for the zone, as on every estate zone, and serves an unfenced address as "[email protected]", so the live page would not say what its schema says. Put the closing fence after the punctuation that follows the address, so the page's words stay as they are for `site-kit lastmod`.
+- `stage1.py`, `stage2.py` and `sections/head.html` still write FAQPage blocks. They ran once and are history, and the build refuses what they would write.
+- Until 2026-09-26 every page kept its own copy in its JSON-LD, and five had drifted from what they show (`CHANGELOG.md`).
+
 ## The words
 - **Payment terms:** never reintroduce Klarna or monthly-financing copy. There are three payments: 50% at signing, 25% when the materials are in and the install is scheduled, 25% on install day (the contract wording is in `docs/crm.md`).
 - **Services:** never re-add Murphy beds or wall beds. Custom cabinets are a service, and the lifetime warranty covers them; cabinets are priced per project, with no ranges without the owner's numbers.

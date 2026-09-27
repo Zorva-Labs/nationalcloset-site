@@ -18,6 +18,7 @@ Marketing site + full CRM for National Closet Company: custom closets, pantries,
 - **A preview deployment shares the live D1:** a form or CRM action there is real (`docs/tracking.md`).
 - **Central time comes from `functions/_lib/dates.js`** (`centralNow()`, `todayCentral()`, `centralAt()`, `centralMidnightUtc()`, the IANA zone), never a flat offset. The DB stores naive Central wall-clock strings, and Central is UTC-6 from November to March (`docs/automations.md`).
 - **A new page or post goes into `sitemap.xml` the day it goes live:** `site-kit submit` sends only what the sitemap lists (`docs/content.md`).
+- **The FAQ schema is the visible FAQ:** no page carries a FAQPage. `build.mjs` writes it into `dist/` from the page's accordion (or a post's `<p><strong>` FAQ list), word for word, and stops on a page with its own copy, an item it can't read, or an email in an answer outside `<!--email_off-->` (`docs/content.md`).
 
 ## The reference — read the one for the part you change
 - `docs/content.md` — the pages, the page factory, the payment terms and services, the service vocabulary.
@@ -46,7 +47,7 @@ node ~/site-kit/bin/site-kit.mjs submit   # IndexNow + Search Console + Bing, on
 - Root `*.html` and `blog/` the pages · `css/styles.css`, `js/main.js` · `img/`, `fonts/` · `_headers` (the CSP) · `llms.txt`, `robots.txt`, `sitemap.xml` · `calc.html` the internal payment calculator (noindex).
 - `book/`, `estimate/`, `proposal/`, `contract/`, `invoice/`, `thanks/` the customer's pages · `crm/` the CRM's pages and scripts, `schema.sql`, `setup-admin.mjs`, `migrations/`.
 - `functions/` — `_middleware.js` (the US gate, the edge log, repo paths, `/review`, the `*.pages.dev` noindex), `api/` (84 endpoints: the CRM's, `contact.js`, `public/*`, `internal/*` for the cron, `stripe/webhook.js`, `traffic*.js`), `functions/_lib/` (mail, lifecycle, invoices, team, the brief, review requests, Stripe, spam checks).
-- `tools/images/` the generated pictures · `tools/site-build/` the page factory · `tools/review-card/` the printed review card · `scripts/` the Google Ads scripts · `.claude/launch.json` the local preview.
+- `tools/images/` the generated pictures · `tools/site-build/` the page factory · `tools/review-card/` the printed review card · `scripts/` the Google Ads scripts · `.claude/launch.json` the local previews (the repo root, and `dist/`).
 
 ## Infrastructure & accounts
 - Cloudflare Pages project `nationalcloset` → nationalcloset.pages.dev (noindexed by the middleware); domain nationalclosetco.com. Zone `1d51a379abcf889e1f8a5445f6ed9b93` (Cloudflare DNS; Google Workspace MX/SPF/DKIM/DMARC p=reject). Canonical = apex, www 301s.

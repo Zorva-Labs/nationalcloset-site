@@ -2,13 +2,13 @@
   "host": "nationalclosetco.com",
   "endpoint": "https://www.bing.com/indexnow",
   "version": 2,
-  "submitted": "2026-09-28T14:12:24.376Z",
+  "submitted": "2026-09-28T15:36:32.849Z",
   "google": {
     "property": "sc-domain:nationalclosetco.com",
     "sitemaps": [
       "https://nationalclosetco.com/sitemap.xml"
     ],
-    "submitted": "2026-09-28T14:12:24.930Z"
+    "submitted": "2026-09-28T15:36:33.875Z"
   },
   "bing": {
     "site": "https://nationalclosetco.com/",
@@ -67,88 +67,88 @@
       "changed": "2026-09-26"
     },
     "https://nationalclosetco.com/closet-cases": {
-      "hash": "19d0e762278c22e8",
-      "changed": "2026-09-22"
+      "hash": "a9cd2f7aa572ebcc",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/keith-irena-office-storage-wall": {
-      "hash": "1e6bbafa50865a2d",
-      "changed": "2026-09-17"
+      "hash": "e26b77597e8ac0c6",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/fraley-pantry-master-closet-makeover": {
-      "hash": "00d582a6c78766e6",
-      "changed": "2026-09-17"
+      "hash": "caed180c02d0700b",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/custom-closets-middle-tennessee": {
-      "hash": "feb87950d2ba7270",
-      "changed": "2026-09-17"
+      "hash": "8b5f0379eb5daeaf",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/closet-organization-ideas": {
-      "hash": "7b34f1bd0e4d0690",
-      "changed": "2026-09-17"
+      "hash": "5cd0bb52ec69be55",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/affordable-custom-closet-systems": {
-      "hash": "0ae40d1642dbd624",
-      "changed": "2026-09-22"
+      "hash": "de6ed501df532468",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/affordable-custom-closet-company": {
-      "hash": "4b3f6fbce5904bcc",
-      "changed": "2026-09-22"
+      "hash": "524cb0a3d967ba6b",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/closet-systems-compared": {
-      "hash": "4f4f6c93d37d17e1",
-      "changed": "2026-09-17"
+      "hash": "0f952651446260d3",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/floor-based-closet-systems": {
-      "hash": "1ca6a937328e0b8d",
-      "changed": "2026-09-22"
+      "hash": "88a25d8d5ecae863",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/modular-closet-systems": {
-      "hash": "96ee8a9d6c598e24",
-      "changed": "2026-09-22"
+      "hash": "475d41c5a9672417",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/rail-closet-systems": {
-      "hash": "e0afae9091a8b6d6",
-      "changed": "2026-09-22"
+      "hash": "1228a3e2a59ebcf8",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/closet-shelf-depth-12-vs-14": {
-      "hash": "05e9b39f0829d4f7",
-      "changed": "2026-09-26"
+      "hash": "e50a2d7cf07da2c5",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/fake-discounts-65-percent-off": {
-      "hash": "ba2a8f119ce2479c",
-      "changed": "2026-09-26"
+      "hash": "0fa92a6428ed9d17",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/custom-closet-cost": {
-      "hash": "9139bd7f5547b582",
-      "changed": "2026-09-22"
+      "hash": "4ed8f4c6d054ec95",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/california-closets-cost": {
-      "hash": "90048324400064a8",
-      "changed": "2026-09-22"
+      "hash": "66fc269babeaf805",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/california-closets-vs-local": {
-      "hash": "741ffd315bc1702c",
-      "changed": "2026-09-17"
+      "hash": "3340c71c6062e253",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/reach-in-vs-walk-in-closet": {
-      "hash": "7769b876b85ff460",
-      "changed": "2026-09-22"
+      "hash": "e9615c4db71c62b1",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/pantry-organization-ideas": {
-      "hash": "a8fe4324b8f3a379",
-      "changed": "2026-09-22"
+      "hash": "cb7e6ce6ceec3be8",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/walk-in-closet-design-ideas": {
-      "hash": "69ae653150169b3e",
-      "changed": "2026-09-22"
+      "hash": "00cd1dded9d2ffbe",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/maximize-small-reach-in-closet": {
-      "hash": "ecdc7e2830097285",
-      "changed": "2026-09-22"
+      "hash": "827010020555cfd8",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/garage-storage-systems-guide": {
-      "hash": "1a3e90fa0be0f0bf",
-      "changed": "2026-09-22"
+      "hash": "b84354ac6831926d",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/service-areas": {
       "hash": "9beaba45a99d1cba",
@@ -239,16 +239,16 @@
       "changed": "2026-09-17"
     },
     "https://nationalclosetco.com/blog/wall-mounted-vs-floor-based-closet-systems": {
-      "hash": "6922759d13d39538",
-      "changed": "2026-09-17"
+      "hash": "2c3ce8c6d5b531aa",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/large-walk-in-closet-6700": {
-      "hash": "42b89c1da2f28d45",
-      "changed": "2026-09-17"
+      "hash": "024c6510eaf6b1ba",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/see-your-closet-in-3d": {
-      "hash": "4243e7b254c06633",
-      "changed": "2026-09-17"
+      "hash": "4791bc16ec2bc073",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/gallery": {
       "hash": "1661942f104364a9",
@@ -271,28 +271,28 @@
       "changed": "2026-09-26"
     },
     "https://nationalclosetco.com/blog/best-closet-company": {
-      "hash": "bc4da8fb75036664",
-      "changed": "2026-09-17"
+      "hash": "a8858cc1146dcfb7",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/closet-installation-cost": {
-      "hash": "c6151c5fcf1036c4",
-      "changed": "2026-09-17"
+      "hash": "6b44f691f2823312",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/contractor-cost-to-build-a-closet": {
-      "hash": "53c2a0e1a405a16d",
-      "changed": "2026-09-17"
+      "hash": "43d30c85e88acc9e",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/custom-pantry-design": {
-      "hash": "75b4e54079ff4df8",
-      "changed": "2026-09-17"
+      "hash": "b520af91107e377e",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/home-depot-lowes-closet-installation": {
-      "hash": "47c509a19d19e9e2",
-      "changed": "2026-09-17"
+      "hash": "8d8bc9c13b806666",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/blog/what-closet-company-does-costco-use": {
-      "hash": "57ded536e4420b3d",
-      "changed": "2026-09-17"
+      "hash": "406f2f1fb34ec70f",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/privacy": {
       "hash": "def0b8a291f7d23b",

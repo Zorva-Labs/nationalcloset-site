@@ -23,5 +23,12 @@ and `stage2.py` are history. On 2026-09-26, `stage4.py` then `tools/images/apply
 rebuilt every committed page byte for byte.
 
 Run from anywhere: `python3 tools/site-build/stage1.py` (they `os.chdir` to the repo). The
-repo is `ROOT` in `chrome.py` and `stage4.py`, `/Users/zeus/nationalcloset-site`, so run
-from a worktree they edit the main checkout, not the worktree.
+repo is `ROOT` in `chrome.py` and `stage4.py`, the checkout the script sits in (since
+2026-09-28; before that the main clone's path, so a worktree run edited the main clone).
+
+Posts: `stage4.py`'s `sweep_posts()` signs every BlogPosting (each post's own and
+`/closet-cases`' `blogPost` list) with `AUTHOR`, the Person node for Michael Blair (our own
+site, so he signs; the publisher stays National Closet Company), and puts the visible
+`<p class="byline">By Michael Blair · <date></p>` under each post's h1, dated by its
+`datePublished`. Run it after adding a post. The full run needs `tools/images/apply-alt.mjs`
+after it (part 2's builders write their own alt text), then the diff is only what changed.

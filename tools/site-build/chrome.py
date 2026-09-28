@@ -2,7 +2,7 @@
 head template, FAQ item, and the new site navigation. Everything is lifted from the
 live city page so new pages match the rest of the site exactly."""
 import re, html, json, os
-ROOT = '/Users/zeus/nationalcloset-site'
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # the checkout this file is in (a worktree edits itself)
 PIN = 'ncc127'
 SITE = 'https://nationalclosetco.com'
 PHONE = '629-298-8241'; TEL = 'tel:+16292988241'

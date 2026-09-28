@@ -17,6 +17,7 @@ Marketing site + full CRM for National Closet Company: custom closets, pantries,
 - **The CRM:** re-measure at 375px after adding a page, and as painted at 1280px and 375px after adding a color; never put text on `--accent`. Templates → Email edits the plain text and the HTML; the consult brief's wording and its fallback stay byte-identical (`docs/crm.md`, `docs/automations.md`).
 - **A preview deployment shares the live D1:** a form or CRM action there is real (`docs/tracking.md`).
 - **Central time comes from `functions/_lib/dates.js`** (`centralNow()`, `todayCentral()`, `centralAt()`, `centralMidnightUtc()`, the IANA zone), never a flat offset. The DB stores naive Central wall-clock strings, and Central is UTC-6 from November to March (`docs/automations.md`).
+- **Posts are signed by Michael Blair:** a Person author (the publisher stays National Closet Company) and a visible byline under the title, both written by `stage4.py → sweep_posts()`; run it after adding a post (`docs/content.md`).
 - **A new page or post goes into `sitemap.xml` the day it goes live:** `site-kit submit` sends only what the sitemap lists (`docs/content.md`).
 - **The FAQ schema is the visible FAQ:** no page carries a FAQPage. `build.mjs` writes it into `dist/` from the page's accordion (or a post's `<p><strong>` FAQ list), word for word, and stops on a page with its own copy, an item it can't read, or an email in an answer outside `<!--email_off-->` (`docs/content.md`).
 

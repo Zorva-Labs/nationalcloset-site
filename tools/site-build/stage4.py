@@ -11,9 +11,10 @@ Part 1 — the chrome sweep over every public page:
   * schema: parentOrganization on the business nodes
   * cache pin ncc125 -> ncc126, homepage inline stylesheet re-synced (with the two
     @font-face rules that the last sync dropped)
-  * the posts (2026-09-28): every BlogPosting, in the posts and on /closet-cases, is signed
-    by Michael Blair (a Person; the publisher stays National Closet Company), and each post
-    carries a visible "By Michael Blair · <date>" byline under its h1, linked to /about
+  * the posts (2026-09-28): every BlogPosting, in the posts and on /closet-cases, and the
+    pricing guide's Article are signed by Michael Blair (a Person; the publisher stays National
+    Closet Company), and each carries a visible "By Michael Blair · <date>" byline under its h1,
+    linked to /about
 Part 2 builds /custom-cabinets-nashville and rebuilds /about (see below).
 
 Run from anywhere: python3 tools/site-build/stage4.py
@@ -161,22 +162,24 @@ AUTHOR = {"@type": "Person", "name": "Michael Blair", "url": "https://nashvilles
           "sameAs": ["https://nashvilleswebdesign.com/about/", "https://zorvalabs.com/team/michael-blair"]}
 
 def sweep_posts():
-    """Every BlogPosting's author is AUTHOR (the posts' own node, and the index's blogPost list);
-    every post gets the visible byline under its h1, dated by its datePublished. Idempotent."""
+    """Every BlogPosting's and Article's author is AUTHOR (the posts' own node, the index's blogPost
+    list, the pricing guide's Article); each of those pages gets the visible byline under its h1,
+    dated by its datePublished. Idempotent."""
     n = 0
-    for p in sorted(glob.glob('blog/*.html')) + ['closet-cases.html']:
+    ARTICLES = ('BlogPosting', 'Article')
+    for p in sorted(glob.glob('blog/*.html')) + ['closet-cases.html', 'custom-closet-cost-nashville.html']:
         s = open(p, encoding='utf-8').read(); o = s
         dates = []
         def fix(m):
             d = json.loads(m.group(1))
             nodes = [d] + [x for x in d.get('blogPost', []) + d.get('@graph', []) if isinstance(x, dict)]
-            posts = [x for x in nodes if x.get('@type') == 'BlogPosting']
-            if d.get('@type') == 'BlogPosting': dates.append(d.get('datePublished', ''))
+            posts = [x for x in nodes if x.get('@type') in ARTICLES]
+            if d.get('@type') in ARTICLES: dates.append(d.get('datePublished', ''))
             if not posts or all(x.get('author') == AUTHOR for x in posts): return m.group(0)
             for x in posts: x['author'] = AUTHOR
             return '<script type="application/ld+json">' + json.dumps(d, ensure_ascii=False) + '</script>'
         s = re.sub(r'<script type="application/ld\+json">(.*?)</script>', fix, s, flags=re.S)
-        if p.startswith('blog/') and 'class="byline"' not in s:
+        if p != 'closet-cases.html' and 'class="byline"' not in s:
             assert len(dates) == 1 and dates[0], p
             y, mo, dy = map(int, dates[0].split('-'))
             when = f'{["January","February","March","April","May","June","July","August","September","October","November","December"][mo-1]} {dy}, {y}'

@@ -2,13 +2,13 @@
   "host": "nationalclosetco.com",
   "endpoint": "https://www.bing.com/indexnow",
   "version": 2,
-  "submitted": "2026-09-28T15:36:32.849Z",
+  "submitted": "2026-09-28T15:38:05.581Z",
   "google": {
     "property": "sc-domain:nationalclosetco.com",
     "sitemaps": [
       "https://nationalclosetco.com/sitemap.xml"
     ],
-    "submitted": "2026-09-28T15:36:33.875Z"
+    "submitted": "2026-09-28T15:38:06.174Z"
   },
   "bing": {
     "site": "https://nationalclosetco.com/",
@@ -35,8 +35,8 @@
       "changed": "2026-09-17"
     },
     "https://nationalclosetco.com/custom-closet-cost-nashville": {
-      "hash": "7cf631154854a34c",
-      "changed": "2026-09-17"
+      "hash": "890206621a1f6dfe",
+      "changed": "2026-09-28"
     },
     "https://nationalclosetco.com/california-closets-alternative": {
       "hash": "5f379534f95ed773",

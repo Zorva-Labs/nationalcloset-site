@@ -2,6 +2,17 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-09-28 (the privacy page names the tags' ids and cookies, the geo-gate and Cloudflare's beacon)
+- **Why:** site-kit `check` has a Privacy step since `3893e37` (rulebook 8, `~/fleet/docs/content-standards.md` §5). Over every live site it found yesterday's page naming Google Analytics without the id the pages load, `G-EJEDXZZWJN`. Michael asked for each flagged page to say what the site's code does.
+- **`tools/site-build/stage5_privacy.py` → `privacy.html`** (the factory, then the page it writes), three additions and the date:
+  - "Each of them sets cookies of its own" now names them: GA4 `G-EJEDXZZWJN` → `_ga`, `_ga_EJEDXZZWJN`; the Ads tag `AW-18306256681` (`js/main.js → GADS_ID`, still configured though the ads stopped 2026-09-22) → `_gcl_au`, and `_gcl_aw` after an ad click; the Meta Pixel → `_fbp`, and `_fbc` after a Facebook or Instagram ad click;
+  - the visit log paragraph says what it implied: visits from outside the United States are turned away (`ALLOWED_COUNTRIES` in the middleware);
+  - Cloudflare's own Web Analytics script: Cloudflare injects it into every page on the live domain (not in the repo, so the build and `check` never see it) and `_headers`' CSP allows `static.cloudflareinsights.com`. It reports load speed and the page, and sets no cookies;
+  - "Last updated September 28, 2026". The factory's docstring lists where the ids and the beacon come from.
+- **Checked:** `python3 tools/site-build/stage5_privacy.py` (only these lines changed), `node build.mjs` (lastmod: `/privacy` only); `site-kit check .` → Privacy "✓ /privacy is linked from every page and names what they load: G-EJEDXZZWJN, Cloudflare Turnstile, Google Fonts, the Google Ads tag, the Meta Pixel, Stripe". In the browser pane at 375px: no overflow, the new lines, the date.
+- **Deployed** `97e28440`; submitted (IndexNow 1 URL, 200; Search Console; Bing).
+- **Owed:** as before, the page changes with the code (a new tag, a form field, the ads coming back, `ncc_attr`'s rules).
+
 ## 2026-09-27 (a privacy page, linked from every page's footer)
 - **Why:** the estate's scanner (core 4.0, check `about-privacy`, rulebook rule 8) found no privacy policy linked from the home page, and `/privacy` answered 404. Michael asked for one on every site that lacked it: what the site's own forms and analytics keep, read from the repo, in the business's name.
 - **`/privacy` (`privacy.html`)**, built with the page factory (`tools/site-build/stage5_privacy.py`, which writes that page and nothing else; its docstring names the code each paragraph comes from). The phero, then the warranty page's `.prose`. What it says:

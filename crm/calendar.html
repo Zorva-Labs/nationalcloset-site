@@ -3,7 +3,7 @@
 <title>Calendar · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
 <link rel="stylesheet" href="/crm/crm-app.css?v=ncc121"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc110"></script>
+<script src="/crm/crm-app.js?v=ncc111"></script>
 <script>
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DOW_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -13,8 +13,7 @@ let viewYear, viewMonth;  // 0-indexed month
   const user = await SSCrm.mount({
     title: "Calendar",
     subtitle: "Month view — click a day to add, click an event to view",
-    actions: `<a class="btn secondary" href="/crm/availability.html">Edit availability →</a>
-              <button class="btn secondary" onclick="showSubscribeInstructions()">📱 Sync to phone</button>
+    actions: `<button class="btn secondary" onclick="showSubscribeInstructions()">📱 Sync to phone</button>
               <button class="btn primary" onclick="SSCrm.quickAddAppointment()">+ Manual appointment</button>`,
     wide: true,
   });

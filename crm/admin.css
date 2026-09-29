@@ -646,13 +646,6 @@ button { font: inherit; cursor: pointer; }
 .cal-event[data-s="cancelled"] { background: #888; text-decoration: line-through; }
 .cal-event:hover { filter: brightness(1.05); }
 
-/* Booking slot grid (customer-facing, used in /book/) */
-.slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
-.slot { background: #fff; border: 1px solid var(--c-line); padding: 10px 8px; text-align: center; cursor: pointer; transition: border-color var(--dur-quick) ease, background var(--dur-quick) ease; font-size: 0.85rem; }
-.slot:hover { border-color: var(--c-brass); background: var(--c-bg-2); }
-.slot.is-selected { background: var(--c-ink); color: var(--c-bg); border-color: var(--c-ink); }
-.slot[disabled] { opacity: 0.35; cursor: not-allowed; }
-
 /* Tier picker (proposal) */
 .tier-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 20px; }
 @media (max-width: 900px) { .tier-grid { grid-template-columns: 1fr; } }

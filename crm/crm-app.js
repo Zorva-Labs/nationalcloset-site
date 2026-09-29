@@ -57,7 +57,7 @@ const NAV_GROUPS = [
   { label: "Address book", items: ["/crm/contacts.html", "/crm/vendors.html"] },
   { label: "Leads & jobs", items: ["/crm/leads.html", "/crm/projects.html"] },
   { label: "Sales", items: ["/crm/estimates.html", "/crm/proposals.html", "/crm/contracts.html", "/crm/invoices.html", "/crm/expenses.html"] },
-  { label: "Operations", items: ["/crm/calendar.html", "/crm/availability.html"] },
+  { label: "Operations", items: ["/crm/calendar.html"] },
   { label: "Insights", items: ["/crm/reports.html", "/crm/traffic.html"] },
   { label: "Setup", items: ["/crm/team.html", "/crm/templates.html", "/crm/activity.html"] },
 ];

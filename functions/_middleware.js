@@ -234,6 +234,13 @@ async function handle(context) {
     return Response.redirect("https://g.page/r/Calj4533P4lBEBM/review", 302);
   }
 
+  // 0c) Self-booking is gone (2026-09-29): /book/ only serves the cancel link
+  //     from confirmation and reminder emails (?cancel=<token>). Anything else
+  //     goes to the request form on the home page.
+  if ((url.pathname === "/book" || url.pathname === "/book/" || url.pathname === "/book/index.html") && !url.searchParams.get("cancel")) {
+    return Response.redirect(new URL("/#consult", url).toString(), 301);
+  }
+
   // 1) Owner / machine surfaces are never geo-blocked.
   if (isBypassPath(url.pathname)) return next();
 

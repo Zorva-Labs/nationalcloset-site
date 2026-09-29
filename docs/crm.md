@@ -18,7 +18,7 @@
 - The pay page creates the Stripe PaymentIntent (`_lib/stripe.js`, no SDK) with automatic payment methods, so it offers whatever the Stripe Dashboard has switched on, Klarna included until the owner turns it off (`CLAUDE.md` → Open items). `/api/stripe/webhook`, verified with `STRIPE_WEBHOOK_SECRET`, is what marks an invoice paid.
 
 ## The customer's pages
-- `book/` (self-booking; slots from `/api/public/slots`), `estimate/`, `proposal/`, `contract/` (signing, then the install slots), `invoice/` (paying, `/invoice/?t=<token>`) and `thanks/`, backed by `functions/api/public/*`; the document pages open from the token link in the email. All six are noindex, and the edge log never counts the four document pages as traffic.
+- `book/` (cancel-only since 2026-09-29: `/book/?cancel=<token>` from the confirmation and reminder emails → `/api/public/cancel`; the bare URL 301s to `/#consult`; customers no longer pick a time, and the CRM's Availability page and `/api/availability`, `/api/public/slots`, `/api/public/book` are gone — the `availability_*` tables stay, unused), `estimate/`, `proposal/`, `contract/` (signing, then the install slots), `invoice/` (paying, `/invoice/?t=<token>`) and `thanks/`, backed by `functions/api/public/*`; the document pages open from the token link in the email. All six are noindex, and the edge log never counts the four document pages as traffic.
 - `CALENDAR_FEED_TOKEN` is the token in the calendar subscription feed's URL (`/api/public/calendar/<token>.ics`, every appointment not canceled): treat that URL as a password.
 
 ## Team and assignment

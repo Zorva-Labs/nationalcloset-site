@@ -2,6 +2,15 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-09-29 (self-booking removed: customers ask, a designer texts to set the visit)
+- **Why:** Michael asked to remove the feature where visitors schedule their own appointments on the site. Two consults were ever self-booked (source `web`, the last on 2026-09-27); 31 were booked by staff in the CRM.
+- **Every CTA → `/#consult`** (the request form), about 500 links on 73 pages and in the factory (`stage4.py`): the header "Free Design", the drawer, the mobile bar, the footer, the in-page buttons, the home page's service cards. Labels kept. The "— or pick your time now →" / "book it now →" clauses after the forms are gone. `js/main.js`: a page with its own `id="consult"` form scrolls to it and focuses the name field instead of leaving for the home page; `consult_cta_click` counts `/#consult` too.
+- **The form's second step** no longer offers "Pick my visit time now"; it says a designer texts within one business day, then the optional details. `ncc_lead` (sessionStorage, only for prefilling the booking page) is gone. The welcome email (`_lib/lead-ack.js`) no longer links to a booking page.
+- **`/book/` is cancel-only:** `/book/?cancel=<token>` (the link in confirmation and reminder emails, staff-booked visits included, and the install invite) still cancels through `/api/public/cancel`, with "call/text to reschedule". The bare `/book/` 301s to `/#consult` (`_middleware.js`). The page stays noindex and out of the sitemap.
+- **Deleted:** `functions/api/public/book.js`, `public/slots.js`, `functions/api/availability/`, `crm/availability.html` (its only use was the public slot grid), its CRM nav entries and the calendar's "Edit availability" button, the unused `.slot` CSS. The `availability_rules` / `availability_blocks` tables stay in D1, unused. The contract page's install picker was already never called; untouched.
+- **Privacy page** (`stage5_privacy.py`, regenerated): no booking page, no `ncc_lead`; visit confirmations and the offline `booked_consultation` are for visits we set up. Thank-you meta: "requesting", not "booking". Cache pins: pages `ncc128`, CRM `crm-app.js` `ncc111`.
+- **Manual:** standing call "no self-booking" in `CLAUDE.md`; `docs/tracking.md` and `docs/crm.md` updated.
+
 ## 2026-09-28 (the new-post steps are in the manual)
 - `CLAUDE.md` and `docs/content.md` now give the full order for a new post: `stage4.py`, then `apply-alt.mjs`, then `node build.mjs`. The byline entry below found that order (the sweep rewrites some alt text), but until now it was only in its "Owed" line. `/blog-post` in fleet sends every post through the site's own steps from this manual.
 

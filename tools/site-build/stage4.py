@@ -310,11 +310,11 @@ def build_cabinets_page(C):
       <p>We design and install custom cabinets throughout <a class="inline" href="/service-areas">Nashville and all of Middle Tennessee</a> — including {cities} — and every community within about 90 miles of Gallatin. Older homes with plaster walls and rooms that are rarely square, and new builds with open plans and a flex room waiting to become something: we build to both.</p>
 
       <h2>Get a free cabinet design</h2>
-      <p>Tell us about the room. We come out, measure, listen, and bring back a 3D rendering and a written price — no cost, no obligation. Your in-home <a class="inline" href="/book/">design visit</a> is free, and most of our customers say the price is the best surprise of the process.</p>
+      <p>Tell us about the room. We come out, measure, listen, and bring back a 3D rendering and a written price — no cost, no obligation. Your in-home <a class="inline" href="/#consult">design visit</a> is free, and most of our customers say the price is the best surprise of the process.</p>
 
       <div style="margin-top:2rem;padding:1.6rem;background:var(--fog);border-radius:var(--radius);display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between">
         <div><strong style="font-family:var(--display);font-size:1.3rem">Custom cabinets, designed free in your home.</strong><br><span class="muted">Kitchens, baths, laundry, mudrooms &amp; built-ins. One honest price, three simple payments.</span></div>
-        <a class="btn btn--primary" href="/book/">Book my free design visit <span class="arr">→</span></a>
+        <a class="btn btn--primary" href="/#consult">Book my free design visit <span class="arr">→</span></a>
       </div>
     </div>
   </div>
@@ -392,8 +392,8 @@ def update_homepage():
         </span>
       </a>
       '''
-    s = sub1(s, '<div class="svc-grid">\n      <a class="svc" href="/book/" data-reveal>', '<div class="svc-grid">\n      ' + card + '<a class="svc" href="/book/" data-reveal>', p)
-    s = re.sub(r'\s*<a class="svc svc--cta" href="/book/" data-reveal data-delay="2">.*?</a>\n', '\n', s, count=1, flags=re.S)
+    s = sub1(s, '<div class="svc-grid">\n      <a class="svc" href="/#consult" data-reveal>', '<div class="svc-grid">\n      ' + card + '<a class="svc" href="/#consult" data-reveal>', p)
+    s = re.sub(r'\s*<a class="svc svc--cta" href="/#consult" data-reveal data-delay="2">.*?</a>\n', '\n', s, count=1, flags=re.S)
     assert 'class="svc svc--cta"' not in s
     # FAQ: one visible item + the schema entry
     q = 'Do you build custom cabinets too?'

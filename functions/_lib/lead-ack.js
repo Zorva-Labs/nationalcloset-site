@@ -5,8 +5,6 @@
 import { sendEmail, brandedEmail, escapeHtml, makeMessageId } from "./email.js";
 import { logOutboundEmail } from "./email-log.js";
 
-const SITE_URL = "https://nationalclosetco.com";
-
 export async function sendLeadAck(env, { name, email, interest, leadId = null, contactId = null }) {
   if (!email) return { skipped: true, reason: "no_email" };
   const first = (name || "there").trim().split(/\s+/)[0] || "there";
@@ -14,11 +12,10 @@ export async function sendLeadAck(env, { name, email, interest, leadId = null, c
   const subject = `Thanks for reaching out to National Closet Company, ${first}`;
   const html = brandedEmail({
     title: "Thanks for reaching out!",
-    preheader: "A designer will text or call within one business day — or pick your visit time now.",
+    preheader: "A designer will text or call within one business day to set up your free design visit.",
     body: `
       <p>Hi ${escapeHtml(first)},</p>
       <p>Thank you for contacting National Closet Company${escapeHtml(about)}. We've received your request, and a member of our family-owned team will text or call within one business day to set up your free in-home design.</p>
-      <p>Want to lock in a time now? <a href="${SITE_URL}/book/">Pick your free design visit here</a> — it takes about a minute.</p>
       <p>If you'd like to talk sooner, just call or text us at <strong>629-298-8241</strong>.</p>
       <p>We look forward to helping you build a beautiful custom space at a price that makes sense.</p>
       <p>Warmly,<br>Michael Blair<br>National Closet Company</p>`,
@@ -28,8 +25,6 @@ export async function sendLeadAck(env, { name, email, interest, leadId = null, c
 `Hi ${first},
 
 Thank you for contacting National Closet Company${about}. We've received your request, and a member of our family-owned team will text or call within one business day to set up your free in-home design.
-
-Want to lock in a time now? Pick your free design visit here: ${SITE_URL}/book/
 
 If you'd like to talk sooner, just call or text us at 629-298-8241.
 

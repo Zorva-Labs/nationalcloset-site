@@ -128,23 +128,17 @@
      extra field costs conversions, and fifteen of twenty visitors who tapped
      the button abandoned the four-field version. The lead is saved and the
      conversion has fired by the time this renders, so everything here is a
-     bonus: the booking calendar first (a confirmed visit beats a call-back),
-     then email / project / address behind a disclosure. Skipping it costs us
-     nothing — we'd ask on the phone anyway. */
+     bonus: email / project / address behind a disclosure. A designer texts to
+     set the visit (there is no self-booking, since 2026-09-29), so skipping it
+     costs us nothing — we'd ask on the phone anyway. */
   var SMS_URL = "sms:+16292988241?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F";
-  function rememberLead(lead, token) {
-    try { sessionStorage.setItem("ncc_lead", JSON.stringify({ name: lead.name || "", phone: lead.phone || "", email: lead.email || "", token: token || "", ts: Date.now() })); } catch (e) {}
-  }
   function mountDetailsStep(success, token, lead) {
     if (success.querySelector(".addr-step")) return;
-    rememberLead(lead, token);
     var inp = 'style="width:100%;min-width:0;padding:11px 13px;border:1.5px solid var(--line,#E4E1DA);border-radius:8px;font:inherit;font-size:15px;background:#fff"';
     var box = document.createElement("div");
     box.className = "addr-step";
     box.innerHTML =
-      (location.pathname.indexOf("/book") === 0 ? '<p class="addr-step__or">We\u2019ll text you within one business day to find a time.</p>' :
-        '<a class="btn btn--primary btn--block addr-step__book" href="/book/">Pick my visit time now <span class="arr">→</span></a>' +
-        '<p class="addr-step__or">or we’ll text you within one business day to set it up.</p>') +
+      '<p class="addr-step__or">We\u2019ll text you within one business day to find a time.</p>' +
       '<details class="addr-step__more"><summary>Add a few details (optional)</summary>' +
         '<div class="addr-step__fields">' +
           (lead.email ? '' : '<input class="addr-email" type="email" autocomplete="email" placeholder="Email (for your design and quote)" ' + inp + '>') +
@@ -163,7 +157,6 @@
         address_street: q(".addr-street"), address_city: q(".addr-city"), address_state: q(".addr-state"), address_zip: q(".addr-zip") };
       if (!payload.email && !payload.interest && !payload.message && !payload.address_street && !payload.address_city && !payload.address_zip) { fadeOut("No problem — we’ll grab it when we call."); return; }
       btn.disabled = true; btn.textContent = "Saving…";
-      if (payload.email) { lead.email = payload.email; rememberLead(lead, token); }
       fetch("/api/contact-address", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
         .then(function (r) { fadeOut(r.ok ? "Got it — thank you!" : "Thanks! We’ll confirm the details when we call."); })
         .catch(function () { fadeOut("Thanks! We’ll confirm the details when we call."); });
@@ -183,7 +176,7 @@
 
   /* Consultation / "Book" & "Request a Bid" CTA clicks — a funnel signal only
      (GA4, not an Ads conversion), since they just scroll to the on-page form. */
-  document.querySelectorAll('a[href="#consult"], a[href="#partner-form"]').forEach(function (a) {
+  document.querySelectorAll('a[href="#consult"], a[href="/#consult"], a[href="#partner-form"]').forEach(function (a) {
     a.addEventListener("click", function () { track("consult_cta_click", { cta: a.getAttribute("href") }); });
   });
 
@@ -220,6 +213,23 @@
     });
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape") closeDrawer();
+    });
+  }
+
+  /* ---------- "Free design" CTAs ----------
+     Every CTA links to /#consult, the home page's request form. A page with its
+     own form (id="consult") keeps the visitor there and scrolls to it instead. */
+  var consult = document.getElementById("consult");
+  if (consult && location.pathname !== "/") {
+    document.querySelectorAll('a[href="/#consult"]').forEach(function (a) {
+      a.addEventListener("click", function (e) {
+        e.preventDefault();
+        closeDrawer();
+        consult.scrollIntoView({ behavior: "smooth", block: "start" });
+        var first = consult.querySelector("input:not([type=hidden]):not([tabindex='-1'])");
+        if (first) setTimeout(function () { first.focus({ preventScroll: true }); }, 400);
+        if (history.replaceState) history.replaceState(null, "", "#consult");
+      });
     });
   }
 

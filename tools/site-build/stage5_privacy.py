@@ -5,7 +5,7 @@ mobile bar match the rest of the site. Run from anywhere: python3 tools/site-bui
 It writes privacy.html and nothing else; the footer link to it is part of stage4.py's chrome sweep.
 
 Every sentence is something the code does. Change the page when the code changes:
-  the forms and what a lead row keeps    functions/api/contact.js, contact-address.js, public/book.js, js/main.js
+  the forms and what a lead row keeps    functions/api/contact.js, contact-address.js, js/main.js (no self-booking since 2026-09-29)
   the mail                               functions/_lib/email.js, lead-ack.js, appointment-reminders.js,
                                          consult-brief.js, review-requests.js, email-sync.js (docs/automations.md)
   contracts, invoices, files             functions/api/public/contract/, invoice/ (Stripe), R2 FILES
@@ -13,7 +13,7 @@ Every sentence is something the code does. Change the page when the code changes
   the edge log and the beacon            functions/_middleware.js (ALLOWED_COUNTRIES), /api/pv-time (docs/traffic.md)
   the cookie names                       G-EJEDXZZWJN (the gtag loader in every page), AW-18306256681 (js/main.js GADS_ID), the pixel
   Cloudflare Web Analytics               injected by Cloudflare on the live domain, allowed by _headers' CSP (not in the repo)
-  browser storage                        js/main.js ncc_attr (localStorage), ncc_lead (sessionStorage)
+  browser storage                        js/main.js ncc_attr (localStorage)
 """
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -22,7 +22,7 @@ from chrome import ROOT, SITE, page, phero, webpage, breadcrumb
 os.chdir(ROOT)
 
 TITLE = 'Privacy Policy | National Closet Company'
-DESC = ('What National Closet Company keeps from its forms, bookings, contracts and invoices, the Google and Meta '
+DESC = ('What National Closet Company keeps from its forms, design visits, contracts and invoices, the Google and Meta '
         'tags on this site, and how to reach us.')
 assert 30 <= len(TITLE) <= 60 and 120 <= len(DESC) <= 160, (len(TITLE), len(DESC))
 
@@ -30,7 +30,7 @@ A = 'class="inline" target="_blank" rel="noopener"'
 
 body = '<article>\n' + phero(
     [('Home', '/#top'), ('Privacy', None)], 'Your information', 'Privacy policy',
-    'What this website and our customer system keep when you visit, ask for a price, book a design visit or pay an '
+    'What this website and our customer system keep when you visit, ask for a price or a design visit, or pay an '
     'invoice, and who else sees it.') + f'''
 
 <section class="section section--tight">
@@ -39,13 +39,13 @@ body = '<article>\n' + phero(
 
       <p>This is the privacy policy of National Closet Company, a division of Blair Custom Interiors, for nationalclosetco.com and for the proposal, contract and invoice pages we send you.</p>
 
-      <h2>When you ask for a price or book a visit</h2>
-      <p>Our price forms ask for your name and a phone number. After that you can add your email, the space you want built, your address and a note. The booking page asks for your name, email and phone and a time for the design visit, and, if you like, your address, the rooms and anything we should know.</p>
+      <h2>When you ask for a price or a design visit</h2>
+      <p>Our price forms ask for your name and a phone number. After that you can add your email, the space you want built, your address and a note.</p>
       <p>Along with what you type, the site keeps the page you sent it from, how you first found us (the page you landed on, the site that sent you, and any ad click id or campaign tags), your browser&rsquo;s user-agent line, a one-way hash of your IP address, and the Google Analytics ids of your visit.</p>
       <p>All of it goes into our own customer system, which runs on Cloudflare. We use it to get back to you, to send your design and your price, and to run your job.</p>
 
       <h2>Email, both ways</h2>
-      <p>We write to you from hello@nationalclosetco.com through Google Workspace: a welcome note once we have your email, the confirmation of a booking, a reminder on the morning of your visit, your proposal, contract and invoices, and, after a design visit or a finished job, a request for a Google review. Mail you send to hello@ is filed in our customer system with your record.</p>
+      <p>We write to you from hello@nationalclosetco.com through Google Workspace: a welcome note once we have your email, the confirmation of your design visit once we set it up with you, a reminder on the morning of your visit, your proposal, contract and invoices, and, after a design visit or a finished job, a request for a Google review. Mail you send to hello@ is filed in our customer system with your record.</p>
       <p>On the morning of a design visit or a measure, each team member going gets an email with your name, phone, email, address, rooms and notes.</p>
 
       <h2>Proposals, contracts and invoices</h2>
@@ -53,7 +53,7 @@ body = '<article>\n' + phero(
       <p>You pay an invoice on its page through Stripe. Your card details go to Stripe, not to us, under <a {A} href="https://stripe.com/privacy">Stripe&rsquo;s privacy policy</a>. Design drawings and other files for your project are stored with it on Cloudflare.</p>
 
       <h2>Google and Meta</h2>
-      <p>The site runs Google Analytics, the Google Ads tag and the Meta Pixel. They see the pages you view, and they&rsquo;re told when you tap to call or text, when you get a ballpark price, and when a request or a booking is saved. When a request is saved, the page also gives the Google tag your email, phone number and name, for Google Ads&rsquo; enhanced conversions, which match a request to the ad click behind it. When you book a design visit, we report the booking to Google Analytics against your visit, so Google Ads can count it if an ad brought you.</p>
+      <p>The site runs Google Analytics, the Google Ads tag and the Meta Pixel. They see the pages you view, and they&rsquo;re told when you tap to call or text, when you get a ballpark price, and when a request is saved. When a request is saved, the page also gives the Google tag your email, phone number and name, for Google Ads&rsquo; enhanced conversions, which match a request to the ad click behind it. When we book your design visit, we report it to Google Analytics against your visit, so Google Ads can count it if an ad brought you.</p>
       <p>Each of them sets cookies of its own. Google Analytics (<code>G-EJEDXZZWJN</code>) sets <code>_ga</code> and <code>_ga_EJEDXZZWJN</code>; the Google Ads tag (<code>AW-18306256681</code>) sets <code>_gcl_au</code>, and <code>_gcl_aw</code> after a click on one of our ads; the Meta Pixel sets <code>_fbp</code>, and <code>_fbc</code> after a click on a Facebook or Instagram ad. Google handles its data under <a {A} href="https://policies.google.com/privacy">its privacy policy</a> and Meta under <a {A} href="https://www.facebook.com/privacy/policy/">its own</a>. <a {A} href="https://tools.google.com/dlpage/gaoptout">Google&rsquo;s opt-out add-on</a> turns off Google Analytics, and blocking this site&rsquo;s cookies in your browser limits all three.</p>
 
       <h2>Our own visit log</h2>
@@ -63,7 +63,6 @@ body = '<article>\n' + phero(
       <h2>What your browser keeps</h2>
       <ul class="bullets">
         <li><code>ncc_attr</code>, in local storage: the first page you landed on, the site that sent you and, after an ad click, its click id and campaign tags. It goes with a form so your request is credited to what brought you, and it stays until you clear this site&rsquo;s data.</li>
-        <li><code>ncc_lead</code>, for the visit only: the name, phone and email you just sent, and a token, so the booking page can fill them in. It&rsquo;s removed when you book or close the tab.</li>
       </ul>
 
       <h2>Other services the site uses</h2>

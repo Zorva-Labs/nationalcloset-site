@@ -1141,4 +1141,14 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
   .rpt-preset { white-space: nowrap; }
   .rpt-bar > * { max-width: 100%; min-width: 0; }
   .rpt-dates, .rpt-right { flex-wrap: wrap; }
+
+  /* The job's Invoices tab: each invoice is a card, not a scrolled row. As a
+     row, the pinned first cell (number and description) filled the screen and
+     the amount and buttons — Send, Record payment, Copy link, Open — sat under
+     it, out of reach. Here the buttons wrap on a line of their own. */
+  .inv-tbl tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: center; border-bottom: 1px solid var(--line-soft); }
+  .inv-tbl tbody tr:last-child { border-bottom: 0; }
+  .inv-tbl td { border-bottom: 0; white-space: normal !important; }
+  .inv-tbl td:first-child { position: static; background: transparent; box-shadow: none; }
+  .inv-tbl td:last-child { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; padding-top: 0; text-align: left !important; }
 }

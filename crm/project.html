@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc121" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc122" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
@@ -532,7 +532,7 @@ function renderInvoices(host, invoices) {
   const openRows = open.map((iv) => `<tr>
       <td>${numLink(iv)}<div class="muted" style="font-size:12px">${e(INV_TYPE[iv.type] || iv.type)}${iv.description ? " · " + e(iv.description) : ""}${(iv.amount_paid_cents || 0) > 0 ? ` · ${m(iv.amount_paid_cents)} paid` : ""}</div></td>
       <td class="money">${m(iv.amount_cents)}</td>
-      <td style="text-align:right;white-space:nowrap"><button class="btn primary sm" onclick="jobRecordPayment(${iv.id})">💵 Record payment</button> <button class="btn ghost sm" onclick="copyPayLink('https://nationalclosetco.com/invoice/?t=${e(iv.view_token)}')">Copy link</button> ${openBtn(iv)}</td>
+      <td style="text-align:right;white-space:nowrap"><button class="btn primary sm" onclick="jobRecordPayment(${iv.id})">💵 Record payment</button> <button class="btn ghost sm" onclick="resendInvoice(${iv.id}, '${e(iv.number)}')">✉️ Send</button> <button class="btn ghost sm" onclick="copyPayLink('https://nationalclosetco.com/invoice/?t=${e(iv.view_token)}')">Copy link</button> ${openBtn(iv)}</td>
     </tr>`).join("");
 
   const procRows = processing.map((iv) => `<tr>
@@ -556,7 +556,7 @@ function renderInvoices(host, invoices) {
 
   const section = (title, rows, n, color) => rows ? `<div class="card">
       <div class="card-head"><h3>${title} <span class="muted" style="font-weight:500">· ${n}</span></h3></div>
-      <div class="tbl" style="border:0"><table><tbody>${rows}</tbody></table></div>
+      <div class="tbl inv-tbl" style="border:0"><table><tbody>${rows}</tbody></table></div>
     </div>` : "";
 
   host.innerHTML = invoices.length
@@ -613,7 +613,9 @@ async function createFullInvoice() {
     loadInvoices();
   } catch (e) { SSCrm.toast(e.message || "Could not create invoice", "error"); }
 }
-async function resendInvoice(iid) {
+async function resendInvoice(iid, number) {
+  // A tap on a phone is easy to misplace, and this emails the customer.
+  if (!(await SSCrm.confirmDialog(`Email ${number || "this invoice"} to the customer with its pay link?`))) return;
   try { await SSCrm.fetchJSON(`/api/invoices/${iid}`, { method: "POST", body: JSON.stringify({ action: "resend" }) }); SSCrm.toast("Invoice re-sent", "success"); }
   catch (e) { SSCrm.toast(e.message || "Could not resend", "error"); }
 }

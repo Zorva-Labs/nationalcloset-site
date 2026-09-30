@@ -15,6 +15,7 @@
 
 ## Invoices and Stripe
 - `_lib/invoices.js`: deposit, scheduling (25%), balance (the last 25%, billed on install day by the cron), full and custom invoices, each emailed with a pay link to `/invoice/`. A paid deposit or full payment books the job.
+- **Completing a job bills what is still owed** (`billOnCompletion`): the balance is raised if it never was; money still uninvoiced (a contract raised after the balance went out) becomes one more invoice for the remainder; and an unpaid balance invoice is emailed again, unless it went out in the last 12 hours (install day's own invoice, then "completed" that afternoon). A re-sent invoice asks for what is left on it after any partial payment.
 - The pay page creates the Stripe PaymentIntent (`_lib/stripe.js`, no SDK) with automatic payment methods, so it offers whatever the Stripe Dashboard has switched on, Klarna included until the owner turns it off (`CLAUDE.md` → Open items). `/api/stripe/webhook`, verified with `STRIPE_WEBHOOK_SECRET`, is what marks an invoice paid.
 
 ## The customer's pages

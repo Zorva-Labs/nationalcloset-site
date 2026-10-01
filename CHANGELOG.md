@@ -2,6 +2,11 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-01 (the Bible verse removed)
+- **Why:** Michael: "remove the bible quote from national closet."
+- **/about** foundation paragraph (`stage4.py → FAITH_P`): the Colossians 3:23 sentence and the verse are removed. The sentence after it, which explained the verse, now stands alone: "We are dedicated to excellence, to treating others with respect and fairness, and to the belief that a job worth doing is worth doing right." The rest of the paragraph and the "A faith-based business, built on integrity" heading are unchanged. No other page quoted scripture.
+- `css/styles.css`: the now-unused `.faith__p q.verse` rule is removed, and the homepage's inline copy re-synced by the sweep. Deployed `7378f1ff`, submitted (1 URL).
+
 ## 2026-10-01 (Michael Blair the only owner)
 - **Why:** Michael: "remove noah blair, only michael blair is the owner."
 - **/about** (built by `stage4.py → build_about_page`): Noah Blair's card and his Person schema node are removed. Michael is "Founder & Owner" on the card and in the schema (was "Co-Owner"), and the Organization's `employee` lists only him. The note reads "One owner, one crew, every project." The foundation paragraph now opens "Michael Blair built National Closet Company on a simple foundation…" and continues in the company's "we" (same values, same verse). No other public page named Noah.

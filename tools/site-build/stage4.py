@@ -527,8 +527,7 @@ if __name__ == '__main__':
 # =====================================================================================
 FAITH_P = ("Michael Blair built National Closet Company on a simple foundation: faith in God, unwavering integrity, and a commitment to doing every job to the very best of our ability. "
            "We believe that honesty matters, even when the truth is difficult to hear, and that character is measured by what a person does when no one is watching. Faith guides every decision, "
-           "every customer interaction, and every project we undertake. Because of these values, Colossians 3:23 serves as our creed: <q class=\"verse\">“Whatever you do, work at it with all your heart, "
-           "as working for the Lord, not for human masters.”</q> This verse reflects our dedication to excellence, our commitment to treating others with respect and fairness, and our belief that a job "
+           "every customer interaction, and every project we undertake. We are dedicated to excellence, to treating others with respect and fairness, and to the belief that a job "
            "worth doing is worth doing right. Through faith, honesty, and integrity, we strive to earn trust, honor God, and deliver craftsmanship that stands the test of time.")
 
 def existing_faq_answers():

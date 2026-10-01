@@ -779,7 +779,6 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .about-grid { display: grid; gap: 2rem; }
 @media (min-width: 900px) { .about-grid { grid-template-columns: 1.4fr 1fr; align-items: start; } }
 .faith__p { font-size: 1.05rem; line-height: 1.7; color: var(--ink-soft); }
-.faith__p q.verse { quotes: none; font-family: "Caveat", var(--display); font-weight: 700; font-size: 1.35rem; line-height: 1.3; color: var(--clay-deep); }
 .people { display: grid; gap: 0.7rem; }
 .person { display: flex; align-items: center; gap: 0.9rem; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 0.9rem 1.1rem; }
 .person__i { width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: var(--clay); display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 0.95rem; flex: none; }

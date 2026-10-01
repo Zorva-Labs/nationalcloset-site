@@ -2,13 +2,13 @@
   "host": "nationalclosetco.com",
   "endpoint": "https://www.bing.com/indexnow",
   "version": 2,
-  "submitted": "2026-10-01T14:17:35.522Z",
+  "submitted": "2026-10-01T14:21:15.390Z",
   "google": {
     "property": "sc-domain:nationalclosetco.com",
     "sitemaps": [
       "https://nationalclosetco.com/sitemap.xml"
     ],
-    "submitted": "2026-10-01T14:17:36.400Z"
+    "submitted": "2026-10-01T14:21:15.971Z"
   },
   "bing": {
     "site": "https://nationalclosetco.com/",
@@ -259,7 +259,7 @@
       "changed": "2026-10-01"
     },
     "https://nationalclosetco.com/about": {
-      "hash": "0d62775912bdf4fd",
+      "hash": "6ff75a5a00255953",
       "changed": "2026-10-01"
     },
     "https://nationalclosetco.com/reviews": {

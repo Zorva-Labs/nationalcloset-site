@@ -51,7 +51,18 @@ export async function onRequestPost({ request, env }) {
   // blocked because the check couldn't run.
   const ip = request.headers.get("CF-Connecting-IP") || "";
   const bot = botReason(data) || (await turnstileReason(env, data.cf_ts, ip));
-  if (bot) { console.warn("[contact.js] bot drop:", bot); return json({ ok: true }); }
+  if (bot) {
+    console.warn("[contact.js] bot drop:", bot);
+    // kept in lead_drops (never emailed, never in leads) so a real person a check
+    // caught can still be found; a failure here never changes the answer
+    try {
+      await env.DB.prepare("INSERT INTO lead_drops (reason, name, email, phone, message, page, country, hp_ms, ua) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)")
+        .bind(bot, name.slice(0, 120) || null, email.slice(0, 200) || null, phone.slice(0, 40) || null, message.slice(0, 4000) || null,
+          (data.landing_page || data.source || "").toString().slice(0, 300) || null, (request.cf && request.cf.country) || null,
+          (data.hp_ms == null ? "" : String(data.hp_ms)).slice(0, 20) || null, (request.headers.get("user-agent") || "").slice(0, 300) || null).run();
+    } catch (e) { console.error("[contact.js] drop log failed:", e?.message || e); }
+    return json({ ok: true });
+  }
 
   // Spam gate — drop bots (links, SEO/marketing pitches) BEFORE we save or email
   // anything. Return ok so the bot thinks it succeeded and doesn't retry; a real

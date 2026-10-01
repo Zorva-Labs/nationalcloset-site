@@ -58,7 +58,7 @@
     "transport": "crm",
     "to": "hello@nationalclosetco.com",
     "activated": null,
-    "notes": "/api/contact → D1 leads + email; two-field forms (name + phone), optional details via /api/contact-address; Turnstile sitekey 0x4AAAAAAEeAHgFn213WJdnQ + hp_url honeypot + hp_ms; bot drops answer 200 {ok:true}, only success:true fires tags"
+    "notes": "/api/contact → D1 leads + email; two-field forms (name + phone), optional details via /api/contact-address; Turnstile sitekey 0x4AAAAAAEeAHgFn213WJdnQ + hp_url honeypot (display:none) + hp_ms; bot drops answer 200 {ok:true}, are kept in D1 lead_drops, and only success:true fires tags"
   },
   "mail": {
     "transport": "gmail-service-account",

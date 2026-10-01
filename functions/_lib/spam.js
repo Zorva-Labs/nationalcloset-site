@@ -43,10 +43,23 @@ export function spamReason(data) {
 // Both checks FAIL OPEN when their field is absent (old cached page, JS
 // disabled): only an actually-filled honeypot or a genuinely-too-fast submit
 // drops — a missing signal never blocks a real lead.
+//
+// The honeypot (`hp_url`) is display:none. A value that copies the person's own
+// name, email, phone or address is a browser's autofill, not a bot (Chrome on
+// cabinetmakerpro.com, 2026-10-01: the field was only off-screen, so it could be
+// filled, and a real lead was dropped). A real drop's reason carries the value
+// (`honeypot: …`).
 const MIN_FILL_MS = 2000; // a real person can't fill name+phone+email in <2s
 export function botReason(data) {
   const g = (k) => (data && data[k] != null ? String(data[k]) : "");
-  if (g("hp_url").trim()) return "honeypot";
+  const hp = g("hp_url").trim();
+  if (hp) {
+    const low = hp.toLowerCase();
+    // the forms post name, phone, email (and address_street / address_city / address_zip, zip)
+    const own = [g("name"), g("email"), g("phone"), g("address_street"), g("address_city"), g("address_zip"), g("zip")]
+      .map((v) => v.trim().toLowerCase()).filter((v) => v.length >= 2);
+    if (!own.some((v) => v.includes(low) || low.includes(v))) return `honeypot: ${hp.slice(0, 60)}`;
+  }
   const ms = parseInt(g("hp_ms"), 10);
   if (Number.isFinite(ms) && ms >= 0 && ms < MIN_FILL_MS) return "too_fast";
   return null;

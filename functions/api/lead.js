@@ -39,7 +39,18 @@ export async function onRequestPost({ request, env }) {
   // signal so a real lead is never dropped.
   const ip = request.headers.get("CF-Connecting-IP") || "";
   const bot = botReason(data) || (await turnstileReason(env, data.cf_ts, ip));
-  if (bot) { console.warn("[lead.js] bot drop:", bot); return json({ ok: true }); }
+  if (bot) {
+    console.warn("[lead.js] bot drop:", bot);
+    // kept in lead_drops (never emailed, never in leads); a failure here never changes the answer
+    try {
+      await env.DB.prepare("INSERT INTO lead_drops (reason, name, email, phone, message, page, country, hp_ms, ua) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)")
+        .bind(bot, (data.name || "").toString().trim().slice(0, 120) || null, (data.email || "").toString().trim().slice(0, 200) || null,
+          (data.phone || "").toString().trim().slice(0, 40) || null, (data.msg || "").toString().trim().slice(0, 4000) || null,
+          (data.page || data.source || "").toString().slice(0, 300) || null, (request.cf && request.cf.country) || null,
+          (data.hp_ms == null ? "" : String(data.hp_ms)).slice(0, 20) || null, (request.headers.get("user-agent") || "").slice(0, 300) || null).run();
+    } catch (e) { console.error("[lead.js] drop log failed:", e?.message || e); }
+    return json({ ok: true });
+  }
 
   // Content heuristics — links / pasted markup. Silently drop.
   const spam = spamReason(data);

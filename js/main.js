@@ -338,12 +338,15 @@
   document.querySelectorAll("form[data-lead]").forEach(function (form) {
     // Stamp when the form became available; the submit carries elapsed ms.
     var _renderTs = Date.now();
-    // Hidden honeypot — off-screen, unfocusable, non-autofilling name. A human
-    // never sees or fills it; a bot that fills every field does.
+    // Hidden honeypot — display:none (a browser can't focus it, so it doesn't
+    // autofill it: Chrome filled an off-screen one on cabinetmakerpro.com on
+    // 2026-10-01 and a real lead was dropped), unfocusable, non-autofilling name.
+    // A human never sees or fills it; a bot reading the HTML and filling every
+    // field does.
     var _hp = document.createElement("input");
     _hp.type = "text"; _hp.name = "hp_url"; _hp.tabIndex = -1; _hp.autocomplete = "off";
     _hp.setAttribute("aria-hidden", "true");
-    _hp.style.cssText = "position:absolute!important;left:-9999px!important;top:auto;width:1px;height:1px;opacity:0;pointer-events:none";
+    _hp.style.cssText = "display:none!important";
     form.appendChild(_hp);
     // Invisible/managed Turnstile widget, placed just above the submit button.
     var _tw = document.createElement("div");

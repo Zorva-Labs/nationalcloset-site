@@ -37,7 +37,7 @@ body = '<article>\n' + phero(
   <div class="wrap">
     <div class="prose">
 
-      <p>This is the privacy policy of National Closet Company, a division of Blair Custom Interiors, for nationalclosetco.com and for the proposal, contract and invoice pages we send you.</p>
+      <p>This is the privacy policy of National Closet Company for nationalclosetco.com and for the proposal, contract and invoice pages we send you.</p>
 
       <h2>When you ask for a price or a design visit</h2>
       <p>Our price forms ask for your name and a phone number. After that you can add your email, the space you want built, your address and a note.</p>

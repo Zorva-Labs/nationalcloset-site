@@ -8,6 +8,7 @@
 // cleared on the first successful write so a leaked one can't be replayed.
 import { upsertContact } from "../_lib/db.js";
 import { sendLeadAck } from "../_lib/lead-ack.js";
+import { sendLeadAlert } from "../_lib/lead-alert.js";
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
@@ -75,6 +76,15 @@ export async function onRequestPost({ request, env }) {
   if (email && !lead.email) {
     await sendLeadAck(env, { name: lead.name, email, interest: interest || lead.interest, leadId: lead.id, contactId }).catch(() => {});
   }
+
+  // Tell the team what was added — before 2026-10-01 these details were saved
+  // without a word, and the only email was the name-and-phone alert.
+  try {
+    const full = await env.DB.prepare(
+      `SELECT id, name, phone, email, interest, message, address_street, address_city, address_state, address_zip, source_page AS source FROM leads WHERE id = ?1`
+    ).bind(lead.id).first();
+    if (full) await sendLeadAlert(env, full, { update: true });
+  } catch (e) { console.error("[contact-address] staff alert failed:", e?.message || e); }
 
   return json({ success: true }, 200);
 }

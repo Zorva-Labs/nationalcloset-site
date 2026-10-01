@@ -141,9 +141,9 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 }
 .nav.scrolled { border-bottom-color: var(--line); box-shadow: 0 8px 30px -22px rgba(0,0,0,.4); }
 
-/* Top utility bar. On phones it is a 28px strip carrying only the parent-company
-   line ("A division of Blair Custom Interiors"); from 1100px it becomes the full
-   44px bar with the whole sentence, the tagline, the phone and the social links. */
+/* Top utility bar. On phones it is a 28px strip carrying only the short message;
+   from 1100px it becomes the full 44px bar with the message, the phone and the
+   social links. */
 .nav__top { display: block; height: 28px; background: var(--ink); }
 .nav__top-inner { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 1.25rem; height: 100%; display: flex; align-items: center; justify-content: center; gap: 1rem; }
 .nav__top-msg { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; color: rgba(255,255,255,0.72); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }

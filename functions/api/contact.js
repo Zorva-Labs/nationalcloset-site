@@ -3,7 +3,8 @@
 // Workspace; see _lib/email.js). DB save is the source of truth — a mail
 // failure logs but never blocks the customer response.
 
-import { sendEmail, sendStaffAlert, brandedEmail, makeMessageId } from "../_lib/email.js";
+import { sendStaffAlert } from "../_lib/email.js";
+import { sendLeadAlert } from "../_lib/lead-alert.js";
 import { sendLeadAck } from "../_lib/lead-ack.js";
 import { upsertContact } from "../_lib/db.js";
 import { genToken } from "../_lib/tokens.js";
@@ -100,47 +101,6 @@ Message: ${message || "(none)"}
     .filter(Boolean)
     .join(" · ");
 
-  const subject = `New consultation request — ${name}`;
-
-  const textBody =
-`New free consultation request from the National Closet Company website.
-
-Source form: ${source}
-
-Name:        ${name}
-Phone:       ${phone}
-Email:       ${email || "(not given — ask on the call)"}
-Address:     ${addressStreet}
-             ${addressCity}, ${addressState} ${addressZip}
-Considering: ${interest || "(not specified)"}
-
-Message:
-${message || "(no message)"}
-
-${email ? "Reply to the customer: " + email : "No email yet — text or call the number above."}
-
-View this lead in the CRM:
-https://nationalclosetco.com/crm/
-`;
-
-  const htmlBody = `
-<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #16140F; max-width: 600px; line-height: 1.55;">
-  <h2 style="font-family: 'Montserrat','Helvetica Neue',Arial,sans-serif; font-weight: 400; font-size: 26px; margin: 0 0 8px;">New consultation request</h2>
-  <p style="margin: 0 0 20px; font-family: 'Montserrat','Helvetica Neue',Arial,sans-serif; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #D2683F;">Source: ${esc(source)} form</p>
-  <table style="border-collapse: collapse; width: 100%; margin: 0 0 24px;">
-    <tr><td style="padding: 8px 12px 8px 0; color: #3A362F; width: 130px;">Name</td><td style="padding: 8px 0;"><strong>${esc(name)}</strong></td></tr>
-    <tr><td style="padding: 8px 12px 8px 0; color: #3A362F;">Phone</td><td style="padding: 8px 0;"><a href="tel:${esc(phone)}" style="color: #D2683F;">${esc(phone)}</a></td></tr>
-    <tr><td style="padding: 8px 12px 8px 0; color: #3A362F;">Email</td><td style="padding: 8px 0;">${email ? `<a href="mailto:${esc(email)}" style="color: #D2683F;">${esc(email)}</a>` : "(not given — ask on the call)"}</td></tr>
-    <tr><td style="padding: 8px 12px 8px 0; color: #3A362F; vertical-align: top;">Address</td><td style="padding: 8px 0;"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${addressStreet}, ${addressCity}, ${addressState} ${addressZip}`)}" style="color: #D2683F;">${esc(addressStreet)}<br/>${esc(addressCity)}, ${esc(addressState)} ${esc(addressZip)}</a></td></tr>
-    <tr><td style="padding: 8px 12px 8px 0; color: #3A362F;">Considering</td><td style="padding: 8px 0;">${esc(interest || "(not specified)")}</td></tr>
-  </table>
-  <p style="margin: 0 0 8px; color: #3A362F;">Message:</p>
-  <div style="background: #FAF9F6; border-left: 2px solid #D2683F; padding: 14px 18px; white-space: pre-wrap;">${esc(message || "(no message)")}</div>
-  ${email ? `<p style="margin: 28px 0 0;"><a href="mailto:${esc(email)}?subject=${encodeURIComponent(`Re: your closet consultation request — National Closet Company`)}" style="display: inline-block; padding: 10px 18px; background: #D2683F; color: #FAF9F6; text-decoration: none; font-family: 'Montserrat','Helvetica Neue',Arial,sans-serif; font-size: 13px; font-weight: 700; border-radius: 6px;">Reply to ${esc(name)}</a></p>` : ""}
-  <p style="margin: 28px 0 0;"><a href="https://nationalclosetco.com/crm/" style="display: inline-block; padding: 10px 18px; background: #16140F; color: #FAF9F6; text-decoration: none; font-family: 'Montserrat','Helvetica Neue',Arial,sans-serif; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; border-radius: 2px;">Open in CRM →</a></p>
-  <p style="margin: 28px 0 0; font-size: 12px; color: #8B7F6F;">Sent from the National Closet Company website. This lead has been saved to the CRM automatically.</p>
-</div>`;
-
   // 1) Persist the lead to D1 first — this is the source of truth. If this
   // fails we DO surface an error to the customer (otherwise the lead would
   // disappear silently).
@@ -227,17 +187,13 @@ https://nationalclosetco.com/crm/
     console.error("contact.js: env.DB is not configured");
   }
 
-  // 2) Fire-and-forget staff alert via Gmail, sent as crm@ to hello@ (see
-  // sendStaffAlert). sendEmail never throws — a mail failure just logs to the
-  // Pages function console. The customer is told their lead was captured (it
-  // was) regardless of email delivery. Reply-To is the customer, so hitting
-  // Reply in hello@ answers the lead directly and the CRM's Sent sync logs it.
-  await sendStaffAlert(env, {
-    label: "National Closet Co. Website",
-    replyTo: email || undefined,
-    subject,
-    text: textBody,
-    html: htmlBody,
+  // 2) Staff alert (sent as crm@ to hello@, Reply-To the customer when there
+  // is an email). Only the fields the customer gave are listed; the details
+  // step sends a follow-up in the same thread (_lib/lead-alert.js). sendEmail
+  // never throws, so a mail failure only logs; the lead is already saved.
+  await sendLeadAlert(env, {
+    id: leadId, name, phone, email, interest, message, source,
+    address_street: addressStreet, address_city: addressCity, address_state: addressState, address_zip: addressZip,
   });
 
   // 2b) Welcome email, when we have an address to send it to (the two-field

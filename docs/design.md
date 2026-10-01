@@ -5,7 +5,7 @@
 - Montserrat for display and body (`--display`, `--body`), from Google Fonts on every page but the home page, which inlines the self-hosted `fonts/montserrat-latin.woff2`. Caveat, self-hosted, is the handwritten accent (signatures, the slogan, the verse). The stylesheet's header comment still names Archivo and Hanken Grotesk; no token uses them.
 
 ## The header
-- Parent-company bar (`.nav__parent`, "A division of Blair Custom Interiors"): `--nav-h` is 100px on phones and 116px from 1100px. The desktop inline nav starts at **1100px**; layout breakpoints stay at 940.
+- Top bar (`.nav__top-msg`, "Family-owned · Serving Nashville & all of Middle TN"; no parent company since 2026-10-01): `--nav-h` is 100px on phones and 116px from 1100px. The desktop inline nav starts at **1100px**; layout breakpoints stay at 940.
 - The nav, in order: Gallery, Our Work, Cabinets (third), Pricing, About, Reviews, Closet Cases.
 
 ## Components (`js/main.js` + `css/styles.css`)

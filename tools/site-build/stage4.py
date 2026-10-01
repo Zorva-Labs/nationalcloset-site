@@ -1,14 +1,12 @@
-"""Stage 4 (Sept 2026): Blair Custom Interiors as the parent company, custom cabinets as a
-service, and the About page rebuilt on the Blair Custom Interiors pattern.
+"""Stage 4 (Sept 2026): custom cabinets as a service, and the About page rebuilt.
 
 Part 1 — the chrome sweep over every public page:
-  * top bar: "National Closet Company is a division of Blair Custom Interiors" (the short
-    "A division of…" form on phones, where the bar is now a 28px strip)
+  * no parent company anywhere (Michael, 2026-10-01): the sweep removes the top bar's
+    "division of" line, the drawer and footer parent blocks, the copyright line's mention,
+    parentOrganization in the schema, and the parent-company sentences in the copy
+    (strip_parent); the top bar is "Family-owned · Serving Nashville & all of Middle TN"
   * brand tagline: Custom Closets & Cabinets (header + footer lockups)
   * primary nav + drawer: Cabinets added; footer Services column: Custom Cabinets
-  * footer: parent-company block under the lockup, and the copyright line
-  * drawer: parent-company line under the contact links
-  * schema: parentOrganization on the business nodes
   * cache pin ncc125 -> ncc126, homepage inline stylesheet re-synced (with the two
     @font-face rules that the last sync dropped)
   * the posts (2026-09-28): every BlogPosting, in the posts and on /closet-cases, and the
@@ -24,9 +22,6 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 os.chdir(ROOT)
 
 PIN = re.search(r"PIN = '(ncc\d+)'", open('tools/site-build/chrome.py').read()).group(1)
-BCI = 'https://blaircustominteriors.com'
-BCI_A = f'<a href="{BCI}" target="_blank" rel="noopener">Blair Custom Interiors</a>'
-PARENT_ORG = {"@type": "Organization", "name": "Blair Custom Interiors", "url": BCI + "/"}
 
 def block(s, start_pat):
     m = re.search(start_pat, s); assert m, start_pat
@@ -52,25 +47,32 @@ def drawer_links_html():
     return '\n'.join(f'  <a class="drawer__link" href="{h}"><span>{l}</span><span class="n">{i+1:02d}</span></a>' for i, (h, l) in enumerate(items))
 
 TOP_OLD = '<span class="nav__top-msg">Family-owned · Serving Nashville &amp; all of Middle TN</span>'
-TOP_NEW = ('<span class="nav__top-msg"><span class="nav__parent"><span class="nav__parent-co">National Closet Company is a</span>'
-           '<span class="nav__parent-a">A</span> division of ' + BCI_A + '</span>'
-           '<span class="nav__top-tag"> · Family-owned · Serving Nashville &amp; all of Middle TN</span></span>')
-
-FOOTER_PARENT = ('\n        <div class="footer__parent"><strong>National Closet Company is a division of ' + BCI_A + '</strong>, '
-                 'our parent company for custom cabinets, closets and interior remodeling across Nashville and Middle Tennessee.'
-                 f'<br><a class="footer__parent-url" href="{BCI}" target="_blank" rel="noopener">blaircustominteriors.com ↗</a></div>')
-
 COPY_OLD = '<p>© <span data-year>2026</span> National Closet Company. All rights reserved. · Custom Closets &amp; Closet Systems · Gallatin, TN.</p>'
-COPY_NEW = ('<p>© <span data-year>2026</span> National Closet Company, a division of ' + BCI_A +
-            '. All rights reserved. · Custom Closets, Cabinets &amp; Pantries · Gallatin, TN.</p>')
+COPY_NEW = '<p>© <span data-year>2026</span> National Closet Company. All rights reserved. · Custom Closets, Cabinets &amp; Pantries · Gallatin, TN.</p>'
 
-DRAWER_PARENT = '<p class="drawer__parent">A division of ' + BCI_A + '</p>'
+# The parent company that is no longer named (2026-10-01): what an earlier sweep wrote, and
+# what each sentence becomes. Every pattern is idempotent, so the sweep can be re-run.
+PARENT_A = r'<a [^>]*href="https://blaircustominteriors\.com/?"[^>]*>Blair Custom Interiors</a>'
+PARENT_SUBS = [
+    (r'<span class="nav__top-msg"><span class="nav__parent">.*?</span><span class="nav__top-tag"> · (.*?)</span></span>', r'<span class="nav__top-msg">\1</span>'),
+    (r'\s*<p class="drawer__parent">.*?</p>', ''),
+    (r'\s*<div class="footer__parent">.*?</div>', ''),
+    (r'National Closet Company, a division of ' + PARENT_A + r'\. All rights reserved\.', 'National Closet Company. All rights reserved.'),
+    (r' We are a division of ' + PARENT_A + r", our family's custom cabinetry and interior remodeling company, so a cabinet project gets", ' A cabinet project gets'),
+    (r' National Closet Company is a division of ' + PARENT_A + r", our family's custom cabinetry company, so cabinets get the same free in-home 3D design, one honest price and our own installers\.",
+     ' Cabinets get the same free in-home 3D design, one honest price and our own installers as a closet.'),
+    (r' When a project grows into a full kitchen, bathroom or laundry remodel, our parent company, Blair Custom Interiors, coordinates the licensed plumbing and electrical trades under one schedule, so you still have one team to call\.', ''),
+    (r' A division of Blair Custom Interiors\.', ''),
+]
 
 PAY_STD = ('<p style="margin-top:.8rem;font-size:.9rem;line-height:1.5">💳 <strong>Three simple payments</strong> — 50% at signing, '
            '25% when your installation is scheduled, 25% on install day. No interest, and no penalty for paying early or in full.</p>')
 
-def add_parent_org(page_html):
-    """Add parentOrganization to the business nodes of every ld+json block; re-serialise only the blocks that change."""
+def strip_parent(page_html):
+    """Remove the parent company: the chrome and copy (PARENT_SUBS) and parentOrganization on
+    every ld+json node; re-serialise only the blocks that change."""
+    for pat, rep in PARENT_SUBS:
+        page_html = re.sub(pat, rep, page_html, flags=re.S)
     def fix(m):
         raw = m.group(1)
         try: d = json.loads(raw)
@@ -79,9 +81,7 @@ def add_parent_org(page_html):
         def walk(n):
             nonlocal changed
             if isinstance(n, dict):
-                t = n.get('@type'); i = n.get('@id', '')
-                if (t in ('LocalBusiness', 'HomeAndConstructionBusiness') or (t == 'Organization' and i.endswith('#org'))) and 'parentOrganization' not in n and n.get('name') == 'National Closet Company':
-                    n['parentOrganization'] = PARENT_ORG; changed = True
+                if n.pop('parentOrganization', None) is not None: changed = True
                 for v in n.values(): walk(v)
             elif isinstance(n, list):
                 for v in n: walk(v)
@@ -93,39 +93,33 @@ def add_parent_org(page_html):
 def sweep(path):
     s = open(path, encoding='utf-8').read(); o = s
     if 'nav__top-msg' not in s or 'footer__bottom' not in s: return False
-    # top bar (every step is idempotent so the sweep can be re-run)
-    assert TOP_OLD in s or 'nav__parent' in s, path
-    s = s.replace(TOP_OLD, TOP_NEW)
+    # top bar, drawer, footer, copy and schema: no parent company (every step is idempotent)
+    s = strip_parent(s)
+    assert TOP_OLD in s, path
     # tagline (header + footer lockups)
     s = s.replace('<small>Custom Closets &amp; Pantries</small>', '<small>Custom Closets &amp; Cabinets</small>')
     # primary nav (keep the current page marker)
     m = re.search(r'<nav class="nav__links".*?</nav>', s, re.S); assert m, path
     cur = re.search(r'href="([^"]+)" aria-current="page"', m.group(0))
     s = s[:m.start()] + nav_links_html(cur.group(1) if cur else None) + s[m.end():]
-    # drawer: links + parent line
+    # drawer: links
     d = block(s, r'<div class="drawer" id="drawer">')
     d2 = re.sub(r'(<div class="drawer" id="drawer">)\s*(?:<a class="drawer__link"[^>]*>.*?</a>\s*)+', lambda mm: mm.group(1) + '\n' + drawer_links_html() + '\n', d, flags=re.S)
-    if 'drawer__parent' not in d2:
-        d2, n = re.subn(r'(<a class="btn btn--primary btn--block" href="[^"]*">[^<]*<span class="arr">→</span></a>)', r'\1\n    ' + DRAWER_PARENT, d2, count=1)
-        assert n == 1, path
     s = s.replace(d, d2)
-    # footer: parent block under the lockup, Custom Cabinets in Services, copyright line
+    # footer: Custom Cabinets in Services, copyright line
     f = block(s, r'<footer class="footer">')
     f2 = f
-    if 'footer__parent' not in f2:
-        f2, n = re.subn(r'(<a href="/?#top" class="footer__logo".*?</a>)', lambda mm: mm.group(1) + FOOTER_PARENT, f2, count=1, flags=re.S); assert n == 1, path
     if '/custom-cabinets-nashville' not in f2:
         f2, n = re.subn(r'(<a href="/?#services">Reach-In Closet Systems</a>)', r'\1\n          <a href="/custom-cabinets-nashville">Custom Cabinets</a>', f2, count=1); assert n == 1, path
     # the privacy policy in the Company column, after FAQ (2026-09-27; the page is stage5_privacy.py's)
     if 'href="/privacy"' not in f2:
         f2, n = re.subn(r'(<a href="/?#faq">FAQ</a>)', r'\1\n          <a href="/privacy">Privacy</a>', f2, count=1); assert n == 1, path
-    assert COPY_OLD in f2 or 'a division of' in f2, path
+    assert COPY_OLD in f2 or COPY_NEW in f2, path
     f2 = f2.replace(COPY_OLD, COPY_NEW)
     # the booking page's footer still carried the Klarna line
     f2 = re.sub(r'<p style="margin-top:\.8rem;font-size:\.9rem;line-height:1\.5">💳 <strong>Buy now, pay later with.*?</p>', PAY_STD, f2, flags=re.S)
     s = s.replace(f, f2)
-    # schema + cache pin
-    s = add_parent_org(s)
+    # cache pin
     s = re.sub(r'(styles\.css|main\.js)\?v=ncc\d+', r'\1?v=' + PIN, s)
     if s != o: open(path, 'w', encoding='utf-8').write(s)
     return s != o
@@ -237,11 +231,11 @@ CAB_ROOMS = [
 
 CAB_FAQ = [
   ('Do you build custom cabinets, or just closets?',
-   'Both. National Closet Company designs and installs custom cabinets for kitchens, bathrooms, laundry rooms, mudrooms, dining rooms, media walls and home offices, as well as the custom closets and pantries we are known for. We are a division of <a class="inline" href="https://blaircustominteriors.com" target="_blank" rel="noopener">Blair Custom Interiors</a>, our family\'s custom cabinetry and interior remodeling company, so a cabinet project gets the same free in-home design, one honest price and our own installers that a closet does.'),
+   'Both. National Closet Company designs and installs custom cabinets for kitchens, bathrooms, laundry rooms, mudrooms, dining rooms, media walls and home offices, as well as the custom closets and pantries we are known for. A cabinet project gets the same free in-home design, one honest price and our own installers that a closet does.'),
   ('How much do custom cabinets cost in Nashville?',
    'It depends on the linear footage, the door style, the finish and what goes inside the boxes, so we do not quote cabinets from a range the way we publish starting prices for closets. A single painted run for a laundry room and a full kitchen with an island are very different jobs. Your free in-home design visit ends with an exact, written price for your project, and there is no obligation.'),
   ('Can you replace my kitchen cabinets without a full remodel?',
-   'Yes. A run of new cabinets, a new island, a pantry wall or a bank of upper cabinets can be designed and installed on its own. When a project grows into a full kitchen, bathroom or laundry remodel, our parent company, Blair Custom Interiors, coordinates the licensed plumbing and electrical trades under one schedule, so you still have one team to call.'),
+   'Yes. A run of new cabinets, a new island, a pantry wall or a bank of upper cabinets can be designed and installed on its own.'),
   ('What door styles and finishes can I choose?',
    'Shaker, flat-panel and inset door styles in painted colors or wood-grain finishes, with the hardware you choose, soft-close doors and full-extension drawers throughout. We bring samples to your free design visit so you can hold them up in your own light.'),
   ('Are custom cabinets covered by your warranty?',
@@ -275,7 +269,7 @@ def build_cabinets_page(C):
 
       <h2>Custom cabinets, built to your walls</h2>
       <p>Stock cabinets come in fixed widths, and the gaps get hidden with filler strips. <strong>Custom cabinets</strong> are drawn to your room — the out-of-square corner, the odd ceiling height, the window that isn\'t centered — so every inch works and the finished wall looks like it was always there. We measure in person, design the room in a photorealistic 3D rendering, price it honestly, and install it with our own team.</p>
-      <p>National Closet Company is a division of <a class="inline" href="https://blaircustominteriors.com" target="_blank" rel="noopener">Blair Custom Interiors</a>, our family\'s custom cabinetry and interior remodeling company. That is what lets a closet company build kitchens, vanities and built-ins to the same standard, with one team from the first measurement to the last hinge adjustment.</p>
+      <p>The designers and installers who build our closets build kitchens, vanities and built-ins to the same standard, with one team from the first measurement to the last hinge adjustment.</p>
 
       <h2>Custom cabinets for every room in the house</h2>
       <p>Most of our cabinet projects fall into one of these rooms. Each one starts with the same free in-home design visit.</p>
@@ -304,7 +298,7 @@ def build_cabinets_page(C):
       <blockquote>Custom cabinets don\'t just fit the wall — they fit the way you cook, fold, work and put things away.</blockquote>
 
       <h2>One family, closets and cabinets</h2>
-      <p>You can start with a closet and come back for the kitchen, or do both at once. The same designer measures, the same crew installs, and the same <strong>lifetime warranty</strong> stands behind the work: cabinet boxes, doors, drawer boxes and fronts, shelving, hinges, slides and hardware are covered against defects for as long as you own your home, plus a one-year guarantee on our installation workmanship. <a class="inline" href="/warranty">Read the warranty →</a> For full kitchen, bathroom and laundry remodels, our parent company <a class="inline" href="https://blaircustominteriors.com" target="_blank" rel="noopener">Blair Custom Interiors</a> coordinates the licensed plumbing and electrical trades under one schedule.</p>
+      <p>You can start with a closet and come back for the kitchen, or do both at once. The same designer measures, the same crew installs, and the same <strong>lifetime warranty</strong> stands behind the work: cabinet boxes, doors, drawer boxes and fronts, shelving, hinges, slides and hardware are covered against defects for as long as you own your home, plus a one-year guarantee on our installation workmanship. <a class="inline" href="/warranty">Read the warranty →</a></p>
 
       <h2>Custom cabinets across Nashville &amp; Middle TN</h2>
       <p>We design and install custom cabinets throughout <a class="inline" href="/service-areas">Nashville and all of Middle Tennessee</a> — including {cities} — and every community within about 90 miles of Gallatin. Older homes with plaster walls and rooms that are rarely square, and new builds with open plans and a flex room waiting to become something: we build to both.</p>
@@ -352,7 +346,7 @@ def build_cabinets_page(C):
                    {"@type": "Offer", "itemOffered": {"@type": "Service", "name": n}} for n in
                    ["Custom Kitchen Cabinets & Islands", "Bathroom Vanities", "Laundry Room Cabinets", "Mudroom Lockers & Benches", "Built-In Hutches & Bookcases", "Media Walls & Entertainment Centers", "Home Office Cabinetry", "Garage & Utility Cabinets"]]},
                "offers": {"@type": "Offer", "description": "Free in-home design consultation with a written price; 50% at signing, 25% when installation is scheduled, 25% on install day.", "priceCurrency": "USD", "availability": "https://schema.org/InStock"}}
-    org_ref = {"@context": "https://schema.org", "@type": "Organization", "@id": "https://nationalclosetco.com/#org", "name": "National Closet Company", "url": "https://nationalclosetco.com/", "parentOrganization": PARENT_ORG}
+    org_ref = {"@context": "https://schema.org", "@type": "Organization", "@id": "https://nationalclosetco.com/#org", "name": "National Closet Company", "url": "https://nationalclosetco.com/"}
     schemas = [service, C.breadcrumb([('Home', 'https://nationalclosetco.com/'), ('Custom Cabinets', CAB_URL)]),
                C.webpage('custom-cabinets-nashville', 'Custom Cabinets in Nashville, TN', html.unescape(desc), '/img/custom-cabinets-og.jpg'), org_ref]
     extra_css = '.cab-rooms figure img { aspect-ratio: 3/2; } .cab-rooms figcaption b { display: block; margin-bottom: .15rem; }'
@@ -397,7 +391,7 @@ def update_homepage():
     assert 'class="svc svc--cta"' not in s
     # FAQ: one visible item + the schema entry
     q = 'Do you build custom cabinets too?'
-    a = f'Yes. Besides closets and pantries we design and install <strong>custom cabinets</strong> — kitchen cabinets and islands, bathroom vanities, laundry and mudroom cabinetry, built-in hutches and media walls. National Closet Company is a division of <a href="https://blaircustominteriors.com" target="_blank" rel="noopener" style="color:var(--clay-deep);font-weight:700">Blair Custom Interiors</a>, our family\'s custom cabinetry company, so cabinets get the same free in-home 3D design, one honest price and our own installers. <a href="{CAB}" style="color:var(--clay-deep);font-weight:700">See our custom cabinets →</a>'
+    a = f'Yes. Besides closets and pantries we design and install <strong>custom cabinets</strong> — kitchen cabinets and islands, bathroom vanities, laundry and mudroom cabinetry, built-in hutches and media walls. Cabinets get the same free in-home 3D design, one honest price and our own installers as a closet. <a href="{CAB}" style="color:var(--clay-deep);font-weight:700">See our custom cabinets →</a>'
     item = f'''<div class="faq__item">
           <button class="faq__q" aria-expanded="false">{q}<span class="faq__icon" aria-hidden="true"></span></button>
           <div class="faq__a"><div class="faq__a-inner">{a}</div></div>
@@ -411,7 +405,7 @@ def update_homepage():
         if '@graph' in d:
             for n in d['@graph']:
                 if n.get('@id', '').endswith('#org'):
-                    n['description'] = "National Closet Company designs, builds and installs custom closets and custom cabinets at a price normal families can afford — walk-in and reach-in closet systems, kitchen cabinets and islands, bathroom vanities, laundry and mudroom cabinetry, built-ins and media walls, home offices, garage storage and pantries across Nashville and Middle Tennessee. A division of Blair Custom Interiors."
+                    n['description'] = "National Closet Company designs, builds and installs custom closets and custom cabinets at a price normal families can afford — walk-in and reach-in closet systems, kitchen cabinets and islands, bathroom vanities, laundry and mudroom cabinetry, built-ins and media walls, home offices, garage storage and pantries across Nashville and Middle Tennessee."
                     n['knowsAbout'] = ["Custom closets", "Custom cabinets", "Custom cabinetry", "Kitchen cabinets", "Pantries", "Home storage systems"]; changed = True
                 if n.get('@type') == 'Person' and n.get('name') == 'Michael Blair':
                     n['knowsAbout'] = ["Custom closets", "Custom cabinets", "Walk-in closet design", "Kitchen cabinetry", "Home storage systems", "Closet installation"]; changed = True
@@ -497,13 +491,13 @@ def update_sitemap_llms_forms():
     if 'custom cabinets' not in s:
         s = sub1(s, '> National Closet Company is a family-owned (not a franchise) custom closet company that designs, builds, and professionally installs custom closet systems and whole-home storage throughout Middle Tennessee',
                  '> National Closet Company is a family-owned (not a franchise) custom closet and custom cabinet company that designs, builds, and professionally installs custom closet systems, custom cabinets and whole-home storage throughout Middle Tennessee', p)
-        s = sub1(s, '- Business name: National Closet Company (also "National Closet Co.")', '- Business name: National Closet Company (also "National Closet Co.")\n- Parent company: Blair Custom Interiors (https://blaircustominteriors.com) — National Closet Company is a division of Blair Custom Interiors, the family\'s custom cabinetry and interior remodeling company in Nashville', p)
+        s = sub1(s, '- Business name: National Closet Company (also "National Closet Co.")', '- Business name: National Closet Company (also "National Closet Co.")', p)
         s = sub1(s, '## Services (Custom Closet Systems)\n- Custom Walk-In Closets\n- Reach-In Closet Systems\n',
                  '## Services (Custom Closets & Custom Cabinets)\n- Custom Walk-In Closets\n- Reach-In Closet Systems\n- Custom Cabinets — kitchen cabinets and islands, bathroom vanities, laundry room and mudroom cabinetry, built-in hutches and bookcases, media walls and entertainment centers, home office cabinetry, garage and utility cabinets (https://nationalclosetco.com/custom-cabinets-nashville)\n', p)
         s = sub1(s, '- Free, no-obligation exact price at the in-home consultation. Deposit reserves your install date; balance due at completion. Financing options available.',
                  '- Custom cabinets: priced per project (linear footage, door style, finish, interior fittings) — no published range; an exact written price comes with the free in-home design\n- Free, no-obligation exact price at the in-home consultation. Every project is paid in three simple installments: 50% at signing, 25% when installation is scheduled, 25% on install day — no interest, no penalty for paying early', p)
         s = sub1(s, '- Do you build more than closets? Yes — garages, pantries, home offices, laundry/mudrooms, and media/wall units.',
-                 '- Do you build more than closets? Yes — custom cabinets (kitchens, baths, laundry, mudrooms, built-ins, media walls), garages, pantries, home offices, laundry/mudrooms, and media/wall units.\n- Do you build custom cabinets? Yes — kitchen cabinets and islands, bathroom vanities, laundry and mudroom cabinetry, built-in hutches and media walls, designed free in your home and installed by our own team. National Closet Company is a division of Blair Custom Interiors, a Nashville custom cabinetry company.\n- How much do custom cabinets cost? Priced per project by linear footage, door style, finish and fittings; an exact written price comes with the free in-home design.', p)
+                 '- Do you build more than closets? Yes — custom cabinets (kitchens, baths, laundry, mudrooms, built-ins, media walls), garages, pantries, home offices, laundry/mudrooms, and media/wall units.\n- Do you build custom cabinets? Yes — kitchen cabinets and islands, bathroom vanities, laundry and mudroom cabinetry, built-in hutches and media walls, designed free in your home and installed by our own team.\n- How much do custom cabinets cost? Priced per project by linear footage, door style, finish and fittings; an exact written price comes with the free in-home design.', p)
         s = sub1(s, '- Pricing guide: https://nationalclosetco.com/custom-closet-cost-nashville', '- Custom cabinets (kitchens, baths, laundry, mudrooms, built-ins): https://nationalclosetco.com/custom-cabinets-nashville\n- Custom pantries: https://nationalclosetco.com/custom-pantry-nashville\n- Pricing guide: https://nationalclosetco.com/custom-closet-cost-nashville', p)
         s = s.replace('- Is there a custom closet company near me? We serve homeowners across the U.S. — call/text 629-298-8241 to confirm your area.', '- Is there a custom closet company near me? We serve homeowners across Nashville and Middle Tennessee, within about 90 miles of Gallatin, TN — call/text 629-298-8241 to confirm your area.')
         open(p, 'w', encoding='utf-8').write(s); print('llms.txt updated')
@@ -526,8 +520,8 @@ if __name__ == '__main__':
 
 
 # =====================================================================================
-# Part 3 — /about rebuilt on the Blair Custom Interiors About page: hero, the owners'
-# foundation paragraph (verbatim, from the BCI site) with the two owners, Michael's note,
+# Part 3 — /about rebuilt: hero, the owners'
+# foundation paragraph (the owners' own words) with the two owners, Michael's note,
 # how we work / what we build with / who we build for, four values, the process, area
 # chips, common questions and the form. NCC's own facts throughout.
 # =====================================================================================
@@ -547,7 +541,7 @@ def existing_faq_answers():
 
 def build_about_page(C):
     title = 'About National Closet Company | Family-Owned, Gallatin TN'
-    desc = 'Meet the family behind National Closet Company, a division of Blair Custom Interiors: faith and integrity, 14″ shelves, one honest price and our own installers.'
+    desc = 'Meet the family behind National Closet Company in Gallatin, TN: faith and integrity, 14″ shelves, one honest price and our own installers.'
     assert len(title) <= 60 and len(desc) <= 160, (len(title), len(desc))
     old = open('about.html', encoding='utf-8').read()
     strip = block(old, r'<div class="about-strip">')           # the truck + Michael's note, approved copy
@@ -556,7 +550,6 @@ def build_about_page(C):
     answers = existing_faq_answers()
     faq = [
       ('Are you a franchise?', answers['Are you a franchise?']),
-      ('Are you part of Blair Custom Interiors?', 'Yes. National Closet Company is a division of <a href="https://blaircustominteriors.com" target="_blank" rel="noopener" style="color:var(--clay-deep);font-weight:700">Blair Custom Interiors</a>, our family\'s custom cabinetry and interior remodeling company in Nashville, owned by Noah Blair and Michael Blair. Closets and pantries run under the National Closet Company name; custom cabinets, kitchens, bathrooms and built-ins draw on the same family, the same designers and the same installers.'),
       ('Do you build custom cabinets too?', answers['Do you build custom cabinets too?']),
       ('How much does a custom closet cost?', answers['How much does a custom closet cost?']),
       ('Do you offer a free in-home consultation?', answers['Do you offer a free in-home consultation?']),
@@ -573,7 +566,7 @@ def build_about_page(C):
     values_html = ''.join(f'<div class="value" data-reveal><span class="value__n">{"I II III IV".split()[i]}</span><h3>{t}</h3><p>{b}</p></div>' for i, (t, b) in enumerate(values))
     body = C.phero([('Home', '/#top'), ('About', None)], 'About · Family-owned, Gallatin, Tennessee',
                    'A family-owned closet and cabinet company that builds the whole space',
-                   'National Closet Company is a small Middle Tennessee family business — not a franchise — and a division of <a href="https://blaircustominteriors.com" target="_blank" rel="noopener" style="color:var(--clay-deep);font-weight:700">Blair Custom Interiors</a>. We design, build and install custom closets, pantries, garage storage, home offices and <a href="/custom-cabinets-nashville" style="color:var(--clay-deep);font-weight:700">custom cabinets</a> at a price normal families can afford. One team measures, designs, builds and installs, so the person who measured your wall is the one who stands the system up against it.') + f'''
+                   'National Closet Company is a small Middle Tennessee family business — not a franchise. We design, build and install custom closets, pantries, garage storage, home offices and <a href="/custom-cabinets-nashville" style="color:var(--clay-deep);font-weight:700">custom cabinets</a> at a price normal families can afford. One team measures, designs, builds and installs, so the person who measured your wall is the one who stands the system up against it.') + f'''
 <section class="section section--tight" id="foundation">
   <div class="wrap">
     <div class="about-grid">
@@ -586,7 +579,6 @@ def build_about_page(C):
         <div class="person" id="noah-blair"><span class="person__i" aria-hidden="true">NB</span><div class="person__who"><b>Noah Blair</b><span>Co-Owner</span></div></div>
         <div class="person" id="michael-blair"><span class="person__i" aria-hidden="true">MB</span><div class="person__who"><b>Michael Blair</b><span>Founder &amp; Co-Owner</span></div></div>
         <p class="people__note">Two owners, one crew, every project.</p>
-        <p class="people__note">Closets and pantries under the National Closet Company name; custom cabinets, kitchens and built-ins through our parent company, <a href="https://blaircustominteriors.com" target="_blank" rel="noopener" style="color:var(--clay-deep);font-weight:700">Blair Custom Interiors</a>.</p>
       </div>
     </div>
   </div>
@@ -597,7 +589,7 @@ def build_about_page(C):
     <span class="eyebrow">In Michael's words</span>
     <div style="margin-top:1.2rem">{strip}</div>
     <div class="proof-chips" style="margin-top:1.6rem">
-      <span>Family-owned since 2012</span><span>Based in Gallatin, TN</span><span>A division of Blair Custom Interiors</span><span>14″ shelves standard</span><span>Most closets installed in one day</span><span>Lifetime system warranty</span>
+      <span>Family-owned since 2012</span><span>Based in Gallatin, TN</span><span>14″ shelves standard</span><span>Most closets installed in one day</span><span>Lifetime system warranty</span>
     </div>
   </div>
 </section>
@@ -611,7 +603,7 @@ def build_about_page(C):
         <p>Once the design is approved, your system is manufactured to the half inch for your exact walls. Our own installers put it in — most closets in a single day — and we protect the floors, control the dust and leave the room cleaner than we found it. When the last drawer is adjusted we walk the space with you, and we do not call it finished until you do.</p>
         <h2>What we build with</h2>
         <p>Closet and pantry systems are built from 3/4-inch furniture board with soft-close hardware, in classic white, wood-grain and premium finishes with doors, glass fronts and lighting. Shelves are 14 inches deep as the standard, not an upgrade, because the 12-inch shelves the national brands install don't fit real hangers and real bins. Every system carries a lifetime warranty on the components for as long as you own your home, plus a one-year guarantee on our installation workmanship — <a class="inline" href="/warranty">read the warranty</a>.</p>
-        <p>Custom cabinets — kitchens, vanities, laundry and mudroom cabinetry, hutches and media walls — are built to order through our parent company, Blair Custom Interiors, in painted and wood-grain finishes with soft-close doors and full-extension drawers, installed by the same crew and covered by the same lifetime warranty. <a class="inline" href="/custom-cabinets-nashville">See our custom cabinets →</a></p>
+        <p>Custom cabinets — kitchens, vanities, laundry and mudroom cabinetry, hutches and media walls — are built to order in painted and wood-grain finishes with soft-close doors and full-extension drawers, installed by the same crew and covered by the same lifetime warranty. <a class="inline" href="/custom-cabinets-nashville">See our custom cabinets →</a></p>
         <h2>Who we build for</h2>
         <p>Homes across Middle Tennessee, which means two very different kinds of house. Older homes in Green Hills, Belle Meade and the historic parts of Franklin have plaster walls and rooms that are rarely square, and the system has to be built to them. New construction in Nolensville, Spring Hill, Mt. Juliet and Gallatin tends to have builder-grade wire shelving, open plans and a flex room waiting to become something.</p>
         <p>The projects range from a single reach-in closet to a whole-home package — master closet, pantry, garage, laundry room and a wall of kitchen cabinets. What they share is an owner who wants the work done properly, once, by people who will be there from the first measurement to the last adjustment.</p>
@@ -677,7 +669,6 @@ def build_about_page(C):
        "description": desc, "mainEntity": {"@id": SITE + "/#org"}, "isPartOf": {"@id": SITE + "/#website"}, "primaryImageOfPage": SITE + "/img/ncc-truck-og.jpg"},
       {"@context": "https://schema.org", "@type": "Organization", "@id": SITE + "/#org", "name": "National Closet Company", "alternateName": "National Closet Co.", "url": SITE + "/",
        "foundingDate": "2012", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com",
-       "parentOrganization": PARENT_ORG,
        "founder": {"@id": SITE + "/#founder"},
        "employee": [{"@id": SITE + "/#founder"}, {"@id": SITE + "/#noah-blair"}],
        "knowsAbout": ["Custom closets", "Custom cabinets", "Custom pantries", "Garage storage", "Home offices", "Kitchen cabinets"]},

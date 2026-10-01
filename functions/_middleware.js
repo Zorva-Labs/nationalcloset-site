@@ -74,7 +74,7 @@ function isBot(ua) {
 /* Google loads an ad's landing page from its own network with an ordinary
    browser user agent and a click id on the URL, when the ad is reviewed and
    from time to time after. No "AdsBot" in the user agent, so botName() cannot
-   see it: on Blair Custom Interiors that was 18 of the first 40 click-id page
+   see it: on another of our sites that was 18 of the first 40 click-id page
    views (2026-09-23/24, "Google LLC", New York) against 21 billed clicks, and
    the dashboard was counting Google's reviewer as ad traffic.
    Deliberately narrow: Google's own networks AND a click id AND no prefetch.
@@ -93,7 +93,7 @@ function isBot(ua) {
        ad review, it got no attribution cookie. When the person opened the
        page, Chrome served its own copy, which never reached the server, and
        their form came out "Unknown" and was not counted as an ad lead
-       (Blair Custom Interiors, 2026-09-24: two of the 53 Google-network
+       (another of our sites, 2026-09-24: two of the 53 Google-network
        fetches since 9/22 were opened by a person, one of them a lead).
    A match is a bot everywhere the caller uses the name: logged under it, given
    no attribution cookie, and, like AdsBot, never geo-blocked, because a 403 to

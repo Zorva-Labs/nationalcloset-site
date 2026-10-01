@@ -520,16 +520,16 @@ if __name__ == '__main__':
 
 
 # =====================================================================================
-# Part 3 — /about rebuilt: hero, the owners'
-# foundation paragraph (the owners' own words) with the two owners, Michael's note,
+# Part 3 — /about rebuilt: hero, the
+# foundation paragraph with the owner, Michael Blair (the only owner, 2026-10-01), Michael's note,
 # how we work / what we build with / who we build for, four values, the process, area
 # chips, common questions and the form. NCC's own facts throughout.
 # =====================================================================================
-FAITH_P = ("Noah Blair and Michael Blair built their business on a simple foundation: faith in God, unwavering integrity, and a commitment to doing every job to the very best of their ability. "
-           "They believe that honesty matters, even when the truth is difficult to hear, and that character is measured by what a person does when no one is watching. Their faith guides every decision, "
-           "every customer interaction, and every project they undertake. Because of these values, Colossians 3:23 serves as their creed: <q class=\"verse\">“Whatever you do, work at it with all your heart, "
-           "as working for the Lord, not for human masters.”</q> This verse reflects their dedication to excellence, their commitment to treating others with respect and fairness, and their belief that a job "
-           "worth doing is worth doing right. Through faith, honesty, and integrity, Noah and Michael strive to earn trust, honor God, and deliver craftsmanship that stands the test of time.")
+FAITH_P = ("Michael Blair built National Closet Company on a simple foundation: faith in God, unwavering integrity, and a commitment to doing every job to the very best of our ability. "
+           "We believe that honesty matters, even when the truth is difficult to hear, and that character is measured by what a person does when no one is watching. Faith guides every decision, "
+           "every customer interaction, and every project we undertake. Because of these values, Colossians 3:23 serves as our creed: <q class=\"verse\">“Whatever you do, work at it with all your heart, "
+           "as working for the Lord, not for human masters.”</q> This verse reflects our dedication to excellence, our commitment to treating others with respect and fairness, and our belief that a job "
+           "worth doing is worth doing right. Through faith, honesty, and integrity, we strive to earn trust, honor God, and deliver craftsmanship that stands the test of time.")
 
 def existing_faq_answers():
     """Reuse the homepage's answers word for word so the two pages never drift."""
@@ -576,9 +576,8 @@ def build_about_page(C):
         <p class="faith__p" style="margin-top:1.2rem">{FAITH_P}</p>
       </div>
       <div class="people" data-reveal>
-        <div class="person" id="noah-blair"><span class="person__i" aria-hidden="true">NB</span><div class="person__who"><b>Noah Blair</b><span>Co-Owner</span></div></div>
-        <div class="person" id="michael-blair"><span class="person__i" aria-hidden="true">MB</span><div class="person__who"><b>Michael Blair</b><span>Founder &amp; Co-Owner</span></div></div>
-        <p class="people__note">Two owners, one crew, every project.</p>
+        <div class="person" id="michael-blair"><span class="person__i" aria-hidden="true">MB</span><div class="person__who"><b>Michael Blair</b><span>Founder &amp; Owner</span></div></div>
+        <p class="people__note">One owner, one crew, every project.</p>
       </div>
     </div>
   </div>
@@ -670,12 +669,10 @@ def build_about_page(C):
       {"@context": "https://schema.org", "@type": "Organization", "@id": SITE + "/#org", "name": "National Closet Company", "alternateName": "National Closet Co.", "url": SITE + "/",
        "foundingDate": "2012", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com",
        "founder": {"@id": SITE + "/#founder"},
-       "employee": [{"@id": SITE + "/#founder"}, {"@id": SITE + "/#noah-blair"}],
+       "employee": [{"@id": SITE + "/#founder"}],
        "knowsAbout": ["Custom closets", "Custom cabinets", "Custom pantries", "Garage storage", "Home offices", "Kitchen cabinets"]},
-      {"@context": "https://schema.org", "@type": "Person", "@id": SITE + "/#founder", "name": "Michael Blair", "jobTitle": "Founder & Co-Owner", "worksFor": {"@id": SITE + "/#org"}, "url": SITE + "/about#michael-blair",
+      {"@context": "https://schema.org", "@type": "Person", "@id": SITE + "/#founder", "name": "Michael Blair", "jobTitle": "Founder & Owner", "worksFor": {"@id": SITE + "/#org"}, "url": SITE + "/about#michael-blair",
        "knowsAbout": ["Custom closets", "Custom cabinets", "Walk-in closet design", "Home storage systems"]},
-      {"@context": "https://schema.org", "@type": "Person", "@id": SITE + "/#noah-blair", "name": "Noah Blair", "jobTitle": "Co-Owner", "worksFor": {"@id": SITE + "/#org"}, "url": SITE + "/about#noah-blair",
-       "knowsAbout": ["Custom cabinets", "Custom closets", "Cabinetry", "Interior remodeling"]},
       # No FAQPage: build.mjs writes it into dist/ from the accordion `faq` becomes above (2026-09-26).
       C.breadcrumb([('Home', SITE + '/'), ('About', SITE + '/about')]),
       C.webpage('about', 'About National Closet Company', desc, '/img/ncc-truck-og.jpg'),

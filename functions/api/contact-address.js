@@ -8,6 +8,8 @@
 // cleared on the first successful write so a leaked one can't be replayed.
 import { upsertContact } from "../_lib/db.js";
 import { sendLeadAck } from "../_lib/lead-ack.js";
+import { sendStaffAlert } from "../_lib/email.js";
+import { renderLeadAlert, leadRows, leadAlertSubject, leadAlertMessageId } from "../_lib/lead-alert.js";
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json" } });
@@ -75,6 +77,31 @@ export async function onRequestPost({ request, env }) {
   if (email && !lead.email) {
     await sendLeadAck(env, { name: lead.name, email, interest: interest || lead.interest, leadId: lead.id, contactId }).catch(() => {});
   }
+
+  // Tell the team what was added, as a reply to the lead's first alert (which
+  // carried only a name and a phone). Before 2026-10-01 these details reached
+  // the CRM but never the inbox. Best-effort: sendStaffAlert never throws.
+  const alert = renderLeadAlert({
+    heading: "Details added",
+    kicker: "Second step of the website form",
+    intro: `${lead.name} added these on the screen after the request.`,
+    rows: leadRows({
+      name: lead.name, phone: lead.phone,
+      email: email && !lead.email ? email : "",
+      street, city, state, zip, interest,
+    }),
+    message, email: finalEmail, name: lead.name, leadId: lead.id,
+  });
+  const parent = leadAlertMessageId(lead.id);
+  await sendStaffAlert(env, {
+    label: "National Closet Co. Website",
+    replyTo: finalEmail || undefined,
+    subject: `Re: ${leadAlertSubject(lead.name)}`,
+    text: alert.text,
+    html: alert.html,
+    inReplyTo: parent,
+    references: parent,
+  }).catch((e) => console.error("[contact-address] details alert failed:", e?.message || e));
 
   return json({ success: true }, 200);
 }

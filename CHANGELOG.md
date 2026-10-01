@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-01 (Noah Blair removed from the CRM)
+- **Why:** Michael: "yes remove noah from the crm" (the open item from the owner change above).
+- **Live D1:** `team_members` #2, Noah Blair (noah@blaircustominteriors.com), set `active = 0`, exactly what the Team page's Remove does (`DELETE /api/team/[id]`). He had no upcoming consult assignments to drop, and an `activity_log` row records the change. He no longer appears in the assign pickers or the roster. He no longer gets the morning consult brief, including the "nobody assigned → the whole active roster" fallback, which is now Michael alone.
+- **Kept as history:** his past assignments, the 2026-09-23 consult (appointment #40) and jobs #48 (installing, install 2026-10-01) and #49 (completed). They only display; nothing sends on a job assignment. Never a hard delete: assignments cascade on delete.
+- `docs/crm.md` and a comment in `functions/api/team/index.js` updated. No deploy needed: data only.
+
 ## 2026-10-01 (the Bible verse removed)
 - **Why:** Michael: "remove the bible quote from national closet."
 - **/about** foundation paragraph (`stage4.py → FAITH_P`): the Colossians 3:23 sentence and the verse are removed. The sentence after it, which explained the verse, now stands alone: "We are dedicated to excellence, to treating others with respect and fairness, and to the belief that a job worth doing is worth doing right." The rest of the paragraph and the "A faith-based business, built on integrity" heading are unchanged. No other page quoted scripture.

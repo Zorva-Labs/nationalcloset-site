@@ -1,6 +1,6 @@
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { sendStageEmail, STAGE_EMAIL_KIND } from "../../../_lib/stage-emails.js";
-import { createInvoice, getProjectBilling } from "../../../_lib/invoices.js";
+import { createInvoice, billOnCompletion, getProjectBilling } from "../../../_lib/invoices.js";
 import { deleteProjectCascade } from "../../../_lib/cascade.js";
 import { todayCentral } from "../../../_lib/dates.js";
 import { getAssignees, getAssigneeMap, setAssignees } from "../../../_lib/team.js";
@@ -191,13 +191,19 @@ export async function onRequestPatch(context) {
   if ((body.status === "installing" || body.status === "completed") && body.status !== prevStatus) {
     milestones.push("balance");
   }
+  // Completion bills whatever is still owed and re-sends an unpaid final invoice
+  // (billOnCompletion), rather than going quiet because the balance exists.
+  const completing = body.status === "completed" && prevStatus !== "completed";
   if (milestones.length) {
     // Strictly sequential: each amount is derived from what's already invoiced,
     // so running scheduling and balance concurrently (one PATCH that both sets
     // the date and starts the install) would let both claim the same money.
     const chain = (async () => {
       for (const type of new Set(milestones)) {
-        await createInvoice(context.env, { projectId: id, type, actor: { id: auth.id, name: auth.email } })
+        const actor = { id: auth.id, name: auth.email };
+        await (type === "balance" && completing
+          ? billOnCompletion(context.env, id, actor)
+          : createInvoice(context.env, { projectId: id, type, actor }))
           .catch((e) => console.error(`[invoice/${type}]`, String(e)));
       }
     })();

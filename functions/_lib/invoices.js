@@ -276,6 +276,49 @@ export async function createInvoice(env, opts) {
   return { invoice: row, created: true };
 }
 
+/* Marking a job completed bills whatever is still owed. The final (balance)
+   invoice is normally raised earlier, when the crew is marked on site, so by
+   completion it usually exists and createInvoice's dedup stays silent: the
+   customer heard nothing at the finish (the Marquart job, 2026-09-30, whose
+   balance went out four days before). So on completion:
+   - raise the balance if it was never raised (that also emails it);
+   - bill any money still uninvoiced (a contract raised after the balance went
+     out) as one more invoice for the remainder;
+   - re-send the balance invoice if it is still unpaid, unless it went out in the
+     last 12 hours (install day's own invoice, then "completed" that afternoon). */
+export async function billOnCompletion(env, projectId, actor) {
+  const db = env.DB;
+  const r = await createInvoice(env, { projectId, type: "balance", actor });
+  if (!r.deduped) return r;
+
+  const billing = await getProjectBilling(db, projectId);
+  const inv = await db.prepare(
+    `SELECT COALESCE(SUM(amount_cents),0) AS n FROM invoices WHERE project_id=?1 AND status != 'void'`
+  ).bind(projectId).first().catch(() => null);
+  const rest = Math.max(0, (billing.totalCents || 0) - (inv?.n || 0));
+  const out = { invoice: r.invoice, deduped: true };
+  if (rest > 0) {
+    out.remainder = await createInvoice(env, {
+      projectId, type: "custom", amountCents: rest,
+      description: "Final payment — remaining project balance", actor,
+    });
+  }
+
+  const bal = await db.prepare(
+    `SELECT *, (datetime(created_at) > datetime('now','-12 hours')) AS recent FROM invoices WHERE id=?1`
+  ).bind(r.invoice.id).first().catch(() => null);
+  if (bal && bal.status === "open" && (bal.amount_paid_cents || 0) < bal.amount_cents && !bal.recent) {
+    const s = await sendInvoiceEmail(env, bal);
+    out.resent = !!s?.ok;
+    await recordActivity(db, {
+      entityType: "project", entityId: projectId, action: "invoice-resent",
+      actorKind: actor?.id ? "admin" : "system", actorId: actor?.id || null, actorName: actor?.name || "auto",
+      details: { invoice_id: bal.id, number: bal.number, reason: "completed", ok: out.resent },
+    }).catch(() => {});
+  }
+  return out;
+}
+
 export async function sendInvoiceEmail(env, invoice, project) {
   const db = env.DB;
   if (!project) {
@@ -289,7 +332,10 @@ export async function sendInvoiceEmail(env, invoice, project) {
   const first = (project.contact_name || "there").split(" ")[0];
   const labelByType = { deposit: "deposit", scheduling: "scheduling payment", balance: "final payment", full: "payment" };
   const label = labelByType[invoice.type] || "payment";
-  const subject = `Invoice ${invoice.number} — ${money(invoice.amount_cents)} ${invoice.type === "deposit" ? "deposit" : "due"}`;
+  // What is still owed on it: a re-send after a partial in-person payment asks
+  // for the rest, which is all the pay page charges.
+  const due = Math.max(0, (invoice.amount_cents || 0) - (invoice.amount_paid_cents || 0)) || invoice.amount_cents;
+  const subject = `Invoice ${invoice.number} — ${money(due)} ${invoice.type === "deposit" ? "deposit" : "due"}`;
 
   // Type-specific clarity note. A scheduling invoice is only part of the job —
   // spell out the payment structure and the exact amount that follows on
@@ -336,16 +382,16 @@ export async function sendInvoiceEmail(env, invoice, project) {
       <p>Here's your ${label} invoice for your custom closet project:</p>
       <table style="border-collapse:collapse;margin:8px 0 4px">
         <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Invoice</td><td style="padding:4px 0;font-weight:600">${invoice.number}</td></tr>
-        <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Amount due</td><td style="padding:4px 0;font-weight:700;font-size:18px">${money(invoice.amount_cents)}</td></tr>
+        <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Amount due</td><td style="padding:4px 0;font-weight:700;font-size:18px">${money(due)}</td></tr>
       </table>
       <p>${invoice.description}.</p>
       ${note}
       <p>You can pay securely online using the button below — pay by card, bank or digital wallet.</p>
     `,
-    ctaLabel: `Pay ${money(invoice.amount_cents)}`,
+    ctaLabel: `Pay ${money(due)}`,
     ctaUrl: payUrl,
   });
-  const text = `Invoice ${invoice.number}: ${money(invoice.amount_cents)} due.`
+  const text = `Invoice ${invoice.number}: ${money(due)} due.`
     + (noteText ? `\n${noteText}` : "") + `\nPay securely: ${payUrl}`;
   const messageId = makeMessageId();
   const to = project.contact_name ? `${project.contact_name} <${project.contact_email}>` : project.contact_email;

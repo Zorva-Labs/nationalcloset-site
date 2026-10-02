@@ -8,7 +8,7 @@ import { markInvoicePaid, markInvoiceProcessing, getProjectBilling } from "../..
 
 // A stored PI is reusable only if it was created with automatic_payment_methods
 // and offers none of EXCLUDED_PAYMENT_METHODS. Legacy intents (an explicit
-// payment_method_types list, or one made while Klarna was on) are recreated.
+// payment_method_types list, or one made while Klarna or Affirm was on) are recreated.
 function piAcceptable(pi) {
   if (!(pi && pi.automatic_payment_methods && pi.automatic_payment_methods.enabled)) return false;
   return !(pi.payment_method_types || []).some((t) => EXCLUDED_PAYMENT_METHODS.includes(t));
@@ -113,7 +113,7 @@ export async function onRequestGet(context) {
           invoice: publicView(inv, project),
         });
       }
-      // Recreate stale intents: canceled, legacy explicit-method-list intents, or one that offers Klarna.
+      // Recreate stale intents: canceled, legacy explicit-method-list intents, or one that offers an excluded method.
       if (pi && (pi.status === "canceled" || !piAcceptable(pi))) pi = null;
       // Otherwise reset to the current balance (in case a partial in-person
       // payment reduced it since the intent was created).

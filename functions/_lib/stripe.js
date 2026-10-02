@@ -54,8 +54,8 @@ export async function stripeRequest(env, method, path, params) {
 }
 
 // Methods we never offer, even if someone switches them on in the Dashboard.
-// No Klarna or other buy-now-pay-later (Michael, 2026-10-02).
-export const EXCLUDED_PAYMENT_METHODS = ["klarna"];
+// No Klarna, Affirm or other buy-now-pay-later (Michael, 2026-10-02).
+export const EXCLUDED_PAYMENT_METHODS = ["klarna", "affirm"];
 
 // Create (or return existing) PaymentIntent for an invoice amount. Uses
 // automatic_payment_methods so the methods enabled in the Stripe Dashboard are

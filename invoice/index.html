@@ -186,7 +186,7 @@
       // BANK TRANSFER (ACH) first as the preferred option, then card, then the
       // wallets. (ACH must be enabled in the Stripe Dashboard to appear.)
       const paymentElement = elements.create("payment", {
-        paymentMethodOrder: ["us_bank_account", "card", "cashapp", "klarna", "link"],
+        paymentMethodOrder: ["us_bank_account", "card", "cashapp", "link"],
       });
       paymentElement.mount("#payment-element");
       // "Pay by check" toggle — hides the online payment flow and shows the

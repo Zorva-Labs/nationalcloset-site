@@ -20,7 +20,6 @@ function money(cents) {
 const INV_TYPE_LABEL = { deposit: "deposit", scheduling: "scheduling payment", balance: "final payment", full: "payment", custom: "payment" };
 function methodLabel(m) {
   if (m === "us_bank_account" || m === "bank") return "bank transfer (ACH)";
-  if (m === "klarna") return "Klarna";
   if (m === "card") return "card";
   return m || "card";
 }

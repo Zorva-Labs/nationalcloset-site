@@ -2,13 +2,13 @@
   "host": "nationalclosetco.com",
   "endpoint": "https://www.bing.com/indexnow",
   "version": 2,
-  "submitted": "2026-10-01T14:21:15.390Z",
+  "submitted": "2026-10-02T21:14:54.301Z",
   "google": {
     "property": "sc-domain:nationalclosetco.com",
     "sitemaps": [
       "https://nationalclosetco.com/sitemap.xml"
     ],
-    "submitted": "2026-10-01T14:21:15.971Z"
+    "submitted": "2026-10-02T21:14:55.031Z"
   },
   "bing": {
     "site": "https://nationalclosetco.com/",
@@ -35,8 +35,8 @@
       "changed": "2026-10-01"
     },
     "https://nationalclosetco.com/custom-closet-cost-nashville": {
-      "hash": "f2a99af3d4ee1a06",
-      "changed": "2026-10-01"
+      "hash": "e7039c7ea2d259e1",
+      "changed": "2026-10-02"
     },
     "https://nationalclosetco.com/california-closets-alternative": {
       "hash": "21234845ddbd9b34",
@@ -267,8 +267,8 @@
       "changed": "2026-10-01"
     },
     "https://nationalclosetco.com/faq": {
-      "hash": "7079e07e4ae3ff8a",
-      "changed": "2026-10-01"
+      "hash": "935360acabbfb96e",
+      "changed": "2026-10-02"
     },
     "https://nationalclosetco.com/blog/best-closet-company": {
       "hash": "8fcd1d1f949f2dfc",

@@ -3,14 +3,15 @@
 // (automatic_payment_methods) and there is no surcharge — the amount charged is
 // exactly the balance due for every method.
 import { json } from "../../../_lib/auth.js";
-import { createPaymentIntent, retrievePaymentIntent, updatePaymentIntentAmount, getChargeFee } from "../../../_lib/stripe.js";
+import { createPaymentIntent, retrievePaymentIntent, updatePaymentIntentAmount, getChargeFee, EXCLUDED_PAYMENT_METHODS } from "../../../_lib/stripe.js";
 import { markInvoicePaid, markInvoiceProcessing, getProjectBilling } from "../../../_lib/invoices.js";
 
-// A stored PI is reusable only if it was created with automatic_payment_methods.
-// Legacy intents built from an explicit payment_method_types list are recreated
-// so the customer gets the full set of enabled methods with no surcharge.
+// A stored PI is reusable only if it was created with automatic_payment_methods
+// and offers none of EXCLUDED_PAYMENT_METHODS. Legacy intents (an explicit
+// payment_method_types list, or one made while Klarna was on) are recreated.
 function piAcceptable(pi) {
-  return !!(pi && pi.automatic_payment_methods && pi.automatic_payment_methods.enabled);
+  if (!(pi && pi.automatic_payment_methods && pi.automatic_payment_methods.enabled)) return false;
+  return !(pi.payment_method_types || []).some((t) => EXCLUDED_PAYMENT_METHODS.includes(t));
 }
 
 // On a deposit/full invoice that hasn't been paid yet, the customer can choose
@@ -94,7 +95,7 @@ export async function onRequestGet(context) {
         await markInvoicePaid(context.env, inv, { method, paymentIntentId: pi.id, feeCents });
         return json({ paid: true, invoice: publicView({ ...inv, status: "paid" }, project) });
       }
-      // Redirect-based methods (Klarna) and ACH come back as "processing" — the
+      // ACH (and any redirect-based method) comes back as "processing" — the
       // customer is done; the webhook finalizes it. Show a processing state so
       // they don't try to pay again.
       if (pi && pi.status === "processing") {
@@ -112,7 +113,7 @@ export async function onRequestGet(context) {
           invoice: publicView(inv, project),
         });
       }
-      // Recreate stale intents: canceled, or legacy explicit-method-list intents.
+      // Recreate stale intents: canceled, legacy explicit-method-list intents, or one that offers Klarna.
       if (pi && (pi.status === "canceled" || !piAcceptable(pi))) pi = null;
       // Otherwise reset to the current balance (in case a partial in-person
       // payment reduced it since the intent was created).
@@ -127,7 +128,7 @@ export async function onRequestGet(context) {
         description: `${inv.number} — ${inv.description}`,
         receiptEmail: project?.contact_email || undefined,
         metadata: { invoice_id: String(inv.id), invoice_number: inv.number, project_id: String(inv.project_id) },
-        idempotencyKey: `inv_${inv.id}_v3`,   // v3 = automatic_payment_methods, no surcharge
+        idempotencyKey: `inv_${inv.id}_v4`,   // v4 = automatic_payment_methods minus Klarna, no surcharge
       });
       await db.prepare(`UPDATE invoices SET stripe_payment_intent_id=?1, updated_at=datetime('now') WHERE id=?2`).bind(pi.id, inv.id).run();
     }

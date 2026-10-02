@@ -34,7 +34,7 @@ async function defaultBasis(env, projectId) {
 }
 
 // Actual Stripe processing fees already collected on this project's paid
-// invoices (card + Klarna carry a real fee; ACH is small; check/cash $0).
+// invoices (card carries a real fee; ACH is small; check/cash $0).
 async function projectFeeCents(env, projectId) {
   const r = await env.DB.prepare(
     `SELECT COALESCE(SUM(fee_cents),0) AS fee FROM invoices WHERE project_id=?1 AND status='paid'`

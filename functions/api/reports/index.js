@@ -61,7 +61,7 @@ export async function onRequestGet(context) {
     // A job_financials row exists iff its columns came back non-null.
     const hasRow = r.price_cents != null;
     const fin = resolveFinancials(gross, discount, hasRow ? r : null);
-    // Processing fee: manual override if set, else actual Stripe fees (card/Klarna)
+    // Processing fee: manual override if set, else actual Stripe fees (card/ACH)
     // when collected, else the estimate (fee_rate × net, default 3%). Into P&L.
     const fee = processingFee(fin.net_cents, fin.fee_rate, r.actual_fee_cents, fin.fee_manual_cents, fin.fee_auto === false ? 0 : 1);
     const expenses = fin.expenses_cents + fee;

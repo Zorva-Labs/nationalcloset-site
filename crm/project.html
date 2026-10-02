@@ -370,7 +370,7 @@ async function jobRecordPayment(invId) {
 }
 
 // Record money taken outside the normal 50/25/25 milestones — cash, check, a
-// card run in person, a Klarna payout. No invoice needs to exist first.
+// card run in person. No invoice needs to exist first.
 // Routing: if the job has open invoices, the payment lands on the oldest one
 // and the server cascades any surplus down the rest (so a single $5,000 check
 // settles deposit + scheduling + part of the balance in one shot). If nothing
@@ -417,7 +417,7 @@ async function jobRecordAnyPayment() {
             ${chips.map((c) => `<button type="button" class="btn ghost sm" data-amt="${c.cents}" style="font-size:12px;padding:4px 10px">${e(c.label)}</button>`).join("")}
           </div>` : ""}
           <div class="row">
-            <label><span>Method</span><select id="jp-method"><option>Check</option><option>Cash</option><option>Card</option><option>Bank transfer</option><option>Klarna</option><option>Other</option></select></label>
+            <label><span>Method</span><select id="jp-method"><option>Check</option><option>Cash</option><option>Card</option><option>Bank transfer</option><option>Other</option></select></label>
             <label><span>Reference <span class="muted" style="font-weight:400">(check #, etc.)</span></span><input id="jp-ref" placeholder="optional"/></label>
           </div>
           <label><span>Date received</span><input id="jp-date" type="date" value="${today}"/></label>

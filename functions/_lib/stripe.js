@@ -53,10 +53,14 @@ export async function stripeRequest(env, method, path, params) {
   return json;
 }
 
+// Methods we never offer, even if someone switches them on in the Dashboard.
+// No Klarna or other buy-now-pay-later (Michael, 2026-10-02).
+export const EXCLUDED_PAYMENT_METHODS = ["klarna"];
+
 // Create (or return existing) PaymentIntent for an invoice amount. Uses
-// automatic_payment_methods so EVERY payment method enabled in the Stripe
-// Dashboard is offered (cards, Apple/Google Pay, Link, ACH, Klarna, etc.). No
-// surcharge — the amount is exactly the balance due for every method.
+// automatic_payment_methods so the methods enabled in the Stripe Dashboard are
+// offered (cards, Apple/Google Pay, Link, ACH), minus EXCLUDED_PAYMENT_METHODS.
+// No surcharge — the amount is exactly the balance due for every method.
 export async function createPaymentIntent(env, { amountCents, currency = "usd", description, receiptEmail, metadata, idempotencyKey }) {
   const params = {
     amount: Math.round(amountCents),
@@ -64,6 +68,7 @@ export async function createPaymentIntent(env, { amountCents, currency = "usd", 
     description,
     receipt_email: receiptEmail || undefined,
     automatic_payment_methods: { enabled: true },
+    excluded_payment_method_types: EXCLUDED_PAYMENT_METHODS,
     metadata: metadata || {},
   };
   // Idempotency so a double-tap on the pay page doesn't make two intents.

@@ -532,22 +532,32 @@
         <td class="amt">${iv.due_date ? SSCrm.fmtDay(iv.due_date) : "—"}</td>
         <td class="amt">${iv.days_past > 0 ? iv.days_past + "d" : "Current"}</td></tr>`).join("")
       : `<tr><td colspan="7" style="text-align:center;color:#777;padding:20px">No outstanding invoices.</td></tr>`;
+    const unbilled = d.unbilled || [];
+    const unbilledRows = unbilled.length ? unbilled.map((u) => `<tr>
+        <td>${e(u.name || "Job #" + u.project_id)}<div class="sub">${e(u.contact_name || "")}</div></td>
+        <td class="amt">${M(u.job_total_cents)}</td><td class="amt">${M(u.invoiced_cents)}</td><td class="amt">${M(u.collected_cents)}</td>
+        <td class="amt strong" style="color:#1a1a1a">${M(u.unbilled_cents)}</td></tr>`).join("") + `
+        <tr><td style="font-weight:800;border-top:2px solid #1a1a1a">Total</td><td style="border-top:2px solid #1a1a1a" colspan="3"></td><td class="amt" style="font-weight:800;border-top:2px solid #1a1a1a">${M(d.unbilled_total_cents)}</td></tr>`
+      : `<tr><td colspan="5" style="text-align:center;color:#777;padding:20px">No unbilled job balances — everything booked is invoiced.</td></tr>`;
     const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
     return `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>A/R Aging — ${e(BIZ.name)}</title><style>${PRINT_CSS}</style></head><body>
       ${letterhead()}
       <h1>Accounts Receivable &amp; Aging</h1>
-      <div class="range">As of ${today} · ${d.count} open invoice${d.count === 1 ? "" : "s"}</div>
+      <div class="range">As of ${today} · ${d.count} open invoice${d.count === 1 ? "" : "s"} · ${unbilled.length} job${unbilled.length === 1 ? "" : "s"} with an unbilled balance</div>
       <div class="kpis">
-        <div class="kpi"><div class="l">Total A/R</div><div class="v">${M(d.total_cents)}</div></div>
+        <div class="kpi"><div class="l">Total owed</div><div class="v">${M(d.grand_total_cents)}</div></div>
+        <div class="kpi"><div class="l">Billed (A/R)</div><div class="v">${M(d.total_cents)}</div></div>
         <div class="kpi"><div class="l">Overdue</div><div class="v">${M(d.overdue_cents)}</div></div>
-        <div class="kpi green"><div class="l">Current</div><div class="v">${M(b.current)}</div></div>
-        <div class="kpi"><div class="l">Oldest</div><div class="v">${d.oldest_days > 0 ? d.oldest_days + " d" : "—"}</div></div>
+        <div class="kpi"><div class="l">Remaining balance</div><div class="v">${M(d.unbilled_total_cents)}</div></div>
       </div>
       <h2>Aging summary</h2>
       <table class="pnl"><thead><tr><th style="text-align:left">Bucket</th><th class="amt">Balance</th><th class="p">%</th></tr></thead><tbody>${agingRow}
         <tr class="tot"><td>Total</td><td class="amt">${M(d.total_cents)}</td><td class="p">100%</td></tr></tbody></table>
       <h2>Open invoices</h2>
       <table class="data"><thead><tr><th>Invoice</th><th>Type</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Due</th><th>Past due</th></tr></thead><tbody>${rows}</tbody></table>
+      <h2>Remaining balances · due at completion</h2>
+      <table class="data"><thead><tr><th>Job</th><th>Job total</th><th>Invoiced</th><th>Collected</th><th>Unbilled</th></tr></thead><tbody>${unbilledRows}</tbody></table>
+      <p style="color:#777;font-size:11px">Billed (A/R) = open invoices, aged from each due date${d.oldest_days > 0 ? " (oldest " + d.oldest_days + " days past due)" : ""}. Remaining balance = the agreed job balance not yet invoiced. Total owed = both.</p>
       <div class="foot"><span>Generated ${today} · ${e(BIZ.name)}</span><span>Internal management report</span></div>
       ${PRINT_JS}</body></html>`;
   }
@@ -579,6 +589,9 @@
       AR_BUCKETS.forEach(([k, lbl]) => rows.push([lbl, c(d.buckets[k])]));
       rows.push(["Total A/R", c(d.total_cents)], [], ["Invoice", "Customer", "Job", "Type", "Amount", "Paid", "Balance", "Due", "Days past due"]);
       d.invoices.forEach((iv) => rows.push([iv.number, iv.contact_name || "", iv.project_name || "", iv.type, c(iv.amount_cents), c(iv.paid_cents), c(iv.balance_cents), iv.due_date || "", iv.days_past > 0 ? iv.days_past : 0]));
+      rows.push([], ["Remaining balances (unbilled, due at completion)"], ["Job", "Customer", "Job total", "Invoiced", "Collected", "Unbilled"]);
+      (d.unbilled || []).forEach((u) => rows.push([u.name || "Job #" + u.project_id, u.contact_name || "", c(u.job_total_cents), c(u.invoiced_cents), c(u.collected_cents), c(u.unbilled_cents)]));
+      rows.push(["Total remaining balance", "", "", "", "", c(d.unbilled_total_cents)], [], ["Total owed (billed + unbilled)", c(d.grand_total_cents)]);
       csvDownload(rows, `NCC-AR-Aging-${d.as_of}.csv`);
     } else if (view === "payables") {
       if (!pdata) return;

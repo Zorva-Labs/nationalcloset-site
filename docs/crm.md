@@ -37,6 +37,12 @@
 - **Templates → Email edits the plain text AND the HTML.** Every automated send prefers `body_html`; a template edited only in `body_text` changes nothing in the recipient's inbox. The editor exposes the HTML box for any template that has one.
 - `reminder_sent_at` / `team_brief_sent_at` are stamped with `datetime('now')`, which is **UTC** — unlike `start_at` and the other appointment datetimes, which are naive Central wall-clock. Anything that displays them has to say so (`fmtStampUtc` in calendar.html).
 
+## Reports
+- `/crm/reports` → `functions/api/reports/` (P&L `index.js`, `receivables.js`, `payables.js`, `cashflow.js`, `leads.js`). Each view's ⤓ PDF and CSV carry everything the screen shows; a figure added to a view goes into `branded…HTML()` and `downloadCSV()` too.
+- **P&L income:** a job counts when it is won (booked → completed) **or has any non-void invoice, whatever its stage**; its revenue is the job price from `resolveFinancials` (`_lib/financials.js`) and never less than what has been invoiced on it (`billed_extra_cents`). The date range is the job's created date.
+- **Receivables:** Billed (A/R) = every non-void invoice with a balance; Remaining balance = job value (contract, else accepted proposal) − invoiced, for the same set of jobs as the P&L; Total owed = both.
+- **Wall finishing (`wallprep`):** accepting a wallprep proposal writes the whole Option 2 as the job price, with the closet as materials charged and the wall as wall charged. Before 2026-10-03 it wrote the closet alone as the price and the wall into `wall_total_cents`, which nothing read; `resolveFinancials` folds such a row's wall back into the gross until the job card is saved (the save itemizes it and zeroes `wall_total_cents`). Every query that feeds `resolveFinancials` from named columns selects `wall_total_cents`.
+
 ## The D1 and its migrations
 - `crm/schema.sql` is the base; `crm/migrations/` runs 0002–0072 (0072 `lead_drops`, the bot-check drops kept with their reason, 0054 pageviews, 0065 `ads_conversion_uploads`, 0066 GA ids on leads, 0067 review_request_visit, 0068/0069 template wording, 0070 the team, the assignments and the consult brief, 0071 its day words), each applied with `d1 execute --file` once: `npx wrangler d1 execute nationalcloset-crm --remote --file=crm/migrations/<file>`, with the account token as in the build block (the older files' "Apply via" comments still name the removed key pair).
 - The tables (60, besides `_cf_KV` and `sqlite_sequence`):

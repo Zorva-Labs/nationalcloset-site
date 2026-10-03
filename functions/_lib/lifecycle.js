@@ -126,8 +126,11 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
   // Option 2 = Option 1's closet lines + the wall-finishing line, so the wall
   // amount is (Option 2 subtotal − Option 1 subtotal) and the closet is Option 1's
   // subtotal — description-independent, robust to renamed wall lines. Writing it
-  // onto job_financials (price override = closet, wall_total = wall) keeps the
-  // card, jobs list, reports and P&L all consistent from one source.
+  // onto job_financials as the charged lines (price = the whole Option 2, closet
+  // = materials charged, wall = wall charged) keeps the card, jobs list, reports
+  // and P&L consistent from one source, with the wall counted as income. (Until
+  // 2026-10-03 the price was the closet alone and the wall sat in
+  // wall_total_cents; resolveFinancials folds those rows back in.)
   if (contractType === "wallprep") {
     const good = await db.prepare(`SELECT subtotal_cents FROM proposal_tiers WHERE proposal_id=?1 AND tier='good'`).bind(proposal.id).first().catch(() => null);
     const option2Sub = tier.subtotal_cents || totalCents || 0;
@@ -135,10 +138,10 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
     const wallCents = Math.max(0, option2Sub - closetCents);
     if (wallCents > 0) {
       await db.prepare(
-        `INSERT INTO job_financials (project_id, price_cents, price_auto, wall_total_cents, updated_at)
-         VALUES (?1, ?2, 0, ?3, datetime('now'))
-         ON CONFLICT(project_id) DO UPDATE SET price_cents=?2, price_auto=0, wall_total_cents=?3, updated_at=datetime('now')`
-      ).bind(proposal.project_id, closetCents, wallCents).run().catch(() => {});
+        `INSERT INTO job_financials (project_id, price_cents, price_auto, materials_charged_cents, wall_charged_cents, wall_total_cents, updated_at)
+         VALUES (?1, ?2, 0, ?3, ?4, 0, datetime('now'))
+         ON CONFLICT(project_id) DO UPDATE SET price_cents=?2, price_auto=0, materials_charged_cents=?3, wall_charged_cents=?4, wall_total_cents=0, updated_at=datetime('now')`
+      ).bind(proposal.project_id, closetCents + wallCents, closetCents, wallCents).run().catch(() => {});
     }
   }
 

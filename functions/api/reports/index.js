@@ -1,9 +1,11 @@
 // GET /api/reports?from=YYYY-MM-DD&to=YYYY-MM-DD&all=0|1
 //   Aggregates gross income (revenue) and a full P&L (revenue − materials −
 //   shipping − tax − labor − misc = profit) across jobs in the date range.
-//   By default only "won" jobs (booked → completed) are counted; all=1 includes
-//   every project. Each job's numbers come from its saved overrides where set,
-//   otherwise from the cost formula applied to its contract/proposal total.
+//   By default only "won" jobs (booked → completed) are counted, plus any job
+//   that has been invoiced whatever its stage (money billed is income); all=1
+//   includes every project. Each job's numbers come from its saved overrides
+//   where set, otherwise from the cost formula applied to its contract/proposal
+//   total — and a job's revenue is never less than what has been invoiced on it.
 import { requireAuth, json } from "../../_lib/auth.js";
 import { resolveFinancials, processingFee } from "../../_lib/financials.js";
 
@@ -16,7 +18,8 @@ export async function onRequestGet(context) {
   const to = (url.searchParams.get("to") || "2999-12-31").slice(0, 10);
   const includeAll = url.searchParams.get("all") === "1";
 
-  const statusClause = includeAll ? "" : `AND p.status IN (${WON.map(() => "?").join(",")})`;
+  const statusClause = includeAll ? "" : `AND (p.status IN (${WON.map(() => "?").join(",")})
+         OR EXISTS (SELECT 1 FROM invoices iv WHERE iv.project_id=p.id AND iv.status != 'void' AND iv.amount_cents > 0))`;
   const binds = [from, to, ...(includeAll ? [] : WON)];
 
   const rows = (await context.env.DB.prepare(
@@ -27,7 +30,7 @@ export async function onRequestGet(context) {
             jf.accessories_cents, jf.wall_expense_cents, jf.manufacturer_discount_cents,
             jf.materials_auto, jf.shipping_auto, jf.tax_auto, jf.labor_auto,
             jf.materials_divisor, jf.shipping_rate, jf.tax_rate, jf.labor_rate, jf.fee_rate,
-            jf.fee_cents, jf.fee_auto,
+            jf.fee_cents, jf.fee_auto, jf.wall_total_cents,
             (SELECT k.total_cents FROM contracts k WHERE k.project_id=p.id
                ORDER BY CASE k.status WHEN 'fully_executed' THEN 0 WHEN 'signed_by_customer' THEN 1 WHEN 'sent' THEN 2 ELSE 3 END,
                         datetime(k.created_at) DESC LIMIT 1) AS contract_total,
@@ -35,7 +38,8 @@ export async function onRequestGet(context) {
                WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_gross,
             (SELECT t.total_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
                WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_net,
-            (SELECT COALESCE(SUM(iv.fee_cents),0) FROM invoices iv WHERE iv.project_id=p.id AND iv.status='paid') AS actual_fee_cents
+            (SELECT COALESCE(SUM(iv.fee_cents),0) FROM invoices iv WHERE iv.project_id=p.id AND iv.status='paid') AS actual_fee_cents,
+            (SELECT COALESCE(SUM(iv.amount_cents),0) FROM invoices iv WHERE iv.project_id=p.id AND iv.status != 'void') AS invoiced_cents
        FROM projects p
        LEFT JOIN contacts c ON c.id = p.contact_id
        LEFT JOIN job_financials jf ON jf.project_id = p.id
@@ -61,6 +65,10 @@ export async function onRequestGet(context) {
     // A job_financials row exists iff its columns came back non-null.
     const hasRow = r.price_cents != null;
     const fin = resolveFinancials(gross, discount, hasRow ? r : null);
+    // Billed beyond the job's price (an extra, a change order, a job priced only
+    // on its invoice) is still income: raise revenue to the amount invoiced.
+    const billedExtra = Math.max(0, (r.invoiced_cents || 0) - fin.net_cents);
+    if (billedExtra) { fin.price_cents += billedExtra; fin.net_cents += billedExtra; fin.profit_cents += billedExtra; }
     // Processing fee: manual override if set, else actual Stripe fees (card/ACH)
     // when collected, else the estimate (fee_rate × net, default 3%). Into P&L.
     const fee = processingFee(fin.net_cents, fin.fee_rate, r.actual_fee_cents, fin.fee_manual_cents, fin.fee_auto === false ? 0 : 1);
@@ -73,7 +81,7 @@ export async function onRequestGet(context) {
       wall_cents: fin.wall_expense_cents, wall_income_cents: fin.wall_charged_cents,
       shipping_cents: fin.shipping_cents,
       tax_cents: fin.tax_cents, labor_cents: fin.labor_cents, misc_cents: fin.misc_cents, fee_cents: fee,
-      expenses_cents: expenses, profit_cents: profit,
+      expenses_cents: expenses, profit_cents: profit, invoiced_cents: r.invoiced_cents || 0, billed_extra_cents: billedExtra,
     });
     totals.gross += fin.price_cents; totals.discounts += fin.discount_cents; totals.revenue += fin.net_cents;
     totals.materials += fin.materials_cents; totals.accessories += fin.accessories_cents;

@@ -56,6 +56,8 @@ export async function onRequestGet(context) {
   // Un-invoiced backlog: for each booked job, the part of the job value that
   // hasn't been billed yet (job total − amount invoiced). It's money owed on the
   // job even though no invoice exists for it (e.g. a final balance not yet sent).
+  // A job counts as booked once it's won, or once it has been invoiced whatever
+  // its stage (a deposit taken on a job whose card was never moved on).
   const WON = ["contracted", "scheduled_install", "installing", "completed"];
   const jobRows = (await context.env.DB.prepare(
     `SELECT p.id, p.name, c.name AS contact_name,
@@ -65,7 +67,8 @@ export async function onRequestGet(context) {
             (SELECT COALESCE(SUM(amount_cents),0) FROM invoices iv WHERE iv.project_id=p.id AND iv.status != 'void') AS invoiced,
             (SELECT COALESCE(SUM(amount_paid_cents),0) FROM invoices iv WHERE iv.project_id=p.id) AS collected
        FROM projects p LEFT JOIN contacts c ON c.id = p.contact_id
-      WHERE p.status IN (${WON.map(() => "?").join(",")})`
+      WHERE p.status IN (${WON.map(() => "?").join(",")})
+         OR EXISTS (SELECT 1 FROM invoices iv WHERE iv.project_id=p.id AND iv.status != 'void' AND iv.amount_cents > 0)`
   ).bind(...WON).all()).results || [];
 
   const unbilled = [];

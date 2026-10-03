@@ -108,20 +108,25 @@ export function depositForTotal(priceCents, netCents, rates) {
 // Client pays NET = gross − discount; profit = net − expenses. Pass row=null
 // when there's no saved row.
 export function resolveFinancials(defaultGrossCents, defaultDiscountCents, row) {
+  const val = (k) => (row && Number.isFinite(row[k]) ? Math.max(0, row[k]) : 0);
+
   const priceOverridden = row && row.price_auto === 0 && row.price_cents != null;
-  const gross = priceOverridden ? row.price_cents : (defaultGrossCents || 0);
+  // A wall-finishing contract accepted before 2026-10-03 stored the closet alone
+  // as the price and the wall in wall_total_cents. The wall is income inside the
+  // gross, so fold it back in as the wall-charged line until the card is saved
+  // (which itemizes it and zeroes wall_total_cents).
+  const legacyWall = priceOverridden && !val("wall_charged_cents") ? val("wall_total_cents") : 0;
+  const gross = priceOverridden ? row.price_cents + legacyWall : (defaultGrossCents || 0);
   const rates = ratesFrom(row);
   const f = computeBreakdown(gross, rates);   // labor only
-
-  const val = (k) => (row && Number.isFinite(row[k]) ? Math.max(0, row[k]) : 0);
 
   // Revenue breakdown of the all-inclusive gross — informational only (does NOT
   // add to what the client pays). Net to client = gross − discount.
   // Materials charged (revenue breakdown) — defaults to the full gross when the
   // job hasn't been itemized, so the markup estimate has a basis.
-  const materialsCharged   = val("materials_charged_cents") || gross;
+  const wallCharged        = val("wall_charged_cents") || legacyWall;
+  const materialsCharged   = val("materials_charged_cents") || (gross - legacyWall);
   const accessoriesCharged = val("accessories_charged_cents");
-  const wallCharged        = val("wall_charged_cents");
 
   // Materials EXPENSE: use the saved value when one exists, otherwise auto-derive
   // from Materials charged ÷ markup (2.10) — so P&L, deposits and the card show a

@@ -2,6 +2,10 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-03 (hello@ CRM password)
+- **What the client asked for:** Michael gave the hello@ password and asked for it to be set and noted in `~/.env`.
+- Set with `node crm/setup-admin.mjs`, and `NCC_CRM_PASSWORD` in `~/.env` updated (single-quoted: the value has a `$`). Signed in on the live site with the value read from `~/.env`, read Don Bruce's job card (booked, $1,208.40, $284.20 paid — the fix above, confirmed on the live CRM), signed out. The open item about the stale password is closed in `CLAUDE.md`.
+
 ## 2026-10-03 (Don Bruce's job, and jobs with two contracts)
 - **What the client asked for:** Michael: "where is the don bruce job?", then "same job, create the invoice and fix the bugs", and "do not send any emails to the client."
 - **What had happened:** project #57 (Shoe Tower — Don Bruce) was booked on 2026-08-28 (C-2026-0028, $568.40, deposit INV-2026-0024 $284.20 paid). A second proposal on the same project, PROP-2026-0050 (laundry shelving, $640, pay in full), was accepted and C-2026-0029 signed on 2026-09-01. Accepting it set the project back to `proposed`, so it vanished from Jobs; signing found the shoe tower's paid deposit (the deposit dedup was per project), so the laundry was never invoiced; and every total read the newest contract alone, so the job read $640.

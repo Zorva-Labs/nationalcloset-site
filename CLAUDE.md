@@ -61,7 +61,6 @@ node ~/site-kit/bin/site-kit.mjs submit   # IndexNow + Search Console + Bing, on
 - Meta pixel `904015652453670`: the Lead event fires on a real form save; the July–Aug 2026 paid campaign (83% of sessions, zero leads) has ended.
 
 ## Open items
-- `NCC_CRM_PASSWORD` in `~/.env` no longer logs in (401 as of 2026-09-22) — ask Michael for the current one, or reset with `node crm/setup-admin.mjs hello@nationalclosetco.com <pw>`.
 - Client still owes: a portrait of Michael, a crew photo, a 60–90 s install/3D-walkthrough video.
 - The gallery captions `blog-large-walkin.webp` and `blog-3d-design-result.webp` "Real project", but they are generated: replace them with photos of those installs, or change the captions (`CHANGELOG.md`, 2026-09-22).
 - Google Postmaster Tools TXT on the zone.

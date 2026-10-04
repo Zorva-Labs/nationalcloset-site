@@ -51,6 +51,16 @@ const FALLBACK_WINDOWS = {
  * @returns {Promise<{ contract_id: number, contract_number: string, view_token: string }>}
  */
 export async function createContractFromProposalTier(db, proposal, actor = { kind: "system" }) {
+  // The customer's accept passes only { id, project_id, number, selected_tier };
+  // the pay-in-full choice and the default contract type live on the stored
+  // proposal, so read it and let the passed fields win. Without this an online
+  // accept always made a 50/25/25 contract (Don Bruce's laundry, PROP-2026-0050
+  // pay in full → C-2026-0029 in installments, 2026-09-01).
+  const stored = await db.prepare(`SELECT * FROM proposals WHERE id=?1`).bind(proposal.id).first().catch(() => null);
+  if (stored) {
+    const passed = Object.fromEntries(Object.entries(proposal).filter(([, v]) => v != null));
+    proposal = { ...stored, ...passed };
+  }
   // Determine which tier — prefer selected, fall back to "best"
   const tierKey = proposal.selected_tier || "best";
   const tier = await db.prepare(`SELECT * FROM proposal_tiers WHERE proposal_id=?1 AND tier=?2`).bind(proposal.id, tierKey).first();

@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-03 (Don Bruce's laundry deposit; online accepts lost pay-in-full)
+- **What the client asked for:** Michael: "Don didn't make a full payment on the first invoice", then "the second invoice is for $640 and it didn't ask him to pay anything."
+- **The record:** INV-2026-0024, the shoe tower deposit (C-2026-0028, $568.40), $284.20, paid by card 2026-08-28; Stripe live agrees (pi_3U9QOKFwmijYgch10XgVBrPK, $284.20 received, no refund or dispute), and it is the only Stripe payment on the job. The laundry contract C-2026-0029 ($640) was never billed: signing it showed Don the shoe tower's paid deposit (the dedup bug fixed earlier today).
+- **INV-2026-0034 corrected to $320**, "Laundry shelving — deposit (50%)": C-2026-0029 as signed is 50/25/25 with a $320 deposit, not the $640 pay-in-full this session first raised from the proposal's setting. Still open and not emailed.
+- **Bug: an online accept dropped pay-in-full.** The customer's accept passed `createContractFromProposalTier` only the proposal's id, project, number and tier, so `payment_plan` and `default_contract_type` were never read and every online accept made a 50/25/25 contract. It now reads the stored proposal first (deployed 7eeb0d87). Only Don's contract was affected (PROP-2026-0050 pay in full → C-2026-0029 installments).
+
 ## 2026-10-03 (hello@ CRM password)
 - **What the client asked for:** Michael gave the hello@ password and asked for it to be set and noted in `~/.env`.
 - Set with `node crm/setup-admin.mjs`, and `NCC_CRM_PASSWORD` in `~/.env` updated (single-quoted: the value has a `$`). Signed in on the live site with the value read from `~/.env`, read Don Bruce's job card (booked, $1,208.40, $284.20 paid — the fix above, confirmed on the live CRM), signed out. The open item about the stale password is closed in `CLAUDE.md`.

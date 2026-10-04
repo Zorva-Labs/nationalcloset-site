@@ -589,6 +589,14 @@ export async function markInvoicePaid(env, invoice, { method = "card", paymentIn
     await db.prepare(
       `UPDATE contracts SET deposit_paid=1, deposit_paid_at=COALESCE(?1, datetime('now')), deposit_paid_method=?2, updated_at=datetime('now') WHERE id=?3`
     ).bind(when, method, invoice.contract_id).run().catch(() => {});
+  } else if (invoice.contract_id) {
+    // Any other invoice tied to a contract whose deposit is still owed (one
+    // invoice for the rest of a job, raised in place of the milestones — Don
+    // Bruce, 2026-10-03) settles that deposit when it covers it.
+    await db.prepare(
+      `UPDATE contracts SET deposit_paid=1, deposit_paid_at=COALESCE(?1, datetime('now')), deposit_paid_method=?2, updated_at=datetime('now')
+        WHERE id=?3 AND deposit_paid=0 AND ?4 >= COALESCE(deposit_cents, 0)`
+    ).bind(when, method, invoice.contract_id, total).run().catch(() => {});
   }
 
   // Booking happens HERE — when the deposit (or a full payment) is paid, not at

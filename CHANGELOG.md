@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-03 (Don Bruce: one job, one invoice)
+- **What the client asked for:** Michael: "combine all into one job and one invoice" (after confirming the record: $284.20 paid on the shoe tower, nothing on the laundry). No email to Don.
+- **Live D1:** project #57 renamed "Shoe Tower & Laundry — Don Bruce"; INV-2026-0034 ($320 laundry deposit, never sent) voided; **INV-2026-0035, $924.20, "Shoe tower and laundry shelving — remaining balance"**, type `custom`, tied to C-2026-0029, open and not emailed. That is the whole job ($1,208.40) less the $284.20 paid, so the scheduling and install-day milestones bill nothing (what is left to invoice is $0). The two signed contracts stay as signed. Checked on the live CRM: booked, $1,208.40, $284.20 paid, $924.20 balance; no email to Don today.
+- **Code (deployed 2e46a9a7):** `markInvoicePaid` marks a contract's deposit received when any invoice tied to it is paid and covers the deposit, not only a `deposit`/`full` invoice, so C-2026-0029 shows its deposit paid once INV-2026-0035 is. A `custom` invoice offers no deposit/full choice on `/invoice/`, so Don sees one amount.
+- **Still owed:** sending INV-2026-0035 is Michael's call (Send on the invoice in the CRM).
+
 ## 2026-10-03 (Don Bruce's laundry deposit; online accepts lost pay-in-full)
 - **What the client asked for:** Michael: "Don didn't make a full payment on the first invoice", then "the second invoice is for $640 and it didn't ask him to pay anything."
 - **The record:** INV-2026-0024, the shoe tower deposit (C-2026-0028, $568.40), $284.20, paid by card 2026-08-28; Stripe live agrees (pi_3U9QOKFwmijYgch10XgVBrPK, $284.20 received, no refund or dispute), and it is the only Stripe payment on the job. The laundry contract C-2026-0029 ($640) was never billed: signing it showed Don the shoe tower's paid deposit (the dedup bug fixed earlier today).

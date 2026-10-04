@@ -2,6 +2,11 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-03 (/crm/traffic blank)
+- **What the client asked for:** Michael: "the traffic page is blank."
+- **Cause:** the Bing block ported from traffic-kit on 2026-09-24 (7571498) sits inside the page's `innerHTML` template string, and its CSS `content:"\2212"` (the minus on the open "Show all" toggle) is an octal escape, which JavaScript refuses inside a template literal. The whole render script failed to parse, so the page showed the CRM chrome and nothing else from then on. Now `"\\2212"`, which writes the same CSS. Checked: every inline script in `crm/traffic.html` parses, and the page renders all four sections locally; deployed 80aa3a74.
+- **For the next port:** a traffic-kit block pasted into a JS template needs its backslashes doubled. NWD's and the network's traffic pages carry the block as plain HTML and parse clean.
+
 ## 2026-10-03 (receivables PDF and P&L show all income)
 - **What the client asked for:** Michael: "the receivables report in the crm isn't showing all receivables on the pdf download", then "make sure all P&L and receivables show all income."
 - **Receivables PDF (and CSV):** the screen showed open invoices *and* the Remaining balances (booked job value not yet invoiced), with Total owed = both; the PDF and CSV printed only the open invoices. Live on 2026-10-03 that meant $1,423.05 of $22,898.71. `crm/reports.html → brandedReceivablesHTML()` now carries Total owed / Billed / Overdue / Remaining balance, the Remaining balances table with its total, and a note on what each figure is; the CSV adds the same table and Total owed.

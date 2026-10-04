@@ -4,6 +4,7 @@
 //   Aging is measured from the due date (or, if none, the invoice date) to the
 //   "as of" date, bucketed Current / 1–30 / 31–60 / 61–90 / 90+ days past due.
 import { requireAuth, json } from "../../_lib/auth.js";
+import { contractTotalSql, acceptedTierSql } from "../../_lib/job-total.js";
 
 const DAY = 86400000;
 
@@ -61,9 +62,8 @@ export async function onRequestGet(context) {
   const WON = ["contracted", "scheduled_install", "installing", "completed"];
   const jobRows = (await context.env.DB.prepare(
     `SELECT p.id, p.name, c.name AS contact_name,
-            (SELECT k.total_cents FROM contracts k WHERE k.project_id=p.id
-               ORDER BY CASE k.status WHEN 'fully_executed' THEN 0 WHEN 'signed_by_customer' THEN 1 WHEN 'sent' THEN 2 ELSE 3 END, datetime(k.created_at) DESC LIMIT 1) AS contract_total,
-            (SELECT pr.selected_total_cents FROM proposals pr WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS accepted_total,
+            ${contractTotalSql()} AS contract_total,
+            ${acceptedTierSql("selected")} AS accepted_total,
             (SELECT COALESCE(SUM(amount_cents),0) FROM invoices iv WHERE iv.project_id=p.id AND iv.status != 'void') AS invoiced,
             (SELECT COALESCE(SUM(amount_paid_cents),0) FROM invoices iv WHERE iv.project_id=p.id) AS collected
        FROM projects p LEFT JOIN contacts c ON c.id = p.contact_id

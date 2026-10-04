@@ -145,8 +145,13 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
     }
   }
 
-  // Advance the project status — accepting a proposal moves the job into "proposed"
-  await db.prepare(`UPDATE projects SET status='proposed', updated_at=datetime('now') WHERE id=?1`).bind(proposal.project_id).run();
+  // Advance the project status — accepting a proposal moves the job into
+  // "proposed", unless it is already booked: a second proposal accepted on a
+  // booked job must not pull it out of the Jobs pipeline (Don Bruce, 2026-09-01).
+  await db.prepare(
+    `UPDATE projects SET status='proposed', updated_at=datetime('now')
+      WHERE id=?1 AND status NOT IN ('contracted','scheduled_install','installing','completed')`
+  ).bind(proposal.project_id).run();
 
   await recordActivity(db, {
     entityType: "contract", entityId: r.id, action: "created-from-proposal",

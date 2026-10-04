@@ -7,6 +7,7 @@
 // from the accepted proposal's selected tier; any line can be overridden.
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { getProjectBilling } from "../../../_lib/invoices.js";
+import { acceptedTierSql } from "../../../_lib/job-total.js";
 import { resolveFinancials, computeBreakdown, processingFee,
          MATERIALS_DIVISOR, SHIPPING_RATE, TAX_RATE, LABOR_RATE, FEE_RATE } from "../../../_lib/financials.js";
 import { recordActivity } from "../../../_lib/db.js";
@@ -16,10 +17,7 @@ import { recordActivity } from "../../../_lib/db.js";
 // to the contract/proposal total with no discount.
 async function defaultBasis(env, projectId) {
   const tier = await env.DB.prepare(
-    `SELECT t.subtotal_cents AS gross, t.total_cents AS net
-       FROM proposals p JOIN proposal_tiers t ON t.proposal_id = p.id AND t.tier = p.selected_tier
-      WHERE p.project_id = ?1 AND p.status = 'accepted'
-      ORDER BY datetime(p.created_at) DESC LIMIT 1`
+    `SELECT ${acceptedTierSql("subtotal_cents", "?1")} AS gross, ${acceptedTierSql("total_cents", "?1")} AS net`
   ).bind(projectId).first().catch(() => null);
   if (tier && (tier.gross || tier.net)) {
     const sub = tier.gross || 0, tot = tier.net || 0;

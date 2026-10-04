@@ -8,6 +8,7 @@
 //   total — and a job's revenue is never less than what has been invoiced on it.
 import { requireAuth, json } from "../../_lib/auth.js";
 import { resolveFinancials, processingFee } from "../../_lib/financials.js";
+import { contractTotalSql, acceptedTierSql } from "../../_lib/job-total.js";
 
 const WON = ["contracted", "scheduled_install", "installing", "completed"];
 
@@ -31,13 +32,9 @@ export async function onRequestGet(context) {
             jf.materials_auto, jf.shipping_auto, jf.tax_auto, jf.labor_auto,
             jf.materials_divisor, jf.shipping_rate, jf.tax_rate, jf.labor_rate, jf.fee_rate,
             jf.fee_cents, jf.fee_auto, jf.wall_total_cents,
-            (SELECT k.total_cents FROM contracts k WHERE k.project_id=p.id
-               ORDER BY CASE k.status WHEN 'fully_executed' THEN 0 WHEN 'signed_by_customer' THEN 1 WHEN 'sent' THEN 2 ELSE 3 END,
-                        datetime(k.created_at) DESC LIMIT 1) AS contract_total,
-            (SELECT t.subtotal_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
-               WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_gross,
-            (SELECT t.total_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
-               WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_net,
+            ${contractTotalSql()} AS contract_total,
+            ${acceptedTierSql("subtotal_cents")} AS tier_gross,
+            ${acceptedTierSql("total_cents")} AS tier_net,
             (SELECT COALESCE(SUM(iv.fee_cents),0) FROM invoices iv WHERE iv.project_id=p.id AND iv.status='paid') AS actual_fee_cents,
             (SELECT COALESCE(SUM(iv.amount_cents),0) FROM invoices iv WHERE iv.project_id=p.id AND iv.status != 'void') AS invoiced_cents
        FROM projects p

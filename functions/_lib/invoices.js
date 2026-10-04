@@ -10,6 +10,7 @@ import { recordActivity } from "./db.js";
 import { markProjectBooked } from "./lifecycle.js";
 import { sendStageEmail } from "./stage-emails.js";
 import { depositForTotal } from "./financials.js";
+import { contractTotalSql, acceptedTierSql } from "./job-total.js";
 
 const SITE_URL = "https://nationalclosetco.com";
 
@@ -126,57 +127,98 @@ export async function markInvoiceFailed(env, invoice, { method = "us_bank_accoun
   return { ok: true };
 }
 
-// Pre-discount GROSS cost basis for a project — the number the deposit is
+// Pre-discount GROSS cost basis for one deal — the number its deposit is
 // figured from. The accepted proposal's selected tier stores the gross in
 // subtotal_cents and the discounted client price in total_cents; the discount
 // lives in the gap and must NOT lower the deposit. Falls back to the net total
 // when there's no accepted tier (e.g. a manual contract with no discount).
-async function projectGrossBasis(db, projectId, fallbackNet) {
+async function dealGrossBasis(db, proposalId, fallbackNet) {
+  if (!proposalId) return fallbackNet || 0;
   const tier = await db.prepare(
     `SELECT t.subtotal_cents AS gross, t.total_cents AS net
        FROM proposals p JOIN proposal_tiers t ON t.proposal_id=p.id AND t.tier=p.selected_tier
-      WHERE p.project_id=?1 AND p.status='accepted'
-      ORDER BY datetime(p.created_at) DESC LIMIT 1`
-  ).bind(projectId).first().catch(() => null);
+      WHERE p.id=?1`
+  ).bind(proposalId).first().catch(() => null);
   if (tier && (tier.gross || tier.net)) return tier.gross > tier.net ? tier.gross : (tier.net || tier.gross);
   return fallbackNet || 0;
 }
 
-// The dollar value of a project's work, from its most authoritative contract
-// (executed > signed > sent > latest), falling back to an accepted proposal.
-export async function getProjectBilling(db, projectId) {
-  const k = await db.prepare(
-    `SELECT id, total_cents, deposit_cents, payment_plan FROM contracts WHERE project_id=?1
-      ORDER BY CASE status WHEN 'fully_executed' THEN 0 WHEN 'signed_by_customer' THEN 1 WHEN 'sent' THEN 2 ELSE 3 END,
-               datetime(created_at) DESC LIMIT 1`
+const RANK = `ORDER BY CASE status WHEN 'fully_executed' THEN 0 WHEN 'signed_by_customer' THEN 1 WHEN 'sent' THEN 2 ELSE 3 END,
+               datetime(created_at) DESC LIMIT 1`;
+
+// What a project is billed on.
+// - totalCents: the whole job, every signed contract counted once
+//   (_lib/job-total.js), so the later payments bill what is left of all of it.
+// - the deal (one contract, or one accepted proposal before its contract
+//   exists): depositCents, paymentPlan, dealTotalCents, contractId, proposalId.
+//   A job can carry more than one deal (a second proposal accepted after
+//   booking), and each has its own deposit. scope = { contractId, proposalId }
+//   picks the deal; without one, the most authoritative contract
+//   (executed > signed > sent > latest), falling back to an accepted proposal.
+export async function getProjectBilling(db, projectId, scope = {}) {
+  const t = await db.prepare(
+    `SELECT ${contractTotalSql("?1")} AS k_total, ${acceptedTierSql("selected", "?1")} AS p_total`
   ).bind(projectId).first().catch(() => null);
+  const totalCents = t?.k_total ?? t?.p_total ?? 0;
+
+  let k = null;
+  if (scope.contractId) {
+    k = await db.prepare(`SELECT id, proposal_id, total_cents, deposit_cents, payment_plan FROM contracts WHERE id=?1 AND project_id=?2`)
+      .bind(scope.contractId, projectId).first().catch(() => null);
+  }
+  if (!k && scope.proposalId) {
+    k = await db.prepare(`SELECT id, proposal_id, total_cents, deposit_cents, payment_plan FROM contracts WHERE proposal_id=?1 AND status != 'void' ${RANK}`)
+      .bind(scope.proposalId).first().catch(() => null);
+  }
+  if (!k && !scope.contractId && !scope.proposalId) {
+    k = await db.prepare(`SELECT id, proposal_id, total_cents, deposit_cents, payment_plan FROM contracts WHERE project_id=?1 ${RANK}`)
+      .bind(projectId).first().catch(() => null);
+  }
   if (k) {
-    const gross = await projectGrossBasis(db, projectId, k.total_cents || 0);
+    const dealTotal = k.total_cents || 0;
+    const gross = await dealGrossBasis(db, k.proposal_id, dealTotal);
     return {
-      totalCents: k.total_cents || 0,
+      totalCents: totalCents || dealTotal,
+      dealTotalCents: dealTotal,
       // Explicit contract deposit wins (manual override); otherwise the
       // hard-cost deposit (materials + shipping + taxes) figured from the
       // pre-discount gross, so a discount never reduces the deposit.
-      depositCents: k.deposit_cents && k.deposit_cents > 0 ? k.deposit_cents : depositForTotal(gross, k.total_cents || 0),
+      depositCents: k.deposit_cents && k.deposit_cents > 0 ? k.deposit_cents : depositForTotal(gross, dealTotal),
       contractId: k.id,
-      proposalId: null,
+      proposalId: k.proposal_id || null,
       paymentPlan: k.payment_plan || "installments",
     };
   }
   const p = await db.prepare(
-    `SELECT id, selected_total_cents FROM proposals WHERE project_id=?1 AND status='accepted'
+    `SELECT id, selected_total_cents, payment_plan FROM proposals WHERE project_id=?1 AND status='accepted'
+        ${scope.proposalId ? "AND id=?2" : ""}
       ORDER BY datetime(created_at) DESC LIMIT 1`
-  ).bind(projectId).first().catch(() => null);
+  ).bind(...(scope.proposalId ? [projectId, scope.proposalId] : [projectId])).first().catch(() => null);
   if (p) {
-    const total = p.selected_total_cents || 0;
-    const gross = await projectGrossBasis(db, projectId, total);
-    return { totalCents: total, depositCents: depositForTotal(gross, total), contractId: null, proposalId: p.id };
+    const dealTotal = p.selected_total_cents || 0;
+    const gross = await dealGrossBasis(db, p.id, dealTotal);
+    return {
+      totalCents: totalCents || dealTotal, dealTotalCents: dealTotal,
+      depositCents: depositForTotal(gross, dealTotal), contractId: null, proposalId: p.id,
+      paymentPlan: p.payment_plan === "full" ? "full" : "installments",
+    };
   }
-  return { totalCents: 0, depositCents: 0, contractId: null, proposalId: null };
+  return { totalCents, dealTotalCents: 0, depositCents: 0, contractId: null, proposalId: null };
 }
 
-// Sum of non-void invoice amounts already created for a project (optionally of a type).
-async function existingInvoice(db, projectId, type) {
+// The live invoice of a type already raised on a project. A deposit belongs to
+// one deal: when the deal is known it matches that contract or its proposal
+// (or an older deposit tied to neither), so a second contract on a booked job
+// gets its own deposit instead of finding the first one's, paid (Don Bruce,
+// 2026-09-01: the laundry contract was never billed).
+async function existingInvoice(db, projectId, type, deal = null) {
+  if (deal && (deal.contractId || deal.proposalId)) {
+    return await db.prepare(
+      `SELECT * FROM invoices WHERE project_id=?1 AND type=?2 AND status != 'void'
+          AND (contract_id=?3 OR proposal_id=?4 OR (contract_id IS NULL AND proposal_id IS NULL))
+        ORDER BY id DESC LIMIT 1`
+    ).bind(projectId, type, deal.contractId || -1, deal.proposalId || -1).first().catch(() => null);
+  }
   return await db.prepare(
     `SELECT * FROM invoices WHERE project_id=?1 AND type=?2 AND status != 'void' ORDER BY id DESC LIMIT 1`
   ).bind(projectId, type).first().catch(() => null);
@@ -193,8 +235,10 @@ export async function createInvoice(env, opts) {
   // Dedup the three scheduled milestones — don't double-bill if multiple
   // triggers fire (e.g. a reschedule re-setting the install date, or a job
   // marked "installing" and then "completed").
+  const scope = { contractId: opts.contractId || null, proposalId: opts.proposalId || null };
+  const billing = await getProjectBilling(db, projectId, type === "deposit" ? scope : {});
   if (type === "deposit" || type === "scheduling" || type === "balance") {
-    const dupe = await existingInvoice(db, projectId, type);
+    const dupe = await existingInvoice(db, projectId, type, type === "deposit" ? billing : null);
     if (dupe) return { invoice: dupe, deduped: true };
   }
 
@@ -203,8 +247,6 @@ export async function createInvoice(env, opts) {
        FROM projects p JOIN contacts c ON c.id=p.contact_id WHERE p.id=?1`
   ).bind(projectId).first();
   if (!project) throw new Error("project not found");
-
-  const billing = await getProjectBilling(db, projectId);
 
   // Resolve the amount when not explicitly passed.
   let amountCents = opts.amountCents;
@@ -233,8 +275,9 @@ export async function createInvoice(env, opts) {
      install booked for today collapses the last two payments into one invoice
      for 50% — a hard-coded "(25%)" then prints a number the customer can see is
      not the number they are being charged. */
-  const pctTag = billing.totalCents > 0
-    ? ` (${Math.round((amountCents / billing.totalCents) * 100)}%)`
+  const pctBase = type === "deposit" ? (billing.dealTotalCents || billing.totalCents) : billing.totalCents;
+  const pctTag = pctBase > 0
+    ? ` (${Math.round((amountCents / pctBase) * 100)}%)`
     : "";
 
   const description = opts.description || (

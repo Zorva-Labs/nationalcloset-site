@@ -4,6 +4,7 @@
 //   Aged from the due date (or bill date if none) to the "as of" date.
 import { requireAuth, json } from "../../_lib/auth.js";
 import { resolveFinancials } from "../../_lib/financials.js";
+import { contractTotalSql, acceptedTierSql } from "../../_lib/job-total.js";
 
 const DAY = 86400000;
 const WON = ["contracted", "scheduled_install", "installing", "completed"];
@@ -66,12 +67,9 @@ export async function onRequestGet(context) {
     `SELECT p.id, p.name, p.status,
             jf.price_cents, jf.discount_cents, jf.materials_cents, jf.shipping_cents, jf.tax_cents, jf.labor_cents, jf.misc_cents,
             jf.price_auto, jf.discount_auto, jf.materials_auto, jf.shipping_auto, jf.tax_auto, jf.labor_auto, jf.wall_total_cents,
-            (SELECT k.total_cents FROM contracts k WHERE k.project_id=p.id
-               ORDER BY CASE k.status WHEN 'fully_executed' THEN 0 WHEN 'signed_by_customer' THEN 1 WHEN 'sent' THEN 2 ELSE 3 END, datetime(k.created_at) DESC LIMIT 1) AS contract_total,
-            (SELECT t.subtotal_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
-               WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_gross,
-            (SELECT t.total_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
-               WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_net,
+            ${contractTotalSql()} AS contract_total,
+            ${acceptedTierSql("subtotal_cents")} AS tier_gross,
+            ${acceptedTierSql("total_cents")} AS tier_net,
             (SELECT v.name FROM project_vendors pv JOIN vendors v ON v.id=pv.vendor_id WHERE pv.project_id=p.id AND pv.role='installer') AS installer_name,
             (SELECT pv.vendor_id FROM project_vendors pv WHERE pv.project_id=p.id AND pv.role='installer') AS installer_id,
             (SELECT v.name FROM project_vendors pv JOIN vendors v ON v.id=pv.vendor_id WHERE pv.project_id=p.id AND pv.role='manufacturer') AS manufacturer_name

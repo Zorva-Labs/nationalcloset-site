@@ -1,5 +1,6 @@
 import { requireAuth, json } from "../../_lib/auth.js";
 import { resolveFinancials, processingFee } from "../../_lib/financials.js";
+import { contractTotalSql, acceptedTierSql } from "../../_lib/job-total.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -18,22 +19,14 @@ export async function onRequestGet(context) {
     return json({ counts });
   }
 
-  // job_total_cents = the dollar value of the job, taken from its most
-  // authoritative contract (executed > signed > sent > latest draft).
+  // job_total_cents = the dollar value of the job: every signed contract once
+  // (_lib/job-total.js), else its most authoritative contract.
   let sql = `SELECT p.*,
                     c.name  AS contact_name,
                     c.email AS contact_email,
                     c.phone AS contact_phone,
                     c.address_city AS contact_city,
-                    (SELECT k.total_cents FROM contracts k
-                      WHERE k.project_id = p.id
-                      ORDER BY CASE k.status
-                                 WHEN 'fully_executed'    THEN 0
-                                 WHEN 'signed_by_customer' THEN 1
-                                 WHEN 'sent'              THEN 2
-                                 ELSE 3 END,
-                               datetime(k.created_at) DESC
-                      LIMIT 1) AS job_total_cents,
+                    ${contractTotalSql()} AS job_total_cents,
                     (SELECT COALESCE(SUM(iv.amount_cents), 0) FROM invoices iv
                       WHERE iv.project_id = p.id AND iv.status = 'paid') AS paid_cents,
                     (SELECT COALESCE(SUM(iv.fee_cents), 0) FROM invoices iv
@@ -47,10 +40,8 @@ export async function onRequestGet(context) {
                     jf.materials_divisor AS jf_materials_divisor, jf.shipping_rate AS jf_shipping_rate,
                     jf.tax_rate AS jf_tax_rate, jf.labor_rate AS jf_labor_rate, jf.fee_rate AS jf_fee_rate,
                     jf.fee_cents AS jf_fee_cents, jf.fee_auto AS jf_fee_auto, jf.wall_total_cents AS jf_wall_total_cents,
-                    (SELECT t.subtotal_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
-                       WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_gross,
-                    (SELECT t.total_cents FROM proposals pr JOIN proposal_tiers t ON t.proposal_id=pr.id AND t.tier=pr.selected_tier
-                       WHERE pr.project_id=p.id AND pr.status='accepted' ORDER BY datetime(pr.created_at) DESC LIMIT 1) AS tier_net
+                    ${acceptedTierSql("subtotal_cents")} AS tier_gross,
+                    ${acceptedTierSql("total_cents")} AS tier_net
              FROM projects p JOIN contacts c ON c.id = p.contact_id
              LEFT JOIN job_financials jf ON jf.project_id = p.id WHERE 1=1`;
   const binds = [];

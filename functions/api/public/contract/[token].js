@@ -115,13 +115,20 @@ export async function onRequestPost(context) {
     // excluded from the booked Jobs pipeline) and leave the lead at 'proposal'.
     // markInvoicePaid books it (project -> contracted, lead -> booked) once the
     // deposit clears.
+    // A job that is already booked (this is a second contract on it) stays where
+    // it is; only its new deposit is owed.
     await context.env.DB.prepare(
-      `UPDATE projects SET status='proposed', updated_at=datetime('now') WHERE id=?1`
+      `UPDATE projects SET status='proposed', updated_at=datetime('now')
+        WHERE id=?1 AND status NOT IN ('contracted','scheduled_install','installing','completed')`
     ).bind(k.project_id).run();
   } else {
-    // No deposit required → book immediately on signing, with the booked email.
-    await markProjectBooked(context.env.DB, k.project_id, k.id);
-    await sendStageEmail(context.env, "contracted", k.project_id, { name: body.signer_name });
+    // No deposit required → book immediately on signing, with the booked email —
+    // unless the job is already booked.
+    const cur = await context.env.DB.prepare(`SELECT status FROM projects WHERE id=?1`).bind(k.project_id).first().catch(() => null);
+    if (!["contracted", "scheduled_install", "installing", "completed"].includes(cur?.status)) {
+      await markProjectBooked(context.env.DB, k.project_id, k.id);
+      await sendStageEmail(context.env, "contracted", k.project_id, { name: body.signer_name });
+    }
   }
 
   // Email the customer their signed copy (summary + full scope/terms + view link).

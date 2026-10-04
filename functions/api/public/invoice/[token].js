@@ -20,7 +20,7 @@ function piAcceptable(pi) {
 async function planInfo(db, inv) {
   if (!["deposit", "full"].includes(inv.type)) return null;
   if ((inv.amount_paid_cents || 0) > 0) return null;
-  const billing = await getProjectBilling(db, inv.project_id).catch(() => null);
+  const billing = await getProjectBilling(db, inv.project_id, { contractId: inv.contract_id, proposalId: inv.proposal_id }).catch(() => null);
   const total = billing?.totalCents || 0;
   if (total <= 0) return null;
   const paidElsewhere = (await db.prepare(
@@ -34,7 +34,7 @@ async function planInfo(db, inv) {
 
 // Resolve the target amount + invoice type for a chosen plan.
 async function planTarget(db, inv, plan) {
-  const billing = await getProjectBilling(db, inv.project_id).catch(() => null);
+  const billing = await getProjectBilling(db, inv.project_id, { contractId: inv.contract_id, proposalId: inv.proposal_id }).catch(() => null);
   const total = billing?.totalCents || 0;
   const paidElsewhere = (await db.prepare(
     `SELECT COALESCE(SUM(amount_paid_cents),0) AS n FROM invoices WHERE project_id=?1 AND id != ?2 AND status != 'void'`

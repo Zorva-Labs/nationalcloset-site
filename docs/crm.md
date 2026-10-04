@@ -3,7 +3,7 @@
 `crm/` is the UI (30 static pages over `crm-app.js` and `crm-app.css`), `functions/api/` the API and `functions/_lib/` the shared code, over the D1 `nationalcloset-crm`. Mail and the scheduled sweeps are in `docs/automations.md`.
 
 ## Sign-in
-- One login, the admin hello@nationalclosetco.com (`admin_users`), password `NCC_CRM_PASSWORD` in `~/.env`, at `/crm/login.html` (styled by `admin.css`). The same session opens `/crm/traffic` (`docs/traffic.md`).
+- Two logins (`admin_users`), both at `/crm/login.html` (styled by `admin.css`): the admin hello@nationalclosetco.com, password `NCC_CRM_PASSWORD` in `~/.env`; and Terry McCarthy, tmccarthy33@yahoo.com (since 2026-10-03, Michael; the password is Terry's and is not kept in `~/.env`). There are no roles: every login sees and can do everything, Stripe and the books included. The same session opens `/crm/traffic` (`docs/traffic.md`).
 - `node crm/setup-admin.mjs <email> [pw]` sets a password: it hashes it locally (PBKDF2-SHA256), writes the hash to D1 through the Cloudflare API with `CLOUDFLARE_API_TOKEN`, and prints the password (it makes one up if none is given). It does not touch `~/.env`.
 
 ## The pipeline

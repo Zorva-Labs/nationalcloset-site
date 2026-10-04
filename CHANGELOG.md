@@ -2,6 +2,11 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-03 (CRM login for Terry McCarthy)
+- **What the client asked for:** Michael: set Terry McCarthy's CRM login, tmccarthy33@yahoo.com, with the password he gave.
+- `node crm/setup-admin.mjs` wrote the login to the live D1 (`admin_users`), display name "Terry McCarthy" (Terry was already on the team roster). Signed in on the live site, read an authenticated endpoint (200) and signed out. The password is not in the repo or `~/.env`.
+- The CRM has no roles, so Terry's login has the same full access as hello@. `docs/crm.md` → Sign-in updated.
+
 ## 2026-10-03 (/crm/traffic blank)
 - **What the client asked for:** Michael: "the traffic page is blank."
 - **Cause:** the Bing block ported from traffic-kit on 2026-09-24 (7571498) sits inside the page's `innerHTML` template string, and its CSS `content:"\2212"` (the minus on the open "Show all" toggle) is an octal escape, which JavaScript refuses inside a template literal. The whole render script failed to parse, so the page showed the CRM chrome and nothing else from then on. Now `"\\2212"`, which writes the same CSS. Checked: every inline script in `crm/traffic.html` parses, and the page renders all four sections locally; deployed 80aa3a74.

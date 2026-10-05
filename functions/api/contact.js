@@ -93,17 +93,16 @@ Message: ${message || "(none)"}
     return json({ ok: true });
   }
 
-  // Two fields are all a lead needs: a name and a phone number. Email is
-  // welcome but optional (the confirmation step asks again) — every required
-  // field on a paid click costs conversions, and fifteen of the twenty visitors
-  // who tapped the button in the last three weeks abandoned the four-field form.
-  if (!name || !phone) {
-    return json({ error: "Name and phone are required." }, 400);
+  // Four fields make a lead: name, phone, email and the space (Michael,
+  // 2026-10-05 — a name and a phone alone left the designer nothing to go on).
+  // The forms mark all four required; this answers a caller that skips them.
+  if (!name || !phone || !email || !interest) {
+    return json({ error: "Name, phone, email and the space are required." }, 400);
   }
   if (phone.replace(/\D/g, "").length < 7) {
     return json({ error: "That phone number looks incomplete." }, 400);
   }
-  if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
     return json({ error: "That email address looks invalid." }, 400);
   }
 

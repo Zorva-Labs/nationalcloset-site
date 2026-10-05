@@ -2,6 +2,15 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-05 (lead forms: email and the space required)
+- **What the client asked for:** Michael, after lead #86 (Stacia Graffia, Google organic, home page) came in with a name and a phone only: "make email and what they want required."
+- **Every lead form** (36 pages' `form[data-lead]`, the homepage's bottom form) now has a required **Email** and a required **What space?** select after Name and Phone; the select's options are the CRM's `SERVICES` (so Kitchen Cabinets and Bathroom Vanity, missing from the public picker, are back in step). The homepage ballpark takes its space from its chips as before and gains a required Email. The trade-partner form already required both.
+- **`/api/contact`** answers 400 "Name, phone, email and the space are required." without all four (and checks the email's shape), before anything is saved. The bot and spam gates still run first.
+- **The follow-up step** (`js/main.js → mountDetailsStep`) now offers the address and a note; it shows the email or the space only if the form didn't send them. Assets pinned `ncc129` (`chrome.py PIN` and every page). `/privacy`'s form paragraph rewritten (`stage5_privacy.py`), `docs/tracking.md` and `docs/content.md` updated.
+- Checked in the browser pane at 375 px (four full-width fields, nothing wider than the viewport, the form refuses name + phone alone) and 1024 px (two by two), and the ballpark (space set from the chip, email required). Deployed 1c9dd4fd; on the live site name + phone alone gets the 400.
+- **Test lead #87 "Form Check"** (615-555-0100): my first live check reached the edge before the new deploy had propagated, so it saved and sent the team the usual new-lead alert. Archived (`archived_at`), not deleted.
+- **Trade-off to watch:** the two-field form was cut down on 2026-09 because most visitors who started the four-field one left it. Watch the lead count over the next weeks.
+
 ## 2026-10-03 (Don Bruce: one job, one invoice)
 - **What the client asked for:** Michael: "combine all into one job and one invoice" (after confirming the record: $284.20 paid on the shoe tower, nothing on the laundry). No email to Don.
 - **Live D1:** project #57 renamed "Shoe Tower & Laundry — Don Bruce"; INV-2026-0034 ($320 laundry deposit, never sent) voided; **INV-2026-0035, $924.20, "Shoe tower and laundry shelving — remaining balance"**, type `custom`, tied to C-2026-0029, open and not emailed. That is the whole job ($1,208.40) less the $284.20 paid, so the scheduling and install-day milestones bill nothing (what is left to invoice is $0). The two signed contracts stay as signed. Checked on the live CRM: booked, $1,208.40, $284.20 paid, $924.20 balance; no email to Don today.

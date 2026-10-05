@@ -3,7 +3,7 @@ head template, FAQ item, and the new site navigation. Everything is lifted from 
 live city page so new pages match the rest of the site exactly."""
 import re, html, json, os
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # the checkout this file is in (a worktree edits itself)
-PIN = 'ncc128'
+PIN = 'ncc129'
 SITE = 'https://nationalclosetco.com'
 PHONE = '629-298-8241'; TEL = 'tel:+16292988241'
 # Who built and hosts the site. The footer credit is the whole sentence as one nofollow link;

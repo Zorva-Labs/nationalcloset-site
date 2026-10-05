@@ -123,14 +123,14 @@
     }
   }
 
-  /* ---------- Step 2: pick a time, then optional details ----------
-     The form asks for a name and a phone number only — on a paid click every
-     extra field costs conversions, and fifteen of twenty visitors who tapped
-     the button abandoned the four-field version. The lead is saved and the
-     conversion has fired by the time this renders, so everything here is a
-     bonus: email / project / address behind a disclosure. A designer texts to
-     set the visit (there is no self-booking, since 2026-09-29), so skipping it
-     costs us nothing — we'd ask on the phone anyway. */
+  /* ---------- Step 2: optional details ----------
+     The form asks for a name, a phone number, an email and the space (all four
+     required since 2026-10-05, Michael: a name and a phone alone left the
+     designer nothing to go on). The lead is saved and the conversion has fired
+     by the time this renders, so everything here is a bonus: the address and a
+     note behind a disclosure, plus the email or space only if a form didn't
+     send them. A designer texts to set the visit (there is no self-booking,
+     since 2026-09-29). */
   var SMS_URL = "sms:+16292988241?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F";
   function mountDetailsStep(success, token, lead) {
     if (success.querySelector(".addr-step")) return;
@@ -139,10 +139,10 @@
     box.className = "addr-step";
     box.innerHTML =
       '<p class="addr-step__or">We\u2019ll text you within one business day to find a time.</p>' +
-      '<details class="addr-step__more"><summary>Add a few details (optional)</summary>' +
+      '<details class="addr-step__more"><summary>Add your address (optional)</summary>' +
         '<div class="addr-step__fields">' +
           (lead.email ? '' : '<input class="addr-email" type="email" autocomplete="email" placeholder="Email (for your design and quote)" ' + inp + '>') +
-          '<select class="addr-project" ' + inp + '><option value="">What space? (optional)</option><option>Walk-In Closet</option><option>Reach-In Closet</option><option>Custom Cabinets</option><option>Pantry</option><option>Garage Storage</option><option>Home Office</option><option>Laundry / Mudroom</option><option>Media / Wall Unit</option><option>Multiple Spaces</option></select>' +
+          (lead.interest ? '' : '<select class="addr-project" ' + inp + '><option value="">What space? (optional)</option><option>Walk-In Closet</option><option>Reach-In Closet</option><option>Custom Cabinets</option><option>Kitchen Cabinets</option><option>Bathroom Vanity</option><option>Pantry</option><option>Garage Storage</option><option>Home Office</option><option>Laundry / Mudroom</option><option>Media / Wall Unit</option><option>Multiple Spaces</option></select>') +
           '<input class="addr-street" type="text" autocomplete="address-line1" placeholder="Street address" ' + inp + '>' +
           '<div class="addr-step__csz"><input class="addr-city" type="text" autocomplete="address-level2" placeholder="City" ' + inp + '><input class="addr-state" type="text" autocomplete="address-level1" placeholder="TN" maxlength="2" ' + inp + '><input class="addr-zip" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="ZIP" ' + inp + '></div>' +
           '<textarea class="addr-msg" rows="2" placeholder="Anything we should know about the space?" ' + inp + '></textarea>' +

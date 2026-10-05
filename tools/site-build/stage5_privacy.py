@@ -40,7 +40,7 @@ body = '<article>\n' + phero(
       <p>This is the privacy policy of National Closet Company for nationalclosetco.com and for the proposal, contract and invoice pages we send you.</p>
 
       <h2>When you ask for a price or a design visit</h2>
-      <p>Our price forms ask for your name and a phone number. After that you can add your email, the space you want built, your address and a note.</p>
+      <p>Our price forms ask for your name, a phone number, your email and the space you want built. After that you can add your address and a note.</p>
       <p>Along with what you type, the site keeps the page you sent it from, how you first found us (the page you landed on, the site that sent you, and any ad click id or campaign tags), your browser&rsquo;s user-agent line, a one-way hash of your IP address, and the Google Analytics ids of your visit.</p>
       <p>All of it goes into our own customer system, which runs on Cloudflare. We use it to get back to you, to send your design and your price, and to run your job.</p>
 

@@ -47,7 +47,8 @@
   "traffic": {
     "path": "/crm/traffic",
     "passwordEnv": "NCC_CRM_PASSWORD",
-    "kit": "bespoke (crm/traffic.html, /api/traffic, /api/traffic-channels?view=humans|all&tn=1, functions/api/traffic-rankings.js)"
+    "kit": "traffic-kit",
+    "shape": "traffic-kit's tabbed page ported into the CRM: crm/traffic.html built by tools/traffic/port.py, functions/api/traffic/* behind the CRM's requireAuth, visits from page_engagement, forms from leads"
   },
   "crm": {
     "path": "/crm",

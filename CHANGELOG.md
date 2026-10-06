@@ -2,6 +2,28 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-06 (/crm/traffic: traffic-kit's tabbed page)
+- **What the client asked for:** Michael: "change the traffic page to the new version."
+- **The page:** `/crm/traffic` is now traffic-kit's tabbed dashboard (Edge, Search Console, Analytics, Google Ads, Bing). It replaces the bespoke page, stays behind the CRM sign-in and has a CRM link in its top bar. `crm/traffic.html` is built by `tools/traffic/port.py` from `~/traffic-kit/template/public/traffic/index.html` with anchored edits, so a later kit version goes in the same way (`docs/traffic.md`). The edits:
+  - the brand;
+  - the CRM sign-in and sign-out;
+  - an All visitors / Tennessee switch (`?tn=1`);
+  - forms in place of the kit's calls;
+  - a "Which state" card in place of devices;
+  - no crawler card.
+- **The endpoints:** `functions/api/traffic/` holds `data`, `ads`, `watch` and `bing`, behind a folder middleware with the CRM's `requireAuth`. `watch` and `bing` are the kit's files unchanged. `data` and `ads` are ported to this site's tables:
+  - visits come from the beacon's `page_engagement` (rows with a channel, since 2026-09-13);
+  - forms come from the website's `leads` rows (`functions/_lib/traffic-leads.js`).
+  The old `/api/traffic-channels`, `-rankings`, `-ga4`, `-watch` and `-bing` are removed. `/api/traffic` stays for the CRM home page.
+- **Google Ads tab:** `site.json → traffic.kit` is now `traffic-kit`, so the nightly ads-report sync (`com.zorvalabs.ads-sync`) writes this account's `ads_*` tables into the live D1. It was run once by hand with `--apply`. The tab shows the paused campaign's last run: Aug 17–Sep 15, $2,398, 131 clicks, 4 conversions.
+- **How it was checked:** on a local CRM over copies of the live tables, then on the live site signed in.
+  - Over 30 days: 569 visits, 4 forms, 26 ad visits. With the Tennessee switch on: 110 visits, 25 of the 26 ad visits.
+  - Every tab drew without errors, and nothing was wider than the viewport at 375 px.
+  - A signed-out visit goes to the CRM login, and the endpoints answer 401.
+- **Noticed:** only 19% of the beacon's visits in the last 30 days came from Tennessee. Virginia, Washington, Oregon and New York send many, most likely headless browsers on hosting networks.
+- **Not done:** taps to call are not logged on this site, so the page counts forms only. A first-party call beacon would add calls.
+- Deployed e16395aa.
+
 ## 2026-10-06 (CRM: a discount on the final payment, breadcrumbs, no costs on the proposal)
 - **What the client asked for:** Michael: "a way to add a discount for the final invoice after the booking is set in the crm, there should also be bread crumbs for going back to the previous job screen when clicking on proposals or messages, etc... Remove the calculations from the proposal screen and only show them on the job screen."
 - **Discount on the final payment:** a booked job (contracted → completed) gets a "🏷 Discount on final payment" button on its Invoices tab and its action card. It takes $ or % of the job total, a reason the customer sees, and Remove. Migration **0073** (applied to the live D1) adds `projects.final_discount_cents` / `final_discount_note` and `invoices.discount_cents`. The new `POST /api/projects/:id/discount` sets the discount and moves any money already billed and unpaid. It refuses more than is still owed, since collected money would need a refund. The job total in billing, the jobs list, the P&L (with `costBasis`), Receivables and the job card are all net of it. The scheduling payment ignores it, so the whole discount comes off the final invoice. The CRM invoice sheet, the invoice email and `/invoice/` show it as a discount line. Setting it emails nothing. How it works: `docs/crm.md` → Invoices and Stripe.

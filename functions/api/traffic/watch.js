@@ -1,8 +1,8 @@
-/* GET  /api/traffic-watch  → the current target list, one keyword per line
- * POST /api/traffic-watch  { keywords: "one per line" } → replaces it
+/* GET  /api/traffic/watch  → the current target list, one keyword per line
+ * POST /api/traffic/watch  { keywords: "one per line" } → replaces it
  *
- * Behind requireAuth, the same gate as the rest of the CRM, so anyone who can
- * sign in to the dashboard can edit the list. That is deliberate: the point
+ * Behind the same _middleware.js gate as the rest of /api/traffic, so anyone
+ * with the dashboard password can edit the list. That is deliberate: the point
  * is that a client can maintain their own targets without going through us.
  *
  * Writes to env.DB — this site's own database, the one the dashboard already
@@ -16,31 +16,35 @@
  * the dashboard forever.
  */
 
-import { requireAuth, json } from "../_lib/auth.js";
+const json = (body, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      'x-robots-tag': 'noindex, nofollow',
+    },
+  });
 
 /* Google lowercases queries and collapses whitespace before reporting them, so
    the stored key does the same or nothing ever matches. The line as typed is
    kept separately for display — a client who writes "Custom Closets Nashville"
    should see it back the way they wrote it. */
-const normalise = (s) => String(s).toLowerCase().replace(/\s+/g, ' ').trim();
+const normalize = (s) => String(s).toLowerCase().replace(/\s+/g, ' ').trim();
 
 /* A guard, not a product decision. Search Console will not report on terms a
    site does not rank for however many are listed, and a runaway paste should
    not put thousands of rows into a table the dashboard renders in full. */
 const MAX = 200;
 
-export async function onRequestGet(context) {
-  const auth = await requireAuth(context); if (auth instanceof Response) return auth;
-  const rows = (await context.env.DB
+export async function onRequestGet({ data }) {
+  const rows = (await data.db
     .prepare('SELECT label, query, note FROM rank_watch ORDER BY added_at, query')
     .all().catch(() => ({ results: [] }))).results || [];
   return json({ ok: true, keywords: rows.map((r) => r.label || r.query).join('\n'), count: rows.length });
 }
 
-export async function onRequestPost(context) {
-  const auth = await requireAuth(context); if (auth instanceof Response) return auth;
-  const { request } = context;
-  const db = context.env.DB;
+export async function onRequestPost({ request, data }) {
   let body = null;
   try { body = await request.json(); } catch { /* handled below */ }
   if (!body || typeof body.keywords !== 'string') {
@@ -55,22 +59,31 @@ export async function onRequestPost(context) {
   for (const line of body.keywords.split(/\r?\n/)) {
     const label = line.trim();
     if (!label) continue;
-    const query = normalise(label);
+    const query = normalize(label);
     if (!query || seen.has(query)) continue;
     seen.add(query);
     rows.push({ query, label });
     if (rows.length >= MAX) break;
   }
 
-  const stmts = [db.prepare('DELETE FROM rank_watch')];
+  /* The table is migration 0005's; a site whose database never had it applied
+     gets it here, rather than a save that fails on a missing table. */
+  const stmts = [
+    data.db.prepare('CREATE TABLE IF NOT EXISTS rank_watch (query TEXT NOT NULL PRIMARY KEY, label TEXT, note TEXT, added_at TEXT NOT NULL) WITHOUT ROWID'),
+    data.db.prepare('DELETE FROM rank_watch'),
+  ];
   for (const r of rows) {
-    stmts.push(db
+    stmts.push(data.db
       .prepare("INSERT INTO rank_watch (query, label, note, added_at) VALUES (?1, ?2, NULL, datetime('now'))")
       .bind(r.query, r.label));
   }
   /* One transaction: a half-applied save would leave the list neither what it
      was nor what was typed, and the delete is the destructive half. */
-  await db.batch(stmts);
+  try {
+    await data.db.batch(stmts);
+  } catch (e) {
+    return json({ ok: false, error: `Could not save the list: ${String(e.message || e).slice(0, 160)}` }, 500);
+  }
 
   return json({ ok: true, count: rows.length, keywords: rows.map((r) => r.label).join('\n') });
 }

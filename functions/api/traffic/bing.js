@@ -1,6 +1,4 @@
-// GET /api/traffic-bing?days=N — the traffic-kit endpoint (~/traffic-kit/template/functions/api/traffic/bing.js),
-// behind this CRM's own requireAuth, since /api here has no directory middleware.
-//
+// GET /api/traffic/bing?days=N
 //
 // Bing Webmaster Tools for this site: clicks and impressions from Bing search,
 // the searches and pages Bing showed, and what Bing's crawler holds. Bing is
@@ -30,8 +28,6 @@
 // and comes back even while Bing has no search figures yet: a site Bing is
 // still taking in is exactly when those matter.
 
-import { requireAuth } from "../_lib/auth.js";
-
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -42,10 +38,8 @@ const json = (body, status = 200) =>
     },
   });
 
-export async function onRequestGet(context) {
-  const auth = await requireAuth(context); if (auth instanceof Response) return auth;
-  const { request } = context;
-  const db = context.env.DB;
+export async function onRequestGet({ request, data }) {
+  const db = data.db;
   const url = new URL(request.url);
   let days = parseInt(url.searchParams.get('days') || '30', 10);
   if (!Number.isFinite(days) || days < 1) days = 30;

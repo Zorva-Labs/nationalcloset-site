@@ -27,7 +27,7 @@ Marketing site + full CRM for National Closet Company: custom closets, pantries,
 - `docs/crm.md` — `/crm`: sign-in, the pipeline and the contracts, invoices and Stripe, the customer's pages, the team, the UI on a phone and its contrast, mail templates and times, the D1 and its migrations.
 - `docs/automations.md` — mail, the cron Worker and what each sweep does: install day, the customer's reminder, the consult brief, review requests, proposal expiry, the inbound sync.
 - `docs/tracking.md` — the lead forms, GA4, the Ads tag and the Meta pixel, the CSP, the local preview.
-- `docs/traffic.md` — `/crm/traffic`: what the edge logs and drops, the views, the panels and where each gets its figures.
+- `docs/traffic.md` — `/crm/traffic` (traffic-kit's tabbed page, built by `tools/traffic/port.py`): what the edge logs and drops, the views, the endpoints and where each gets its figures.
 - `docs/google-ads.md` — the stopped campaign as it ran, the conversions, the daily launchd job and its scripts, what Google refuses.
 
 ## Build & deploy
@@ -47,8 +47,8 @@ node ~/site-kit/bin/site-kit.mjs submit   # IndexNow + Search Console + Bing, on
 ## Map
 - Root `*.html` and `blog/` the pages · `css/styles.css`, `js/main.js` · `img/`, `fonts/` · `_headers` (the CSP) · `llms.txt`, `robots.txt`, `sitemap.xml` · `calc.html` the internal payment calculator (noindex).
 - `book/`, `estimate/`, `proposal/`, `contract/`, `invoice/`, `thanks/` the customer's pages · `crm/` the CRM's pages and scripts, `schema.sql`, `setup-admin.mjs`, `migrations/`.
-- `functions/` — `_middleware.js` (the US gate, the edge log, repo paths, `/review`, the `*.pages.dev` noindex), `api/` (84 endpoints: the CRM's, `contact.js`, `public/*`, `internal/*` for the cron, `stripe/webhook.js`, `traffic*.js`), `functions/_lib/` (mail, lifecycle, invoices, team, the brief, review requests, Stripe, spam checks).
-- `tools/images/` the generated pictures · `tools/site-build/` the page factory · `tools/review-card/` the printed review card · `scripts/` the Google Ads scripts · `.claude/launch.json` the local previews (the repo root, `dist/`, and `dist/` with the functions over a local D1).
+- `functions/` — `_middleware.js` (the US gate, the edge log, repo paths, `/review`, the `*.pages.dev` noindex), `api/` (84 endpoints: the CRM's, `contact.js`, `public/*`, `internal/*` for the cron, `stripe/webhook.js`, `traffic.js` and `traffic/*` for `/crm/traffic`), `functions/_lib/` (mail, lifecycle, invoices, team, the brief, review requests, Stripe, spam checks).
+- `tools/images/` the generated pictures · `tools/site-build/` the page factory · `tools/traffic/port.py` builds `crm/traffic.html` from traffic-kit's page (`docs/traffic.md`) · `tools/review-card/` the printed review card · `scripts/` the Google Ads scripts · `.claude/launch.json` the local previews (the repo root, `dist/`, and `dist/` with the functions over a local D1).
 
 ## Infrastructure & accounts
 - Cloudflare Pages project `nationalcloset` → nationalcloset.pages.dev (noindexed by the middleware); domain nationalclosetco.com. Zone `1d51a379abcf889e1f8a5445f6ed9b93` (Cloudflare DNS; Google Workspace MX/SPF/DKIM/DMARC p=reject). Canonical = apex, www 301s.

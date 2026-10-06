@@ -2,6 +2,13 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-06 (CRM: invoice the full remaining balance when the install is scheduled)
+- **What the client asked for:** Michael: "I need a button to check to invoice for the remaining balance on install schedule instead of just the 25%."
+- **The checkbox:** "Invoice the full remaining balance, not 25%" sits beside the install date. It shows on the job's action card and in the Schedule modal (the pipeline's Scheduled step), and only while the job has no install date, because that first date is what raises the invoice. Ticked, the PATCH carries `bill_balance: true`. `functions/api/projects/[id]/index.js` then raises the balance invoice at once instead of the scheduling one, through `createInvoice`'s new `early` option.
+- **What the customer sees:** "Remaining balance (N%) — your installation is scheduled". The email note says it is the last N% of the project and nothing else is due after it. A final-payment discount rides on it as it would on install day.
+- **Nothing is billed twice:** the install-day hop (installing/completed) dedups against that balance invoice. Unticked, nothing changes: 25% at scheduling, the rest on install day.
+- **Tested** on the local CRM (4119) with a $10,000 job, a $5,000 deposit and a $300 discount. Ticked, both the card and the modal raised one $4,700 balance invoice, and Start install added nothing. Unticked, it raised the usual $2,500 scheduling invoice. At 375px the checkbox row is 44px tall with no overflow. `docs/crm.md` is updated. Deployed d9f959dc.
+
 ## 2026-10-06 (/crm/traffic: traffic-kit's tabbed page)
 - **What the client asked for:** Michael: "change the traffic page to the new version."
 - **The page:** `/crm/traffic` is now traffic-kit's tabbed dashboard (Edge, Search Console, Analytics, Google Ads, Bing). It replaces the bespoke page, stays behind the CRM sign-in and has a CRM link in its top bar. `crm/traffic.html` is built by `tools/traffic/port.py` from `~/traffic-kit/template/public/traffic/index.html` with anchored edits, so a later kit version goes in the same way (`docs/traffic.md`). The edits:

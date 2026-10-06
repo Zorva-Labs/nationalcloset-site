@@ -230,7 +230,8 @@ async function existingInvoice(db, projectId, type, deal = null) {
 
 // Create an invoice (idempotent for deposit/balance per project) and email the
 // customer a pay link. Best-effort email; the invoice is always created.
-// opts: { projectId, type, amountCents?, description?, proposalId?, contractId?, actor?, send=true }
+// opts: { projectId, type, amountCents?, description?, proposalId?, contractId?, actor?, send=true,
+//         early? — a balance billed when the install is scheduled, not on the day }
 export async function createInvoice(env, opts) {
   const db = env.DB;
   const { projectId, type } = opts;
@@ -296,7 +297,9 @@ export async function createInvoice(env, opts) {
       : ({
           deposit: `Deposit${pctTag} to release your custom closet order`,
           scheduling: `Second payment${pctTag} — your installation is scheduled`,
-          balance: `Final payment${pctTag} — due the day of installation`,
+          balance: opts.early
+            ? `Remaining balance${pctTag} — your installation is scheduled`
+            : `Final payment${pctTag} — due the day of installation`,
           full: "Custom closet project — payment",
         })[type]
   ) || "Invoice";
@@ -421,6 +424,12 @@ export async function sendInvoiceEmail(env, invoice, project) {
         + (finalBalance > 0
             ? ` The remaining ${money(finalBalance)}${finalPct == null ? "" : ` (final ${finalPct}%)`} will be invoiced on install day.`
             : ` The remaining balance is billed on install day.`);
+    } else if (String(invoice.description || "").startsWith("Remaining balance")) {
+      // Billed in full when the install was scheduled (createInvoice's `early`).
+      const share = thisPct == null ? "the rest of your project" : `the last ${thisPct}% of your project`;
+      note = `<p style="${CARD}">
+        <strong>This is your remaining balance</strong> — ${share}. Once it's paid, nothing else is due.</p>`;
+      noteText = `This is your remaining balance — ${share}. Once it's paid, nothing else is due.`;
     } else {
       const share = thisPct == null ? "the remainder of your project" : `the last ${thisPct}% of your project`;
       note = `<p style="${CARD}">

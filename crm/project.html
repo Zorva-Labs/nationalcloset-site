@@ -179,6 +179,16 @@ function installDateField(project) {
     📅 Install date
     <input type="date" value="${project.install_date || ""}" onchange="setInstallDate(this.value)"
       style="padding:7px 10px;border:2px solid var(--line);border-radius:8px;font:inherit;color:var(--ink);max-width:100%;min-width:0"/>
+  </label>${project.install_date ? "" : billBalanceBox("bill-balance-inline")}`;
+}
+
+// Ticked when the install is scheduled: one invoice for the whole remaining
+// balance instead of the 25% scheduling payment (the API's bill_balance).
+// Only offered before the first install date — that is when the invoice goes out.
+function billBalanceBox(boxId) {
+  return `<label style="display:inline-flex;align-items:center;gap:8px;min-height:44px;max-width:100%;font-size:13px;color:var(--ink-soft);font-weight:600;cursor:pointer">
+    <input type="checkbox" id="${boxId}" style="width:18px;height:18px;margin:0;flex:none"/>
+    Invoice the full remaining balance, not 25%
   </label>`;
 }
 
@@ -309,6 +319,7 @@ async function setInstallDate(date) {
   if (!date) return;
   const s = state?.project?.status;
   const body = { install_date: date };
+  if (document.getElementById("bill-balance-inline")?.checked) body.bill_balance = true;
   if (s === "contracted" || s === "scheduled_install") {
     body.status = (date <= localToday()) ? "installing" : "scheduled_install";
   }
@@ -347,6 +358,7 @@ function promptInstallDate(current) {
           <label style="display:block;font-size:13px;color:var(--ink-soft);margin-bottom:6px">Install date</label>
           <input id="install-date-input" type="date" value="${current || ""}" min="${today}"
             style="width:100%;padding:10px 12px;border:2px solid var(--line);border-radius:8px;font:inherit;box-sizing:border-box"/>
+          ${current ? "" : `<div style="margin-top:10px">${billBalanceBox("bill-balance-modal")}</div>`}
         </div>
         <div class="modal-foot">
           <button class="btn ghost" data-cancel>Cancel</button>
@@ -356,7 +368,10 @@ function promptInstallDate(current) {
     document.body.appendChild(bg);
     const input = bg.querySelector("#install-date-input");
     setTimeout(() => input.focus(), 30);
-    const close = (v) => { bg.remove(); resolve(v); };
+    const close = (v) => {
+      const billAll = !!bg.querySelector("#bill-balance-modal")?.checked;
+      bg.remove(); resolve(v ? { date: v, billAll } : null);
+    };
     bg.querySelector("[data-cancel]").onclick = () => close(null);
     bg.querySelector("[data-save]").onclick = () => {
       if (!input.value) { input.style.borderColor = "#D2683F"; input.focus(); return; }
@@ -368,8 +383,9 @@ function promptInstallDate(current) {
 }
 
 async function scheduleInstall() {
-  const date = await promptInstallDate(state?.project?.install_date || "");
-  if (!date) return;
+  const picked = await promptInstallDate(state?.project?.install_date || "");
+  if (!picked) return;
+  const { date, billAll } = picked;
   // If the install date is today (or earlier), the job is installing right now —
   // move it straight to "installing" instead of waiting for the cron sweep.
   // Future dates go to "scheduled_install" and auto-advance on the day.
@@ -377,7 +393,7 @@ async function scheduleInstall() {
   try {
     await SSCrm.fetchJSON("/api/projects/" + id, {
       method: "PATCH",
-      body: JSON.stringify({ status: isNow ? "installing" : "scheduled_install", install_date: date }),
+      body: JSON.stringify({ status: isNow ? "installing" : "scheduled_install", install_date: date, ...(billAll ? { bill_balance: true } : {}) }),
     });
     SSCrm.toast(isNow ? "Install started" : "Install scheduled", "success");
     await render();

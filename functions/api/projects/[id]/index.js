@@ -170,6 +170,7 @@ export async function onRequestPatch(context) {
   // an installing→completed hop can't double-bill, and each amount is figured
   // from what's still uninvoiced — a customer who paid in full gets neither.
   const milestones = [];
+  let billEarly = false;
   // Setting the install date for the first time = the install is scheduled.
   if (body.install_date !== undefined && body.install_date && !prevInstallDate) {
     /* ...unless that date is today or already gone. The schedule bills 25% when
@@ -184,7 +185,10 @@ export async function onRequestPatch(context) {
     // arrived with a time on it would sort AFTER the bare date and read as
     // future — billing 25% on the morning of the install.
     const arrived = String(body.install_date).slice(0, 10) <= todayCentral();
-    milestones.push(arrived ? "balance" : "scheduling");
+    // "Invoice the full remaining balance" ticked beside the date: one invoice
+    // for everything still owed now, in place of the 25% scheduling payment.
+    if (body.bill_balance === true && !arrived) billEarly = true;
+    milestones.push(arrived || billEarly ? "balance" : "scheduling");
   }
   // The final payment is due the day of installation — fire it when the crew is
   // marked on site. Completion is a backstop for jobs that skip 'installing'.
@@ -203,7 +207,7 @@ export async function onRequestPatch(context) {
         const actor = { id: auth.id, name: auth.email };
         await (type === "balance" && completing
           ? billOnCompletion(context.env, id, actor)
-          : createInvoice(context.env, { projectId: id, type, actor }))
+          : createInvoice(context.env, { projectId: id, type, actor, early: type === "balance" && billEarly }))
           .catch((e) => console.error(`[invoice/${type}]`, String(e)));
       }
     })();

@@ -7,7 +7,7 @@
 // from the accepted proposal's selected tier; any line can be overridden.
 import { requireAuth, json } from "../../../_lib/auth.js";
 import { getProjectBilling } from "../../../_lib/invoices.js";
-import { acceptedTierSql } from "../../../_lib/job-total.js";
+import { acceptedTierSql, finalDiscountSql, costBasis } from "../../../_lib/job-total.js";
 import { resolveFinancials, computeBreakdown, processingFee,
          MATERIALS_DIVISOR, SHIPPING_RATE, TAX_RATE, LABOR_RATE, FEE_RATE } from "../../../_lib/financials.js";
 import { recordActivity } from "../../../_lib/db.js";
@@ -15,20 +15,22 @@ import { recordActivity } from "../../../_lib/db.js";
 // Gross (pre-discount) cost basis + dollar discount for a job. Prefer the
 // accepted proposal's selected tier (subtotal = gross, total = net); fall back
 // to the contract/proposal total with no discount.
+// The job's final-payment discount (projects.final_discount_cents) adds to the
+// proposal's, so the card's profit drops by what the customer no longer pays.
 async function defaultBasis(env, projectId) {
   const tier = await env.DB.prepare(
-    `SELECT ${acceptedTierSql("subtotal_cents", "?1")} AS gross, ${acceptedTierSql("total_cents", "?1")} AS net`
+    `SELECT ${acceptedTierSql("subtotal_cents", "?1")} AS gross, ${acceptedTierSql("total_cents", "?1")} AS net,
+            ${finalDiscountSql("?1")} AS fd`
   ).bind(projectId).first().catch(() => null);
+  const fd = tier?.fd || 0;
   if (tier && (tier.gross || tier.net)) {
-    const sub = tier.gross || 0, tot = tier.net || 0;
-    // A discount makes net (total) LESS than gross (subtotal). If total >= subtotal
-    // there's no discount — total is the real client price (older tiers stored a
-    // with-tax total > pre-tax subtotal; treat total as the basis).
-    if (sub > tot) return { grossCents: sub, discountCents: sub - tot };
-    return { grossCents: tot || sub, discountCents: 0 };
+    const { gross, discount } = costBasis(tier.gross, tier.net, 0, fd);
+    return { grossCents: gross, discountCents: discount, finalDiscountCents: fd };
   }
+  // getProjectBilling's total is already net of the final discount.
   const b = await getProjectBilling(env.DB, projectId).catch(() => null);
-  return { grossCents: b?.totalCents || 0, discountCents: 0 };
+  const { gross, discount } = costBasis(null, null, (b?.totalCents || 0) + fd, fd);
+  return { grossCents: gross, discountCents: discount, finalDiscountCents: fd };
 }
 
 // Actual Stripe processing fees already collected on this project's paid
@@ -58,7 +60,7 @@ export async function onRequestGet(context) {
   const b = await defaultBasis(context.env, id);
   const fee = await projectFeeCents(context.env, id);
   const fin = withFee(resolveFinancials(b.grossCents, b.discountCents, row), fee);
-  return json({ financials: { ...fin, default_price_cents: b.grossCents, default_discount_cents: b.discountCents } });
+  return json({ financials: { ...fin, default_price_cents: b.grossCents, default_discount_cents: b.discountCents, final_discount_cents: b.finalDiscountCents } });
 }
 
 export async function onRequestPut(context) {
@@ -143,5 +145,5 @@ export async function onRequestPut(context) {
     actorKind: "admin", actorId: auth.id, actorName: auth.email,
     details: { price_cents: price, discount_cents: discount, profit_cents: fin.profit_cents },
   }).catch(() => {});
-  return json({ financials: { ...fin, default_price_cents: b.grossCents, default_discount_cents: b.discountCents } });
+  return json({ financials: { ...fin, default_price_cents: b.grossCents, default_discount_cents: b.discountCents, final_discount_cents: b.finalDiscountCents } });
 }

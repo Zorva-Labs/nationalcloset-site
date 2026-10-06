@@ -2,6 +2,21 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-06 (CRM: a discount on the final payment, breadcrumbs, no costs on the proposal)
+- **What the client asked for:** Michael: "a way to add a discount for the final invoice after the booking is set in the crm, there should also be bread crumbs for going back to the previous job screen when clicking on proposals or messages, etc... Remove the calculations from the proposal screen and only show them on the job screen."
+- **Discount on the final payment:** a booked job (contracted → completed) gets a "🏷 Discount on final payment" button on its Invoices tab and its action card. It takes $ or % of the job total, a reason the customer sees, and Remove. Migration **0073** (applied to the live D1) adds `projects.final_discount_cents` / `final_discount_note` and `invoices.discount_cents`. The new `POST /api/projects/:id/discount` sets the discount and moves any money already billed and unpaid. It refuses more than is still owed, since collected money would need a refund. The job total in billing, the jobs list, the P&L (with `costBasis`), Receivables and the job card are all net of it. The scheduling payment ignores it, so the whole discount comes off the final invoice. The CRM invoice sheet, the invoice email and `/invoice/` show it as a discount line. Setting it emails nothing. How it works: `docs/crm.md` → Invoices and Stripe.
+- **Breadcrumbs:** Jobs › job › Proposals/Contracts/Invoices › document on the proposal, contract, invoice and estimate pages. Their back link is now "← Back to job" and goes to the tab you came from (`SSCrm.jobCrumbs`; `docs/crm.md` → Getting around). Messages already open inside the job.
+- **Proposal page:** the cost-rate bar and the per-option cost/profit boxes are gone. "Expenses & profit" on the job is the one place for those figures. `proposals.cost_rates` stays in the D1, unused.
+- CRM assets pinned `crm-app.css?v=ncc123`, `crm-app.js?v=ncc112`.
+- **How it was checked:** a local CRM (`wrangler pages dev dist` over a seeded local D1, `docs/tracking.md`) with a $10,000 job, $7,500 paid and a $2,500 final invoice open:
+  - A $250 discount took the invoice to $2,250 and the job to $9,750. The sheet showed Subtotal $2,500, the discount line and Total due $2,250.
+  - Removing it put back $2,500.
+  - A $300 discount set before the final invoice existed gave a $2,200 balance invoice carrying it.
+  - $10,000 was refused ("$2,500.00 can come off").
+  - The breadcrumbs and back links were correct on all four pages, and the proposal showed no cost figures.
+  - At 375px nothing was wider than the viewport, the dialog fit, taps were ≥44px and the discount text measured 5.02:1.
+- Nothing on the live site was discounted or emailed.
+
 ## 2026-10-05 (lead forms: email and the space required)
 - **What the client asked for:** Michael, after lead #86 (Stacia Graffia, Google organic, home page) came in with a name and a phone only: "make email and what they want required."
 - **Every lead form** (36 pages' `form[data-lead]`, the homepage's bottom form) now has a required **Email** and a required **What space?** select after Name and Phone; the select's options are the CRM's `SERVICES` (so Kitchen Cabinets and Bathroom Vanity, missing from the public picker, are back in step). The homepage ballpark takes its space from its chips as before and gains a required Email. The trade-partner form already required both.

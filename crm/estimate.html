@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc122" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc123" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc111"></script>
+<script src="/crm/crm-app.js?v=ncc112"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/estimates.html";
 let state;
 
 (async () => {
-  const user = await SSCrm.mount({ title: "Estimate", actions: `<a class="btn ghost" href="/crm/estimates.html">← Estimates</a>` });
+  const user = await SSCrm.mount({ title: "Estimate", actions: `<a class="btn ghost" id="back-link" href="/crm/estimates.html">← Estimates</a>` });
   if (!user) return;
   state = await SSCrm.fetchJSON("/api/estimates/" + id);
   render();
@@ -27,6 +27,7 @@ function render() {
   const { estimate: e, lines } = state;
   if (state.quote_markup_rate != null) MK_RATE = state.quote_markup_rate;
   document.getElementById("page-title").textContent = `${e.number || "Draft estimate"} · ${SSCrm.fmtMoney(e.total_cents)}`;
+  SSCrm.jobCrumbs(e.project_id, e.project_name, "overview", e.number || "Draft estimate");
   const isSent = ["sent","viewed","approved","declined"].includes(e.status);
   const customerUrl = `${location.origin}/estimate/?t=${e.view_token}`;
 

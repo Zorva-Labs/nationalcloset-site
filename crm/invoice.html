@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc122" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc123" />
   <link rel="icon" href="/img/favicon-nc.png" />
   <style>
     .inv-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:16px; }
@@ -62,7 +62,7 @@
   </style>
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc111"></script>
+<script src="/crm/crm-app.js?v=ncc112"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -73,7 +73,7 @@ const TYPE_LABEL = { deposit: "Deposit (50%)", scheduling: "Scheduling (25%)", b
 const STATUS = { open: ["open","Awaiting payment"], paid: ["paid","Paid"], void: ["void","Void"], draft: ["open","Draft"] };
 
 (async () => {
-  const user = await SSCrm.mount({ title: "Invoice", actions: `<a class="btn ghost" href="javascript:history.back()">← Back</a>`, wide: true });
+  const user = await SSCrm.mount({ title: "Invoice", actions: `<a class="btn ghost" id="back-link" href="/crm/invoices.html">← Invoices</a>`, wide: true });
   if (!user) return;
   await load();
 })();
@@ -82,7 +82,8 @@ async function load() {
   data = await SSCrm.fetchJSON("/api/invoices/" + id);
   // Seed an editable line from the single amount if there are no line items yet.
   if (!data.lines || !data.lines.length) {
-    data.lines = [{ description: data.invoice.description || (TYPE_LABEL[data.invoice.type] || "Custom closet project"), qty: 1, unit_cents: data.invoice.amount_cents || 0 }];
+    // The line is the work before any final-payment discount the invoice carries.
+    data.lines = [{ description: data.invoice.description || (TYPE_LABEL[data.invoice.type] || "Custom closet project"), qty: 1, unit_cents: (data.invoice.amount_cents || 0) + (data.invoice.discount_cents || 0) }];
   }
   render();
 }
@@ -91,10 +92,12 @@ function fmtDay(iso) { return iso ? SSCrm.fmtDay(iso) : ""; }
 
 function render() {
   const iv = data.invoice;
+  SSCrm.jobCrumbs(iv.project_id, iv.project_name, "invoices", iv.number);
   const paid = iv.status === "paid", isVoid = iv.status === "void", locked = paid || isVoid;
   const [bcls, blabel] = STATUS[iv.status] || ["open", iv.status];
   const payUrl = "https://nationalclosetco.com/invoice/?t=" + iv.view_token;
   const total = data.lines.reduce((s, l) => s + Math.round((Number(l.qty)||0) * (Number(l.unit_cents)||0)), 0);
+  const disc = iv.discount_cents || 0;   // the job's final-payment discount, where this invoice carries it
 
   const rows = data.lines.map((l, i) => editing ? `
     <tr>
@@ -175,11 +178,14 @@ function render() {
 
       <div class="inv-totals">
         <table>
+        ${disc > 0 ? `
+          <tr><td>Subtotal</td><td class="r" style="text-align:right">${m(total)}</td></tr>
+          <tr><td>Discount${iv.final_discount_note ? ` · ${e(iv.final_discount_note)}` : ""}</td><td class="r" style="text-align:right;color:#047857">−${m(disc)}</td></tr>` : ""}
         ${(iv.amount_paid_cents > 0) ? `
           <tr><td>Invoice total</td><td class="r" style="text-align:right">${m(iv.amount_cents)}</td></tr>
           <tr><td>Paid</td><td class="r" style="text-align:right;color:#047857">−${m(iv.amount_paid_cents)}</td></tr>
           <tr class="grand"><td>${iv.status === "paid" ? "Paid in full" : "Balance due"}</td><td class="r" style="text-align:right">${m(Math.max(0, (iv.amount_cents || 0) - (iv.amount_paid_cents || 0)))}</td></tr>
-        ` : `<tr class="grand"><td>${iv.status === "paid" ? "Paid in full" : "Total due"}</td><td class="r" style="text-align:right">${m(total)}</td></tr>`}
+        ` : `<tr class="grand"><td>${iv.status === "paid" ? "Paid in full" : "Total due"}</td><td class="r" style="text-align:right">${m(Math.max(0, total - disc))}</td></tr>`}
         </table>
       </div>
       ${(data.payments && data.payments.length) ? `

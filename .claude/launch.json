@@ -24,6 +24,21 @@
         "dist"
       ],
       "port": 4118
+    },
+    {
+      "name": "nationalcloset-local-crm",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "wrangler",
+        "pages",
+        "dev",
+        "dist",
+        "--port",
+        "4119",
+        "--persist-to",
+        ".wrangler/local-crm"
+      ],
+      "port": 4119
     }
   ]
 }

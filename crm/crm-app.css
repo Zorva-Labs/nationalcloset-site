@@ -1152,3 +1152,13 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
   .inv-tbl td:first-child { position: static; background: transparent; box-shadow: none; }
   .inv-tbl td:last-child { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; padding-top: 0; text-align: left !important; }
 }
+
+/* Breadcrumbs above a page title (setCrumbs / jobCrumbs in crm-app.js). */
+.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; font-size: 13px; color: var(--ink-soft); margin: 0 0 6px; min-width: 0; }
+.crumbs a { color: var(--accent-text); font-weight: 600; text-decoration: none; padding: 4px 0; }
+.crumbs a:hover { color: var(--accent-text-hover); text-decoration: underline; }
+.crumbs [aria-current] { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+.crumbs__sep { color: var(--ink-soft); }
+@media (max-width: 700px) {
+  .crumbs a { display: inline-flex; align-items: center; min-height: 44px; padding: 0; }
+}

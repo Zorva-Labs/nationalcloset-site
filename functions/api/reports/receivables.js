@@ -4,7 +4,7 @@
 //   Aging is measured from the due date (or, if none, the invoice date) to the
 //   "as of" date, bucketed Current / 1–30 / 31–60 / 61–90 / 90+ days past due.
 import { requireAuth, json } from "../../_lib/auth.js";
-import { contractTotalSql, acceptedTierSql } from "../../_lib/job-total.js";
+import { contractTotalSql, acceptedTierSql, finalDiscountSql } from "../../_lib/job-total.js";
 
 const DAY = 86400000;
 
@@ -64,6 +64,7 @@ export async function onRequestGet(context) {
     `SELECT p.id, p.name, c.name AS contact_name,
             ${contractTotalSql()} AS contract_total,
             ${acceptedTierSql("selected")} AS accepted_total,
+            ${finalDiscountSql()} AS final_discount,
             (SELECT COALESCE(SUM(amount_cents),0) FROM invoices iv WHERE iv.project_id=p.id AND iv.status != 'void') AS invoiced,
             (SELECT COALESCE(SUM(amount_paid_cents),0) FROM invoices iv WHERE iv.project_id=p.id) AS collected
        FROM projects p LEFT JOIN contacts c ON c.id = p.contact_id
@@ -74,7 +75,7 @@ export async function onRequestGet(context) {
   const unbilled = [];
   let unbilledTotal = 0;
   for (const j of jobRows) {
-    const jobTotal = j.contract_total || j.accepted_total || 0;
+    const jobTotal = Math.max(0, (j.contract_total || j.accepted_total || 0) - (j.final_discount || 0));
     const amt = Math.max(0, jobTotal - (j.invoiced || 0));
     if (amt <= 0) continue;
     unbilledTotal += amt;

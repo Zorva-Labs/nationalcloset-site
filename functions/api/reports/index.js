@@ -8,7 +8,7 @@
 //   total — and a job's revenue is never less than what has been invoiced on it.
 import { requireAuth, json } from "../../_lib/auth.js";
 import { resolveFinancials, processingFee } from "../../_lib/financials.js";
-import { contractTotalSql, acceptedTierSql } from "../../_lib/job-total.js";
+import { contractTotalSql, acceptedTierSql, finalDiscountSql, costBasis } from "../../_lib/job-total.js";
 
 const WON = ["contracted", "scheduled_install", "installing", "completed"];
 
@@ -35,6 +35,7 @@ export async function onRequestGet(context) {
             ${contractTotalSql()} AS contract_total,
             ${acceptedTierSql("subtotal_cents")} AS tier_gross,
             ${acceptedTierSql("total_cents")} AS tier_net,
+            ${finalDiscountSql()} AS final_discount,
             (SELECT COALESCE(SUM(iv.fee_cents),0) FROM invoices iv WHERE iv.project_id=p.id AND iv.status='paid') AS actual_fee_cents,
             (SELECT COALESCE(SUM(iv.amount_cents),0) FROM invoices iv WHERE iv.project_id=p.id AND iv.status != 'void') AS invoiced_cents
        FROM projects p
@@ -48,17 +49,9 @@ export async function onRequestGet(context) {
   const totals = { gross: 0, discounts: 0, revenue: 0, materials: 0, accessories: 0, wall: 0, wall_income: 0, shipping: 0, tax: 0, labor: 0, misc: 0, fee: 0, expenses: 0, profit: 0 };
 
   for (const r of rows) {
-    // Cost basis is the pre-discount gross; revenue is the net the client pays.
-    // A discount makes net < gross (tier total < subtotal). Older tiers stored a
-    // with-tax total > pre-tax subtotal — that's not a discount, so use total.
-    let gross, net, discount;
-    if (r.tier_gross != null || r.tier_net != null) {
-      const sub = r.tier_gross || 0, tot = r.tier_net || 0;
-      if (sub > tot) { gross = sub; net = tot; discount = sub - tot; }
-      else { gross = tot || sub; net = gross; discount = 0; }
-    } else {
-      gross = r.contract_total || 0; net = gross; discount = 0;
-    }
+    // Cost basis is the pre-discount gross; revenue is the net the client pays
+    // (the proposal's discount and any final-payment discount come off it).
+    const { gross, discount } = costBasis(r.tier_gross, r.tier_net, r.contract_total, r.final_discount);
     // A job_financials row exists iff its columns came back non-null.
     const hasRow = r.price_cents != null;
     const fin = resolveFinancials(gross, discount, hasRow ? r : null);

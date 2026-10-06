@@ -9,11 +9,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc122" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc123" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc111"></script>
+<script src="/crm/crm-app.js?v=ncc112"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -44,6 +44,7 @@ async function render() {
   state = await SSCrm.fetchJSON("/api/projects/" + id);
   const { project, windows, estimates, proposals, contracts, appointments, lead, email_count } = state;
   document.title = `${project.name} · National Closet Company CRM`;
+  SSCrm.setCrumbs([{ label: "Jobs", href: "/crm/projects.html" }, { label: project.name }]);
 
   // Find the "booked-the-job" state
   const fullyExecuted = contracts.find((c) => c.status === "fully_executed");
@@ -204,7 +205,100 @@ function renderJobActions(project) {
       <div class="job-action__text"><strong>Job completed 🎉</strong>${when ? ` &nbsp;Installed ${when}.` : ""}</div>
       <div class="job-action__btns">${dateField}</div>`;
   }
-  return `<div class="job-action card">${body}</div>`;
+  const disc = finalDiscountCents();
+  const discLine = `<div class="job-action__disc" style="flex-basis:100%;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--ink-soft)">
+      ${disc > 0 ? `<span>🏷 <strong style="color:#15803D">${SSCrm.fmtMoney(disc)} off the final payment</strong>${project.final_discount_note ? ` · ${SSCrm.esc(project.final_discount_note)}` : ""}</span>` : ""}
+      <button class="btn ghost sm" onclick="finalDiscountUI()">${disc > 0 ? "Change discount" : "🏷 Discount on final payment"}</button>
+    </div>`;
+  return `<div class="job-action card" style="flex-wrap:wrap">${body}${discLine}</div>`;
+}
+
+const JOB_STAGES = ["contracted", "scheduled_install", "installing", "completed"];
+const fdBtn = (on) => `min-width:44px;min-height:44px;border:1px solid ${on ? "var(--ink)" : "var(--line-strong)"};font:inherit;font-size:14px;font-weight:700;cursor:pointer;background:${on ? "var(--ink)" : "#fff"};color:${on ? "#fff" : "var(--ink)"}`;
+
+// A discount on a booked job, off its final payment. The server takes it off
+// the job total (so the final invoice bills less), lowers an open final
+// invoice already raised, and refuses anything past what is still owed.
+function finalDiscountUI() {
+  const m = SSCrm.fmtMoney, e = SSCrm.esc;
+  const cur = finalDiscountCents();
+  const before = (jobTotalCents() || 0) + cur;           // the job before this discount
+  const paid = (state.billing && state.billing.paid_cents) || 0;
+  let mode = "usd";
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `
+    <div class="modal" style="max-width:440px">
+      <div class="modal-head">Discount on the final payment</div>
+      <div class="modal-body">
+        <p class="muted" style="font-size:12px;margin:0 0 12px;line-height:1.5">
+          Job total before the discount <strong style="color:var(--ink)">${m(before)}</strong> · paid so far <strong style="color:var(--ink)">${m(paid)}</strong>.
+          It comes off the final invoice; one already sent and unpaid is lowered to match. Money already collected can't be discounted.
+        </p>
+        <div class="form">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label for="fd-amt" style="font-size:13px;font-weight:600;color:var(--ink)">Discount</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span style="display:inline-flex;flex:none" role="group" aria-label="Enter as dollars or percent">
+                <button type="button" id="fd-usd" style="${fdBtn(true)};border-radius:6px 0 0 6px">$</button
+                ><button type="button" id="fd-pct" style="${fdBtn(false)};border-left:0;border-radius:0 6px 6px 0">%</button>
+              </span>
+              <input id="fd-amt" type="text" inputmode="decimal" value="${cur ? m(cur) : ""}" placeholder="0.00" style="min-width:0;flex:1"/>
+            </div>
+          </div>
+          <div id="fd-eq" class="muted" style="font-size:12px;margin:-4px 0 4px;min-height:16px"></div>
+          <label><span>Reason <span class="muted" style="font-weight:400">· shown to the customer on the invoice</span></span>
+            <input id="fd-note" maxlength="140" value="${e(state.project.final_discount_note || "")}" placeholder="e.g. Install day delay"/></label>
+        </div>
+      </div>
+      <div class="modal-foot">
+        ${cur ? `<button class="btn ghost" data-remove style="margin-right:auto;color:#991B1B">Remove discount</button>` : ""}
+        <button class="btn ghost" data-cancel>Cancel</button>
+        <button class="btn primary" data-save>Save discount</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  const amtI = bg.querySelector("#fd-amt"), eq = bg.querySelector("#fd-eq");
+  const cents = () => {
+    const v = parseFloat(String(amtI.value).replace(/[^0-9.]/g, "")) || 0;
+    if (v <= 0) return 0;
+    return mode === "pct" ? Math.round(before * Math.min(v, 100) / 100) : Math.round(v * 100);
+  };
+  const paint = () => {
+    bg.querySelector("#fd-usd").setAttribute("style", fdBtn(mode === "usd") + ";border-radius:6px 0 0 6px");
+    bg.querySelector("#fd-pct").setAttribute("style", fdBtn(mode === "pct") + ";border-left:0;border-radius:0 6px 6px 0");
+    const c = cents();
+    eq.textContent = c > 0
+      ? (mode === "pct" ? `= ${m(c)} · ` : (before > 0 ? `= ${Math.round((c / before) * 1000) / 10}% · ` : "")) + `job total becomes ${m(Math.max(0, before - c))}`
+      : "";
+  };
+  bg.querySelector("#fd-usd").onclick = () => { if (mode !== "usd") { mode = "usd"; amtI.value = cents() ? m(cents()) : ""; } paint(); };
+  bg.querySelector("#fd-pct").onclick = () => { if (mode !== "pct") { const c = cents(); mode = "pct"; amtI.value = c && before ? String(Math.round((c / before) * 1000) / 10) : ""; } paint(); };
+  amtI.addEventListener("input", paint);
+  paint(); amtI.focus();
+  const close = () => bg.remove();
+  bg.querySelector("[data-cancel]").onclick = close;
+  bg.addEventListener("click", (ev) => { if (ev.target === bg) close(); });
+  const save = async (amount) => {
+    const btn = bg.querySelector("[data-save]");
+    btn.disabled = true; btn.textContent = "Saving…";
+    try {
+      const r = await SSCrm.fetchJSON(`/api/projects/${id}/discount`, { method: "POST", body: JSON.stringify({
+        amount_cents: amount, note: bg.querySelector("#fd-note").value.trim(),
+      })});
+      close();
+      const moved = (r.adjusted || []).map((a) => a.status === "void" ? `${a.number} voided` : `${a.number} now ${m(a.amount_cents)}`);
+      SSCrm.toast((amount ? "Discount saved" : "Discount removed") + (moved.length ? ` · ${moved.join(" · ")}` : ""), "success");
+      await render();
+      if (moved.length) switchTab("invoices");
+    } catch (err) {
+      SSCrm.toast(err.message || "Could not save the discount", "error");
+      btn.disabled = false; btn.textContent = "Save discount";
+    }
+  };
+  bg.querySelector("[data-save]").onclick = () => save(cents());
+  const rm = bg.querySelector("[data-remove]");
+  if (rm) rm.onclick = () => save(0);
 }
 
 // Save the picked install date and advance the job. Setting a date on a booked
@@ -485,14 +579,18 @@ async function jobRecordAnyPayment() {
   };
 }
 
-// Job (contract) value, from the most authoritative contract on the project.
+// What the customer owes for the whole job: the server's billing total (every
+// signed contract once, less any final-payment discount), else the most
+// authoritative contract less the discount.
 function jobTotalCents() {
+  if (state?.billing && state.billing.total_cents > 0) return state.billing.total_cents;
   const ks = (state?.contracts || []).slice();
   if (!ks.length) return null;
   const rank = { fully_executed: 0, signed_by_customer: 1, sent: 2 };
   ks.sort((a, b) => ((rank[a.status] ?? 3) - (rank[b.status] ?? 3)) || (b.id - a.id));
-  return ks[0].total_cents != null ? ks[0].total_cents : null;
+  return ks[0].total_cents != null ? Math.max(0, ks[0].total_cents - finalDiscountCents()) : null;
 }
+const finalDiscountCents = () => (state?.project?.final_discount_cents || 0);
 
 function renderInvoices(host, invoices) {
   const m = SSCrm.fmtMoney, e = SSCrm.esc;
@@ -514,11 +612,13 @@ function renderInvoices(host, invoices) {
 
   const summary = `<div class="card" style="display:flex;gap:22px;flex-wrap:wrap;align-items:center">
       ${stat("Job total", jobTotal != null ? m(jobTotal) : "—")}
+      ${finalDiscountCents() > 0 ? stat("Discount", "−" + m(finalDiscountCents()), "#15803D") : ""}
       ${stat("Paid", m(paidCents), "#10B981")}
       ${stat("Balance due", m(balanceDue), balanceDue > 0 ? "#B45309" : "#10B981")}
       ${(jobTotal && balanceDue === 0 && paidCents >= jobTotal) ? `<div style="background:#ECFDF5;color:#15803D;font-weight:700;font-size:13px;padding:6px 12px;border-radius:999px">✓ Paid in full</div>` : ""}
       <div style="flex:1;min-width:200px;text-align:right;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">
         <button class="btn primary sm" onclick="jobRecordAnyPayment()">💵 Record a payment</button>
+        ${JOB_STAGES.includes(state.project.status) ? `<button class="btn secondary sm" onclick="finalDiscountUI()">🏷 ${finalDiscountCents() > 0 ? "Change discount" : "Discount on final payment"}</button>` : ""}
         <button class="btn secondary sm" onclick="createFullInvoice()">+ Full payment</button>
         <button class="btn secondary sm" onclick="createInvoiceUI('deposit')">+ Deposit</button>
         <button class="btn secondary sm" onclick="createInvoiceUI('balance')">+ Balance</button>
@@ -736,8 +836,9 @@ function renderOverview(s) {
               <div class="muted">Type</div><div>${e(signedContract.contract_type || "custom_order").replace(/_/g, " ")}</div>
               <div class="muted">Total</div><div class="money" style="font-size:15px">${fmtMoney(signedContract.total_cents)}</div>
               ${signedContract.deposit_cents ? `<div class="muted">Deposit</div><div>${fmtMoney(signedContract.deposit_cents)} ${signedContract.deposit_paid ? "<span class=\"muted\">· received</span>" : "<span class=\"muted\">· pending</span>"}</div>` : ""}
+              ${finalDiscountCents() > 0 ? `<div class="muted">Final-payment discount</div><div style="color:#15803D;font-weight:600">−${fmtMoney(finalDiscountCents())}${project.final_discount_note ? ` <span class="muted" style="font-weight:400">· ${e(project.final_discount_note)}</span>` : ""}</div>` : ""}
               ${(() => {
-                const total = signedContract.total_cents || 0;
+                const total = jobTotalCents() ?? (signedContract.total_cents || 0);
                 const paid = (state.billing && state.billing.paid_cents) || 0;
                 const bal = Math.max(0, total - paid);
                 const pif = (state.billing && state.billing.paid_in_full) || bal === 0;
@@ -1041,7 +1142,7 @@ function finRender() {
       ${finExpRow("accessories_charged", "Accessories charged <span class='muted' style='font-size:11px'>· of gross</span>")}
       ${finExpRow("wall_charged", "Wall repair &amp; paint charged <span class='muted' style='font-size:11px'>· of gross</span>")}
       <tr>
-        <td style="padding:8px 0 6px">Client discount <span class='muted' style='font-size:11px'>· from proposal · out of profit</span></td>
+        <td style="padding:8px 0 6px">Client discount <span class='muted' style='font-size:11px'>· from proposal${(finState.final_discount_cents || 0) > 0 ? " + final payment" : ""} · out of profit</span></td>
         <td style="text-align:right;white-space:nowrap">
           <label style="font-size:11px;color:var(--ink-soft);margin-right:8px;cursor:pointer"><input type="checkbox" id="fin-discount-auto" ${f.discount_auto ? "checked" : ""} onchange="finToggle('discount')"/> auto</label>
           ${finUnitTog("discount")}

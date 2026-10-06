@@ -6,10 +6,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc122" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc123" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc111"></script>
+<script src="/crm/crm-app.js?v=ncc112"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -30,7 +30,7 @@ async function retype(kind) {
 }
 
 (async () => {
-  const user = await SSCrm.mount({ title: "Proposal", actions: `<a class="btn ghost" href="/crm/proposals.html">← Proposals</a>` });
+  const user = await SSCrm.mount({ title: "Proposal", actions: `<a class="btn ghost" id="back-link" href="/crm/proposals.html">← Proposals</a>` });
   if (!user) return;
   state = await SSCrm.fetchJSON("/api/proposals/" + id);
   render();
@@ -39,12 +39,10 @@ async function retype(kind) {
 function render() {
   const { proposal: p, tiers, comments } = state;
   if (state.quote_markup_rate != null) MK_RATE = state.quote_markup_rate;
-  // Restore the saved internal cost-rate bar so the profit preview persists
-  // instead of resetting to the 2.10 default on every reload.
-  if (p.cost_rates) { try { Object.assign(PROP_RATES, JSON.parse(p.cost_rates)); } catch (e) {} }
   // Derive the proposal "kind" from its option count: 1 option = single, 2 = custom.
   const currentKind = (tiers || []).length <= 1 ? "single" : "custom";
   document.getElementById("page-title").textContent = `${p.number} · ${p.project_name}`;
+  SSCrm.jobCrumbs(p.project_id, p.project_name, "proposals", p.number);
   const canSend = ["draft"].includes(p.status);
   const isAccepted = p.status === "accepted";
   const customerUrl = `${location.origin}/proposal/?t=${p.view_token}`;
@@ -102,8 +100,6 @@ function render() {
       <textarea id="job-notes" rows="4" placeholder="e.g. Includes soft-close hinges on all drawers, crown molding, and paint touch-up after install." style="width:100%;border:1px solid var(--line-soft);padding:8px 10px;border-radius:var(--r-sm);font:inherit;font-size:13px;box-sizing:border-box">${SSCrm.esc(p.job_notes || "")}</textarea>
       <div class="form-actions" style="margin-top:8px"><button class="btn secondary sm" onclick="saveAll()">💾 Save</button></div>
     </div>
-
-    ${propRatesBar()}
 
     <!-- Tiers stacked vertically so each card has the full page width
          for line items, dimensions, color, and pricing columns -->
@@ -168,97 +164,9 @@ function renderTier(t, i) {
     <div style="border-top:1px solid var(--line-soft);margin-top:10px;padding-top:10px">
       <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total <span style="font-weight:400;color:var(--ink-soft);font-size:12px">· incl. shipping, tax &amp; install${mkPct() > 0 ? ` &amp; ${mkPct()}% markup` : ""}</span></span><span class="tier-total money">${SSCrm.fmtMoney(t.total_cents || 0)}</span></div>
     </div>
-    ${(() => { const sub = t.subtotal_cents || 0, tot = t.total_cents || 0; return tierCostBox(sub > tot ? sub : tot, tot || sub); })()}
   </div>`;
 }
 
-// Internal cost & profit breakdown — CRM-only (never rendered on the customer
-// proposal). Mirrors the cost model: materials = price ÷ 1.8; shipping = 5% of
-// materials; taxes = 9.75% of (materials + shipping); labor = 10% of gross, min $350.
-// Editable formula rates for the internal cost preview (session-only; defaults
-// mirror _lib/financials.js). The rate bar above the options edits these.
-// The standing incentive: a free shoe/storage tower. We pay our supplier cost;
-// the customer sees it at the same markup as everything else on the quote, so
-// the advertised value tracks the markup instead of being typed in by hand.
-const TOWER_COST_CENTS = 33400;
-// Minimum job to qualify. At $5k the tower is ~14% of profit; below ~$3k it's
-// closer to a quarter of it, and nothing in our book falls between $2.6k and $5.7k,
-// so this threshold protects margin without excluding work we'd otherwise have won.
-const TOWER_MIN_CENTS = 500000;
-const towerValueCents = () => Math.round(TOWER_COST_CENTS * PROP_RATES.divisor);
-// Advertised figures read as round dollars — "$935", never "$935.20".
-const usd = (cents) => "$" + Math.round(cents / 100).toLocaleString("en-US");
-
-const PROP_RATES = { divisor: 2.10, shipRate: 0, taxRate: 0, laborRate: 0.10, matDiscRate: 0, feeRate: 0.03 };  // materials ÷2.10, labor 10%, processing fee 3%; shipping/taxes/mfr 0
-const propPctStr = (frac) => String(+((frac * 100).toFixed(4)));
-function tierCostCalc(grossCents, netCents) {
-  const g = grossCents || 0;
-  const r = PROP_RATES;
-  // price ÷ modifier = actual materials cost, then the mfr discount comes off that.
-  const matList = r.divisor > 0 ? Math.round(g / r.divisor) : 0;  // divisor 0 → no materials
-  const matDisc = Math.round(matList * r.matDiscRate); // manufacturer discount (credit)
-  const materials = matList - matDisc;                 // net materials cost we actually pay
-  // Shipping & taxes follow the net (post-discount) materials.
-  const shipping = Math.round(materials * r.shipRate);
-  const tax = Math.round((materials + shipping) * r.taxRate);
-  const labor = g > 0 ? Math.max(Math.round(g * r.laborRate), 35000) : 0;
-  const fee = Math.round((netCents || 0) * r.feeRate);  // payment-processing fee, out of profit
-  const cost = materials + shipping + tax + labor + fee;
-  const profit = (netCents || 0) - cost;
-  const margin = netCents ? Math.round((profit / netCents) * 100) : 0;
-  return { matList, matDisc, materials, shipping, tax, labor, fee, cost, profit, margin };
-}
-function tierCostRows(grossCents, netCents) {
-  const c = tierCostCalc(grossCents, netCents);
-  const m = SSCrm.fmtMoney;
-  const r = PROP_RATES;
-  const discount = (grossCents || 0) - (netCents || 0);
-  const row = (l, v, strong) => `<div style="${strong ? "font-weight:700;color:var(--ink)" : ""}">${l}</div><div style="text-align:right;${strong ? "font-weight:700;color:var(--ink)" : ""}">${v}</div>`;
-  return row(`Materials <span style="opacity:.7">(price ÷ ${+r.divisor.toFixed(4)})</span>`, m(c.matList))
-    + row(`Mfr. discount <span style="opacity:.7">(${propPctStr(r.matDiscRate)}%)</span>`, `<span style="color:#B45309">−${m(c.matDisc)}</span>`)
-    + row(`Shipping <span style="opacity:.7">(${propPctStr(r.shipRate)}%)</span>`, m(c.shipping))
-    + row(`Taxes <span style="opacity:.7">(${propPctStr(r.taxRate)}%)</span>`, m(c.tax))
-    + row(`Labor <span style="opacity:.7">(${propPctStr(r.laborRate)}%, min $350)</span>`, m(c.labor))
-    + row(`Processing fee <span style="opacity:.7">(${propPctStr(r.feeRate)}% of net)</span>`, m(c.fee))
-    + row("Total cost", m(c.cost), true)
-    + (discount > 0 ? row("Discount (off profit)", "−" + m(discount)) : "")
-    + row("Profit", `<span style="color:#15803D;font-weight:700">${m(c.profit)} · ${c.margin}%</span>`, true);
-}
-
-// The editable rate bar (one shared control above all options). Editing a rate
-// updates PROP_RATES and re-renders every option's internal cost box live.
-function propRatesBar() {
-  const r = PROP_RATES;
-  const inp = (id, val) => `<input id="${id}" value="${val}" oninput="applyPropRates()" inputmode="decimal" style="width:56px;text-align:right;padding:3px 7px;font-size:12px;font-weight:600;border:1px solid #FDBA74;border-radius:5px;background:#fff"/>`;
-  return `<div class="card" style="margin-top:16px;background:#FFF7ED;border-color:#FDBA74">
-    <div class="card-head" style="margin-bottom:8px"><h3 style="color:#9A3412">🔒 Internal cost rates <span class="muted" style="font-weight:400;font-size:11px">· adjust the profit-preview formula (not shown to the client)</span></h3></div>
-    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--ink-soft)">
-      <label style="display:flex;align-items:center;gap:6px">Materials ÷ ${inp("prop-rate-divisor", +r.divisor.toFixed(4))}</label>
-      <label style="display:flex;align-items:center;gap:6px">Shipping ${inp("prop-rate-ship", propPctStr(r.shipRate))}%</label>
-      <label style="display:flex;align-items:center;gap:6px">Taxes ${inp("prop-rate-tax", propPctStr(r.taxRate))}%</label>
-      <label style="display:flex;align-items:center;gap:6px">Labor ${inp("prop-rate-labor", propPctStr(r.laborRate))}% <span class="muted">min $350</span></label>
-      <label style="display:flex;align-items:center;gap:6px">Mfr. discount ${inp("prop-rate-matdisc", propPctStr(r.matDiscRate))}%</label>
-      <label style="display:flex;align-items:center;gap:6px">Processing fee ${inp("prop-rate-fee", propPctStr(r.feeRate))}%</label>
-    </div>
-  </div>`;
-}
-function applyPropRates() {
-  const num = (id) => parseFloat((document.getElementById(id) || {}).value);
-  const div = num("prop-rate-divisor"), sh = num("prop-rate-ship"), tx = num("prop-rate-tax"), lb = num("prop-rate-labor"), md = num("prop-rate-matdisc"), fe = num("prop-rate-fee");
-  if (isFinite(div) && div > 0) PROP_RATES.divisor = div;
-  if (isFinite(sh) && sh >= 0) PROP_RATES.shipRate = sh / 100;
-  if (isFinite(tx) && tx >= 0) PROP_RATES.taxRate = tx / 100;
-  if (isFinite(lb) && lb >= 0) PROP_RATES.laborRate = lb / 100;
-  if (isFinite(md) && md >= 0) PROP_RATES.matDiscRate = md / 100;
-  if (isFinite(fe) && fe >= 0) PROP_RATES.feeRate = fe / 100;
-  document.querySelectorAll('.card[data-tier]').forEach((card) => recalcTierEl(card));
-}
-function tierCostBox(grossCents, netCents) {
-  return `<div class="tier-cost" style="margin-top:10px;padding:10px 12px;background:#FFF7ED;border:1px dashed #FDBA74;border-radius:8px;font-size:12px">
-    <div style="font-weight:700;color:#9A3412;text-transform:uppercase;letter-spacing:.04em;font-size:10px;margin-bottom:6px">🔒 Internal cost &amp; profit · not shown to the client</div>
-    <div class="tier-cost-rows" style="display:grid;grid-template-columns:1fr auto;gap:3px 16px;color:var(--ink-soft)">${tierCostRows(grossCents, netCents)}</div>
-  </div>`;
-}
 function tierLineRow(l) {
   // Discounts are stored as negative line items (come out of profit; the cost
   // basis stays on the pre-discount gross). Render them as a distinct row.
@@ -391,8 +299,6 @@ function recalcTierEl(card) {
   });
   const net = base + disc;
   card.querySelector(".tier-total").textContent = SSCrm.fmtMoney(net);
-  const box = card.querySelector(".tier-cost-rows");
-  if (box) box.innerHTML = tierCostRows(gross, net);
 }
 
 // Copy Option 1's (the "good" tier) line items into this option, then append a
@@ -441,7 +347,6 @@ async function saveAll() {
     await SSCrm.fetchJSON("/api/proposals/" + id, { method: "PATCH", body: JSON.stringify({
       intro: document.getElementById("intro").value.trim(),
       job_notes: jn ? jn.value.trim() : "",
-      cost_rates: JSON.stringify(PROP_RATES),
       payment_plan: (document.getElementById("pay-in-full") && document.getElementById("pay-in-full").checked) ? "full" : "installments",
       tiers,
     })});

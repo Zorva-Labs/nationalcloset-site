@@ -1,6 +1,6 @@
 import { requireAuth, json } from "../../_lib/auth.js";
 import { resolveFinancials, processingFee } from "../../_lib/financials.js";
-import { contractTotalSql, acceptedTierSql } from "../../_lib/job-total.js";
+import { contractTotalSql, acceptedTierSql, finalDiscountSql, costBasis } from "../../_lib/job-total.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -41,7 +41,8 @@ export async function onRequestGet(context) {
                     jf.tax_rate AS jf_tax_rate, jf.labor_rate AS jf_labor_rate, jf.fee_rate AS jf_fee_rate,
                     jf.fee_cents AS jf_fee_cents, jf.fee_auto AS jf_fee_auto, jf.wall_total_cents AS jf_wall_total_cents,
                     ${acceptedTierSql("subtotal_cents")} AS tier_gross,
-                    ${acceptedTierSql("total_cents")} AS tier_net
+                    ${acceptedTierSql("total_cents")} AS tier_net,
+                    ${finalDiscountSql()} AS final_discount
              FROM projects p JOIN contacts c ON c.id = p.contact_id
              LEFT JOIN job_financials jf ON jf.project_id = p.id WHERE 1=1`;
   const binds = [];
@@ -59,11 +60,10 @@ export async function onRequestGet(context) {
   // subtotal, else contract total); discount comes off profit. Mirrors the job
   // Expenses card and Reports so the numbers line up.
   for (const r of rows) {
-    let gross, discount;
-    if (r.tier_gross != null || r.tier_net != null) {
-      const s = r.tier_gross || 0, t = r.tier_net || 0;
-      if (s > t) { gross = s; discount = s - t; } else { gross = t || s; discount = 0; }
-    } else { gross = r.job_total_cents || 0; discount = 0; }
+    const { gross, discount } = costBasis(r.tier_gross, r.tier_net, r.job_total_cents, r.final_discount);
+    // The job's value is what the customer pays: the signed contracts less any
+    // final-payment discount.
+    if (r.job_total_cents != null) r.job_total_cents = Math.max(0, r.job_total_cents - (r.final_discount || 0));
     const jfRow = r.jf_price_cents != null ? {
       price_cents: r.jf_price_cents, discount_cents: r.jf_discount_cents,
       materials_cents: r.jf_materials_cents, shipping_cents: r.jf_shipping_cents, tax_cents: r.jf_tax_cents,

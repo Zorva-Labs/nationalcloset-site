@@ -148,6 +148,7 @@
             <div class="amount"><span id="amt-due">${money(base)}</span> <small>due</small></div>
             ${alreadyPaid > 0 ? `<p class="sub" style="margin-top:-2px">${money(alreadyPaid)} of ${money(inv.amount_cents)} already paid — balance shown above.</p>` : ""}
             <p class="desc">${esc(inv.description || "")}</p>
+            ${inv.discount_cents > 0 ? `<p class="sub">Includes a ${money(inv.discount_cents)} discount${inv.discount_note ? ` — ${esc(inv.discount_note)}` : ""}.</p>` : ""}
             <div class="divider"></div>
           </div>
           <div class="pay">

@@ -3,14 +3,14 @@
 // the customer a branded pay link. Stripe PaymentIntents are created lazily on
 // the public pay page; here we just create the invoice record + notify.
 import { genToken, nextSequence, formatDocNumber } from "./tokens.js";
-import { sendEmail, sendStaffAlert, staffInbox, makeMessageId, brandedEmail } from "./email.js";
+import { sendEmail, sendStaffAlert, staffInbox, makeMessageId, brandedEmail, escapeHtml } from "./email.js";
 import { retrievePaymentIntent } from "./stripe.js";
 import { logOutboundEmail } from "./email-log.js";
 import { recordActivity } from "./db.js";
 import { markProjectBooked } from "./lifecycle.js";
 import { sendStageEmail } from "./stage-emails.js";
 import { depositForTotal } from "./financials.js";
-import { contractTotalSql, acceptedTierSql } from "./job-total.js";
+import { contractTotalSql, acceptedTierSql, finalDiscountSql } from "./job-total.js";
 
 const SITE_URL = "https://nationalclosetco.com";
 
@@ -155,11 +155,15 @@ const RANK = `ORDER BY CASE status WHEN 'fully_executed' THEN 0 WHEN 'signed_by_
 //   booking), and each has its own deposit. scope = { contractId, proposalId }
 //   picks the deal; without one, the most authoritative contract
 //   (executed > signed > sent > latest), falling back to an accepted proposal.
+//   totalCents is net of the job's final-payment discount (finalDiscountCents),
+//   so every later bill asks for the lower figure; the deal's own figures are not.
 export async function getProjectBilling(db, projectId, scope = {}) {
   const t = await db.prepare(
-    `SELECT ${contractTotalSql("?1")} AS k_total, ${acceptedTierSql("selected", "?1")} AS p_total`
+    `SELECT ${contractTotalSql("?1")} AS k_total, ${acceptedTierSql("selected", "?1")} AS p_total, ${finalDiscountSql("?1")} AS fd`
   ).bind(projectId).first().catch(() => null);
-  const totalCents = t?.k_total ?? t?.p_total ?? 0;
+  const rawTotal = t?.k_total ?? t?.p_total ?? 0;
+  const finalDiscountCents = t?.fd || 0;
+  const net = (gross) => Math.max(0, (gross || 0) - finalDiscountCents);
 
   let k = null;
   if (scope.contractId) {
@@ -178,7 +182,7 @@ export async function getProjectBilling(db, projectId, scope = {}) {
     const dealTotal = k.total_cents || 0;
     const gross = await dealGrossBasis(db, k.proposal_id, dealTotal);
     return {
-      totalCents: totalCents || dealTotal,
+      totalCents: net(rawTotal || dealTotal), finalDiscountCents,
       dealTotalCents: dealTotal,
       // Explicit contract deposit wins (manual override); otherwise the
       // hard-cost deposit (materials + shipping + taxes) figured from the
@@ -198,12 +202,12 @@ export async function getProjectBilling(db, projectId, scope = {}) {
     const dealTotal = p.selected_total_cents || 0;
     const gross = await dealGrossBasis(db, p.id, dealTotal);
     return {
-      totalCents: totalCents || dealTotal, dealTotalCents: dealTotal,
+      totalCents: net(rawTotal || dealTotal), finalDiscountCents, dealTotalCents: dealTotal,
       depositCents: depositForTotal(gross, dealTotal), contractId: null, proposalId: p.id,
       paymentPlan: p.payment_plan === "full" ? "full" : "installments",
     };
   }
-  return { totalCents, dealTotalCents: 0, depositCents: 0, contractId: null, proposalId: null };
+  return { totalCents: net(rawTotal), finalDiscountCents, dealTotalCents: 0, depositCents: 0, contractId: null, proposalId: null };
 }
 
 // The live invoice of a type already raised on a project. A deposit belongs to
@@ -250,6 +254,7 @@ export async function createInvoice(env, opts) {
 
   // Resolve the amount when not explicitly passed.
   let amountCents = opts.amountCents;
+  let discountCents = 0;
   if (amountCents == null) {
     if (type === "deposit") amountCents = billing.depositCents;
     else if (type === "scheduling" || type === "balance") {
@@ -257,13 +262,18 @@ export async function createInvoice(env, opts) {
       // invoice), so a deposit that was upgraded to a full payment leaves $0 to
       // bill instead of double-charging.
       const inv = await db.prepare(
-        `SELECT COALESCE(SUM(amount_cents),0) AS n FROM invoices WHERE project_id=?1 AND status != 'void'`
+        `SELECT COALESCE(SUM(amount_cents),0) AS n, COALESCE(SUM(discount_cents),0) AS d FROM invoices WHERE project_id=?1 AND status != 'void'`
       ).bind(projectId).first().catch(() => null);
       const rest = Math.max(0, billing.totalCents - (inv?.n || 0));
+      // The job's final-payment discount not yet shown on an invoice. It comes
+      // off the final payment alone, so the scheduling half is figured as if
+      // it weren't there.
+      const unshown = Math.max(0, (billing.finalDiscountCents || 0) - (inv?.d || 0));
       // Scheduling takes half of what's left (25% of the job when the deposit
       // landed at the standard 50%); the final balance then sweeps up the
       // remainder, so the two always sum to `rest` with no rounding leak.
-      amountCents = type === "scheduling" ? Math.round(rest / 2) : rest;
+      if (type === "scheduling") amountCents = Math.min(rest, Math.round((rest + unshown) / 2));
+      else { amountCents = rest; discountCents = rest > 0 ? unshown : 0; }
     } else if (type === "full") amountCents = billing.totalCents;
     else amountCents = 0;
   }
@@ -297,13 +307,13 @@ export async function createInvoice(env, opts) {
   const token = genToken(20);
 
   const row = await db.prepare(
-    `INSERT INTO invoices (number, project_id, contact_id, proposal_id, contract_id, type, description, amount_cents, status, view_token, author_user_id)
-     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,'open',?9,?10) RETURNING *`
+    `INSERT INTO invoices (number, project_id, contact_id, proposal_id, contract_id, type, description, amount_cents, status, view_token, author_user_id, discount_cents)
+     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,'open',?9,?10,?11) RETURNING *`
   ).bind(
     number, projectId, project.contact_id,
     opts.proposalId || billing.proposalId || null,
     opts.contractId || billing.contractId || null,
-    type, description, amountCents, token, opts.actor?.id || null,
+    type, description, amountCents, token, opts.actor?.id || null, discountCents,
   ).first();
 
   await recordActivity(db, {
@@ -378,6 +388,8 @@ export async function sendInvoiceEmail(env, invoice, project) {
   // for the rest, which is all the pay page charges.
   const due = Math.max(0, (invoice.amount_cents || 0) - (invoice.amount_paid_cents || 0)) || invoice.amount_cents;
   const subject = `Invoice ${invoice.number} — ${money(due)} ${invoice.type === "deposit" ? "deposit" : "due"}`;
+  // The job's final-payment discount, where this invoice carries it.
+  const disc = invoice.discount_cents || 0;
 
   // Type-specific clarity note. A scheduling invoice is only part of the job —
   // spell out the payment structure and the exact amount that follows on
@@ -424,6 +436,7 @@ export async function sendInvoiceEmail(env, invoice, project) {
       <p>Here's your ${label} invoice for your custom closet project:</p>
       <table style="border-collapse:collapse;margin:8px 0 4px">
         <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Invoice</td><td style="padding:4px 0;font-weight:600">${invoice.number}</td></tr>
+        ${disc > 0 ? `<tr><td style="padding:4px 16px 4px 0;color:#6B6457">Discount${project.final_discount_note ? ` (${escapeHtml(project.final_discount_note)})` : ""}</td><td style="padding:4px 0;color:#067647;font-weight:600">−${money(disc)}</td></tr>` : ""}
         <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Amount due</td><td style="padding:4px 0;font-weight:700;font-size:18px">${money(due)}</td></tr>
       </table>
       <p>${invoice.description}.</p>
@@ -434,6 +447,7 @@ export async function sendInvoiceEmail(env, invoice, project) {
     ctaUrl: payUrl,
   });
   const text = `Invoice ${invoice.number}: ${money(due)} due.`
+    + (disc > 0 ? `\nIncludes a ${money(disc)} discount${project.final_discount_note ? ` (${project.final_discount_note})` : ""}.` : "")
     + (noteText ? `\n${noteText}` : "") + `\nPay securely: ${payUrl}`;
   const messageId = makeMessageId();
   const to = project.contact_name ? `${project.contact_name} <${project.contact_email}>` : project.contact_email;

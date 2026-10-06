@@ -142,7 +142,8 @@ async function mount({ title = "", subtitle = "", actions = "", wide = false } =
     </nav>
     <main class="app ${wide ? "app--wide" : ""}">
       <header class="page-head">
-        <div>
+        <div style="min-width:0">
+          <nav class="crumbs" id="page-crumbs" aria-label="Breadcrumb" hidden></nav>
           <h1 id="page-title">${title}</h1>
           ${subtitle ? `<div class="sub">${subtitle}</div>` : ""}
         </div>
@@ -153,6 +154,34 @@ async function mount({ title = "", subtitle = "", actions = "", wide = false } =
   `;
   wireNav();
   return me.user;
+}
+
+// Breadcrumbs above the page title: [{ label, href }, …, { label }] — the
+// last item is the page itself, unlinked. A page opened from a job (proposal,
+// contract, invoice, estimate) leads back to that job on the tab it came from.
+function setCrumbs(items) {
+  const el = document.getElementById("page-crumbs");
+  if (!el) return;
+  const list = (items || []).filter((c) => c && c.label);
+  el.hidden = !list.length;
+  el.innerHTML = list.map((c, i) => {
+    const last = i === list.length - 1;
+    return (i ? `<span class="crumbs__sep" aria-hidden="true">›</span>` : "")
+      + (c.href && !last ? `<a href="${esc(c.href)}">${esc(c.label)}</a>` : `<span${last ? ' aria-current="page"' : ""}>${esc(c.label)}</span>`);
+  }).join("");
+}
+function jobCrumbs(projectId, projectName, tab, current) {
+  if (!projectId) return;
+  const TAB = { proposals: "Proposals", contracts: "Contracts", invoices: "Invoices", overview: "Overview" };
+  setCrumbs([
+    { label: "Jobs", href: "/crm/projects.html" },
+    { label: projectName || "Job", href: `/crm/project.html?id=${projectId}#tab=overview` },
+    TAB[tab] && tab !== "overview" ? { label: TAB[tab], href: `/crm/project.html?id=${projectId}#tab=${tab}` } : null,
+    { label: current },
+  ]);
+  // The page's own back button (#back-link) goes to the job too.
+  const back = document.getElementById("back-link");
+  if (back) { back.href = `/crm/project.html?id=${projectId}#tab=${tab || "overview"}`; back.textContent = "← Back to job"; }
 }
 
 function navLink(n, currentPath) {
@@ -1305,7 +1334,7 @@ function wireAssigneePicker(root) {
 }
 
 window.SSCrm = {
-  fetchJSON, mount, fmtMoney, fmtMoneyShort, parseMoney, fmtDate, fmtDay, fmtDateTime, fmtTime, esc, pill, logout, toast, confirmDialog,
+  fetchJSON, mount, setCrumbs, jobCrumbs, fmtMoney, fmtMoneyShort, parseMoney, fmtDate, fmtDay, fmtDateTime, fmtTime, esc, pill, logout, toast, confirmDialog,
   pickContact, pickJob, openModal, recordPayment,
   quickAddLead, quickAddContact, quickAddJob, quickAddAppointment, quickAddEstimate, quickAddProposal, quickAddContract,
   composeEmail, renderEmailTimeline,

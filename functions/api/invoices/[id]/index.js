@@ -11,7 +11,7 @@ export async function onRequestGet(context) {
   const inv = await context.env.DB.prepare(
     `SELECT i.*, c.name AS contact_name, c.email AS contact_email, c.phone AS contact_phone,
             c.address_street, c.address_city, c.address_state, c.address_zip,
-            p.name AS project_name, p.po_number AS po_number
+            p.name AS project_name, p.po_number AS po_number, p.final_discount_note
        FROM invoices i
        LEFT JOIN contacts c ON c.id = i.contact_id
        LEFT JOIN projects p ON p.id = i.project_id
@@ -51,7 +51,9 @@ export async function onRequestPatch(context) {
         `INSERT INTO invoice_lines (invoice_id, description, qty, unit_cents, position) VALUES (?1,?2,?3,?4,?5)`
       ).bind(id, desc, qty, unit, pos++).run();
     }
-    amountCents = total;
+    // The lines are the work before the job's final-payment discount, which
+    // this invoice carries in discount_cents.
+    amountCents = Math.max(0, total - (inv.discount_cents || 0));
   } else if (body.amount_cents != null) {
     amountCents = Math.round(Number(body.amount_cents) || 0);
   }

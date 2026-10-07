@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-07 (CRM: Noah removed, Anthony Potts added)
+- **What the client asked for:** Michael: "remove noah from the crm and add Anthony Potts his email will be the hello@nationalclosetco.com with the password … to login to the crm."
+- **Noah Blair** (team member 2, inactive since 2026-10-01) is deleted from `team_members`, with his three assignments (consult 40, jobs 48 and 49). Nobody else is assigned to those in his place.
+- **Anthony Potts** is team member 4, `hello@nationalclosetco.com`, no role set yet (edit it at `/crm/team.html`). The CRM sign-in `hello@nationalclosetco.com` now shows as Anthony Potts, and its password was reset with `crm/setup-admin.mjs`; the new one is `NCC_CRM_PASSWORD` in `~/.env`. Anyone else who signed in as hello@ needs the new password. A live sign-in was checked (200, `ok:true`).
+- Data change only, in the live D1; the code change is comments. No deploy.
+
 ## 2026-10-06 (CRM: invoice the full remaining balance when the install is scheduled)
 - **What the client asked for:** Michael: "I need a button to check to invoice for the remaining balance on install schedule instead of just the 25%."
 - **The checkbox:** "Invoice the full remaining balance, not 25%" sits beside the install date. It shows on the job's action card and in the Schedule modal (the pipeline's Scheduled step), and only while the job has no install date, because that first date is what raises the invoice. Ticked, the PATCH carries `bill_balance: true`. `functions/api/projects/[id]/index.js` then raises the balance invoice at once instead of the scheduling one, through `createInvoice`'s new `early` option.

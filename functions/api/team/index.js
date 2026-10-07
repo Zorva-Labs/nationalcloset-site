@@ -1,7 +1,7 @@
 // GET  /api/team            — the roster (?all=1 includes deactivated people)
 // POST /api/team            — add a team member
 //
-// One active member today (Michael; Noah deactivated 2026-10-01). This exists so a third installer can be
+// Michael, Terry and Anthony today (Noah removed 2026-10-07). This exists so a third installer can be
 // added without a migration — the consult brief goes to whoever is assigned.
 import { requireAuth, json } from "../../_lib/auth.js";
 import { recordActivity } from "../../_lib/db.js";

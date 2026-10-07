@@ -88,7 +88,7 @@ export async function setAssignees(db, entityType, entityId, memberIds, actor = 
   return after;
 }
 
-// "Michael and Noah" / "Michael, Noah and Dave" — for email copy.
+// "Michael and Terry" / "Michael, Terry and Anthony" — for email copy.
 export function nameList(members, { first = true } = {}) {
   const names = (members || []).map((m) => (first ? String(m.name || "").trim().split(/\s+/)[0] : m.name)).filter(Boolean);
   if (!names.length) return "";

@@ -88,8 +88,8 @@ function memberForm(m = {}) {
     <div class="row">
       <label><span>Phone <span class="muted" style="font-weight:400;font-size:11px">· optional</span></span><input id="t-phone" type="tel" value="${SSCrm.esc(m.phone || "")}"/></label>
       <label><span>Role <span class="muted" style="font-weight:400;font-size:11px">· optional</span></span>
-        <input id="t-role" value="${SSCrm.esc(m.role || "")}" placeholder="owner, designer, installer" list="role-list"/>
-        <datalist id="role-list"><option>owner</option><option>designer</option><option>installer</option></datalist>
+        <input id="t-role" value="${SSCrm.esc(m.role || "")}" placeholder="owner, manager, designer, installer" list="role-list"/>
+        <datalist id="role-list"><option>owner</option><option>manager</option><option>designer</option><option>installer</option></datalist>
       </label>
     </div>
   </div>`;

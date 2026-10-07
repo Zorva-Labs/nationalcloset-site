@@ -7,6 +7,7 @@ Newest first. One entry per session that changed this repo: what changed, why, w
 - **Noah Blair** (team member 2, inactive since 2026-10-01) is deleted from `team_members`, with his three assignments (consult 40, jobs 48 and 49). Nobody else is assigned to those in his place.
 - **Anthony Potts** is team member 4, `hello@nationalclosetco.com`, no role set yet (edit it at `/crm/team.html`). The CRM sign-in `hello@nationalclosetco.com` now shows as Anthony Potts, and its password was reset with `crm/setup-admin.mjs`; the new one is `NCC_CRM_PASSWORD` in `~/.env`. Anyone else who signed in as hello@ needs the new password. A live sign-in was checked (200, `ok:true`).
 - Data change only, in the live D1; the code change is comments. No deploy.
+- **Later the same day:** Michael: "Anthony is a manager." His role is now `manager`, and the Team screen's role list offers manager (`crm/team.html`). The role is a label only; nothing in the CRM keys off it. Deployed 5490e950.
 
 ## 2026-10-06 (CRM: invoice the full remaining balance when the install is scheduled)
 - **What the client asked for:** Michael: "I need a button to check to invoice for the remaining balance on install schedule instead of just the 25%."

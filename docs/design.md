@@ -1,8 +1,8 @@
 # Design — the look, the header, the components and the pictures
 
 ## The look
-- "Crisp Architectural": white, charcoal and terracotta over fog. The tokens are the `:root` of `css/styles.css` (the terracotta is `--clay`, #d2683f; `--ink` the charcoal).
-- Montserrat for display and body (`--display`, `--body`), from Google Fonts on every page but the home page, which inlines the self-hosted `fonts/montserrat-latin.woff2`. Caveat, self-hosted, is the handwritten accent (signatures, the slogan, the verse). The stylesheet's header comment still names Archivo and Hanken Grotesk; no token uses them.
+- "Crisp Architectural": white, charcoal and terracotta over fog. The tokens are the `:root` of `css/styles.css` (the terracotta is `--clay`, #d2683f, for marks, rules and large display text only; `--clay-deep`, #a34927 since 2026-10-09, for any text and for white-on-terracotta fills such as `.btn--primary` and the mobile bar's "Book a visit", 4.5:1 or better on white, paper, fog, fog-2 and clay-wash; `--clay-dark` #8a3d20 is its hover; `--ink` the charcoal).
+- Montserrat for display and body (`--display`, `--body`), self-hosted (`fonts/montserrat-latin.woff2`, declared in `css/styles.css` and preloaded in each page head) since 2026-10-09; the Google Fonts swap was the posts' late LCP. The 19 town pages still load it from Google Fonts until their Phase 5 pass, and `chrome.py` lifts its head from the Nashville town page, so a new factory page needs the same swap. Caveat, self-hosted, is the handwritten accent (signatures, the slogan, the verse). The stylesheet's header comment still names Archivo and Hanken Grotesk; no token uses them.
 
 ## The header
 - Top bar (`.nav__top-msg`, "Family-owned · Serving Nashville & all of Middle TN"; no parent company since 2026-10-01): `--nav-h` is 100px on phones and 116px from 1100px. The desktop inline nav starts at **1100px**; layout breakpoints stay at 940.
@@ -13,7 +13,8 @@
 - The mobile bar has three buttons, one of them "Text a photo" (an `sms:` link; a small pill on desktop).
 
 ## The home page's inline stylesheet
-- **`index.html` carries its own inline copy of the stylesheet** (`<style id="ncc-inline-css">`) — a fix to `css/styles.css` skips the homepage unless re-synced with `stage4.py sync_inline_css()`, which also keeps the Montserrat `@font-face` lines the block needs. Never paste `styles.css` over it by hand. Classes that exist only in the inline block render unstyled elsewhere.
+- **`index.html` carries its own inline copy of the stylesheet** (`<style id="ncc-inline-css">`) — a fix to `css/styles.css` skips the homepage unless re-synced with `stage4.py sync_inline_css()` (the `@font-face` lines are in `styles.css` itself). To run only the sync: exec the function from `stage4.py`; a full `stage4.py` run also rebuilds `/about` and `/custom-cabinets-nashville`.
+- **The home hero picture** is served by `srcset` (480/800/1280) with a matching `<link rel="preload" imagesrcset>`; on phones it sits under a 74-95% white wash, so `sizes` asks for the 480 file there. The "organized by <month>" line under the hero buttons is filled by an inline script as the hero paints; `js/main.js` only fills it when the inline script did not (the late rewrite was the home page's 15 s lab LCP). Never paste `styles.css` over it by hand. Classes that exist only in the inline block render unstyled elsewhere.
 
 ## The landing page
 - `/free-design` (noindex, the paid landing page) keeps its own CSS inline. Landing-page anchors belong on the form wrapper with `scroll-margin-top: calc(var(--nav-h) + 1rem)`; `.lp-hero` needs `padding-top` like `.hero` because `.nav` is fixed.

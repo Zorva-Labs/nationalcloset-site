@@ -30,7 +30,10 @@ const FILES = [
   ...fs.readdirSync(ROOT).filter((f) => /^[0-9a-f]{32}\.txt$/.test(f)),
 ];
 const DIRS = ['blog', 'book', 'contract', 'crm', 'css', 'estimate', 'fonts', 'img', 'invoice', 'js', 'proposal', 'thanks'];
-const PRIVATE = (rel) => /(^|\/)\.|(^|\/)migrations\/|\.(md|sql|py|sh|log|toml|bak|orig)$/i.test(rel) || rel === 'crm/setup-admin.mjs';
+const PRIVATE = (rel) => /(^|\/)\.|(^|\/)migrations\/|\.(md|sql|py|sh|log|toml|bak|orig)$/i.test(rel) || rel === 'crm/setup-admin.mjs'
+  /* Originals no page, stylesheet or script references (2026-10-09 scan: 1.2 MB the build should not ship); they stay in the repo. */
+  || ORIGINALS.has(rel);
+const ORIGINALS = new Set(['img/blog-fraley-closet.jpg', 'img/blog-fraley-pantry.jpg', 'img/ncc-truck-hires.webp', 'img/svc-modular.webp']);
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });

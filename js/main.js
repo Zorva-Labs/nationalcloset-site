@@ -78,6 +78,9 @@
     var bar = document.getElementById("capacity-bar");
     var out = document.getElementById("capacity-text");
     if (!bar || !out) return;
+    // The home page fills the evergreen line inline as the hero paints; rewriting it here
+    // made a second, late paint that Lighthouse took as the LCP (2026-10-09).
+    if (bar.classList.contains("is-on")) return;
 
     var MONTHS = ["January","February","March","April","May","June",
                   "July","August","September","October","November","December"];

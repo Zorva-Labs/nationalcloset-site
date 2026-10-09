@@ -9,6 +9,9 @@ Disallow: /api/
 Disallow: /crm/
 Disallow: /invoice/
 Disallow: /proposal/
+Disallow: /contract/
+Disallow: /estimate/
+Disallow: /traffic
 Disallow: /calc
 Disallow: /calc.html
 
@@ -27,6 +30,9 @@ Disallow: /api/
 Disallow: /crm/
 Disallow: /invoice/
 Disallow: /proposal/
+Disallow: /contract/
+Disallow: /estimate/
+Disallow: /traffic
 Disallow: /calc
 Disallow: /calc.html
 

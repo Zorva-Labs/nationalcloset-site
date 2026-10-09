@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Custom Closets &amp; Custom Cabinets | Nashville TN</title>
+<title>Custom Closets in Nashville, TN | National Closet Company</title>
 <meta name="keywords" content="custom closets, custom cabinets, cabinets Nashville, custom cabinets Nashville, closet organizers, closet systems, custom pantry, kitchen cabinets, built-in cabinets, custom closets Nashville" />
-<meta name="description" content="Custom closets, custom cabinets &amp; pantries at a price normal families can afford. Serving Nashville &amp; Middle TN — free in-home 3D design." />
+<meta name="description" content="Family-owned custom closet company in Gallatin serving Nashville and Middle Tennessee. Free in-home 3D design, one installed price, 14-inch shelves as standard." />
 <link rel="canonical" href="https://nationalclosetco.com/" />
 <meta name="robots" content="index, follow, max-image-preview:large" />
 <meta name="theme-color" content="#16140f" />
@@ -13,30 +13,30 @@
 <!-- Open Graph / Twitter -->
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="National Closet Company" />
-<meta property="og:title" content="Custom Closets &amp; Custom Cabinets | Nashville TN" />
-<meta property="og:description" content="Custom closets, custom cabinets &amp; pantries at a price normal families can afford. Serving Nashville &amp; Middle TN — free in-home 3D design." />
+<meta property="og:title" content="Custom Closets in Nashville, TN | National Closet Company" />
+<meta property="og:description" content="Family-owned custom closet company in Gallatin serving Nashville and Middle Tennessee. Free in-home 3D design, one installed price, 14-inch shelves as standard." />
 <meta property="og:url" content="https://nationalclosetco.com/" />
 <meta property="og:image" content="https://nationalclosetco.com/img/hero-closet-og.jpg" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:type" content="image/jpeg" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Custom Closets &amp; Custom Cabinets | National Closet Co." />
-<meta name="twitter:description" content="Custom closets, custom cabinets &amp; pantries at a price normal families can afford. Nashville &amp; Middle TN — free in-home 3D design." />
+<meta name="twitter:title" content="Custom Closets in Nashville, TN | National Closet Company" />
+<meta name="twitter:description" content="Family-owned custom closet company in Gallatin serving Nashville and Middle Tennessee. Free in-home 3D design, one installed price, 14-inch shelves as standard." />
 <meta name="twitter:image" content="https://nationalclosetco.com/img/hero-closet-og.jpg" />
 
-<!-- Fonts are self-hosted (same-origin). The hero image is inlined as a data-URI
-     (no request), so the LCP element is the H1 text — preload Montserrat so it
-     swaps in early and LCP stays low + stable. -->
+<!-- Fonts are self-hosted (same-origin); preload Montserrat so the hero text swaps in early.
+     The hero picture is preloaded at the width the device needs (srcset): on phones it sits
+     under a 74-95% white wash, so the 480 file is enough there. -->
 <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/montserrat-latin.woff2" />
+<link rel="preload" as="image" href="/img/hero-closet-480.webp" imagesrcset="/img/hero-closet-480.webp 480w, /img/hero-closet-800.webp 800w, /img/hero-closet.webp?v=ncc105 1280w" imagesizes="(max-width: 939px) 160px, 100vw" fetchpriority="high" />
 <link rel="icon" type="image/png" href="/img/favicon-ncc.png" />
 <link rel="apple-touch-icon" href="/img/favicon-ncc.png" />
 <!-- styles.css inlined to eliminate the render-blocking request and speed up LCP.
      If css/styles.css changes, re-run the inline. Other pages load it externally. -->
 <style id="ncc-inline-css">
-/* Self-hosted UI font (same-origin); the homepage does not load Google Fonts. Caveat is declared in styles.css itself. */
+/* Self-hosted faces, same-origin, on every page (2026-10-09: Montserrat no longer comes from Google Fonts — its late swap was the posts' LCP). Caveat is the handwritten accent (signatures, the slogan, the verse). */
 @font-face{font-family:'Montserrat';font-style:normal;font-weight:100 900;font-display:swap;src:url(/fonts/montserrat-latin.woff2) format('woff2')}
-/* Self-hosted handwritten accent face (signatures, the slogan, the verse). Montserrat comes from Google Fonts on every page except the homepage, which inlines it. */
 @font-face{font-family:'Caveat';font-style:normal;font-weight:400 700;font-display:swap;src:url(/fonts/caveat-latin.woff2) format('woff2')}
 
 /* ============================================================
@@ -56,7 +56,8 @@
   --ink-soft:   #3a362f;
   --muted:      #6c665b;
   --clay:       #d2683f;   /* terracotta accent */
-  --clay-deep:  #b9542f;
+  --clay-deep:  #a34927;   /* text and white-on-terracotta buttons: 4.5:1+ on white, paper, fog, fog-2 and clay-wash (2026-10-09; was #b9542f, 4.06:1 on fog) */
+  --clay-dark:  #8a3d20;   /* hover for --clay-deep fills */
   --clay-wash:  #f6e6df;
   --sand:       #c9a063;
 
@@ -99,7 +100,7 @@ img { display: block; max-width: 100%; height: auto; }
 a { color: inherit; text-decoration: none; }
 button { font-family: inherit; cursor: pointer; border: none; background: none; }
 ul { list-style: none; }
-::selection { background: var(--clay); color: #fff; }
+::selection { background: var(--clay-deep); color: #fff; }
 
 /* Grain overlay for atmosphere */
 body::before {
@@ -158,8 +159,8 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 }
 .btn .arr { transition: transform .35s var(--ease); }
 .btn:hover .arr { transform: translateX(5px); }
-.btn--primary { background: var(--clay); color: #fff; box-shadow: 0 10px 24px -12px rgba(210,104,63,.8); }
-.btn--primary:hover { background: var(--clay-deep); transform: translateY(-3px); box-shadow: 0 18px 34px -14px rgba(185,84,47,.9); }
+.btn--primary { background: var(--clay-deep); color: #fff; box-shadow: 0 10px 24px -12px rgba(163,73,39,.8); }
+.btn--primary:hover { background: var(--clay-dark); transform: translateY(-3px); box-shadow: 0 18px 34px -14px rgba(138,61,32,.9); }
 .btn--ink { background: var(--ink); color: #fff; }
 .btn--ink:hover { transform: translateY(-3px); background: #000; }
 .btn--ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
@@ -211,7 +212,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .nav__phone { display: none; font-weight: 700; font-size: 0.95rem; align-items: center; gap: 0.45rem; }
 .nav__phone:hover { color: var(--clay); }
 .nav__social { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; color: var(--ink); transition: color .2s, background .2s; }
-.nav__social:hover { color: var(--clay); background: var(--clay-wash); }
+.nav__social:hover { color: var(--clay-deep); background: var(--clay-wash); }
 .nav__social svg { display: block; }
 
 .hamburger { display: inline-flex; flex-direction: column; gap: 5px; padding: 0.6rem; margin-right: -0.4rem; }
@@ -245,7 +246,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
   padding: 0.7rem 0; border-bottom: 1px solid var(--line);
   display: flex; align-items: baseline; justify-content: space-between;
 }
-.drawer a.drawer__link .n { font-family: var(--body); font-size: 0.8rem; font-weight: 700; color: var(--clay); letter-spacing: 0.1em; }
+.drawer a.drawer__link .n { font-family: var(--body); font-size: 0.8rem; font-weight: 700; color: var(--clay-deep); letter-spacing: 0.1em; }
 .drawer__foot { margin-top: auto; padding-top: 2rem; display: grid; gap: 0.8rem; }
 .drawer__foot .btn { width: 100%; }
 .drawer__contact { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 700; font-size: 1.05rem; }
@@ -283,7 +284,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .hero__slogan { font-family: "Caveat", "Montserrat", cursive; color: var(--clay-deep); font-weight: 700; font-size: clamp(1.55rem, 3.6vw, 2.35rem); line-height: 1.04; letter-spacing: 0.01em; margin-top: 0.9rem; text-align: right; }
 .hero__actions { display: flex; flex-wrap: wrap; gap: 0.8rem; opacity: 0; animation: fadeUp .8s var(--ease) .62s forwards; }
 .hero__proof { display: flex; flex-wrap: wrap; gap: 1.4rem 2rem; align-items: center; padding-top: 0.6rem; opacity: 0; animation: fadeUp .8s var(--ease) .74s forwards; }
-.hero__proof .stars { color: var(--clay); letter-spacing: 2px; }
+.hero__proof .stars { color: var(--clay-deep); letter-spacing: 2px; }
 .hero__proof b { font-family: var(--display); }
 @keyframes fadeUp { from { opacity:0; transform: translateY(22px);} to { opacity:1; transform: translateY(0);} }
 
@@ -327,7 +328,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .svc:hover { background: var(--ink); color: var(--paper); }
 .svc:hover::after { transform: scaleX(1); }
 .svc:hover .svc__desc { color: #c7c2b8; }
-.svc:hover .svc__arrow { background: var(--clay); color: #fff; transform: rotate(0deg); border-color: var(--clay); }
+.svc:hover .svc__arrow { background: var(--clay-deep); color: #fff; transform: rotate(0deg); border-color: var(--clay-deep); }
 .svc__img { display: block; aspect-ratio: 16/10; overflow: hidden; background: var(--fog-2); }
 .svc__img img { width: 100%; height: 100%; object-fit: cover; transition: transform .65s var(--ease); }
 .svc:hover .svc__img img { transform: scale(1.06); }
@@ -338,7 +339,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .svc:hover .svc__arrow { transform: rotate(0deg); }
 .svc--cta { background: var(--ink); color: var(--paper); justify-content: center; }
 .svc--cta .svc__desc { color: #c7c2b8; }
-.svc--cta .svc__arrow { background: var(--clay); color: #fff; border-color: var(--clay); transform: rotate(0deg); }
+.svc--cta .svc__arrow { background: var(--clay-deep); color: #fff; border-color: var(--clay-deep); transform: rotate(0deg); }
 .svc--cta:hover { background: #000; }
 
 /* ---------- Stats ---------- */
@@ -383,7 +384,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 /* ---------- Testimonials ---------- */
 .tcard { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.8rem 1.6rem; display: flex; flex-direction: column; gap: 1rem; height: 100%; transition: transform .4s var(--ease), box-shadow .4s var(--ease); }
 .tcard:hover { transform: translateY(-5px); box-shadow: 0 26px 50px -30px rgba(0,0,0,.35); }
-.tcard .stars { color: var(--clay); letter-spacing: 2px; }
+.tcard .stars { color: var(--clay-deep); letter-spacing: 2px; }
 .tcard blockquote { font-family: var(--display); font-weight: 600; font-size: 1.18rem; line-height: 1.32; letter-spacing: -0.01em; }
 .tcard__who { display: flex; align-items: center; gap: 0.75rem; margin-top: auto; }
 .tcard__av { width: 42px; height: 42px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font-family: var(--display); font-weight: 800; }
@@ -417,7 +418,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .stamp { position: relative; width: min(64vw, 250px); aspect-ratio: 1; display: grid; place-items: center; }
 .stamp__svg { position: absolute; inset: 0; width: 100%; height: 100%; animation: spin 22s linear infinite; }
 .stamp__svg text { font-family: var(--display); font-weight: 700; font-size: 13.5px; letter-spacing: 1.5px; fill: var(--ink); text-transform: uppercase; }
-.stamp__center { width: 56%; aspect-ratio: 1; border-radius: 50%; background: var(--clay); color: #fff; display: grid; place-items: center; text-align: center; font-family: var(--display); font-weight: 800; font-size: 1rem; line-height: 1.04; letter-spacing: 0.01em; box-shadow: 0 18px 34px -16px rgba(210,104,63,.85); }
+.stamp__center { width: 56%; aspect-ratio: 1; border-radius: 50%; background: var(--clay-deep); color: #fff; display: grid; place-items: center; text-align: center; font-family: var(--display); font-weight: 800; font-size: 1rem; line-height: 1.04; letter-spacing: 0.01em; box-shadow: 0 18px 34px -16px rgba(210,104,63,.85); }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .stamp__svg { animation: none; } }
 
@@ -491,7 +492,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .mobicta.show { transform: translateY(0); }
 .mobicta a { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 1rem; font-weight: 800; font-size: 0.95rem; min-height: 56px; }
 .mobicta a.call { background: var(--ink); color: #fff; }
-.mobicta a.quote { background: var(--clay); color: #fff; }
+.mobicta a.quote { background: var(--clay-deep); color: #fff; }
 .mobicta a.photo { background: #fff; color: var(--ink); }
 .mobicta--3, .mobicta:has(a.photo) { grid-template-columns: 1fr 1.15fr 1fr; }
 .mobicta--3 a, .mobicta:has(a.photo) a { font-size: 0.86rem; padding: 0.9rem 0.4rem; }
@@ -718,14 +719,15 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 /* ===== New components (Sept 2026): Google rating badge, review cards, before/after,
    estimator, gallery filters, comparison table, about strip ===== */
 .gbadge { display: inline-flex; align-items: center; gap: .5rem; font-weight: 700; color: var(--ink); text-decoration: none; padding: .55rem 1rem; border: 1px solid var(--line); border-radius: 100px; background: #fff; }
-.gbadge .stars { color: var(--clay); letter-spacing: 2px; }
+.gbadge .stars { color: var(--clay-deep); letter-spacing: 2px; }
 .gbadge b { font-size: 1.05rem; }
 .tcard { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 1.8rem 1.6rem; display: flex; flex-direction: column; gap: 1rem; height: 100%; }
-.tcard .stars { color: var(--clay); letter-spacing: 2px; }
+.tcard .stars { color: var(--clay-deep); letter-spacing: 2px; }
 .tcard blockquote { font-family: var(--display); font-weight: 600; font-size: 1.08rem; line-height: 1.38; letter-spacing: -0.01em; margin: 0; }
 .tcard__story { font-weight: 700; color: var(--clay-deep); font-size: .92rem; }
 .tcard__who { display: flex; align-items: center; gap: 0.75rem; margin-top: auto; font-size: .9rem; }
 .tcard__who span span { display: block; color: var(--muted); font-size: .82rem; }
+.tcard__who .tcard__av { color: #fff; }   /* the initials: .tcard__who span would paint them --muted on --ink (3.2:1) */
 .tcard__av { width: 42px; height: 42px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font-family: var(--display); font-weight: 800; flex: none; }
 .reviews-grid { display: grid; gap: 1rem; }
 @media (min-width: 700px) { .reviews-grid { grid-template-columns: 1fr 1fr; } }
@@ -825,7 +827,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .people__note { font-size: 0.9rem; color: var(--muted); margin: 0.4rem 0 0; }
 .values { display: grid; gap: 0.8rem; }
 .value { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 1.3rem 1.3rem 1.4rem; }
-.value__n { display: block; font-weight: 800; font-size: 0.74rem; letter-spacing: 0.12em; color: var(--clay); margin-bottom: 0.7rem; }
+.value__n { display: block; font-weight: 800; font-size: 0.74rem; letter-spacing: 0.12em; color: var(--clay-deep); margin-bottom: 0.7rem; }
 .value h3 { font-size: 1.12rem; margin: 0 0 0.45rem; }
 .value p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 0.95rem; }
 @media (min-width: 700px) { .values { grid-template-columns: 1fr 1fr; } }
@@ -840,7 +842,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 </style>
 
 <!-- ============ JSON-LD: Organization + LocalBusiness + WebSite ============ -->
-<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://nationalclosetco.com/#org", "name": "National Closet Company", "alternateName": "National Closet Co.", "url": "https://nationalclosetco.com/", "logo": {"@type": "ImageObject", "url": "https://nationalclosetco.com/img/ncc.png", "width": 512, "height": 512, "creator": {"@type": "Organization", "@id": "https://nationalclosetco.com/#org", "name": "National Closet Company"}, "creditText": "National Closet Company", "contentUrl": "https://nationalclosetco.com/img/ncc.png"}, "image": "https://nationalclosetco.com/img/hero-closet-og.jpg", "description": "National Closet Company designs, builds and installs custom closets and custom cabinets at a price normal families can afford — walk-in and reach-in closet systems, kitchen cabinets and islands, bathroom vanities, laundry and mudroom cabinetry, built-ins and media walls, home offices, garage storage and pantries across Nashville and Middle Tennessee.", "foundingDate": "2012", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com", "priceRange": "$$", "slogan": "Beautiful custom-designed closets at a price normal families can afford.", "numberOfEmployees": {"@type": "QuantitativeValue", "value": 4}, "areaServed": [{"@type": "GeoCircle", "geoMidpoint": {"@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467}, "geoRadius": "144840"}, {"@type": "City", "name": "Gallatin, TN"}, {"@type": "City", "name": "Hendersonville, TN"}, {"@type": "City", "name": "Nashville, TN"}, {"@type": "City", "name": "Goodlettsville, TN"}, {"@type": "City", "name": "Mount Juliet, TN"}, {"@type": "City", "name": "Lebanon, TN"}, {"@type": "City", "name": "Brentwood, TN"}, {"@type": "City", "name": "Franklin, TN"}, {"@type": "City", "name": "Murfreesboro, TN"}, {"@type": "City", "name": "Smyrna, TN"}, {"@type": "City", "name": "Spring Hill, TN"}, {"@type": "City", "name": "Columbia, TN"}, {"@type": "City", "name": "Springfield, TN"}, {"@type": "City", "name": "Clarksville, TN"}, {"@type": "City", "name": "Dickson, TN"}, {"@type": "City", "name": "Bowling Green, KY"}, {"@type": "City", "name": "White House, TN"}, {"@type": "City", "name": "Portland, TN"}, {"@type": "City", "name": "La Vergne, TN"}, {"@type": "City", "name": "Nolensville, TN"}, {"@type": "City", "name": "Belle Meade, TN"}, {"@type": "City", "name": "Green Hills, Nashville, TN"}, {"@type": "City", "name": "Hermitage, Nashville, TN"}, {"@type": "City", "name": "Old Hickory, Nashville, TN"}, {"@type": "City", "name": "Cookeville, TN"}, {"@type": "City", "name": "Shelbyville, TN"}], "sameAs": ["https://www.facebook.com/NationalClosetCompany", "https://www.instagram.com/nationalclosetcompany", "https://www.pinterest.com/nationalclosetco", "https://www.houzz.com/pro/nationalclosetco", "https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE"], "contactPoint": {"@type": "ContactPoint", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com", "contactType": "sales", "areaServed": "US", "availableLanguage": "English"}, "knowsAbout": ["Custom closets", "Custom cabinets", "Custom cabinetry", "Kitchen cabinets", "Pantries", "Home storage systems"]}, {"@type": "LocalBusiness", "@id": "https://nationalclosetco.com/#localbusiness", "name": "National Closet Company", "image": "https://nationalclosetco.com/img/hero-closet-og.jpg", "url": "https://nationalclosetco.com/", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com", "priceRange": "$$", "address": {"@type": "PostalAddress", "addressLocality": "Gallatin", "addressRegion": "TN", "addressCountry": "US"}, "geo": {"@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467}, "areaServed": [{"@type": "GeoCircle", "geoMidpoint": {"@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467}, "geoRadius": "144840"}, {"@type": "City", "name": "Gallatin, TN"}, {"@type": "City", "name": "Hendersonville, TN"}, {"@type": "City", "name": "Nashville, TN"}, {"@type": "City", "name": "Goodlettsville, TN"}, {"@type": "City", "name": "Mount Juliet, TN"}, {"@type": "City", "name": "Lebanon, TN"}, {"@type": "City", "name": "Brentwood, TN"}, {"@type": "City", "name": "Franklin, TN"}, {"@type": "City", "name": "Murfreesboro, TN"}, {"@type": "City", "name": "Smyrna, TN"}, {"@type": "City", "name": "Spring Hill, TN"}, {"@type": "City", "name": "Columbia, TN"}, {"@type": "City", "name": "Springfield, TN"}, {"@type": "City", "name": "Clarksville, TN"}, {"@type": "City", "name": "Dickson, TN"}, {"@type": "City", "name": "Bowling Green, KY"}, {"@type": "City", "name": "White House, TN"}, {"@type": "City", "name": "Portland, TN"}, {"@type": "City", "name": "La Vergne, TN"}, {"@type": "City", "name": "Nolensville, TN"}, {"@type": "City", "name": "Belle Meade, TN"}, {"@type": "City", "name": "Green Hills, Nashville, TN"}, {"@type": "City", "name": "Hermitage, Nashville, TN"}, {"@type": "City", "name": "Old Hickory, Nashville, TN"}, {"@type": "City", "name": "Cookeville, TN"}, {"@type": "City", "name": "Shelbyville, TN"}], "openingHoursSpecification": [{"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "opens": "08:00", "closes": "18:00"}, {"@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "09:00", "closes": "16:00"}], "hasMap": "https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE", "sameAs": ["https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE"]}, {"@type": "WebSite", "@id": "https://nationalclosetco.com/#website", "url": "https://nationalclosetco.com/", "name": "National Closet Company", "publisher": {"@id": "https://nationalclosetco.com/#org"}, "potentialAction": {"@type": "SearchAction", "target": {"@type": "EntryPoint", "urlTemplate": "https://nationalclosetco.com/closet-cases?q={search_term_string}"}, "query-input": "required name=search_term_string"}, "creator": {"@type": "Organization", "@id": "https://nashvilleswebdesign.com/#organization", "name": "Nashville's Web Design", "url": "https://nashvilleswebdesign.com"}, "provider": {"@type": "Organization", "name": "Nashville's Web Design", "url": "https://nashvilleswebdesign.com"}, "maintainer": {"@id": "https://nashvilleswebdesign.com/#organization"}}, {"@type": "Person", "@id": "https://nationalclosetco.com/#founder", "name": "Michael Blair", "jobTitle": "Founder & Owner", "worksFor": {"@id": "https://nationalclosetco.com/#org"}, "knowsAbout": ["Custom closets", "Custom cabinets", "Walk-in closet design", "Kitchen cabinetry", "Home storage systems", "Closet installation"]}, {"@type": "WebPage", "@id": "https://nationalclosetco.com/#webpage", "url": "https://nationalclosetco.com/", "name": "Custom Closets & Custom Cabinets | National Closet Co.", "isPartOf": {"@id": "https://nationalclosetco.com/#website"}, "about": {"@id": "https://nationalclosetco.com/#org"}, "primaryImageOfPage": "https://nationalclosetco.com/img/hero-closet-og.jpg", "speakable": {"@type": "SpeakableSpecification", "cssSelector": ["h1", ".hero__slogan", ".hero__sub"]}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "Organization", "@id": "https://nationalclosetco.com/#org", "name": "National Closet Company", "alternateName": "National Closet Co.", "url": "https://nationalclosetco.com/", "logo": {"@type": "ImageObject", "url": "https://nationalclosetco.com/img/ncc.png", "width": 512, "height": 512, "creator": {"@type": "Organization", "@id": "https://nationalclosetco.com/#org", "name": "National Closet Company"}, "creditText": "National Closet Company", "contentUrl": "https://nationalclosetco.com/img/ncc.png", "license": "https://nationalclosetco.com/", "acquireLicensePage": "https://nationalclosetco.com/#consult"}, "image": "https://nationalclosetco.com/img/hero-closet-og.jpg", "description": "National Closet Company designs, builds and installs custom closets and custom cabinets at a price normal families can afford — walk-in and reach-in closet systems, kitchen cabinets and islands, bathroom vanities, laundry and mudroom cabinetry, built-ins and media walls, home offices, garage storage and pantries across Nashville and Middle Tennessee.", "foundingDate": "2012", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com", "priceRange": "$$", "slogan": "Beautiful custom-designed closets at a price normal families can afford.", "numberOfEmployees": {"@type": "QuantitativeValue", "value": 4}, "areaServed": [{"@type": "GeoCircle", "geoMidpoint": {"@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467}, "geoRadius": "144840"}, {"@type": "City", "name": "Gallatin, TN"}, {"@type": "City", "name": "Hendersonville, TN"}, {"@type": "City", "name": "Nashville, TN"}, {"@type": "City", "name": "Goodlettsville, TN"}, {"@type": "City", "name": "Mount Juliet, TN"}, {"@type": "City", "name": "Lebanon, TN"}, {"@type": "City", "name": "Brentwood, TN"}, {"@type": "City", "name": "Franklin, TN"}, {"@type": "City", "name": "Murfreesboro, TN"}, {"@type": "City", "name": "Smyrna, TN"}, {"@type": "City", "name": "Spring Hill, TN"}, {"@type": "City", "name": "Columbia, TN"}, {"@type": "City", "name": "Springfield, TN"}, {"@type": "City", "name": "Clarksville, TN"}, {"@type": "City", "name": "Dickson, TN"}, {"@type": "City", "name": "Bowling Green, KY"}, {"@type": "City", "name": "White House, TN"}, {"@type": "City", "name": "Portland, TN"}, {"@type": "City", "name": "La Vergne, TN"}, {"@type": "City", "name": "Nolensville, TN"}, {"@type": "City", "name": "Belle Meade, TN"}, {"@type": "City", "name": "Green Hills, Nashville, TN"}, {"@type": "City", "name": "Hermitage, Nashville, TN"}, {"@type": "City", "name": "Old Hickory, Nashville, TN"}, {"@type": "City", "name": "Cookeville, TN"}, {"@type": "City", "name": "Shelbyville, TN"}], "sameAs": ["https://www.facebook.com/NationalClosetCompany", "https://www.instagram.com/nationalclosetcompany", "https://www.pinterest.com/nationalclosetco", "https://www.houzz.com/pro/nationalclosetco", "https://maps.google.com/?cid=4722376017013072809"], "contactPoint": {"@type": "ContactPoint", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com", "contactType": "sales", "areaServed": "US", "availableLanguage": "English"}, "knowsAbout": ["Custom closets", "Custom cabinets", "Custom cabinetry", "Kitchen cabinets", "Pantries", "Home storage systems"]}, {"@type": "LocalBusiness", "@id": "https://nationalclosetco.com/#localbusiness", "name": "National Closet Company", "image": "https://nationalclosetco.com/img/hero-closet-og.jpg", "url": "https://nationalclosetco.com/", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com", "priceRange": "$$", "address": {"@type": "PostalAddress", "addressLocality": "Gallatin", "addressRegion": "TN", "addressCountry": "US"}, "geo": {"@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467}, "areaServed": [{"@type": "GeoCircle", "geoMidpoint": {"@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467}, "geoRadius": "144840"}, {"@type": "City", "name": "Gallatin, TN"}, {"@type": "City", "name": "Hendersonville, TN"}, {"@type": "City", "name": "Nashville, TN"}, {"@type": "City", "name": "Goodlettsville, TN"}, {"@type": "City", "name": "Mount Juliet, TN"}, {"@type": "City", "name": "Lebanon, TN"}, {"@type": "City", "name": "Brentwood, TN"}, {"@type": "City", "name": "Franklin, TN"}, {"@type": "City", "name": "Murfreesboro, TN"}, {"@type": "City", "name": "Smyrna, TN"}, {"@type": "City", "name": "Spring Hill, TN"}, {"@type": "City", "name": "Columbia, TN"}, {"@type": "City", "name": "Springfield, TN"}, {"@type": "City", "name": "Clarksville, TN"}, {"@type": "City", "name": "Dickson, TN"}, {"@type": "City", "name": "Bowling Green, KY"}, {"@type": "City", "name": "White House, TN"}, {"@type": "City", "name": "Portland, TN"}, {"@type": "City", "name": "La Vergne, TN"}, {"@type": "City", "name": "Nolensville, TN"}, {"@type": "City", "name": "Belle Meade, TN"}, {"@type": "City", "name": "Green Hills, Nashville, TN"}, {"@type": "City", "name": "Hermitage, Nashville, TN"}, {"@type": "City", "name": "Old Hickory, Nashville, TN"}, {"@type": "City", "name": "Cookeville, TN"}, {"@type": "City", "name": "Shelbyville, TN"}], "openingHoursSpecification": [{"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "opens": "08:00", "closes": "18:00"}, {"@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "09:00", "closes": "16:00"}], "hasMap": "https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE", "sameAs": ["https://maps.google.com/?cid=4722376017013072809"]}, {"@type": "WebSite", "@id": "https://nationalclosetco.com/#website", "url": "https://nationalclosetco.com/", "name": "National Closet Company", "publisher": {"@id": "https://nationalclosetco.com/#org"}, "creator": {"@type": "Organization", "@id": "https://nashvilleswebdesign.com/#organization", "name": "Nashville's Web Design", "url": "https://nashvilleswebdesign.com"}, "provider": {"@type": "Organization", "name": "Nashville's Web Design", "url": "https://nashvilleswebdesign.com"}, "maintainer": {"@id": "https://nashvilleswebdesign.com/#organization"}}, {"@type": "Person", "@id": "https://nationalclosetco.com/#founder", "name": "Michael Blair", "jobTitle": "Founder & Owner", "worksFor": {"@id": "https://nationalclosetco.com/#org"}, "knowsAbout": ["Custom closets", "Custom cabinets", "Walk-in closet design", "Kitchen cabinetry", "Home storage systems", "Closet installation"]}, {"@type": "WebPage", "@id": "https://nationalclosetco.com/#webpage", "url": "https://nationalclosetco.com/", "name": "Custom Closets in Nashville, TN | National Closet Company", "isPartOf": {"@id": "https://nationalclosetco.com/#website"}, "about": {"@id": "https://nationalclosetco.com/#org"}, "primaryImageOfPage": "https://nationalclosetco.com/img/hero-closet-og.jpg", "speakable": {"@type": "SpeakableSpecification", "cssSelector": ["h1", ".hero__slogan", ".hero__sub"]}, "dateModified": "2026-10-05"}]}</script>
 
 <!-- ============ JSON-LD: Service catalog ============ -->
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Service", "serviceType": "Custom Closets & Custom Cabinets", "provider": {"@id": "https://nationalclosetco.com/#org"}, "areaServed": {"@type": "GeoCircle", "geoMidpoint": {"@type": "GeoCoordinates", "latitude": 36.3884, "longitude": -86.4467}, "geoRadius": "144840"}, "description": "Beautiful custom-designed closets and custom cabinets at a price normal families can afford — custom closet systems, professionally designed and installed: walk-in and reach-in closets, closet organizers, custom kitchen cabinets and islands, bathroom vanities, laundry and mudroom cabinetry, built-in hutches and media walls, custom pantries and pantry cabinets, home offices and garage storage.", "keywords": "custom cabinets, cabinets, custom cabinets Nashville, kitchen cabinets, closet organizers, custom closets, closet systems, closet design, custom pantry, pantry cabinets, built-in cabinets, media wall, custom closets Nashville", "hasOfferCatalog": {"@type": "OfferCatalog", "name": "Custom Closets & Cabinets", "itemListElement": [{"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Closet Organizers"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Custom Cabinets", "url": "https://nationalclosetco.com/custom-cabinets-nashville"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Custom Kitchen Cabinets & Islands", "url": "https://nationalclosetco.com/custom-cabinets-nashville"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Bathroom Vanities & Built-Ins", "url": "https://nationalclosetco.com/custom-cabinets-nashville"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Custom Walk-In Closets"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Reach-In Closet Systems"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Home Office Cabinetry"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Garage Storage Systems"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Custom Pantries &amp; Pantry Cabinets"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Butler &amp; Walk-In Pantry Organization"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Laundry Room & Mudroom Storage"}}, {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Entertainment & Media Centers"}}]}}</script>
@@ -853,7 +855,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 <!-- ============ JSON-LD: Breadcrumb ============ -->
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://nationalclosetco.com/"}]}</script>
 <!-- Google tag (gtag.js) -->
-<script>(function(){var l=function(){var s=document.createElement("script");s.async=true;s.src="https://www.googletagmanager.com/gtag/js?id=G-EJEDXZZWJN";document.head.appendChild(s)};if(document.readyState==="complete")l();else window.addEventListener("load",l)})();</script>
+<script>(function(){var l=function(){var s=document.createElement("script");s.async=true;s.src="https://www.googletagmanager.com/gtag/js?id=G-EJEDXZZWJN";document.head.appendChild(s)};var o=0,g=function(){if(!o){o=1;l()}};["pointerdown","keydown","touchstart","scroll"].forEach(function(e){addEventListener(e,g,{once:true,passive:true})});var w=function(){setTimeout(g,3500)};if(document.readyState==="complete")w();else addEventListener("load",w)})();</script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -869,12 +871,12 @@ n.callMethod.apply(n,arguments):n.queue.push(arguments)};
 if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
 n.queue=[];var l=function(){t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];
-s.parentNode.insertBefore(t,s)};if(b.readyState==='complete')setTimeout(l,1200);else f.addEventListener('load',function(){setTimeout(l,1200)})}(window, document,'script',
+s.parentNode.insertBefore(t,s)};var o=0,g=function(){if(!o){o=1;l()}};['pointerdown','keydown','touchstart','scroll'].forEach(function(x){f.addEventListener(x,g,{once:true,passive:true})});var w=function(){setTimeout(g,3500)};if(b.readyState==='complete')w();else f.addEventListener('load',w)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
 fbq('init', '904015652453670');
 fbq('track', 'PageView');
 </script>
-<noscript><img height="1" width="1" style="display:none"
+<noscript><img height="1" width="1" style="display:none" alt=""
 src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
 /></noscript>
 <!-- End Meta Pixel Code -->
@@ -900,7 +902,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
   </div>
   <div class="nav__inner">
     <a href="#top" class="brand" aria-label="National Closet Company — home">
-      <span class="brand__mark"><img src="/img/ncc-logo-nc.png" alt="National Closet Company NC monogram logo" width="62" height="38" /></span><span>National Closet Co.<small>Custom Closets &amp; Cabinets</small></span>
+      <span class="brand__mark"><img src="/img/ncc-logo-nc.webp" alt="National Closet Company NC monogram logo" width="62" height="38" /></span><span>National Closet Co.<small>Custom Closets &amp; Cabinets</small></span>
     </a>
 
     <nav class="nav__links" aria-label="Primary"><a class="nav__link" href="/gallery">Gallery</a><a class="nav__link" href="/our-work">Our Work</a><a class="nav__link" href="/custom-cabinets-nashville">Cabinets</a><a class="nav__link" href="/custom-closet-cost-nashville">Pricing</a><a class="nav__link" href="/about">About</a><a class="nav__link" href="/reviews">Reviews</a><a class="nav__link" href="/closet-cases">Closet Cases</a></nav>
@@ -937,11 +939,12 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
     <a class="btn btn--primary btn--block" href="/#consult">Book my free design visit <span class="arr">→</span></a>
   </div>
 </div>
+<main id="main">
 
 <!-- ================= HERO ================= -->
 <section class="hero">
   <div class="hero__bg" aria-hidden="true">
-    <img src="/img/hero-closet.webp?v=ncc105" alt="Master walk-in closet in warm white painted shaker cabinetry with white oak shelves, brass pulls, double-hang rods and a bench" width="1280" height="1280" fetchpriority="high" decoding="sync" />
+    <img src="/img/hero-closet-480.webp" srcset="/img/hero-closet-480.webp 480w, /img/hero-closet-800.webp 800w, /img/hero-closet.webp?v=ncc105 1280w" sizes="(max-width: 939px) 160px, 100vw" alt="Master walk-in closet in warm white painted shaker cabinetry with white oak shelves, brass pulls, double-hang rods and a bench" width="1280" height="1280" fetchpriority="high" decoding="async" />
   </div>
   <div class="wrap">
     <div class="hero__inner">
@@ -962,6 +965,8 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
         <p class="capacity" id="capacity-bar">
           <span class="dot"></span><span id="capacity-text"></span>
         </p>
+        <script>/* Filled here, as the hero paints, not when main.js runs (it was the late LCP). main.js keeps the data-slots override. */
+        (function(){var b=document.getElementById("capacity-bar"),o=document.getElementById("capacity-text");if(!b||!o||(b.getAttribute("data-slots")||"").trim())return;var M=["January","February","March","April","May","June","July","August","September","October","November","December"],t=new Date(Date.now()+28*86400000);o.innerHTML="Custom closets are built to order &mdash; start your free design now and be organized by <b>"+M[t.getMonth()]+"</b>.";b.classList.add("is-on")})();</script>
         <p class="doodle-note" aria-hidden="true"><span class="doodle-arrow"><svg viewBox="0 0 80 60" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M72,52 C 36,50 13,38 14,9"/><path d="M5,22 L14,5 L26,16"/></svg></span> it's 100% free — no obligation!</p>
         <div class="hero__proof"><a class="gbadge" href="https://www.google.com/maps/place/?q=place_id:ChIJhxwNszEGaqwRqWPjnfc_iUE" target="_blank" rel="noopener"><span class="stars">★★★★★</span> <b>5.0</b> from 6 Google reviews</a></div>
       </div>
@@ -1034,8 +1039,8 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
     <div class="split" style="align-items:start">
       <figure class="ba-feature" style="margin:0">
   <div class="ba" data-ba>
-    <img class="ba__img" src="/img/pantry-before-840.webp" srcset="/img/pantry-before-560.webp 560w, /img/pantry-before-840.webp 840w, /img/pantry-before.webp 1100w" sizes="(min-width: 900px) 560px, 100vw" alt="Before: builder-grade wire shelving in the Fraleys' pantry" loading="lazy" />
-    <img class="ba__img ba__after" src="/img/pantry-after-840.webp" srcset="/img/pantry-after-560.webp 560w, /img/pantry-after-840.webp 840w, /img/pantry-after.webp 1100w" sizes="(min-width: 900px) 560px, 100vw" alt="After: the same pantry with custom white shelving, deep drawers and pull-outs" loading="lazy" />
+    <img width="840" height="1120" class="ba__img" src="/img/pantry-before-840.webp" srcset="/img/pantry-before-560.webp 560w, /img/pantry-before-840.webp 840w, /img/pantry-before.webp 1100w" sizes="(min-width: 900px) 560px, 100vw" alt="Before: builder-grade wire shelving in the Fraleys' pantry" loading="lazy" />
+    <img width="840" height="1120" class="ba__img ba__after" src="/img/pantry-after-840.webp" srcset="/img/pantry-after-560.webp 560w, /img/pantry-after-840.webp 840w, /img/pantry-after.webp 1100w" sizes="(min-width: 900px) 560px, 100vw" alt="After: the same pantry with custom white shelving, deep drawers and pull-outs" loading="lazy" />
     <span class="ba__tag ba__tag--b">Before</span><span class="ba__tag ba__tag--a">After</span>
     <span class="ba__line" aria-hidden="true"></span><span class="ba__knob" aria-hidden="true"><i></i><i></i></span>
     <input class="ba__range" type="range" min="0" max="100" value="50" aria-label="Drag to compare before and after" />
@@ -1228,7 +1233,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
     #two-quotes .tq__tag{align-self:center;font-weight:800;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--clay-deep);background:var(--clay-wash);padding:.32rem .85rem;border-radius:100px}
     #two-quotes .tq__badge{align-self:center;margin-top:.6rem;font-weight:800;font-size:.7rem;letter-spacing:.04em;text-transform:uppercase;padding:.28rem .75rem;border-radius:100px}
     #two-quotes .tq__badge--std{color:var(--ink-soft);background:var(--fog);border:1px solid var(--line)}
-    #two-quotes .tq__badge--only{color:#fff;background:var(--clay)}
+    #two-quotes .tq__badge--only{color:#fff;background:var(--clay-deep)}
     #two-quotes .tq h4{font-family:var(--display);font-size:1.4rem;margin:.95rem 0 .25rem}
     #two-quotes .tq__sub{color:var(--ink-soft);margin:0 0 1.3rem;font-size:.97rem}
     #two-quotes .tq__panels{display:grid;gap:.8rem;margin-top:auto;text-align:left}
@@ -1390,7 +1395,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
       <p class="lead" data-reveal data-delay="1">Ideas by room to spark your own space. Find a look you love, then let's design one built around you.</p>
     </div>
     <div class="gallery">
-      <a class="gal" href="/gallery" data-reveal><img src="/img/insp-walkin-1.webp" alt="Mid-size walk-in closet in white shaker cabinetry with brushed nickel pulls, double-hang rods, drawers and shoe shelves" loading="lazy" /><span class="gal__cap">Walk-in closet</span></a><a class="gal" href="/gallery" data-reveal><img src="/img/insp-pantry-1.webp" alt="Corner walk-in pantry in white shaker cabinetry with nickel cup pulls, open shelves, woven baskets and a marble counter" loading="lazy" /><span class="gal__cap">Pantry</span></a><a class="gal" href="/gallery" data-reveal><img src="/img/insp-reachin-1.webp" alt="Reach-in bedroom closet in white shaker cabinetry with nickel knobs, double-hang rods, folded sweaters and shoe shelves" loading="lazy" /><span class="gal__cap">Reach-in closet</span></a><a class="gal" href="/gallery" data-reveal><img src="/img/insp-garage-1.webp" alt="Garage storage wall in white shaker-front cabinets with steel pulls, a stainless workbench, pegboard tools and bin shelves" loading="lazy" /><span class="gal__cap">Garage storage</span></a><a class="gal" href="/gallery" data-reveal><img src="/img/svc-office.webp" alt="Home office with white oak built-in cabinetry, shaker doors, brass pulls, open bookshelves and a stone-topped built-in desk" loading="lazy" /><span class="gal__cap">Home office</span></a><a class="gal" href="/gallery" data-reveal><img src="/img/insp-laundry-1.webp" alt="Galley laundry room in white shaker cabinetry with nickel cup pulls, a washer and dryer under a quartz folding counter" loading="lazy" /><span class="gal__cap">Laundry &amp; mudroom</span></a>
+      <a class="gal" href="/gallery" data-reveal><img width="1024" height="1024" src="/img/insp-walkin-1.webp" alt="Mid-size walk-in closet in white shaker cabinetry with brushed nickel pulls, double-hang rods, drawers and shoe shelves" loading="lazy" /><span class="gal__cap">Walk-in closet</span></a><a class="gal" href="/gallery" data-reveal><img width="1024" height="1024" src="/img/insp-pantry-1.webp" alt="Corner walk-in pantry in white shaker cabinetry with nickel cup pulls, open shelves, woven baskets and a marble counter" loading="lazy" /><span class="gal__cap">Pantry</span></a><a class="gal" href="/gallery" data-reveal><img width="1024" height="1024" src="/img/insp-reachin-1.webp" alt="Reach-in bedroom closet in white shaker cabinetry with nickel knobs, double-hang rods, folded sweaters and shoe shelves" loading="lazy" /><span class="gal__cap">Reach-in closet</span></a><a class="gal" href="/gallery" data-reveal><img width="1024" height="1024" src="/img/insp-garage-1.webp" alt="Garage storage wall in white shaker-front cabinets with steel pulls, a stainless workbench, pegboard tools and bin shelves" loading="lazy" /><span class="gal__cap">Garage storage</span></a><a class="gal" href="/gallery" data-reveal><img width="1024" height="1024" src="/img/svc-office.webp" alt="Home office with white oak built-in cabinetry, shaker doors, brass pulls, open bookshelves and a stone-topped built-in desk" loading="lazy" /><span class="gal__cap">Home office</span></a><a class="gal" href="/gallery" data-reveal><img width="1024" height="1024" src="/img/insp-laundry-1.webp" alt="Galley laundry room in white shaker cabinetry with nickel cup pulls, a washer and dryer under a quartz folding counter" loading="lazy" /><span class="gal__cap">Laundry &amp; mudroom</span></a>
     </div>
     <p style="text-align:center;margin-top:1.8rem" data-reveal><a class="btn btn--primary" href="/gallery">See the Full Gallery <span class="arr">→</span></a></p>
   </div>
@@ -1408,15 +1413,15 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
     </div>
     <div class="post-grid">
       <a class="post-card" href="/blog/fraley-pantry-master-closet-makeover" data-reveal>
-        <div class="post-card__img"><img src="/img/blog-fraley-closet.webp" alt="The Fraleys' new custom master walk-in closet" loading="lazy" /></div>
+        <div class="post-card__img"><img width="1800" height="1591" src="/img/blog-fraley-closet.webp" alt="The Fraleys' new custom master walk-in closet" loading="lazy" /></div>
         <div class="post-card__body"><span class="tag">Real project</span><h3>Wire shelving to custom: the Fraleys' pantry &amp; master closet</h3><p>Builder-grade wire shelving replaced with custom systems in a day. "Holy Wow! BEST investment for our home."</p><span class="post-card__meta">Before &amp; after photos</span></div>
       </a>
       <a class="post-card" href="/blog/keith-irena-office-storage-wall" data-reveal data-delay="1">
-        <div class="post-card__img"><img src="/img/blog-office-storage-after.webp" alt="Keith and Irena's floor-to-ceiling office storage wall" loading="lazy" /></div>
+        <div class="post-card__img"><img width="1194" height="896" src="/img/blog-office-storage-after.webp" alt="Keith and Irena's floor-to-ceiling office storage wall" loading="lazy" /></div>
         <div class="post-card__body"><span class="tag">Real project</span><h3>Keith &amp; Irena's floor-to-ceiling office storage wall</h3><p>A beautiful home with almost no closets, solved with one custom wall. "Very happy with Michael Blair and his installer."</p><span class="post-card__meta">Before &amp; after photos</span></div>
       </a>
       <a class="post-card" href="/blog/large-walk-in-closet-6700" data-reveal data-delay="2">
-        <div class="post-card__img"><img src="/img/blog-large-walkin.webp" alt="Large custom white walk-in closet with double-hang sections, drawers and shoe shelves" loading="lazy" /></div>
+        <div class="post-card__img"><img width="1024" height="1024" src="/img/blog-large-walkin.webp" alt="Large custom white walk-in closet with double-hang sections, drawers and shoe shelves" loading="lazy" /></div>
         <div class="post-card__body"><span class="tag">Real project · $6,700</span><h3>A large walk-in closet for $6,700, not $12K–$17K</h3><p>The national brands quoted $12,000 to $17,000 for the same closet. Here's the one we built.</p><span class="post-card__meta">4 min read</span></div>
       </a>
     </div>
@@ -1456,7 +1461,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
         </div>
 <div class="faq__item">
           <button class="faq__q" aria-expanded="false">Do you offer discounts or run sales?<span class="faq__icon" aria-hidden="true"></span></button>
-          <div class="faq__a"><div class="faq__a-inner">We may run a <strong>straightforward, honest coupon or promotion</strong> now and then — but we don&rsquo;t play the inflated &ldquo;National Price, then 40% off if you sign tonight&rdquo; game the national brands do. <strong>That discount was never real</strong> &mdash; it was baked into the price so it could be handed back as a favor. We price the job <strong>once, honestly</strong>, for the same closet system, and our everyday price often lands around <strong>half of a national brand&rsquo;s discounted, book-now price</strong> — on a closet we quote <strong>deeper (14&Prime; shelves vs their 12&Prime;)</strong>. No inflated list price, no countdown, no manager to call, no sale to wait for. <a href="/blog/fake-discounts-65-percent-off">See how the fake-discount game works →</a></div></div>
+          <div class="faq__a"><div class="faq__a-inner">We may run a <strong>straightforward, honest coupon or promotion</strong> now and then — but we don&rsquo;t play the inflated &ldquo;National Price, then 40% off if you sign tonight&rdquo; game the national brands do. <strong>That discount was never real</strong> &mdash; it was baked into the price so it could be handed back as a favor. We price the job <strong>once, honestly</strong>, for the same closet system, and our everyday price often lands around <strong>half of a national brand&rsquo;s discounted, book-now price</strong> — on a closet we quote <strong>deeper (14&Prime; shelves vs their 12&Prime;)</strong>. No inflated list price, no countdown, no manager to call, no sale to wait for. <a href="/blog/fake-discounts-65-percent-off">See how the fake-discount game works →</a> Pricing California Closets too? <a href="/blog/california-closets-cost">See what California Closets costs by project →</a></div></div>
         </div>
 <div class="faq__item">
           <button class="faq__q" aria-expanded="false">Do you offer a free in-home consultation?<span class="faq__icon" aria-hidden="true"></span></button>
@@ -1555,6 +1560,7 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
 </section>
 
 <!-- ================= FOOTER ================= -->
+</main>
 <footer class="footer">
   <div class="wrap">
     <div class="footer__top">

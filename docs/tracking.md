@@ -9,6 +9,7 @@
 - Tracking: GA4 `G-EJEDXZZWJN` (property 539664920 — no other tag in the code), in each page's `<head>`; Ads `AW-18306256681` (form label `UnZvCNvcxMwcEKmejZlE`, click-to-call `rm_UCOCV2_AcEKmejZlE`), configured by `js/main.js` and still loaded, though the ads stopped; Meta pixel `904015652453670`.
 - `track()` in `js/main.js` fires the GA4 event, the matching Ads conversion and the Meta event (`generate_lead` → Lead, `contact` → Contact) together. The events: `generate_lead` (a saved lead only), `contact`, `consult_cta_click`, and `estimate`. `booked_consultation` is now sent only by the daily offline-conversions job for visits staff book in the CRM (`docs/google-ads.md`); the browser fired it from the booking page until 2026-09-29.
 - With a saved lead, `js/main.js` also sets `user_data` (email, phone, name) for Enhanced Conversions; the switch for it is in the Ads UI (`CLAUDE.md` → Open items).
+- **When the tags load (2026-10-09):** gtag.js and the Meta pixel script are fetched on the first interaction (pointerdown, keydown, touchstart, scroll) or 3.5 s after `load`, whichever comes first; `dataLayer` and `fbq` queue until then, so a lead saved before that still reaches both. The 19 town pages still carry the older loader (after `load`, the pixel +1.2 s) until their Phase 5 pass.
 - The GA4 "0 since Jul 17" cliff was account-side + the owner's ad blocker; Cloudflare edge = true traffic, CRM = true conversions.
 
 ## The CSP

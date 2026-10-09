@@ -89,7 +89,7 @@ def webpage(slug, name, desc, image):
 
 def page(slug, title, desc, og_image, body_html, schemas, robots='index, follow, max-image-preview:large', extra_css='', current=None):
     header, drawer = with_new_nav(HEADER, DRAWER, current or ('/' + slug if slug else None))
-    out = head(slug, title, desc, og_image, schemas, robots, extra_css) + '<body id="top">\n' + header + '\n' + drawer + '\n' + body_html + '\n' + FOOTER + '\n' + MOBICTA + f'\n<script src="/js/main.js?v={PIN}" defer></script>\n</body>\n</html>\n'
+    out = head(slug, title, desc, og_image, schemas, robots, extra_css) + '<body id="top">\n' + header + '\n' + drawer + '\n<main id="main">\n' + body_html + '\n</main>\n' + FOOTER + '\n' + MOBICTA + f'\n<script src="/js/main.js?v={PIN}" defer></script>\n</body>\n</html>\n'
     return out
 
 def phero(crumbs, eyebrow, h1, lead):

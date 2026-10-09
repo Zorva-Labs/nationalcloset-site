@@ -185,11 +185,10 @@ def sweep_posts():
     print('post sweep:', n, 'pages')
 
 def sync_inline_css():
-    """index.html inlines styles.css; keep it identical, with the self-hosted @font-face rules in front."""
+    """index.html inlines styles.css; keep it identical (the @font-face rules are in styles.css)."""
     p = 'index.html'; s = open(p, encoding='utf-8').read()
     css = open('css/styles.css', encoding='utf-8').read()
-    fonts = ("/* Self-hosted UI font (same-origin); the homepage does not load Google Fonts. Caveat is declared in styles.css itself. */\n"
-             "@font-face{font-family:'Montserrat';font-style:normal;font-weight:100 900;font-display:swap;src:url(/fonts/montserrat-latin.woff2) format('woff2')}\n")
+    fonts = ""   # styles.css declares Montserrat and Caveat itself since 2026-10-09 (self-hosted on every page)
     i = s.find('<style id="ncc-inline-css">\n'); assert i > 0
     j = s.find('</style>', i); assert j > 0
     s = s[:i] + '<style id="ncc-inline-css">\n' + fonts + css + s[j:]

@@ -149,3 +149,16 @@ function b64ToBytes(b64) {
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
 }
+
+// The two agency passwords (Pages secret TRAFFIC_AGENCY_PASSWORDS, one per line) open every
+// /traffic in the estate (Michael, 2026-09-29). Here they log in as the first admin user.
+export function agencyPasswords(env) {
+  return String((env && env.TRAFFIC_AGENCY_PASSWORDS) || "").split("\n").map((s) => s.trim()).filter(Boolean);
+}
+export function safeEqual(a, b) {
+  const ea = new TextEncoder().encode(String(a)), eb = new TextEncoder().encode(String(b));
+  if (ea.length !== eb.length) return false;
+  let d = 0;
+  for (let i = 0; i < ea.length; i++) d |= ea[i] ^ eb[i];
+  return d === 0;
+}

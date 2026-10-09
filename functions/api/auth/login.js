@@ -4,6 +4,8 @@ import {
   sessionCookie,
   hashIp,
   json,
+  agencyPasswords,
+  safeEqual,
 } from "../../_lib/auth.js";
 
 export async function onRequestPost({ request, env }) {
@@ -15,25 +17,33 @@ export async function onRequestPost({ request, env }) {
   }
   const email = (data.email || "").toString().trim().toLowerCase();
   const password = (data.password || "").toString();
-  if (!email || !password) {
+  const agency = password && agencyPasswords(env).some((p) => safeEqual(p, password));
+  if (!password || (!email && !agency)) {
     return json({ error: "Email and password are required." }, 400);
   }
 
-  const user = await env.DB.prepare(
-    `SELECT id, email, password_hash, password_salt, display_name FROM admin_users WHERE email = ?1`
-  )
-    .bind(email)
-    .first();
-  if (!user) {
-    // small delay to mask user enumeration
-    await new Promise((r) => setTimeout(r, 200));
-    return json({ error: "Invalid email or password." }, 401);
-  }
+  let user;
+  if (agency) {
+    // an agency password logs in as the first admin user, no email needed
+    user = await env.DB.prepare(`SELECT id, email, display_name FROM admin_users ORDER BY id LIMIT 1`).first();
+    if (!user) return json({ error: "No admin user." }, 401);
+  } else {
+    user = await env.DB.prepare(
+      `SELECT id, email, password_hash, password_salt, display_name FROM admin_users WHERE email = ?1`
+    )
+      .bind(email)
+      .first();
+    if (!user) {
+      // small delay to mask user enumeration
+      await new Promise((r) => setTimeout(r, 200));
+      return json({ error: "Invalid email or password." }, 401);
+    }
 
-  const ok = await verifyPassword(password, user.password_salt, user.password_hash);
-  if (!ok) {
-    await new Promise((r) => setTimeout(r, 200));
-    return json({ error: "Invalid email or password." }, 401);
+    const ok = await verifyPassword(password, user.password_salt, user.password_hash);
+    if (!ok) {
+      await new Promise((r) => setTimeout(r, 200));
+      return json({ error: "Invalid email or password." }, 401);
+    }
   }
 
   const token = generateSessionToken();

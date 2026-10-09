@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-09 (the agency passwords open the CRM; monitor login path)
+- **Why:** the estate monitor found `/api/traffic/auth` answering 401 to the agency passwords — this site's dashboard lives inside the CRM behind its user login, which took only email + password, so the rule that the two agency passwords open every `/traffic` (Michael, 2026-09-29) did not hold here.
+- **What:** `functions/_lib/auth.js` gained `agencyPasswords` (the `TRAFFIC_AGENCY_PASSWORDS` secret, one per line) and a constant-time `safeEqual`; `functions/api/auth/login.js` accepts an agency password with no email and signs in as the first admin user (Anthony's). Email + password login is unchanged; a wrong password with no email still gets a 400. Secret stored, built, deployed, both passwords verified live. `site.json → monitor.loginApi` is `/api/auth/login` so the monitor checks the right door; `cloudflare.secrets` lists the new secret.
+- **Also found by the monitor, not fixed here:** the Google Ads account 8968122786 is not under the NWD manager (API 403) — `/client-access` when Michael says so; the monitor's "Lighthouse SEO 50" did not reproduce (PageSpeed gives 100 on the same URL).
+- **Owed:** nothing on this site.
+
 ## 2026-10-09 (SEO scan, Phase 4: contrast, LCP, schema, titles, the California Closets cost post)
 - **Why:** the 2026-10-09 estate scan (`~/fleet/reports/seo/estate/2026-10-09/F.md` → nationalclosetco.com, plan row 4.5): scanner 92, the primary button at 3.62:1, a 14.3 s lab LCP, a dead `SearchAction`, titles Google truncates, and a cost post stuck at positions 8-14. Michael's three constraints held: no form changes, no phone added, no claim removed or softened.
 - **Contrast:** `--clay-deep` is #a34927 (was #b9542f, 4.06:1 on fog); `.btn--primary` and the mobile bar's "Book a visit" are white on `--clay-deep` (5.93:1, was 3.62:1); the stars, value numerals, drawer numbers, the stamp, the service arrows, `::selection`, the "Only National Closet Co." badge and the review initials (painted `--muted` on `--ink` by a stray selector) are fixed. Measured as rendered on 20 pages at 375 and 1280 px: no text under 4.5:1 (3:1 large).

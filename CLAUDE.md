@@ -67,3 +67,4 @@ node ~/site-kit/bin/site-kit.mjs submit   # IndexNow + Search Console + Bing, on
 - Google Postmaster Tools TXT on the zone.
 - `com.zorvalabs.ncc-ads-conversions` still runs: unload it once the last ad clicks are past the conversion window, if Michael confirms the stop is permanent.
 - Only if the ads run again, and optional: switch on Enhanced Conversions for "Submit lead form" in the Ads UI. The tag already sends `user_data`, and the account has accepted the customer data terms.
+- **Login (2026-10-09):** `/api/auth/login` takes `{email, password}`; either agency password (`TRAFFIC_AGENCY_PASSWORD_1`/`_2` in `~/.env`, Pages secret `TRAFFIC_AGENCY_PASSWORDS`, one per line) also logs in with no email, as the first `admin_users` row. The monitor checks this path (`site.json → monitor.loginApi`).

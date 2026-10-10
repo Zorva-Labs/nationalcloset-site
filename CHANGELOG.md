@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-10 (Search Console: the 404 is Cloudflare's email-protection URL; /cdn-cgi/ disallowed)
+- **Why:** Search Console's "New reasons prevent pages from being indexed" notice for nationalclosetco.com (michael@ and zorvalabs@, 2026-10-07 07:38 UTC): one new *Not found (404)*. The Page indexing report names it: `/cdn-cgi/l/email-protection`, last crawled Sep 27. That is Cloudflare's email-obfuscation link (Scrape Shield rewrites every mailto on the page to it; the home page carries four), not a page of ours, and it is right to 404 for a crawler.
+- **Fix:** `Disallow: /cdn-cgi/` in `robots.txt`, in both user-agent groups, as the estate standard lists it (fleet/docs/seo-standards.md §10, "What CAN go in robots.txt Disallow"). `node build.mjs` copies it into `dist/`; `site-kit check`: "every robots.txt group repeats the private rules" (the contrast, alt and sameAs lines it prints are older and untouched here).
+- **Also in the report, left alone:** 37 *Page with redirect* (www and old URLs, the working 301s), 1 *Excluded by noindex* and 1 *Alternate page with proper canonical tag* (expected), 1 *Discovered – currently not indexed*.
+- **Owed:** merge and deploy (`site.json → deploy.command`); the 404 line clears as Google stops crawling the path. No Validate fix needed.
+
 ## 2026-10-09 (monitor: Ads check off)
 - **Why:** the estate monitor reported "Google Ads account could not be read" (the account is not under our manager). Michael: "ignore national closets ad access."
 - **What:** `site.json → monitor.ads: false`, roster re-synced, finding 152 closed with the reason. If the account is ever linked, remove the switch.

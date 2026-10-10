@@ -2,6 +2,10 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-09 (monitor: Ads check off)
+- **Why:** the estate monitor reported "Google Ads account could not be read" (the account is not under our manager). Michael: "ignore national closets ad access."
+- **What:** `site.json → monitor.ads: false`, roster re-synced, finding 152 closed with the reason. If the account is ever linked, remove the switch.
+
 ## 2026-10-09 (the agency passwords open the CRM; monitor login path)
 - **Why:** the estate monitor found `/api/traffic/auth` answering 401 to the agency passwords — this site's dashboard lives inside the CRM behind its user login, which took only email + password, so the rule that the two agency passwords open every `/traffic` (Michael, 2026-09-29) did not hold here.
 - **What:** `functions/_lib/auth.js` gained `agencyPasswords` (the `TRAFFIC_AGENCY_PASSWORDS` secret, one per line) and a constant-time `safeEqual`; `functions/api/auth/login.js` accepts an agency password with no email and signs in as the first admin user (Anthony's). Email + password login is unchanged; a wrong password with no email still gets a 400. Secret stored, built, deployed, both passwords verified live. `site.json → monitor.loginApi` is `/api/auth/login` so the monitor checks the right door; `cloudflare.secrets` lists the new secret.

@@ -118,6 +118,7 @@
   },
   "monitor": {
     "loginApi": "/api/auth/login",
-    "notes": "The CRM login is /api/auth/login; an agency password logs in as the first admin user (2026-10-09)."
+    "notes": "The CRM login is /api/auth/login; an agency password logs in as the first admin user (2026-10-09). ads false 2026-10-09: the Ads account (8968122786) is not under our manager; Michael: ignore National Closet ad access.",
+    "ads": false
   }
 }

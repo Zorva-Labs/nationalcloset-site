@@ -51,6 +51,7 @@ node ~/site-kit/bin/site-kit.mjs submit   # IndexNow + Search Console + Bing, on
 - `tools/images/` the generated pictures · `tools/site-build/` the page factory · `tools/traffic/port.py` builds `crm/traffic.html` from traffic-kit's page (`docs/traffic.md`) · `tools/review-card/` the printed review card · `scripts/` the Google Ads scripts · `.claude/launch.json` the local previews (the repo root, `dist/`, and `dist/` with the functions over a local D1).
 
 ## Infrastructure & accounts
+- **Estate monitor (2026-10-09):** `site.json → monitor.ads: false` — the Google Ads account `8968122786` is not under the NWD manager and Michael said to ignore the access question ("ignore national closets ad access"); the monitor's Ads check is off for this site until it is linked.
 - Cloudflare Pages project `nationalcloset` → nationalcloset.pages.dev (noindexed by the middleware); domain nationalclosetco.com. Zone `1d51a379abcf889e1f8a5445f6ed9b93` (Cloudflare DNS; Google Workspace MX/SPF/DKIM/DMARC p=reject). Canonical = apex, www 301s.
 - D1 `nationalcloset-crm` (id `f5787ce4-29f9-43be-bf0e-cb486f1ec8e9`) bound as `DB`, prod + preview; migrations in `crm/migrations/` (`docs/crm.md`). R2 `nationalcloset-files` as `FILES` (proposal drawings and other uploads), prod + preview.
 - Workers: `nationalcloset-email-cron` (`~/nationalcloset-cron`, every 3 minutes; `docs/automations.md`). launchd `com.zorvalabs.ncc-ads-conversions`, daily (`docs/google-ads.md`).

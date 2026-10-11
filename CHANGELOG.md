@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-11 (image rights: all six fields on every ImageObject)
+
+- **Why:** Search Console's Image metadata report lists `creditText` and `copyrightNotice` as missing (non-critical) on an ImageObject that carries only a creator and a license (dropzonepainting.com's logo, elopementsinc.com's images, emails of 2026-10-10 and 2026-10-11). `site-kit check` now warns on an ImageObject missing any of `creditText`, `copyrightNotice` or `copyrightHolder` and `--strict` fails it (site-kit, 2026-10-11); the estate standard (`~/fleet/docs/seo-standards.md` → ImageObject) names all six fields.
+- **What:** `copyrightNotice` ("© 2026 National Closet Company") and `copyrightHolder` (the Organization, the same node as `creator`) on the logo ImageObject in every page's inline JSON-LD (42 files); the check had warned on both. Built, checked, deployed and submitted.
+- **Owed:** nothing; Search Console's next crawl of the pages clears the report.
+
 ## 2026-10-11 (monitor triage: Lighthouse and PageSpeed pass the geo gate)
 - **Why:** the estate monitor reported "Lighthouse SEO score 50" twice in a row (failing audits: http-status-code, is-crawlable, meta-description). PageSpeed ran Lighthouse from Google's Taiwan data center on 2026-10-10 (the same minute, four sister zones' firewall logs show the identical Lighthouse user agent from TW), and this site's middleware gate answers a non-US request with its 403 — Lighthouse was not in `BOT_UA`, so the gate treated it as a visitor. The 10-09 note that the 50 "did not reproduce" was a run from a US data center.
 - **What:** `functions/_middleware.js` → `BOT_UA` gains `chrome-lighthouse`, `lighthouse` and `pagespeed` (the needles the network's middleware already carries), so a PageSpeed run from anywhere sees the page a US visitor sees. Nothing else changed.

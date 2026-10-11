@@ -21,6 +21,9 @@ const BOT_UA = [
   // google-fetchers: Google's fetchers that don't say bot, never counted (bin/add-our-checks.mjs keeps this block current)
   "google-adwords", "google-ads-creatives", "google-businesslinkverification", "google-read-aloud", "google-safety", "google-agent", "google-notebooklm", "google-gemininotebook", "google-site-verification", "google-cloudvertexbot", "google-cws", "google-pinpoint", "googleproducer", "googlemessages", "google-apps-script", "apps-spreadsheets", "appengine-google", "google favicon", "google web preview", "google wap proxy",
   // /google-fetchers
+  // Lighthouse and PageSpeed Insights (2026-10-11): PageSpeed runs Lighthouse from Google's data centers
+  // abroad (Taiwan on 2026-10-10), and a 403 there scores the page 50 on SEO.
+  "chrome-lighthouse", "lighthouse", "pagespeed",
   // Google
   "googlebot", "google-extended", "googleother", "apis-google", "adsbot-google",
   "mediapartners-google", "google-inspectiontool", "storebot-google", "feedfetcher-google",

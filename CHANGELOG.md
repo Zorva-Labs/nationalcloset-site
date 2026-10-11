@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-11 (monitor triage: Lighthouse and PageSpeed pass the geo gate)
+- **Why:** the estate monitor reported "Lighthouse SEO score 50" twice in a row (failing audits: http-status-code, is-crawlable, meta-description). PageSpeed ran Lighthouse from Google's Taiwan data center on 2026-10-10 (the same minute, four sister zones' firewall logs show the identical Lighthouse user agent from TW), and this site's middleware gate answers a non-US request with its 403 — Lighthouse was not in `BOT_UA`, so the gate treated it as a visitor. The 10-09 note that the 50 "did not reproduce" was a run from a US data center.
+- **What:** `functions/_middleware.js` → `BOT_UA` gains `chrome-lighthouse`, `lighthouse` and `pagespeed` (the needles the network's middleware already carries), so a PageSpeed run from anywhere sees the page a US visitor sees. Nothing else changed.
+- **Checked:** `node build.mjs` (312 files); `site-kit check` reports the same five pre-existing problems as before (sameAs map search URL, image dimensions, hero srcset — none from this change; `site.json → build.check` is unset on this repo). Deployed `ceb33e45`; live, a Lighthouse user agent gets 200 on `/` and `/robots.txt`.
+- **Owed:** nothing on this site from this change.
+
 ## 2026-10-09 (monitor: Ads check off)
 - **Why:** the estate monitor reported "Google Ads account could not be read" (the account is not under our manager). Michael: "ignore national closets ad access."
 - **What:** `site.json → monitor.ads: false`, roster re-synced, finding 152 closed with the reason. If the account is ever linked, remove the switch.

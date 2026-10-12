@@ -8,6 +8,9 @@ pages_build_output_dir = "dist"
 # and are NOT affected — RESEND_API_KEY, PURELYMAIL_PASSWORD, CRON_SECRET,
 # CALENDAR_FEED_TOKEN stay as encrypted secrets.)
 [vars]
+# The geo gate (functions/_middleware.js): the countries a public page answers. Crawlers, Lighthouse and
+# PageSpeed are let through by user agent; the CRM, its APIs and static files are never gated.
+GEO_ALLOW = "US"
 PURELYMAIL_USER = "hello@nationalclosetco.com"
 IMAP_HOST = "imap.purelymail.com"
 IMAP_PORT = "993"

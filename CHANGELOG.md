@@ -2,6 +2,11 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-11 (geo gate moved into the code)
+- **Why:** Lighthouse SEO scores of 40 across the estate (the monitor's findings; Springhaven's #285 tonight): Cloudflare zone WAF country rules, set up in the dashboard before the fleet and never in a repo, answered PageSpeed's Lighthouse run from Google's Taiwan data center with a 403. Michael, 2026-10-11: one gate for every site, in the code — "US only everywhere except Elopements Inc".
+- **What:** `functions/_middleware.js` reads the allowed countries from `GEO_ALLOW` in `wrangler.toml [vars]` (`"US"`) instead of a hard-coded set, so this site's gate is set the same way as every other site's; behavior unchanged (US only; crawlers, Lighthouse and PageSpeed, the CRM, its APIs and static files never gated). CLAUDE.md → Infrastructure notes it.
+- **Checked:** `node build.mjs`; deployed `e899dd61`; live `/`, `/robots.txt`, `/crm/` and a Lighthouse user agent answer 200; PageSpeed mobile SEO 100.
+
 ## 2026-10-11 (image rights: all six fields on every ImageObject)
 
 - **Why:** Search Console's Image metadata report lists `creditText` and `copyrightNotice` as missing (non-critical) on an ImageObject that carries only a creator and a license (dropzonepainting.com's logo, elopementsinc.com's images, emails of 2026-10-10 and 2026-10-11). `site-kit check` now warns on an ImageObject missing any of `creditText`, `copyrightNotice` or `copyrightHolder` and `--strict` fails it (site-kit, 2026-10-11); the estate standard (`~/fleet/docs/seo-standards.md` → ImageObject) names all six fields.

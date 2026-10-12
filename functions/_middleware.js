@@ -1,5 +1,6 @@
 import { classifyChannel } from "./_lib/channel.js";
-// Geo-gate: the public site is reachable only from the United States.
+// Geo-gate: the public site is reachable only from the countries in GEO_ALLOW
+// (wrangler.toml [vars], "US"; the estate's knob, the same as traffic-kit's).
 //
 // Always allowed regardless of country:
 //   - Search / AI crawlers (Google, Bing, OpenAI, Anthropic, Perplexity, …) by
@@ -11,7 +12,10 @@ import { classifyChannel } from "./_lib/channel.js";
 // Everything else (marketing pages, customer portals, the public /api/public/*
 // endpoints) is blocked outside the US with a 403.
 
-const ALLOWED_COUNTRIES = new Set(["US"]);
+// GEO_ALLOW (wrangler.toml) names the countries; empty means no gate. Since 2026-10-11 the
+// list is read from there, not written here, so every site's gate is set in one place.
+const allowedCountries = (env) =>
+  String((env && env.GEO_ALLOW) || "").split(",").map((c) => c.trim().toUpperCase()).filter(Boolean);
 
 // User-agent substrings (lowercase) for crawlers we always allow.
 const BOT_UA = [
@@ -254,7 +258,8 @@ async function handle(context) {
   //    A missing value means we're not behind the CF edge (local dev / preview)
   //    — allow rather than risk false blocks.
   const country = (request.cf && request.cf.country) || request.headers.get("cf-ipcountry") || "";
-  if (!country || ALLOWED_COUNTRIES.has(country)) {
+  const allow = allowedCountries(context.env);
+  if (!country || !allow.length || allow.includes(country)) {
     // Allowed visitor. Fetch the response first, then log the pageview ONLY if
     // it's a real page (200 + HTML) — so bot probes to non-existent URLs
     // (/contact, /wp-login, etc.) that 404 never pollute the traffic counts.

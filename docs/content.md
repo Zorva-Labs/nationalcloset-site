@@ -8,15 +8,15 @@
 - `calc.html` is the internal payment-schedule calculator: noindex in the page and in `_headers`, and never counted as traffic.
 
 ## The page factory
-- `tools/site-build/chrome.py` (header/drawer/footer lifted from the city page, nav list, reviews data, component builders, `page()`, `COMPARE_ROWS`) and `stage4.py` (idempotent chrome sweep + page builds + `sync_inline_css()`). Build any new page with it so the chrome stays identical; new pages inherit the two-field form and the three-button mobile bar.
-- Pages are built/synced by `stage4.py` (chrome sweep + page builds): run it (`python3 tools/site-build/stage4.py`, from anywhere), review, then `node build.mjs` and deploy. `stage1.py`–`stage3.py` ran once, in the September rebuild (`tools/site-build/README.md`); to add a page, import `page()` from `chrome.py` and follow `stage1.py`.
+- `tools/site-build/chrome.py` (header/drawer/footer lifted from the city page, nav list, reviews data, component builders, `page()`, `COMPARE_ROWS`) and `stage4.py` (idempotent chrome sweep, credit and post sweeps, `sync_inline_css()`; its September page builds, Parts 2 and 3, are retired since 2026-10-12). Build any new page with it so the chrome stays identical; new pages inherit the two-field form and the three-button mobile bar.
+- Pages are synced by `stage4.py` (the sweeps): run it (`python3 tools/site-build/stage4.py`, from anywhere), review, then `node build.mjs` and deploy. `stage1.py`–`stage3.py` ran once, in the September rebuild (`tools/site-build/README.md`); to add a page, import `page()` from `chrome.py` and follow `stage1.py`.
 - The home page's stylesheet is inline and is re-synced by the same script (`docs/design.md`).
 
 ## The FAQs
 - **The visible FAQ is the list, and the schema is written from it.** No page carries a FAQPage. `build.mjs` writes one into each page in `dist/` from what the page shows, word for word (`@id` = the canonical + `#faq`). It reads either:
   - the accordion (`.faq__item`: `button.faq__q` + `.faq__a-inner`, what `chrome.py`'s `faq_item()` writes), on the pages and 21 posts;
   - or, on the 8 posts without one, the `<p><strong>Question?</strong><br>Answer</p>` paragraphs under their "Frequently asked questions" heading.
-- **To add or change a question,** edit it on the page. On `/custom-cabinets-nashville` and `/about`, edit `CAB_FAQ` or the `faq` list in `stage4.py` too, because a re-run rebuilds those two pages.
+- **To add or change a question,** edit it on the page. That includes `/custom-cabinets-nashville` and `/about`: since 2026-10-12 `stage4.py` no longer rebuilds them, so `CAB_FAQ` and its `faq` list are history, not the source.
 - **The build stops** on any of these:
   - a page that carries its own FAQPage;
   - an FAQ item it can't read, such as a `<div>` inside an answer;

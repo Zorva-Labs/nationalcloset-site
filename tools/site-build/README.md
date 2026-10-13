@@ -22,6 +22,13 @@ FAQPage into `dist/` from the accordion and stops on a page that carries its own
 and `stage2.py` are history. On 2026-09-26, `stage4.py` then `tools/images/apply-alt.mjs`
 rebuilt every committed page byte for byte.
 
+Since 2026-10-12 running `stage4.py` runs its Part 1 only (the chrome, credit and post
+sweeps and the homepage CSS sync). Parts 2 and 3, the cabinets page and /about builders, are
+retired and not called: both pages were edited in place after September (self-hosted fonts,
+schema, image srcsets, copy), so a re-run wrote the September copy back over the cabinets
+page and then stopped in `update_homepage()` on the old home title. The two pages in the repo
+are the source; edit them directly.
+
 Run from anywhere: `python3 tools/site-build/stage1.py` (they `os.chdir` to the repo). The
 repo is `ROOT` in `chrome.py` and `stage4.py`, the checkout the script sits in (since
 2026-09-28; before that the main clone's path, so a worktree run edited the main clone).

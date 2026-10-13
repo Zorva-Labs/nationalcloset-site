@@ -13,7 +13,12 @@ Part 1 — the chrome sweep over every public page:
     pricing guide's Article are signed by Michael Blair (a Person; the publisher stays National
     Closet Company), and each carries a visible "By Michael Blair · <date>" byline under its h1,
     linked to /about
-Part 2 builds /custom-cabinets-nashville and rebuilds /about (see below).
+Parts 2 and 3 built /custom-cabinets-nashville and rebuilt /about in September 2026. They are
+retired (2026-10-12): both pages have been edited in place since (self-hosted fonts, schema,
+image srcsets, copy), so the pages in the repo are the source now, and running this file runs
+Part 1 only. Parts 2 and 3 stay below as the record of how the pages were first built; they
+are not called, and nothing should call them (they write the September copy over the page and
+Part 2's update_homepage() stops on the old home title).
 
 Run from anywhere: python3 tools/site-build/stage4.py
 """
@@ -209,8 +214,8 @@ if __name__ == '__main__':
 
 
 # =====================================================================================
-# Part 2 — custom cabinets: the /custom-cabinets-nashville page, the homepage, the
-# gallery, the city pages, the FAQ page, the sitemap, llms.txt and the lead form.
+# Part 2 (retired 2026-10-12, not run) — custom cabinets: the /custom-cabinets-nashville page,
+# the homepage, the gallery, the city pages, the FAQ page, the sitemap, llms.txt and the lead form.
 # chrome.py is imported here, after the sweep, so it lifts the updated chrome.
 # =====================================================================================
 CAB = '/custom-cabinets-nashville'
@@ -519,12 +524,11 @@ def part2():
     build_cabinets_page(C)
     update_homepage(); update_gallery(); update_city_pages(); update_faq_page(); update_sitemap_llms_forms()
 
-if __name__ == '__main__':
-    part2()
+# Retired 2026-10-12 (see the docstring): part2() is not run. The cabinets page in the repo is the source.
 
 
 # =====================================================================================
-# Part 3 — /about rebuilt: hero, the
+# Part 3 (retired 2026-10-12, not run) — /about rebuilt: hero, the
 # foundation paragraph with the owner, Michael Blair (the only owner, 2026-10-01), Michael's note,
 # how we work / what we build with / who we build for, four values, the process, area
 # chips, common questions and the form. NCC's own facts throughout.
@@ -691,5 +695,4 @@ def part3():
     CONSULT = block(C.BODY, r'<section class="section section--fog" id="consult">').replace('Book your free Nashville design', 'Book your free in-home design').replace('to book your free Nashville design', 'to book your free in-home design')
     build_about_page(C)
 
-if __name__ == '__main__':
-    part3()
+# Retired 2026-10-12 (see the docstring): part3() is not run. about.html in the repo is the source.

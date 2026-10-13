@@ -3,6 +3,7 @@
 // phrase keywords let through, three ambiguous keywords paused, the five
 // closet RSAs rewritten (unpinned, every keyword theme in a headline), and an
 // ad schedule that skips midnight–6am. validateOnly first, then apply.
+// Superseded copy: the "half the price" lines (C.half and four descriptions) came out on 2026-10-13 — scripts/ads-copy-2026-10-13.mjs; never rerun this file as is.
 //
 //   node scripts/ads-optimize-2026-09-12.mjs            # validate only
 //   node scripts/ads-optimize-2026-09-12.mjs --apply

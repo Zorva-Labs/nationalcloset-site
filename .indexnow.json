@@ -2,13 +2,13 @@
   "host": "nationalclosetco.com",
   "endpoint": "https://www.bing.com/indexnow",
   "version": 2,
-  "submitted": "2026-10-13T05:01:31.628Z",
+  "submitted": "2026-10-13T13:31:33.513Z",
   "google": {
     "property": "sc-domain:nationalclosetco.com",
     "sitemaps": [
       "https://nationalclosetco.com/sitemap.xml"
     ],
-    "submitted": "2026-10-13T05:01:32.239Z"
+    "submitted": "2026-10-13T13:31:34.144Z"
   },
   "bing": {
     "site": "https://nationalclosetco.com/",
@@ -19,8 +19,8 @@
   },
   "urls": {
     "https://nationalclosetco.com/": {
-      "hash": "b28f1662ea47bdac",
-      "changed": "2026-10-11"
+      "hash": "e02ae386b665ebdc",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-cabinets-nashville": {
       "hash": "35b059a8cd804273",
@@ -35,36 +35,36 @@
       "changed": "2026-10-11"
     },
     "https://nationalclosetco.com/custom-closet-cost-nashville": {
-      "hash": "78dd7f52d1ec4627",
-      "changed": "2026-10-12"
+      "hash": "3730762678309198",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/california-closets-alternative": {
-      "hash": "eae172f96470b3f2",
+      "hash": "d14210a89a46a9ab",
       "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/closets-by-design-alternative": {
-      "hash": "731518f1af51c12e",
-      "changed": "2026-10-11"
+      "hash": "4cd7488588b63da1",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/tailored-closet-alternative": {
-      "hash": "f57d2ffda064a4f8",
-      "changed": "2026-10-11"
+      "hash": "fbb36d732ff973c6",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/up-closets-alternative": {
-      "hash": "3a49e091ccfe1b06",
-      "changed": "2026-10-11"
+      "hash": "8b9ca66aca7a85a8",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/the-closet-company-alternative": {
-      "hash": "5ab542d004b7de49",
-      "changed": "2026-10-11"
+      "hash": "235efddb3c2aa217",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/inspired-closets-alternative": {
-      "hash": "5eef29fd4597a883",
-      "changed": "2026-10-11"
+      "hash": "aa8bd1cc0c23d830",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/closet-factory-alternative": {
-      "hash": "c8cc98854b18d9f8",
-      "changed": "2026-10-11"
+      "hash": "48023223f00cf8bf",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/closet-cases": {
       "hash": "19810cf3720f11be",
@@ -115,8 +115,8 @@
       "changed": "2026-10-12"
     },
     "https://nationalclosetco.com/blog/fake-discounts-65-percent-off": {
-      "hash": "6217729e930c5e10",
-      "changed": "2026-10-12"
+      "hash": "b8bd1f7a9629f05e",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/custom-closet-cost": {
       "hash": "d4cc515ed38b9960",
@@ -127,8 +127,8 @@
       "changed": "2026-10-12"
     },
     "https://nationalclosetco.com/blog/california-closets-vs-local": {
-      "hash": "a037ff04e1a4eb45",
-      "changed": "2026-10-12"
+      "hash": "2b40373971dfbbbd",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/reach-in-vs-walk-in-closet": {
       "hash": "7004291e6d1b3848",
@@ -143,8 +143,8 @@
       "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/maximize-small-reach-in-closet": {
-      "hash": "01d90d8d1e48bbbe",
-      "changed": "2026-10-12"
+      "hash": "429e8448eddf8bba",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/garage-storage-systems-guide": {
       "hash": "28954a50f95cfe2a",
@@ -159,80 +159,80 @@
       "changed": "2026-10-09"
     },
     "https://nationalclosetco.com/custom-closets-nashville": {
-      "hash": "4bdd63f907daf41e",
-      "changed": "2026-10-05"
+      "hash": "7e1acde5382c3527",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-franklin": {
-      "hash": "6b2d4bd731aaef67",
-      "changed": "2026-10-05"
+      "hash": "518c5ec88784de58",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-brentwood": {
-      "hash": "ea5d1d90f1bccca4",
-      "changed": "2026-10-05"
+      "hash": "3b794ea71d038052",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-hendersonville": {
-      "hash": "0c78ae72b147ab65",
-      "changed": "2026-10-05"
+      "hash": "936a4548d8e3c61f",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-mt-juliet": {
-      "hash": "8bdcc0ad507709c4",
-      "changed": "2026-10-05"
+      "hash": "80886afa91f60ff8",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-murfreesboro": {
-      "hash": "7320838aa56148b0",
-      "changed": "2026-10-05"
+      "hash": "8d84f0e61e0dfc16",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-gallatin": {
-      "hash": "a1bc908247e2c264",
-      "changed": "2026-10-05"
+      "hash": "75dfdeeb205b1b34",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-lebanon": {
-      "hash": "b24e51c4a9d359e5",
-      "changed": "2026-10-05"
+      "hash": "228b216190757868",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-smyrna": {
-      "hash": "357074e2bd72c66d",
-      "changed": "2026-10-05"
+      "hash": "789c71da7ab965cc",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-nolensville": {
-      "hash": "7ce853a9fdad71c5",
-      "changed": "2026-10-05"
+      "hash": "8ead5da3dd6a4596",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-spring-hill": {
-      "hash": "6255474ca138c5f4",
-      "changed": "2026-10-05"
+      "hash": "a639090bc6513a7f",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-belle-meade": {
-      "hash": "0d23f25681204c29",
-      "changed": "2026-10-05"
+      "hash": "50f1b5da84f2c4cb",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-goodlettsville": {
-      "hash": "b0463d85f0a3f1d0",
-      "changed": "2026-10-05"
+      "hash": "a530fb0a50fe88c2",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-white-house": {
-      "hash": "0634f1d9a9f3793b",
-      "changed": "2026-10-05"
+      "hash": "b092bfff782c80c1",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-portland": {
-      "hash": "2eb31c43dfb5574a",
-      "changed": "2026-10-05"
+      "hash": "beebe7fbdf123180",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-la-vergne": {
-      "hash": "945337e007473d29",
-      "changed": "2026-10-05"
+      "hash": "0756a09b49783aa8",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-green-hills": {
-      "hash": "515b4a528a461717",
-      "changed": "2026-10-05"
+      "hash": "86bc45f528dbe6a2",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-hermitage": {
-      "hash": "d971251ae9182430",
-      "changed": "2026-10-05"
+      "hash": "aa9bcb92f59bc578",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/custom-closets-old-hickory": {
-      "hash": "1ecce89b1cafc399",
-      "changed": "2026-10-05"
+      "hash": "49f816b10bafeee9",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/warranty": {
       "hash": "0ab34df690e28626",
@@ -267,32 +267,32 @@
       "changed": "2026-10-09"
     },
     "https://nationalclosetco.com/faq": {
-      "hash": "86ad888833fa5b07",
+      "hash": "c144a6e8086fc800",
       "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/best-closet-company": {
-      "hash": "878925481ffa14de",
-      "changed": "2026-10-12"
+      "hash": "16753fd3b0cea667",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/closet-installation-cost": {
-      "hash": "e5d841377e2eb54c",
-      "changed": "2026-10-12"
+      "hash": "7eb7b49f1fd24b9e",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/contractor-cost-to-build-a-closet": {
-      "hash": "d43389916fbbcfbd",
-      "changed": "2026-10-12"
+      "hash": "de1b5659cb8a6a2e",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/custom-pantry-design": {
-      "hash": "430c465c1096496b",
-      "changed": "2026-10-12"
+      "hash": "a4297660c31e65c2",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/home-depot-lowes-closet-installation": {
-      "hash": "99c06b8b617c3a9e",
-      "changed": "2026-10-12"
+      "hash": "bec1cb00e0f8a2ed",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/what-closet-company-does-costco-use": {
-      "hash": "7d2edf94e71e90a1",
-      "changed": "2026-10-12"
+      "hash": "18cfd23526417e41",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/privacy": {
       "hash": "5345e8b580d098c9",

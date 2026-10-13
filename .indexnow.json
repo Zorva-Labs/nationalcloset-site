@@ -2,13 +2,13 @@
   "host": "nationalclosetco.com",
   "endpoint": "https://www.bing.com/indexnow",
   "version": 2,
-  "submitted": "2026-10-13T13:31:33.513Z",
+  "submitted": "2026-10-13T13:36:16.889Z",
   "google": {
     "property": "sc-domain:nationalclosetco.com",
     "sitemaps": [
       "https://nationalclosetco.com/sitemap.xml"
     ],
-    "submitted": "2026-10-13T13:31:34.144Z"
+    "submitted": "2026-10-13T13:36:18.018Z"
   },
   "bing": {
     "site": "https://nationalclosetco.com/",
@@ -67,7 +67,7 @@
       "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/closet-cases": {
-      "hash": "19810cf3720f11be",
+      "hash": "bdf29e803d8a5525",
       "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/keith-irena-office-storage-wall": {
@@ -115,7 +115,7 @@
       "changed": "2026-10-12"
     },
     "https://nationalclosetco.com/blog/fake-discounts-65-percent-off": {
-      "hash": "b8bd1f7a9629f05e",
+      "hash": "a240925542790b90",
       "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/custom-closet-cost": {

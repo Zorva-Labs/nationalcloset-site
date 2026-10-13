@@ -2,13 +2,13 @@
   "host": "nationalclosetco.com",
   "endpoint": "https://www.bing.com/indexnow",
   "version": 2,
-  "submitted": "2026-10-13T04:51:41.747Z",
+  "submitted": "2026-10-13T05:01:31.628Z",
   "google": {
     "property": "sc-domain:nationalclosetco.com",
     "sitemaps": [
       "https://nationalclosetco.com/sitemap.xml"
     ],
-    "submitted": "2026-10-13T04:51:42.390Z"
+    "submitted": "2026-10-13T05:01:32.239Z"
   },
   "bing": {
     "site": "https://nationalclosetco.com/",
@@ -39,8 +39,8 @@
       "changed": "2026-10-12"
     },
     "https://nationalclosetco.com/california-closets-alternative": {
-      "hash": "acfbe1b5557adf01",
-      "changed": "2026-10-11"
+      "hash": "eae172f96470b3f2",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/closets-by-design-alternative": {
       "hash": "731518f1af51c12e",
@@ -67,8 +67,8 @@
       "changed": "2026-10-11"
     },
     "https://nationalclosetco.com/closet-cases": {
-      "hash": "d7a7503fde6c640a",
-      "changed": "2026-10-12"
+      "hash": "19810cf3720f11be",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/keith-irena-office-storage-wall": {
       "hash": "536364e939f902d7",
@@ -87,16 +87,16 @@
       "changed": "2026-10-12"
     },
     "https://nationalclosetco.com/blog/affordable-custom-closet-systems": {
-      "hash": "73234c7b6dc73b4e",
-      "changed": "2026-10-12"
+      "hash": "f36986a39cf78638",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/affordable-custom-closet-company": {
       "hash": "38a210bf76588209",
       "changed": "2026-10-12"
     },
     "https://nationalclosetco.com/blog/closet-systems-compared": {
-      "hash": "80fefa003ed8f732",
-      "changed": "2026-10-12"
+      "hash": "51dd0f9806748d19",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/floor-based-closet-systems": {
       "hash": "0cea2b3f81d6d32a",
@@ -139,8 +139,8 @@
       "changed": "2026-10-12"
     },
     "https://nationalclosetco.com/blog/walk-in-closet-design-ideas": {
-      "hash": "b746754e02c96c1b",
-      "changed": "2026-10-12"
+      "hash": "e0378a0995757d91",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/maximize-small-reach-in-closet": {
       "hash": "01d90d8d1e48bbbe",
@@ -267,8 +267,8 @@
       "changed": "2026-10-09"
     },
     "https://nationalclosetco.com/faq": {
-      "hash": "1cd6715f566217d2",
-      "changed": "2026-10-12"
+      "hash": "86ad888833fa5b07",
+      "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/blog/best-closet-company": {
       "hash": "878925481ffa14de",

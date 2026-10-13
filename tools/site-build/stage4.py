@@ -152,13 +152,15 @@ def sweep_credit():
 
 # Posts on our own sites are signed by Michael Blair (the estate rule since 2026-09-28,
 # ~/fleet/docs/content-standards.md §7; `blog-post byline nationalcloset` and `fleet audit` hold it).
+PROFILE = 'https://whoismichaelblair.com/'   # Michael's author site (2026-10-12): first in sameAs, linked from every byline
 AUTHOR = {"@type": "Person", "name": "Michael Blair", "url": "https://nashvilleswebdesign.com/about/",
-          "sameAs": ["https://nashvilleswebdesign.com/about/", "https://zorvalabs.com/team/michael-blair"]}
+          "sameAs": [PROFILE, "https://nashvilleswebdesign.com/about/", "https://zorvalabs.com/team/michael-blair"]}
+MORE = f' · <a href="{PROFILE}">More about Michael</a>'   # a plain followed link, in the byline only
 
 def sweep_posts():
     """Every BlogPosting's and Article's author is AUTHOR (the posts' own node, the index's blogPost
     list, the pricing guide's Article); each of those pages gets the visible byline under its h1,
-    dated by its datePublished. Idempotent."""
+    dated by its datePublished, ending in the link to his author site. Idempotent."""
     n = 0
     ARTICLES = ('BlogPosting', 'Article')
     for p in sorted(glob.glob('blog/*.html')) + ['closet-cases.html', 'custom-closet-cost-nashville.html']:
@@ -178,8 +180,11 @@ def sweep_posts():
             y, mo, dy = map(int, dates[0].split('-'))
             when = f'{["January","February","March","April","May","June","July","August","September","October","November","December"][mo-1]} {dy}, {y}'
             by = (f'<p class="byline">By <a href="/about#michael-blair">Michael Blair</a> · '
-                  f'<time datetime="{dates[0]}">{when}</time></p>')
+                  f'<time datetime="{dates[0]}">{when}</time>{MORE}</p>')
             s, k = re.subn(r'(<section class="phero">.*?</h1>)', lambda mm: mm.group(1) + '\n    ' + by, s, count=1, flags=re.S)
+            assert k == 1, p
+        elif p != 'closet-cases.html' and f'href="{PROFILE}"' not in s:
+            s, k = re.subn(r'(<p class="byline">.*?</time>)(</p>)', lambda mm: mm.group(1) + MORE + mm.group(2), s, count=1, flags=re.S)
             assert k == 1, p
         if s != o: open(p, 'w', encoding='utf-8').write(s); n += 1
     print('post sweep:', n, 'pages')

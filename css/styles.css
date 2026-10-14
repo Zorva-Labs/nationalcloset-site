@@ -483,6 +483,11 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .prose figure { margin: 1.8rem 0; }
 .prose figure img { border-radius: var(--radius); width: 100%; }
 .prose figcaption { font-size: 0.85rem; color: var(--muted); margin-top: 0.5rem; text-align: center; }
+/* A post's short answer, under the title (content-standards §7, 2026-10-14): written by stage4.py from
+   tools/site-build/short-answers.json; the [data-short-answer] paragraph is the BlogPosting abstract and speakable. */
+.answer-box { margin: 0 0 1.8rem; padding: 1.15rem 1.3rem 1.2rem; background: var(--clay-wash); border-left: 4px solid var(--clay); border-radius: 0 var(--radius) var(--radius) 0; }
+.prose .answer-box__label { margin: 0 0 0.45rem; font-family: var(--display); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--clay-deep); }
+.prose .answer-box [data-short-answer] { margin: 0; color: var(--ink); font-size: 1.05rem; line-height: 1.6; }
 
 /* ---------- Blog cards ---------- */
 .post-grid { display: grid; gap: 1.6rem; }

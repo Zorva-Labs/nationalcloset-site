@@ -194,6 +194,44 @@ def sweep_posts():
         if s != o: open(p, 'w', encoding='utf-8').write(s); n += 1
     print('post sweep:', n, 'pages')
 
+SHORT_ANSWERS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'short-answers.json')
+SHORT_LABEL = 'The measured answer'   # this site's label; no two sites share one (content-standards §7)
+SPEAKABLE = {"@type": "SpeakableSpecification", "cssSelector": ["[data-short-answer]"]}
+
+def sweep_short_answers():
+    """Every post opens with its short answer (content-standards §7, 2026-10-14): the text is the post's
+    entry in short-answers.json, rendered as the first thing in .prose (under the title, before the story),
+    and the same text is the BlogPosting's abstract, with speakable naming [data-short-answer]. The FAQ
+    section after a post moves inside its <article>, so the post's text is one unit. A post with no entry
+    stops the run. Idempotent."""
+    answers = json.load(open(SHORT_ANSWERS, encoding='utf-8'))
+    n = 0
+    for p in sorted(glob.glob('blog/*.html')):
+        slug = os.path.basename(p)[:-5]
+        text = ' '.join(answers.get(slug, '').split())
+        assert text, f'{p}: no short answer — add "{slug}" to {SHORT_ANSWERS}'
+        assert 40 <= len(text.split()) <= 120, f'{slug}: the short answer is {len(text.split())} words (40–120)'
+        s = open(p, encoding='utf-8').read(); o = s
+        box = (f'<aside class="answer-box" aria-label="{SHORT_LABEL}">\n'
+               f'        <p class="answer-box__label">{SHORT_LABEL}</p>\n'
+               f'        <p data-short-answer>{html.escape(text, quote=False)}</p>\n'
+               f'      </aside>\n\n      ')
+        s = re.sub(r'<aside class="answer-box".*?</aside>\s*', '', s, flags=re.S)
+        s, k = re.subn(r'(<div class="prose">\s*)', lambda m: m.group(1) + box, s, count=1)
+        assert k == 1, p
+        def fix(m):
+            d = json.loads(m.group(1))
+            nodes = [d] + [x for x in d.get('@graph', []) if isinstance(x, dict)]
+            posts = [x for x in nodes if x.get('@type') == 'BlogPosting']
+            if not posts: return m.group(0)
+            for x in posts: x['abstract'] = text; x['speakable'] = SPEAKABLE
+            return '<script type="application/ld+json">' + json.dumps(d, ensure_ascii=False) + '</script>'
+        s = re.sub(r'<script type="application/ld\+json">(.*?)</script>', fix, s, flags=re.S)
+        assert '"abstract"' in s, p
+        s = re.sub(r'</article>(\s*)(<section class="section" id="faq">.*?</section>)', r'\1\2\n</article>', s, count=1, flags=re.S)
+        if s != o: open(p, 'w', encoding='utf-8').write(s); n += 1
+    print('short-answer sweep:', n, 'posts')
+
 def sync_inline_css():
     """index.html inlines styles.css; keep it identical (the @font-face rules are in styles.css)."""
     p = 'index.html'; s = open(p, encoding='utf-8').read()
@@ -210,6 +248,7 @@ if __name__ == '__main__':
     print('chrome sweep:', len(done), 'pages')
     sweep_credit()
     sweep_posts()
+    sweep_short_answers()
     sync_inline_css(); print('homepage inline CSS re-synced')
 
 

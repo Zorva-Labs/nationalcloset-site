@@ -1,5 +1,5 @@
 // The consult brief — everything the person going out needs, emailed to the
-// team member(s) assigned to the visit on the morning of the visit.
+// team member(s) assigned to the visit, the day before and the morning of it.
 //
 // Client name, phone, email, address (linked to Google Maps), rooms, notes and
 // the time, plus a link back to the consult in the CRM. One email per assignee
@@ -17,6 +17,9 @@ import { renderTemplate } from "./email-vars.js";
 import { recordActivity } from "./db.js";
 import { getAssignees, listTeam, nameList } from "./team.js";
 import { centralNow } from "./dates.js";
+import {
+  dueWindows, claimNotice, settleNotice, notYetSent, CUSTOMER_VISIT_TYPES, CLOSED_STATUSES,
+} from "./event-notices.js";
 
 const SITE_URL = "https://nationalclosetco.com";
 const DASH = "—";
@@ -48,8 +51,8 @@ export function fmtDay(startAt) {
 }
 
 // How the visit's day reads relative to the day the brief is sent. The sweep
-// only ever sends on the day itself, but "Send crew brief" in the calendar can
-// go out days early — a Tuesday send for a Friday visit must not say "Today".
+// sends the day before and on the day itself, and "Send crew brief" in the
+// calendar can go out days early — a Tuesday send for a Friday visit must not say "Today".
 //   day_word     "Today" | "Tomorrow" | "Friday" | "Friday, October 2"
 //   day_relative "today" | "tomorrow" | "on Friday" | "on Friday, October 2"
 export function dayWords(startAt, todayIso) {
@@ -110,7 +113,11 @@ function shortPlace(address) {
 }
 
 export function visitLabel(type) {
-  return (type || "consultation").toLowerCase() === "measure" ? "measure & design visit" : "in-home consultation";
+  const t = (type || "consultation").toLowerCase();
+  if (t === "measure") return "measure & design visit";
+  if (t === "install") return "install";
+  if (t === "service") return "service visit";
+  return "in-home consultation";
 }
 
 // The appointment's site address, falling back to the contact record — a
@@ -251,39 +258,45 @@ export async function sendConsultBrief(env, appt, { actor = {} } = {}) {
   return { sent, failed, to, assigned };
 }
 
-// ── Morning-of sweep ─────────────────────────────────────────────────
-// Idempotent: safe on every cron tick. For each client visit happening later
-// TODAY in Central Time, once it is past 7am Central, email the assigned team
-// member(s) their brief and stamp team_brief_sent_at so it goes out once.
-export async function sweepConsultBriefs(env) {
+// ── Day-before and morning-of sweep ─────────────────────────────────
+// Idempotent: safe on every cron tick. Every customer visit on the calendar
+// (consultation, measure, install, service) gets its brief twice: the day
+// before (9am–8pm Central) and the morning of (from 7am Central, while the
+// visit is still ahead). Each send is an event_notices row claimed before the
+// email goes, keyed on start_at, so it goes once per time and a rescheduled
+// visit is briefed again (_lib/event-notices.js). The wording already reads
+// "Tomorrow" / "Today" from {{day_word}} and {{day_relative}}.
+export async function sweepConsultBriefs(env, { now = centralNow() } = {}) {
   const db = env && env.DB;
   if (!db) return { briefed: 0 };
-  const now = centralNow();
-  if (now.hour < 7) return { briefed: 0, skipped: "before_7am" };
-
-  const due = (await db.prepare(
-    `SELECT id, type, start_at, end_at, duration_min, name, email, phone, site_address, rooms, notes,
-            contact_id, project_id, lead_id
-       FROM appointments
-      WHERE LOWER(COALESCE(type,'consultation')) IN ('consultation','measure')
-        AND LOWER(COALESCE(status,'')) NOT IN ('canceled','cancelled','no_show','no-show','completed','done')
-        AND team_brief_sent_at IS NULL
-        AND date(start_at) = ?1
-        AND start_at > ?2
-      ORDER BY start_at LIMIT 25`
-  ).bind(now.date, now.iso).all().catch(() => ({ results: [] }))).results || [];
+  const windows = dueWindows(now);
+  if (!windows.length) return { briefed: 0, skipped: "outside_hours" };
 
   let briefed = 0, people = 0;
-  for (const appt of due) {
-    // Stamp first: a send that hangs mid-loop must not double-send next tick.
-    await db.prepare(
-      `UPDATE appointments SET team_brief_sent_at=datetime('now'), updated_at=datetime('now') WHERE id=?1`
-    ).bind(appt.id).run();
-    const r = await sendConsultBrief(env, appt).catch((e) => {
-      console.error("[consult-brief] sweep failed for appointment", appt.id, e?.message || e);
-      return { sent: 0 };
-    });
-    if (r.sent) { briefed++; people += r.sent; }
+  for (const w of windows) {
+    const notice = `crew_${w.when}`;
+    const due = (await db.prepare(
+      `SELECT a.id, a.type, a.start_at, a.end_at, a.duration_min, a.name, a.email, a.phone, a.site_address,
+              a.rooms, a.notes, a.contact_id, a.project_id, a.lead_id
+         FROM appointments a
+        WHERE LOWER(COALESCE(a.type,'consultation')) IN (${CUSTOMER_VISIT_TYPES.map((t) => `'${t}'`).join(",")})
+          AND LOWER(COALESCE(a.status,'')) NOT IN (${CLOSED_STATUSES.map((t) => `'${t}'`).join(",")})
+          AND date(a.start_at) = ?1
+          AND (?2 IS NULL OR a.start_at > ?2)
+          AND ${notYetSent("a", "start_at", "'appointment'", "?3")}
+        ORDER BY a.start_at LIMIT 25`
+    ).bind(w.date, w.after, notice).all().catch(() => ({ results: [] }))).results || [];
+
+    for (const appt of due) {
+      // Stamp first: a send that hangs mid-loop must not double-send next tick.
+      if (!(await claimNotice(db, "appointment", appt.id, notice, appt.start_at))) continue;
+      const r = await sendConsultBrief(env, appt).catch((e) => {
+        console.error("[consult-brief] sweep failed for appointment", appt.id, e?.message || e);
+        return { sent: 0 };
+      });
+      await settleNotice(db, "appointment", appt.id, notice, appt.start_at, r.sent ? "sent" : "failed");
+      if (r.sent) { briefed++; people += r.sent; }
+    }
   }
   return { briefed, people };
 }

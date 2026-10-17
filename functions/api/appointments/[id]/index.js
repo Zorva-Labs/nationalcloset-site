@@ -8,8 +8,8 @@ import { getAssignees, setAssignees } from "../../../_lib/team.js";
 //   { action: "send_confirmation" } — (re)send the client the consultation /
 //     measure confirmation email for an existing booking.
 //   { action: "send_team_brief" }   — send the crew brief now, rather than
-//     waiting for the morning-of sweep. Does NOT stamp team_brief_sent_at, so
-//     the automatic brief still lands on the day.
+//     waiting for the sweep. Claims no event_notices row, so the automatic
+//     day-before and morning-of briefs still go.
 export async function onRequestPost(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const id = parseInt(context.params.id, 10);

@@ -2,6 +2,10 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-17 (Mike Cornwell on the team)
+- Asked: "add mike cornwell from vendors as a team member to be added to jobs."
+- Added as team member #5 through `POST /api/team` (name, email and phone copied from vendor #1, role Installer), so he is in the assignee picker on jobs and visits. It is a data change only: no deploy, and no CRM sign-in for him. He gets the crew emails only for the visits and jobs he is assigned to. Vendor #1 stays as it is.
+
 ## 2026-10-17 (Breadcrumbs to the job; upcoming visits open the job)
 - Asked: "make sure there are bread crumbs leading back to the main job page on every page to do with a job" and "when clicking a link in upcoming events it should go to the job, not the calendar event."
 - Breadcrumbs: the install worksheet now shows Jobs › job › Install worksheet (not in print); a lead with a job shows Jobs › job › Lead (Leads › name without one); a proposal, contract, invoice or estimate with no job falls back to its list. The four job documents already led back to the job.

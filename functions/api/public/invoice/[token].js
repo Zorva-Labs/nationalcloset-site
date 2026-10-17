@@ -5,6 +5,7 @@
 import { json } from "../../../_lib/auth.js";
 import { createPaymentIntent, retrievePaymentIntent, updatePaymentIntentAmount, getChargeFee, EXCLUDED_PAYMENT_METHODS } from "../../../_lib/stripe.js";
 import { markInvoicePaid, markInvoiceProcessing, getProjectBilling } from "../../../_lib/invoices.js";
+import { dealPaidOnFile } from "../../../_lib/option-change.js";
 
 // A stored PI is reusable only if it was created with automatic_payment_methods
 // and offers none of EXCLUDED_PAYMENT_METHODS. Legacy intents (an explicit
@@ -30,6 +31,18 @@ async function planInfo(db, inv) {
   const fullCents = Math.max(depositCents, total - paidElsewhere);
   if (fullCents <= depositCents) return null; // deposit already covers the job
   return { deposit_cents: depositCents, full_cents: fullCents, current_plan: inv.type === "full" ? "full" : "deposit" };
+}
+
+// An unpaid deposit on a proposal with more than one option: the proposal's
+// token, so the customer can go back and pick another (_lib/option-change.js).
+async function changeOptionToken(db, inv) {
+  if (!["deposit", "full"].includes(inv.type) || !inv.proposal_id || (inv.amount_paid_cents || 0) > 0) return null;
+  const pr = await db.prepare(
+    `SELECT view_token, (SELECT COUNT(*) FROM proposal_tiers WHERE proposal_id=proposals.id) AS n FROM proposals WHERE id=?1`
+  ).bind(inv.proposal_id).first().catch(() => null);
+  if (!pr || (pr.n || 0) < 2) return null;
+  if (await dealPaidOnFile(db, inv.proposal_id)) return null;
+  return pr.view_token;
 }
 
 // Resolve the target amount + invoice type for a chosen plan.
@@ -73,7 +86,18 @@ export async function onRequestGet(context) {
        FROM projects p JOIN contacts c ON c.id=p.contact_id WHERE p.id=?1`
   ).bind(inv.project_id).first().catch(() => null);
 
-  if (inv.status === "void") return json({ voided: true, invoice: publicView(inv, project) });
+  if (inv.status === "void") {
+    // Voided because the customer changed their option: point at the deal's
+    // live invoice, so an old link still gets them to what they owe.
+    let replacedBy = null;
+    if (inv.proposal_id) {
+      const r = await db.prepare(
+        `SELECT view_token FROM invoices WHERE proposal_id=?1 AND id != ?2 AND status NOT IN ('void') ORDER BY id DESC LIMIT 1`
+      ).bind(inv.proposal_id, inv.id).first().catch(() => null);
+      replacedBy = r?.view_token || null;
+    }
+    return json({ voided: true, invoice: publicView(inv, project), replaced_by_token: replacedBy });
+  }
   if (inv.status === "paid") return json({ paid: true, invoice: publicView(inv, project) });
 
   if (!context.env.STRIPE_SECRET_KEY) return json({ error: "Payments not configured" }, 500);
@@ -140,6 +164,7 @@ export async function onRequestGet(context) {
       publishable_key: context.env.STRIPE_PUBLISHABLE_KEY,
       client_secret: pi.client_secret,
       plan: await planInfo(db, inv),
+      change_option_token: await changeOptionToken(db, inv),
     });
   } catch (e) {
     return json({ error: e.message || "Stripe error" }, 502);

@@ -8,6 +8,7 @@ import { markProjectBooked } from "../../../_lib/lifecycle.js";
 import { sendStageEmail } from "../../../_lib/stage-emails.js";
 import { createInvoice } from "../../../_lib/invoices.js";
 import { sendSignedContractCopyToClient } from "../../../_lib/contract-emails.js";
+import { liveContract, dealPaidOnFile } from "../../../_lib/option-change.js";
 
 const SITE_URL = "https://nationalclosetco.com";
 
@@ -31,11 +32,32 @@ export async function onRequestGet(context) {
   let invoiceToken = null;
   if (["signed_by_customer", "fully_executed"].includes(k.status) && (k.deposit_cents || 0) > 0) {
     const inv = await context.env.DB.prepare(
-      `SELECT view_token FROM invoices WHERE project_id=?1 AND status NOT IN ('paid','void') ORDER BY id ASC LIMIT 1`
-    ).bind(k.project_id).first();
+      `SELECT view_token FROM invoices WHERE project_id=?1 AND status NOT IN ('paid','void')
+          AND (contract_id=?2 OR (?3 IS NOT NULL AND proposal_id=?3))
+        ORDER BY id ASC LIMIT 1`
+    ).bind(k.project_id, k.id, k.proposal_id ?? null).first();
     invoiceToken = inv?.view_token || null;
   }
-  return json({ contract: safe, lines, invoice_token: invoiceToken });
+  // The proposal behind it: while nothing is paid on the deal, a proposal with
+  // more than one option lets the customer go back and pick another
+  // (_lib/option-change.js). A contract voided by such a switch points to the
+  // one that replaced it.
+  let proposalToken = null, canChangeOption = false, replacedByToken = null;
+  if (k.proposal_id) {
+    const pr = await context.env.DB.prepare(
+      `SELECT view_token, (SELECT COUNT(*) FROM proposal_tiers WHERE proposal_id=proposals.id) AS n FROM proposals WHERE id=?1`
+    ).bind(k.proposal_id).first().catch(() => null);
+    if (pr) {
+      proposalToken = pr.view_token;
+      if (k.status === "void") {
+        const live = await liveContract(context.env.DB, k.proposal_id);
+        replacedByToken = live?.view_token || null;
+      } else if ((pr.n || 0) > 1) {
+        canChangeOption = !(await dealPaidOnFile(context.env.DB, k.proposal_id));
+      }
+    }
+  }
+  return json({ contract: safe, lines, invoice_token: invoiceToken, proposal_token: proposalToken, can_change_option: canChangeOption, replaced_by_token: replacedByToken });
 }
 
 export async function onRequestPost(context) {
@@ -46,6 +68,7 @@ export async function onRequestPost(context) {
   if (k.status === "fully_executed" || k.status === "signed_by_customer") {
     return json({ error: "Contract is already signed." }, 400);
   }
+  if (k.status === "void") return json({ error: "This contract was replaced. Please open the newest link we sent, or call or text 629-298-8241." }, 410);
   if (body.action !== "sign") return json({ error: "Unknown action" }, 400);
   if (!body.signer_name || !body.signature_image) {
     return json({ error: "Missing typed name or signature image." }, 400);

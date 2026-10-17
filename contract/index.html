@@ -141,8 +141,30 @@ async function load() {
     if (data.error) throw new Error(data.error);
     contract = data.contract;
     window.__payInv = data.invoice_token || null;   // resume: pay-deposit link when signed but unpaid
+    // Before anything is paid, the customer can go back to the proposal and
+    // pick another option (functions/_lib/option-change.js).
+    window.__changeOpt = data.can_change_option && data.proposal_token ? data.proposal_token : null;
+    if (data.contract.status === "void") return renderReplaced(data.contract, data.replaced_by_token, data.proposal_token);
     render(data.contract, data.lines);
   } catch (e) { document.getElementById("root").innerHTML = `<p style="color:#B85450;text-align:center;padding:40px">${esc(e.message)}</p>`; }
+}
+
+// A contract voided because the customer chose a different option.
+function renderReplaced(k, nextTok, propTok) {
+  document.title = `${k.number} · Replaced · National Closet Company`;
+  document.getElementById("root").innerHTML = `
+    <div class="signed-box" style="margin-top:20px">
+      <h2>This contract was replaced</h2>
+      <p>Contract ${esc(k.number)} was canceled when you chose a different option, so it no longer applies.${nextTok ? " Your current contract is here:" : ""}</p>
+      ${nextTok ? `<a href="/contract/?t=${encodeURIComponent(nextTok)}" style="display:inline-block;margin-top:18px;padding:16px 24px;background:var(--color-champagne);color:var(--color-ink);border-radius:10px;font-weight:800;text-decoration:none">Open your current contract →</a>`
+        : propTok ? `<a href="/proposal/?t=${encodeURIComponent(propTok)}" style="display:inline-block;margin-top:18px;padding:16px 24px;background:var(--color-champagne);color:var(--color-ink);border-radius:10px;font-weight:800;text-decoration:none">Choose your option →</a>` : ""}
+    </div>
+    <div class="doc-foot">National Closet Company · Custom Closets &amp; Closet Systems · Gallatin, TN · 629-298-8241 · hello@nationalclosetco.com · nationalclosetco.com</div>`;
+}
+
+function changeOptionLink() {
+  if (!window.__changeOpt) return "";
+  return `<p class="no-print" style="margin:16px 0 0;font-size:.95rem;color:var(--color-ink);opacity:1">Want a different option? You can still switch before you pay. <a href="/proposal/?t=${encodeURIComponent(window.__changeOpt)}" style="color:inherit;font-weight:800">Change my option →</a></p>`;
 }
 
 function render(k, lines) {
@@ -191,7 +213,7 @@ function render(k, lines) {
     <h2>Terms &amp; conditions</h2>
     <div>${k.terms_html || ""}</div>
 
-    ${isExecuted ? `
+    ${isExecuted && !(window.__payInv && (k.deposit_cents || 0) > 0) ? `
       <div class="signed-box">
         <h2>Your job is booked! 🎉</h2>
         <p>Signed on ${formatDt(k.signed_by_customer_at)}.${k.deposit_cents > 0 ? ` Due now: <strong style="color:var(--color-champagne)">${money(k.deposit_cents)}</strong>.` : ""} Thank you! We'll reach out after we receive and process your order to coordinate the rest — nothing else is needed from you right now. Your remaining payments come later: 25% once your materials arrive and we schedule your install, and the final 25% the day of installation — or you're welcome to pay in full at any time instead.</p>
@@ -202,6 +224,7 @@ function render(k, lines) {
         <h2 style="color:var(--color-ink)">Thank you — you're almost done!</h2>
         <p style="color:var(--color-ink);opacity:0.85">We've received your signature.${(window.__payInv && (k.deposit_cents||0) > 0) ? ` One last step — pay your deposit to release your order to the manufacturer.` : ` We'll release your order shortly.`}</p>
         ${(window.__payInv && (k.deposit_cents||0) > 0) ? `<a href="/invoice/?t=${encodeURIComponent(window.__payInv)}" class="no-print" style="display:block;margin-top:16px;padding:18px 24px;background:var(--color-ink);color:#fff;border-radius:10px;font-weight:800;font-size:1.12rem;text-decoration:none;text-align:center">Pay your ${money(k.deposit_cents)} deposit now →</a>` : ""}
+        ${changeOptionLink()}
         <button onclick="window.print()" class="no-print" style="margin-top:12px;padding:12px 22px;background:transparent;color:var(--color-ink);border:1.5px solid var(--color-ink);font:inherit;font-weight:700;font-size:0.82rem;border-radius:8px;cursor:pointer">🖨 Print / Save PDF</button>
       </div>
     ` : `

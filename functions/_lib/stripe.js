@@ -99,6 +99,12 @@ export function retrievePaymentIntent(env, id) {
   return stripeRequest(env, "GET", `/payment_intents/${id}`);
 }
 
+// Cancel an unpaid PaymentIntent so a voided invoice can never be charged
+// (the customer changed their option, _lib/option-change.js).
+export function cancelPaymentIntent(env, id) {
+  return stripeRequest(env, "POST", `/payment_intents/${id}/cancel`, {});
+}
+
 // The actual Stripe processing fee (in cents) for a PaymentIntent's payment,
 // read from the charge's balance transaction. Returns null if unavailable
 // (e.g. no charge yet). pi may be a full PaymentIntent object or an id.

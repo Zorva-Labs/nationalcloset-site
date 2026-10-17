@@ -123,7 +123,10 @@ async function load() {
     if (data.error) throw new Error(data.error);
     proposal = data.proposal;
     window.__contractToken = data.contract_token || null;   // resume: jump to the awaiting-signature contract
-    window.__contractLocked = !!data.contract_locked;       // true once signed — options can no longer be switched
+    window.__contractLocked = !!data.contract_locked;       // true once money has moved on the deal — options freeze
+    window.__contractSigned = !!data.contract_signed;       // signed but unpaid — switching still allowed (it replaces the contract)
+    window.__payInv = data.invoice_token || null;           // the unpaid deposit, when signed
+    window.__tiers = data.tiers || [];
     render(data.proposal, data.tiers, data.attachments || []);
   } catch (e) { document.getElementById("root").innerHTML = `<p class="err">${esc(e.message)}</p>`; }
 }
@@ -190,9 +193,11 @@ function render(p, tiers, attachments) {
   attachments = attachments || [];
   if (isExpired(p)) { renderExpired(p); return; }
   const isAccepted = p.status === "accepted";
-  // A customer can keep switching options until the contract is actually signed.
-  // "locked" is only true once signed — then the options freeze.
+  // A customer can keep switching options until money moves on the deal, even
+  // after signing (the signed contract is then replaced). "locked" is only
+  // true once a payment is on it — then the options freeze.
   const locked = isAccepted && !!window.__contractLocked;
+  const signed = isAccepted && !locked && !!window.__contractSigned;
   const many = (tiers || []).length > 1;
   // Never claim "no discount" on a quote that has one: a discount shows up as
   // the gap between an option's pre-discount subtotal and what the client pays.
@@ -233,7 +238,7 @@ function render(p, tiers, attachments) {
         </div>` : `<div class="opt__empty">Itemized details to follow.</div>`}
         ${!locked ? `<button class="btn opt-btn${isAccepted && p.selected_tier !== t.tier ? " opt-btn--alt" : ""}" type="button" onclick="event.stopPropagation();continueToContract('${esc(t.tier)}')">${
           !isAccepted ? (many ? "Choose this option →" : "Accept & sign →")
-          : (p.selected_tier === t.tier ? "Continue to your contract →" : "Switch to this option →")
+          : (p.selected_tier === t.tier ? (signed ? "View your signed contract →" : "Continue to your contract →") : "Switch to this option →")
         }</button>` : ""}
       </div>`).join("")}
     </div>
@@ -270,6 +275,12 @@ function render(p, tiers, attachments) {
         <h2>You're all set — your contract is signed.</h2>
         <p>Thanks! Your order is locked in and we'll be in touch to schedule your install. Need to change your option or anything else? Just call or text <a href="tel:+16292988241">629-298-8241</a>.</p>
       </div>
+    ` : signed ? `
+      <div class="accept">
+        <h2>Your contract is signed. Your deposit is next.</h2>
+        <p><strong>Want a different option?</strong> Choose it above. You'll sign a new contract for that option and pay its deposit, and the contract you signed is canceled. Nothing has been charged yet. Questions? Call or text <a href="tel:+16292988241">629-298-8241</a>.</p>
+        ${window.__payInv ? `<a class="btn accept-btn" href="/invoice/?t=${encodeURIComponent(window.__payInv)}" style="min-height:56px;font-size:1.1rem;padding:16px 34px;text-decoration:none;display:inline-block">Pay your deposit →</a>` : ""}
+      </div>
     ` : `
       <div class="accept">
         <h2>Accepted — one step left</h2>
@@ -297,6 +308,15 @@ function render(p, tiers, attachments) {
 // One-tap: select the option AND create + open the contract. The customer types
 // their name (their signature) on the contract — no name entry here.
 async function continueToContract(tier) {
+  // Switching away from a signed contract cancels it: say so before doing it.
+  if (window.__contractSigned && !window.__contractLocked && proposal && proposal.selected_tier !== tier) {
+    const tiers = window.__tiers || [];
+    const to = tiers.find((t) => t.tier === tier) || {};
+    const fromIdx = tiers.findIndex((t) => t.tier === proposal.selected_tier);
+    const name = (t, i) => t.title || ("Option " + (i + 1));
+    const msg = `Switch to ${name(to, tiers.indexOf(to))} (${money(to.total_cents)})?\n\nThe contract you signed${fromIdx >= 0 ? " for " + name(tiers[fromIdx], fromIdx) : ""} will be canceled, and you'll sign a new one for this option. Nothing has been charged.`;
+    if (!confirm(msg)) return;
+  }
   try {
     const res = await fetch("/api/public/proposal/" + token, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "continue", tier }) });
     const data = await res.json();

@@ -1,6 +1,7 @@
 import { requireAuth, json } from "../../_lib/auth.js";
 import { resolveFinancials, processingFee } from "../../_lib/financials.js";
 import { contractTotalSql, acceptedTierSql, finalDiscountSql, costBasis } from "../../_lib/job-total.js";
+import { wallPaintSql } from "../../_lib/painter.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -27,6 +28,7 @@ export async function onRequestGet(context) {
                     c.phone AS contact_phone,
                     c.address_city AS contact_city,
                     ${contractTotalSql()} AS job_total_cents,
+                    ${wallPaintSql("p")} AS wall_paint,
                     (SELECT COALESCE(SUM(iv.amount_cents), 0) FROM invoices iv
                       WHERE iv.project_id = p.id AND iv.status = 'paid') AS paid_cents,
                     (SELECT COALESCE(SUM(iv.fee_cents), 0) FROM invoices iv

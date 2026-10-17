@@ -1,5 +1,6 @@
 // GET /api/dashboard — aggregator for the home screen
 import { requireAuth, json } from "../_lib/auth.js";
+import { painterNeededSql } from "../_lib/painter.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -77,7 +78,8 @@ export async function onRequestGet(context) {
       (SELECT COUNT(*) FROM proposals WHERE status IN ('sent','viewed') AND sent_at < datetime('now', '-5 days')) AS stale_proposals,
       (SELECT COUNT(*) FROM proposals WHERE status = 'draft' AND created_at < datetime('now', '-1 day')) AS draft_proposals,
       (SELECT COUNT(*) FROM invoices WHERE status = 'open' AND ((due_date IS NOT NULL AND due_date < date('now')) OR (due_date IS NULL AND created_at < datetime('now', '-7 days')))) AS overdue_invoices,
-      (SELECT COUNT(*) FROM leads WHERE status = 'new' AND created_at < datetime('now', '-1 day')) AS untouched_leads
+      (SELECT COUNT(*) FROM leads WHERE status = 'new' AND created_at < datetime('now', '-1 day')) AS untouched_leads,
+      (SELECT COUNT(*) FROM projects p WHERE ${painterNeededSql("p")}) AS painter_needed
   `).first();
 
   return json({

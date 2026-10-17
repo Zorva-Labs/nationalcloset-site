@@ -4,12 +4,14 @@ import { createInvoice, billOnCompletion, getProjectBilling } from "../../../_li
 import { deleteProjectCascade } from "../../../_lib/cascade.js";
 import { todayCentral } from "../../../_lib/dates.js";
 import { getAssignees, getAssigneeMap, setAssignees } from "../../../_lib/team.js";
+import { wallPaintSql } from "../../../_lib/painter.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const id = parseInt(context.params.id, 10);
   const project = await context.env.DB
-    .prepare(`SELECT p.*, c.name AS contact_name, c.email AS contact_email, c.phone AS contact_phone
+    .prepare(`SELECT p.*, c.name AS contact_name, c.email AS contact_email, c.phone AS contact_phone,
+                    ${wallPaintSql("p")} AS wall_paint
               FROM projects p JOIN contacts c ON c.id=p.contact_id WHERE p.id=?1`)
     .bind(id).first();
   if (!project) return json({ error: "Not found" }, 404);
@@ -119,7 +121,8 @@ export async function onRequestPatch(context) {
   // clears it. Keys are fixed (no user SQL), so the literal expression is safe.
   const stampCols = { materials_ordered: "materials_ordered_at", materials_received: "materials_received_at",
                       materials_damaged: "materials_damaged_at", materials_missing: "materials_missing_at",
-                      materials_installed: "materials_installed_at" };
+                      materials_installed: "materials_installed_at",
+                      painter_booked: "painter_booked_at" };   // Option 2 jobs (_lib/painter.js)
   for (const [k, col] of Object.entries(stampCols)) {
     if (body[k] !== undefined) fields.push(`${col}=${body[k] ? "datetime('now')" : "NULL"}`);
   }

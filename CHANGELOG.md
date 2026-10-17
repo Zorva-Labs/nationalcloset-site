@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-17 (Option 2 jobs: book the painter)
+- Asked: "I need a way for jobs that booked option 2 to stand out so we know to book the painter."
+- Option 2 is the `wallprep` contract (closet plus wall repair and paint). A job with one signed now shows "🎨 Book painter" in four places: on its page, as a banner with a "✓ Painter booked" button; on the Jobs list, as a badge, an amber edge and a banner naming the jobs; on the dashboard, under "Needs your attention" (→ `/crm/projects.html?painter=1`); and on the calendar, on its install day. Ticking it stamps `projects.painter_booked_at` (migration 0075, applied to the live D1), and the flag turns into a quiet "Painter booked" with an undo.
+- Flagged at launch: Lesia Wood, Wonda Askew, Derek Smith, Helena Kirkendall. Amy Hill's Option 2 job is completed, so it isn't flagged.
+- `crm-app.css?v=ncc124`, `crm-app.js?v=ncc114`. Checked on a local D1 at 375px and desktop: banner, badge, tick and undo, the dashboard count, the calendar mark. Contrast 6.4:1 and better, taps 44px, no sideways scroll.
+
 ## 2026-10-17 (Mike Cornwell on the team)
 - Asked: "add mike cornwell from vendors as a team member to be added to jobs."
 - Added as team member #5 through `POST /api/team` (name, email and phone copied from vendor #1, role Installer), so he is in the assignee picker on jobs and visits. It is a data change only: no deploy, and no CRM sign-in for him. He gets the crew emails only for the visits and jobs he is assigned to. Vendor #1 stays as it is.

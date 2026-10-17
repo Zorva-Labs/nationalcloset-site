@@ -5,6 +5,7 @@ import { recordActivity, upsertContact } from "../../_lib/db.js";
 import { bumpLeadStatusForward } from "../../_lib/lifecycle.js";
 import { sendAppointmentConfirmation, isClientVisit } from "../../_lib/appointment-emails.js";
 import { getAssigneeMap, setAssignees } from "../../_lib/team.js";
+import { wallPaintSql } from "../../_lib/painter.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context);
@@ -31,7 +32,8 @@ export async function onRequestGet(context) {
   let installEvents = [];
   if (!status) {
     const installs = (await DB.prepare(
-      `SELECT p.id, p.name AS project_name, p.install_date, p.status, c.name AS contact_name
+      `SELECT p.id, p.name AS project_name, p.install_date, p.status, c.name AS contact_name,
+              ${wallPaintSql("p")} AS wall_paint, p.painter_booked_at
          FROM projects p LEFT JOIN contacts c ON c.id = p.contact_id
         WHERE p.install_date IS NOT NULL AND p.install_date >= ?1 AND p.install_date <= ?2`
     ).bind(from, to).all().catch(() => ({ results: [] }))).results || [];
@@ -47,6 +49,7 @@ export async function onRequestGet(context) {
       end_at: `${p.install_date}T17:00:00`,
       name: p.contact_name || p.project_name || "Install",
       project_name: p.project_name || null,
+      wall_paint: p.wall_paint, painter_booked_at: p.painter_booked_at,
     }));
   }
 

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Jobs · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc123"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc124"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc113"></script>
+<script src="/crm/crm-app.js?v=ncc114"></script>
 <script>
 // A project only counts as a "Job" once the contract is signed AND the deposit
 // is paid (status 'contracted'). Until then the deal stays a LEAD in the
@@ -55,8 +55,10 @@ function rowHtml(p) {
         .join(" ")
       + `<span class="muted" style="font-size:10px;margin-left:5px">${SSCrm.fmtDate(shown[0].at)}</span>`
     : `<span class="muted">—</span>`;
-  return `<tr class="clickable" onclick="location.href='/crm/project.html?id=${p.id}'">
-    <td><strong>${SSCrm.esc(p.contact_name || "—")}</strong></td>
+  const paint = SSCrm.painterBadge(p);
+  const needsPainter = paint && !p.painter_booked_at;
+  return `<tr class="clickable${needsPainter ? " needs-painter" : ""}" onclick="location.href='/crm/project.html?id=${p.id}'">
+    <td><strong>${SSCrm.esc(p.contact_name || "—")}</strong>${paint ? `<div style="margin-top:4px">${paint}</div>` : ""}</td>
     <td>${p.contact_email ? `<a href="mailto:${SSCrm.esc(p.contact_email)}" onclick="event.stopPropagation()">${SSCrm.esc(p.contact_email)}</a>` : `<span class="muted">—</span>`}</td>
     <td>${p.contact_phone ? `<a href="tel:${SSCrm.esc(p.contact_phone)}" onclick="event.stopPropagation()">${SSCrm.esc(p.contact_phone)}</a>` : `<span class="muted">—</span>`}</td>
     <td>${p.contact_city ? SSCrm.esc(p.contact_city) : `<span class="muted">—</span>`}</td>
@@ -92,7 +94,8 @@ function totalsBar(open, completed) {
 (async () => {
   const params = new URLSearchParams(location.search);
   const filterStatus = params.get("status");
-  const subtitle = filterStatus && JOB_STATUSES.has(filterStatus)
+  const subtitle = params.get("painter") === "1" ? "Option 2 · wall repair and paint"
+    : filterStatus && JOB_STATUSES.has(filterStatus)
     ? `${JOB_STATUS_LABELS[filterStatus] || filterStatus} jobs`
     : "Booked work — contract signed";
 
@@ -111,7 +114,17 @@ function totalsBar(open, completed) {
     return;
   }
 
+  // ?painter=1 (the dashboard's link): Option 2 jobs still waiting on the painter.
+  if (params.get("painter") === "1") {
+    const list = all.filter((p) => p.wall_paint && !p.painter_booked_at && p.status !== "completed" && p.status !== "lost");
+    document.getElementById("page-title").textContent = "Book the painter";
+    page.innerHTML = `<p class="muted" style="font-size:13px;margin:0 0 12px">Jobs booked on Option 2 (wall repair and paint). Tick <strong>Painter booked</strong> on the job once the painter is scheduled.</p>`
+      + (list.length ? tableHtml(list) : `<div class="tbl"><div class="empty">Every Option 2 job has its painter booked.</div></div>`);
+    return;
+  }
+
   const openJobs = all.filter((p) => OPEN_STATUSES.includes(p.status));
+  const waitingPainter = openJobs.filter((p) => p.wall_paint && !p.painter_booked_at);
   const completedJobs = all.filter((p) => p.status === "completed");
 
   if (!openJobs.length && !completedJobs.length) {
@@ -122,7 +135,12 @@ function totalsBar(open, completed) {
     return;
   }
 
-  page.innerHTML = totalsBar(openJobs, completedJobs)
+  page.innerHTML = (waitingPainter.length ? `<div class="banner" style="margin-bottom:14px;background:#FFFBEB;border-color:#FCD34D;color:#92400E">
+        <div class="banner__icon" style="background:#FEF3C7;color:#92400E">🎨</div>
+        <div class="banner__body"><strong>${waitingPainter.length} Option 2 job${waitingPainter.length === 1 ? "" : "s"} need${waitingPainter.length === 1 ? "s" : ""} the painter booked.</strong>
+          <span>${waitingPainter.map((p) => `<a href="/crm/project.html?id=${p.id}" style="color:#92400E;font-weight:700">${SSCrm.esc(p.contact_name || p.name)}</a>`).join(" · ")}</span></div>
+      </div>` : "")
+    + totalsBar(openJobs, completedJobs)
     + sectionTitle("Open jobs", `${openJobs.length}`)
     + (openJobs.length ? tableHtml(openJobs) : `<div class="tbl"><div class="empty">No open jobs.</div></div>`)
     + (completedJobs.length ? sectionTitle("Completed", `${completedJobs.length}`) + tableHtml(completedJobs) : "");

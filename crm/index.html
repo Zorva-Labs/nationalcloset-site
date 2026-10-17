@@ -9,11 +9,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc123" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc124" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc113"></script>
+<script src="/crm/crm-app.js?v=ncc114"></script>
 <script>
 (async () => {
   const user = await SSCrm.mount({
@@ -135,6 +135,7 @@ function renderTraffic(days) {
 
 function renderAttention(a) {
   const items = [];
+  if (a.painter_needed) items.push({ label: `🎨 ${a.painter_needed} Option 2 job${a.painter_needed === 1 ? "" : "s"} need${a.painter_needed === 1 ? "s" : ""} the painter booked`, href: "/crm/projects.html?painter=1" });
   if (a.untouched_leads) items.push({ label: `${a.untouched_leads} new lead${a.untouched_leads === 1 ? "" : "s"} need first contact`, href: "/crm/leads.html?status=new" });
   if (a.draft_proposals) items.push({ label: `${a.draft_proposals} proposal${a.draft_proposals === 1 ? "" : "s"} drafted but not sent`, href: "/crm/proposals.html?status=draft" });
   if (a.stale_proposals) items.push({ label: `${a.stale_proposals} sent proposal${a.stale_proposals === 1 ? "" : "s"} to follow up (5+ days)`, href: "/crm/proposals.html?status=sent" });

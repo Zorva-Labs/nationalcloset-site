@@ -170,6 +170,16 @@ function setCrumbs(items) {
       + (c.href && !last ? `<a href="${esc(c.href)}">${esc(c.label)}</a>` : `<span${last ? ' aria-current="page"' : ""}>${esc(c.label)}</span>`);
   }).join("");
 }
+// Option 2 jobs (wall repair + paint, _lib/painter.js) need the painter booked:
+// "Book painter" until someone ticks Painter booked on the job, then a quiet
+// "Painter booked". A finished job that was never ticked shows nothing.
+function painterBadge(p) {
+  if (!p || !p.wall_paint) return "";
+  if (p.painter_booked_at) return `<span class="paint-flag paint-flag--done" title="Painter booked ${esc(fmtDate(p.painter_booked_at))}">🎨 Painter booked</span>`;
+  if (p.status === "completed" || p.status === "lost") return "";
+  return `<span class="paint-flag" title="Option 2: wall repair and paint. Book the painter.">🎨 Book painter</span>`;
+}
+
 function jobCrumbs(projectId, projectName, tab, current) {
   const TAB = { proposals: "Proposals", contracts: "Contracts", invoices: "Invoices", overview: "Overview" };
   // A document with no job still gets a trail, back to its own list.
@@ -1339,7 +1349,7 @@ function wireAssigneePicker(root) {
 }
 
 window.SSCrm = {
-  fetchJSON, mount, setCrumbs, jobCrumbs, fmtMoney, fmtMoneyShort, parseMoney, fmtDate, fmtDay, fmtDateTime, fmtTime, esc, pill, logout, toast, confirmDialog,
+  fetchJSON, mount, setCrumbs, jobCrumbs, painterBadge, fmtMoney, fmtMoneyShort, parseMoney, fmtDate, fmtDay, fmtDateTime, fmtTime, esc, pill, logout, toast, confirmDialog,
   pickContact, pickJob, openModal, recordPayment,
   quickAddLead, quickAddContact, quickAddJob, quickAddAppointment, quickAddEstimate, quickAddProposal, quickAddContract,
   composeEmail, renderEmailTimeline,

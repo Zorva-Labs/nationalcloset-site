@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Calendar · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc123"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc124"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc113"></script>
+<script src="/crm/crm-app.js?v=ncc114"></script>
 <script>
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DOW_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -131,7 +131,7 @@ function renderCell(c, byDate, todayStr) {
   const more = events.length - shown.length;
   return `<div class="${classes.join(" ")}" data-date="${iso}">
     <div class="cal-day-num">${c.date.getUTCDate()}</div>
-    ${shown.map((a) => `<div class="cal-event" data-id="${a.id}" data-type="${SSCrm.esc(a.type || "consultation")}" data-s="${SSCrm.esc(a.status)}"${a.is_install ? ` data-project="${a.project_id}"` : ""} title="${SSCrm.esc(a.name)} — ${a.is_install ? "Install" : SSCrm.esc(a.type)}${crewTitle(a.assignees)}">${a.is_install ? "🔧 " : ""}<span class="cal-event-time">${prettyTime(a.start_at)}</span> ${SSCrm.esc((a.name || "").split(" ")[0])}${crewDots(a.assignees)}</div>`).join("")}
+    ${shown.map((a) => `<div class="cal-event" data-id="${a.id}" data-type="${SSCrm.esc(a.type || "consultation")}" data-s="${SSCrm.esc(a.status)}"${a.is_install ? ` data-project="${a.project_id}"` : ""} title="${SSCrm.esc(a.name)} — ${a.is_install ? (a.wall_paint ? "Install, wall repair and paint" + (a.painter_booked_at ? " (painter booked)" : " (book the painter)") : "Install") : SSCrm.esc(a.type)}${crewTitle(a.assignees)}">${a.is_install ? "🔧 " : ""}${a.is_install && a.wall_paint ? "🎨 " : ""}<span class="cal-event-time">${prettyTime(a.start_at)}</span> ${SSCrm.esc((a.name || "").split(" ")[0])}${crewDots(a.assignees)}</div>`).join("")}
     ${more > 0 ? `<div class="cal-more">+${more} more</div>` : ""}
   </div>`;
 }
@@ -198,7 +198,7 @@ async function openDay(iso) {
             <div style="margin-top:4px;font-weight:600">${SSCrm.esc(a.name)}</div>
             <div style="font-size:12px;color:var(--ink-soft)">${SSCrm.esc(a.project_name || "Custom closet project")}</div>
             <div style="margin-top:6px">${SSCrm.assigneeChips(a.assignees)}</div>
-            <div style="margin-top:6px">${SSCrm.pill(a.status)}</div>
+            <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">${SSCrm.pill(a.status)}${SSCrm.painterBadge(a)}</div>
           </div>` : `
           <div style="border:1px solid var(--line);border-radius:var(--r-sm);padding:12px;cursor:pointer" onclick="openAppt(${a.id})">
             <div style="font-weight:600;color:var(--accent-text);font-size:13px">${prettyTime(a.start_at)} — ${prettyTime(a.end_at)}</div>

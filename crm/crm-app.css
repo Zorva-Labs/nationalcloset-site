@@ -1153,6 +1153,12 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
   .inv-tbl td:last-child { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; padding-top: 0; text-align: left !important; }
 }
 
+/* Option 2 jobs: book the painter (painterBadge in crm-app.js). Amber and
+   green tints with dark text, 6:1 and better. */
+.paint-flag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; line-height: 1; padding: 4px 8px; border-radius: 999px; background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; white-space: nowrap; vertical-align: middle; }
+.paint-flag--done { background: #F0FDF4; color: #166534; border-color: #BBF7D0; }
+tr.needs-painter > td:first-child { box-shadow: inset 4px 0 0 #F59E0B; }
+
 /* Breadcrumbs above a page title (setCrumbs / jobCrumbs in crm-app.js). */
 .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; font-size: 13px; color: var(--ink-soft); margin: 0 0 6px; min-width: 0; }
 .crumbs a { color: var(--accent-text); font-weight: 600; text-decoration: none; padding: 4px 0; }

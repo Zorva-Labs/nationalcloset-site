@@ -13,7 +13,7 @@
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc112"></script>
+<script src="/crm/crm-app.js?v=ncc113"></script>
 <script>
 (async () => {
   const user = await SSCrm.mount({
@@ -153,10 +153,18 @@ function renderAttention(a) {
   `;
 }
 
+// An upcoming visit opens its job; a lead with no job yet opens the lead, and
+// only a visit tied to neither opens the calendar.
+function upcomingHref(a) {
+  if (a.job_id) return `/crm/project.html?id=${a.job_id}#tab=overview`;
+  if (a.lead_id) return `/crm/lead.html?id=${a.lead_id}`;
+  return `/crm/calendar.html?appt=${a.id}`;
+}
+
 function renderUpcoming(list) {
   return `<div class="tbl" style="border:0"><table>
     <tbody>${list.map((a) => `
-      <tr class="clickable" onclick="location.href='/crm/calendar.html?focus=${a.id}'">
+      <tr class="clickable" onclick="location.href='${upcomingHref(a)}'">
         <td style="width:36px;color:var(--accent-text);font-weight:600">${SSCrm.esc((a.start_at || "").slice(8, 10))}</td>
         <td>
           <div style="font-weight:600">${SSCrm.esc(a.name)}</div>
@@ -219,7 +227,7 @@ function renderActivity(list) {
 
 function entityLink(type, id) {
   return ({
-    appointment: "/crm/calendar.html?focus=" + id,
+    appointment: "/crm/calendar.html?appt=" + id,
     contact: "/crm/contact.html?id=" + id,
     project: "/crm/project.html?id=" + id,
     estimate: "/crm/estimate.html?id=" + id,

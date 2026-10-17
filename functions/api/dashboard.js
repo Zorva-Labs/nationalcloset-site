@@ -25,9 +25,11 @@ export async function onRequestGet(context) {
       (SELECT COALESCE(SUM(total_cents), 0) FROM contracts WHERE counter_signed_at >= ?1) AS booked_revenue_this_month
   `).bind(monthStart + "T00:00:00").first();
 
-  // Upcoming appointments (next 7 days)
+  // Upcoming appointments (next 7 days). job_id is the job each one opens on
+  // the dashboard: bookings carry the lead, and the job hangs off the lead.
   const upcoming = (await DB.prepare(`
-    SELECT a.id, a.start_at, a.end_at, a.type, a.status, a.name, a.site_address, a.rooms, c.id AS contact_id
+    SELECT a.id, a.start_at, a.end_at, a.type, a.status, a.name, a.site_address, a.rooms, c.id AS contact_id, a.lead_id,
+           COALESCE(a.project_id, (SELECT p.id FROM projects p WHERE a.lead_id IS NOT NULL AND p.lead_id = a.lead_id ORDER BY p.id DESC LIMIT 1)) AS job_id
     FROM appointments a
     LEFT JOIN contacts c ON c.id = a.contact_id
     WHERE a.start_at >= ?1 AND a.start_at < ?2 AND a.status IN ('pending','confirmed')

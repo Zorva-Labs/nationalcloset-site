@@ -13,7 +13,7 @@
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc112"></script>
+<script src="/crm/crm-app.js?v=ncc113"></script>
 <script>
 // Lead pipeline ends at "Proposal" or "Lost". Once the contract is signed
 // the lead is auto-bumped to "booked" by the contract-sign handler — at
@@ -65,6 +65,10 @@ function render() {
   const l = state.lead;
   document.getElementById("page-title").textContent = l.name;
   const ws = workspace || {};
+  // A lead that has become a job leads back to that job.
+  SSCrm.setCrumbs(ws.project
+    ? [{ label: "Jobs", href: "/crm/projects.html" }, { label: ws.project.name || l.name, href: `/crm/project.html?id=${ws.project.id}#tab=overview` }, { label: "Lead" }]
+    : [{ label: "Leads", href: "/crm/leads.html" }, { label: l.name }]);
   const props = ws.proposals || [];
   const contracts = ws.contracts || [];
   const invoices = ws.invoices || [];

@@ -171,8 +171,13 @@ function setCrumbs(items) {
   }).join("");
 }
 function jobCrumbs(projectId, projectName, tab, current) {
-  if (!projectId) return;
   const TAB = { proposals: "Proposals", contracts: "Contracts", invoices: "Invoices", overview: "Overview" };
+  // A document with no job still gets a trail, back to its own list.
+  if (!projectId) {
+    const LIST = { proposals: ["Proposals", "/crm/proposals.html"], contracts: ["Contracts", "/crm/contracts.html"], invoices: ["Invoices", "/crm/invoices.html"], overview: ["Estimates", "/crm/estimates.html"] }[tab];
+    if (LIST) setCrumbs([{ label: LIST[0], href: LIST[1] }, { label: current }]);
+    return;
+  }
   setCrumbs([
     { label: "Jobs", href: "/crm/projects.html" },
     { label: projectName || "Job", href: `/crm/project.html?id=${projectId}#tab=overview` },

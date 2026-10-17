@@ -42,7 +42,10 @@ export async function onRequestPost(context) {
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const id = parseInt(context.params.id, 10);
-  const row = await context.env.DB.prepare(`SELECT * FROM appointments WHERE id = ?1`).bind(id).first();
+  const row = await context.env.DB.prepare(
+    `SELECT a.*, COALESCE(a.project_id, (SELECT p.id FROM projects p WHERE a.lead_id IS NOT NULL AND p.lead_id = a.lead_id ORDER BY p.id DESC LIMIT 1)) AS job_id
+       FROM appointments a WHERE a.id = ?1`
+  ).bind(id).first();
   if (!row) return json({ error: "Not found" }, 404);
   return json({ appointment: row, assignees: await getAssignees(context.env.DB, "appointment", id) });
 }

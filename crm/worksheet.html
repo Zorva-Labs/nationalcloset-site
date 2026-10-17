@@ -11,6 +11,9 @@
   body{font-family:'Montserrat',-apple-system,sans-serif;color:var(--ink);background:#edece8;padding:24px 16px 60px;line-height:1.45}
   .sheet{max-width:820px;margin:0 auto;background:#fff;padding:34px 38px 44px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
   .bar{max-width:820px;margin:0 auto 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .crumbs{max-width:820px;margin:0 auto 8px;display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;font-size:13px;color:var(--soft)}
+  .crumbs a{color:var(--ink);font-weight:700;text-decoration:underline;text-underline-offset:2px;display:inline-flex;align-items:center;min-height:44px}
+  .crumbs [aria-current]{color:var(--ink);font-weight:600}
   .btn{font:inherit;font-weight:700;font-size:14px;padding:9px 16px;border-radius:8px;border:0;cursor:pointer;background:var(--ink);color:#fff;text-decoration:none;display:inline-block}
   .btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
   .tgl{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--soft);background:#fff;border:1.5px solid var(--line);padding:8px 12px;border-radius:8px;cursor:pointer}
@@ -48,7 +51,7 @@
   .muted{color:var(--mute);font-style:italic;font-size:13px}
   @media print{
     body{background:#fff;padding:0}
-    .bar{display:none !important}
+    .bar,.crumbs{display:none !important}
     .sheet{box-shadow:none;max-width:none;padding:0 .3in}
     @page{size:letter portrait;margin:.45in}
     h2{break-after:avoid}
@@ -57,6 +60,7 @@
 </style>
 </head>
 <body>
+<nav class="crumbs" id="page-crumbs" aria-label="Breadcrumb" hidden></nav>
 <div class="bar">
   <a class="btn ghost" id="back" href="#">← Back to job</a>
   <button class="btn" onclick="window.print()">🖨 Print worksheet</button>
@@ -65,7 +69,7 @@
 </div>
 <div class="sheet" id="sheet">Loading…</div>
 
-<script src="/crm/crm-app.js?v=ncc112"></script>
+<script src="/crm/crm-app.js?v=ncc113"></script>
 <script>
 const pid = parseInt(new URLSearchParams(location.search).get("id"), 10);
 const e = (s) => SSCrm.esc(s == null ? "" : String(s));
@@ -83,6 +87,11 @@ function toggleInternal() {
   // fetchJSON bounces to login on 401, so this doubles as the auth gate
   const s = await SSCrm.fetchJSON(`/api/projects/${pid}`);
   DATA = s;
+  SSCrm.setCrumbs([
+    { label: "Jobs", href: "/crm/projects.html" },
+    { label: (s.project && s.project.name) || "Job", href: `/crm/project.html?id=${pid}#tab=overview` },
+    { label: "Install worksheet" },
+  ]);
 
   // Line items come from the accepted proposal's selected tier.
   let lines = [], tierTitle = "";

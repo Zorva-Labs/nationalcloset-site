@@ -3,7 +3,7 @@
 <title>Activity · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
 <link rel="stylesheet" href="/crm/crm-app.css?v=ncc123"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc112"></script>
+<script src="/crm/crm-app.js?v=ncc113"></script>
 <script>
 (async () => {
   const user = await SSCrm.mount({ title: "Activity", subtitle: "Every action across the system", wide: true });
@@ -34,7 +34,7 @@
   `).join("");
 })();
 function prettyDate(d) { const date = new Date(d + "T12:00:00Z"); const today = new Date().toISOString().slice(0, 10); if (d === today) return "Today"; return date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }); }
-function entityLink(t, id) { return ({ appointment: "/crm/calendar.html?focus=" + id, contact: "/crm/contact.html?id=" + id, project: "/crm/project.html?id=" + id, estimate: "/crm/estimate.html?id=" + id, proposal: "/crm/proposal.html?id=" + id, contract: "/crm/contract.html?id=" + id })[t] || "#"; }
+function entityLink(t, id) { return ({ appointment: "/crm/calendar.html?appt=" + id, contact: "/crm/contact.html?id=" + id, project: "/crm/project.html?id=" + id, estimate: "/crm/estimate.html?id=" + id, proposal: "/crm/proposal.html?id=" + id, contract: "/crm/contract.html?id=" + id })[t] || "#"; }
 function verb(a) { return ({ booked: "Booked", created: "Created", sent: "Sent", viewed: "Viewed", approved: "Approved", "signed-by-customer": "Customer signed", "counter-signed": "Counter-signed", accepted: "Accepted", "tier-selected": "Picked tier", cancelled: "Cancelled", updated: "Updated", "created-from-proposal": "Drafted from proposal", "comment-added": "Commented", "cancelled-by-customer": "Cancelled (customer)" })[a] || a; }
 function actionIcon(a) { if (["signed-by-customer", "counter-signed", "accepted", "approved"].includes(a)) return "✓"; if (a === "sent") return "→"; if (a === "viewed") return "👁"; if (["booked", "created", "created-from-proposal"].includes(a)) return "+"; return "·"; }
 </script></body></html>

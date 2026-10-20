@@ -362,6 +362,6 @@ function blockedPage() {
   <img src="/img/ncc-logo-nc.png" alt="National Closet Company"/>
   <h1>We're available in the United States</h1>
   <p>National Closet Company serves homeowners across the United States. This site isn't available in your region.</p>
-  <p>If you believe you're seeing this in error, reach us at <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> or <a href="tel:+16292988241">629-298-8241</a>.</p>
+  <p>If you believe you're seeing this in error, reach us at <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> or <a href="tel:+16158575668">615-857-5668</a>.</p>
 </div></body></html>`;
 }

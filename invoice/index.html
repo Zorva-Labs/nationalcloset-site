@@ -70,7 +70,7 @@
       <span class="co">National Closet Company</span>
     </div>
     <div id="root"><div class="spin"></div></div>
-    <div class="foot">Questions? <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> · <a href="tel:+16292988241">629-298-8241</a> · <a href="/privacy">Privacy</a></div>
+    <div class="foot">Questions? <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> · <a href="tel:+16158575668">615-857-5668</a> · <a href="/privacy">Privacy</a></div>
   </div>
 
   <script>
@@ -103,7 +103,7 @@
         <h2>Almost done — verify your bank</h2>
         <p>Because you entered your account and routing number, your bank needs to confirm it's really you before the payment goes through.</p>
         <p>In <strong>1–2 business days</strong> you'll see a <strong>small deposit (about $0.01)</strong> from <strong>STRIPE</strong> in your account, with a <strong>6-digit code</strong> in the description. Come back and enter that code to finish${url ? ` — <a href="${esc(url)}" style="color:var(--clay,#D2683F);font-weight:700">verify your bank here</a>` : ""}.</p>
-        <p style="color:#6c665b;font-size:.92rem;margin-top:14px">We'll email your receipt once it clears. Questions? Call or text <a href="tel:+16292988241" style="color:var(--clay,#D2683F)">629-298-8241</a>.</p>
+        <p style="color:#6c665b;font-size:.92rem;margin-top:14px">We'll email your receipt once it clears. Questions? Call or text <a href="tel:+16158575668" style="color:var(--clay,#D2683F)">615-857-5668</a>.</p>
       </div></div>`;
     }
     function voidState(inv, nextTok) {
@@ -163,7 +163,7 @@
             <div class="check-panel" id="check-panel" hidden>
               <h3>Pay by check</h3>
               <div class="payee">Make your check payable to<br/><strong>James Blair</strong> &middot; <span id="chk-amt">${money(base)}</span></div>
-              <p>Hand your check to your Project Manager, and we'll mark this invoice paid as soon as it's received. Questions? Call or text <a href="tel:+16292988241">629-298-8241</a>.</p>
+              <p>Hand your check to your Project Manager, and we'll mark this invoice paid as soon as it's received. Questions? Call or text <a href="tel:+16158575668">615-857-5668</a>.</p>
             </div>
             <form id="pay-form">
               <p style="font-size:13px;font-weight:700;color:var(--ink);margin:0 0 10px">Pay by bank transfer or card</p>
@@ -258,7 +258,7 @@
           var vurl = ""; try { vurl = paymentIntent.next_action.verify_with_microdeposits.hosted_verification_url; } catch (e) {}
           microdepositState(vurl);
         } else {
-          msg.textContent = "We couldn't confirm the payment (" + (paymentIntent ? paymentIntent.status : "unknown") + "). Please try again or call/text 629-298-8241.";
+          msg.textContent = "We couldn't confirm the payment (" + (paymentIntent ? paymentIntent.status : "unknown") + "). Please try again or call/text 615-857-5668.";
           btn.disabled = false; btn.textContent = `Pay ${money(payAmount)}`;
         }
       });

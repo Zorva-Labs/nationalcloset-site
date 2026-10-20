@@ -73,7 +73,7 @@ body = '<article>\n' + phero(
       </ul>
 
       <h2>Asking about your information</h2>
-      <p>To see what we hold about you, or to have it corrected or deleted, email <a class="inline" href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> or call <a class="inline" href="tel:+16292988241">629-298-8241</a>.</p>
+      <p>To see what we hold about you, or to have it corrected or deleted, email <a class="inline" href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> or call <a class="inline" href="tel:+16158575668">615-857-5668</a>.</p>
       <p>Last updated September 28, 2026.</p>
 
     </div>

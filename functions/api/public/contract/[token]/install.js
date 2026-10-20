@@ -104,7 +104,7 @@ export async function onRequestPost(context) {
     uid: `install-${r.id}@nationalclosetco.com`,
     start: startAt, end: endAt,
     summary: `National Closet Company · Install · ${k.project_name}`,
-    description: `Install for contract ${k.number}.\\nQuestions? Call 629-298-8241.\\nReschedule: ${SITE_URL}/book/?cancel=${cancelToken}`,
+    description: `Install for contract ${k.number}.\\nQuestions? Call 615-857-5668.\\nReschedule: ${SITE_URL}/book/?cancel=${cancelToken}`,
     location: k.site_address || "Your home",
     organizer: "hello@nationalclosetco.com",
     organizerName: "National Closet Company",
@@ -123,11 +123,11 @@ export async function onRequestPost(context) {
         <p style="font-size:18px;color:#16140F;font-weight:600;margin:14px 0">${escapeHtml(fmtPretty(startAt))}</p>
         ${k.site_address ? `<p>We'll be at:<br/><strong>${escapeHtml(k.site_address)}</strong></p>` : ""}
         <p>Plan for the team to be on site about ${Math.round(dur/60)} hour${dur >= 90 ? "s" : ""}. We'll arrive with drop cloths and tools, install every window, demo each motor or mechanism, and not leave until you're satisfied with the work.</p>
-        <p>If anything changes, you can <a href="${SITE_URL}/book/?cancel=${cancelToken}">reschedule or cancel here</a>, or call/text us at <a href="tel:+16292988241">629-298-8241</a>.</p>
+        <p>If anything changes, you can <a href="${SITE_URL}/book/?cancel=${cancelToken}">reschedule or cancel here</a>, or call/text us at <a href="tel:+16158575668">615-857-5668</a>.</p>
         <p style="margin-top:20px">See you then,<br/>— National Closet Company</p>
       `,
     }),
-    text: `Install scheduled for ${fmtPretty(startAt)}.\nReschedule: ${SITE_URL}/book/?cancel=${cancelToken}\nQuestions: 629-298-8241`,
+    text: `Install scheduled for ${fmtPretty(startAt)}.\nReschedule: ${SITE_URL}/book/?cancel=${cancelToken}\nQuestions: 615-857-5668`,
     attachments: [{
       filename: "stately-shades-install.ics",
       contentType: "text/calendar; method=REQUEST",

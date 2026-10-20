@@ -68,7 +68,7 @@ export async function onRequestPost(context) {
   if (k.status === "fully_executed" || k.status === "signed_by_customer") {
     return json({ error: "Contract is already signed." }, 400);
   }
-  if (k.status === "void") return json({ error: "This contract was replaced. Please open the newest link we sent, or call or text 629-298-8241." }, 410);
+  if (k.status === "void") return json({ error: "This contract was replaced. Please open the newest link we sent, or call or text 615-857-5668." }, 410);
   if (body.action !== "sign") return json({ error: "Unknown action" }, 400);
   if (!body.signer_name || !body.signature_image) {
     return json({ error: "Missing typed name or signature image." }, 400);

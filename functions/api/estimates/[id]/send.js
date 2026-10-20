@@ -34,12 +34,12 @@ export async function onRequestPost(context) {
         </ul>
         <p>Open the estimate online — you can review every line, ask questions, or approve in one click.</p>
         ${est.notes_customer ? `<p style="border-left:3px solid #D2683F;padding-left:14px;color:#3A362F;font-style:italic">${escapeHtml(est.notes_customer)}</p>` : ""}
-        <p style="margin-top:20px">Questions? Reply to this email or call us at <a href="tel:+16292988241">629-298-8241</a>.</p>
+        <p style="margin-top:20px">Questions? Reply to this email or call us at <a href="tel:+16158575668">615-857-5668</a>.</p>
       `,
       ctaLabel: "View Your Estimate",
       ctaUrl: url,
     }),
-    text: `Your estimate ${est.number} is ready — total ${total}.\n\nView and approve at: ${url}\n\nQuestions? 629-298-8241`,
+    text: `Your estimate ${est.number} is ready — total ${total}.\n\nView and approve at: ${url}\n\nQuestions? 615-857-5668`,
   });
   await context.env.DB.prepare(
     `UPDATE estimates SET status='sent', sent_at=datetime('now'), updated_at=datetime('now') WHERE id=?1`

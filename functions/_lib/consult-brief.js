@@ -76,7 +76,7 @@ export function greetingWord(hour) {
   return hour < 12 ? "Morning" : hour < 17 ? "Afternoon" : "Evening";
 }
 
-// "(629) 298-8241" → "+16292988241" for the tel: href. Anything that isn't a
+// "(615) 857-5668" → "+16158575668" for the tel: href. Anything that isn't a
 // US 10/11-digit number is passed through with its punctuation stripped.
 function telHref(phone) {
   const digits = String(phone || "").replace(/[^\d+]/g, "");

@@ -258,7 +258,7 @@ for it in items:
     qa.append((q, a))
 head_src = open(f'{S}/head.html', encoding='utf-8').read()
 faq_schema = next(json.loads(s) for s in re.findall(r'<script type="application/ld\+json">(.*?)</script>', head_src, re.S) if '"FAQPage"' in s)
-call_box = '''<div class="form-card" style="margin-top:1.6rem"><strong style="font-family:var(--display);font-size:1.1rem">Still have a question?</strong><p class="muted" style="margin:.4rem 0 1rem">Call or text us and a real designer answers.</p><a class="btn btn--primary btn--block" href="tel:+16292988241">📞 Call/Text 629-298-8241</a></div>'''
+call_box = '''<div class="form-card" style="margin-top:1.6rem"><strong style="font-family:var(--display);font-size:1.1rem">Still have a question?</strong><p class="muted" style="margin:.4rem 0 1rem">Call or text us and a real designer answers.</p><a class="btn btn--primary btn--block" href="tel:+16158575668">📞 Call/Text 615-857-5668</a></div>'''
 faq_body = phero([('Home', '/#top'), ('FAQ', None)], 'Good questions', 'Custom closet FAQs', 'Everything homeowners ask before booking a free in-home design: cost, discounts, the process, materials, warranty and what makes us different from the national brands.') + f'''
 <section class="section section--tight">
   <div class="wrap">

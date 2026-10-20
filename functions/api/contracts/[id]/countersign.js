@@ -42,7 +42,7 @@ export async function onRequestPost(context) {
       body: `
         <p>Hi ${escapeHtml(k.contact_name.split(" ")[0])},</p>
         <p>We've counter-signed contract <strong>${escapeHtml(k.number)}</strong>. Your order will be released to our manufacturing partners as soon as we receive the deposit.</p>
-        <p>If you have any questions, just reply to this email or call us at <a href="tel:+16292988241">629-298-8241</a>.</p>
+        <p>If you have any questions, just reply to this email or call us at <a href="tel:+16158575668">615-857-5668</a>.</p>
       `,
       ctaLabel: "View Contract",
       ctaUrl: `https://nationalclosetco.com/contract/?t=${k.view_token}`,

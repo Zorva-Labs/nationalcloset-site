@@ -369,7 +369,7 @@ const DEFAULT_SIGNATURE = `
       National Closet Co.<br/>
       <a href="https://nationalclosetco.com" style="color:${BRAND.brass};text-decoration:none">NationalClosetCo.com</a><br/>
       <a href="mailto:hello@nationalclosetco.com" style="color:${BRAND.brass};text-decoration:none">hello@nationalclosetco.com</a><br/>
-      <a href="tel:+16292988241" style="color:${BRAND.brass};text-decoration:none">629-298-8241</a>
+      <a href="tel:+16158575668" style="color:${BRAND.brass};text-decoration:none">615-857-5668</a>
     </div>`;
 
 export function brandedEmail({ title, preheader, body, ctaLabel, ctaUrl, footer, signature }) {
@@ -407,7 +407,7 @@ export function brandedEmail({ title, preheader, body, ctaLabel, ctaUrl, footer,
     ${signature === false ? "" : (signature || DEFAULT_SIGNATURE)}
   </div>
   <div class="footer">
-    ${footer || `National Closet Company · Custom Closets &amp; Closet Systems<br/><a href="tel:+16292988241">629-298-8241</a> · <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> · <a href="https://nationalclosetco.com">nationalclosetco.com</a>`}
+    ${footer || `National Closet Company · Custom Closets &amp; Closet Systems<br/><a href="tel:+16158575668">615-857-5668</a> · <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> · <a href="https://nationalclosetco.com">nationalclosetco.com</a>`}
   </div>
 </div>
 </body>

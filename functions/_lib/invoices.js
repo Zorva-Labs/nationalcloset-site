@@ -565,7 +565,7 @@ export async function sendBankVerificationEmail(env, invoice, project) {
     + `To finish paying invoice ${invoice.number} (${money(invoice.amount_cents)}) by bank transfer, confirm the two small deposits (each under $1.00) Stripe sent to your account. They usually arrive within 1-2 business days.\n\n`
     + `Confirm your bank here: ${verifyUrl}\n\n`
     + `On your statement the deposits may show as STRIPE or "ACCTVERIFY".\n\n`
-    + `Questions? Reply to this email or call/text 629-298-8241.\nNational Closet Company`;
+    + `Questions? Reply to this email or call/text 615-857-5668.\nNational Closet Company`;
   const messageId = makeMessageId();
   const to = project.contact_name ? `${project.contact_name} <${project.contact_email}>` : project.contact_email;
   const res = await sendEmail(env, { to, subject, html, text, messageId });

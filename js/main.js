@@ -134,7 +134,7 @@
      note behind a disclosure, plus the email or space only if a form didn't
      send them. A designer texts to set the visit (there is no self-booking,
      since 2026-09-29). */
-  var SMS_URL = "sms:+16292988241?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F";
+  var SMS_URL = "sms:+16158575668?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F";
   function mountDetailsStep(success, token, lead) {
     if (success.querySelector(".addr-step")) return;
     var inp = 'style="width:100%;min-width:0;padding:11px 13px;border:1.5px solid var(--line,#E4E1DA);border-radius:8px;font:inherit;font-size:15px;background:#fff"';
@@ -395,7 +395,7 @@
           err.style.cssText = "margin-top:14px;padding:12px 16px;border-radius:8px;background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;font-size:14px;line-height:1.5;text-align:left";
           form.appendChild(err);
         }
-        err.textContent = "Sorry — we couldn't send your request just now. Please call or text us at 629-298-8241 and we'll take care of you right away.";
+        err.textContent = "Sorry — we couldn't send your request just now. Please call or text us at 615-857-5668 and we'll take care of you right away.";
         err.style.display = "";
       }
 
@@ -719,7 +719,7 @@
 
 /* ---------- Homepage ballpark card + the always-on "text a photo" button (Sept 2026) ---------- */
 (function () {
-  var SMS_URL = "sms:+16292988241?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F";
+  var SMS_URL = "sms:+16158575668?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F";
 
   // The hero card: two taps for a typical installed range, then a name and a
   // phone number to see it — the estimate is the hook, the phone is the lead.
@@ -776,7 +776,7 @@
   if (!document.querySelector(".txtpill") && !/^\/(crm|book)(\/|$)/.test(location.pathname)) {
     var pill = document.createElement("a");
     pill.className = "txtpill"; pill.href = SMS_URL;
-    pill.innerHTML = '<span class="txtpill__ico" aria-hidden="true">📷</span><span><b>Text us a photo of your closet</b><small>629-298-8241 · we reply with a ballpark</small></span>';
+    pill.innerHTML = '<span class="txtpill__ico" aria-hidden="true">📷</span><span><b>Text us a photo of your closet</b><small>615-857-5668 · we reply with a ballpark</small></span>';
     document.body.appendChild(pill);
   }
   document.addEventListener("click", function (e) {

@@ -2,13 +2,13 @@
   "host": "nationalclosetco.com",
   "endpoint": "https://www.bing.com/indexnow",
   "version": 2,
-  "submitted": "2026-10-14T18:44:54.378Z",
+  "submitted": "2026-10-20T14:34:17.902Z",
   "google": {
     "property": "sc-domain:nationalclosetco.com",
     "sitemaps": [
       "https://nationalclosetco.com/sitemap.xml"
     ],
-    "submitted": "2026-10-14T18:44:55.094Z"
+    "submitted": "2026-10-20T14:34:18.641Z"
   },
   "bing": {
     "site": "https://nationalclosetco.com/",
@@ -19,12 +19,12 @@
   },
   "urls": {
     "https://nationalclosetco.com/": {
-      "hash": "e02ae386b665ebdc",
-      "changed": "2026-10-13"
+      "hash": "fad3d22ff2de0aa1",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-cabinets-nashville": {
-      "hash": "35b059a8cd804273",
-      "changed": "2026-10-09"
+      "hash": "d5a4f75373de525e",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-pantry-nashville": {
       "hash": "53f053e00d4ec2c9",
@@ -35,8 +35,8 @@
       "changed": "2026-10-11"
     },
     "https://nationalclosetco.com/custom-closet-cost-nashville": {
-      "hash": "3730762678309198",
-      "changed": "2026-10-13"
+      "hash": "83fe64aafd39e7c8",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/california-closets-alternative": {
       "hash": "d14210a89a46a9ab",
@@ -67,8 +67,8 @@
       "changed": "2026-10-13"
     },
     "https://nationalclosetco.com/closet-cases": {
-      "hash": "bdf29e803d8a5525",
-      "changed": "2026-10-13"
+      "hash": "2857733179172cb2",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/blog/keith-irena-office-storage-wall": {
       "hash": "35b53848a97b1093",
@@ -155,88 +155,88 @@
       "changed": "2026-10-12"
     },
     "https://nationalclosetco.com/work-with-us": {
-      "hash": "8f1356c069493e8f",
-      "changed": "2026-10-09"
+      "hash": "8a3f99bd2a702345",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-nashville": {
-      "hash": "7e1acde5382c3527",
-      "changed": "2026-10-13"
+      "hash": "8677f2e9b11dab9a",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-franklin": {
-      "hash": "518c5ec88784de58",
-      "changed": "2026-10-13"
+      "hash": "8060a581a8689e25",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-brentwood": {
-      "hash": "3b794ea71d038052",
-      "changed": "2026-10-13"
+      "hash": "be0370f429c217a6",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-hendersonville": {
-      "hash": "936a4548d8e3c61f",
-      "changed": "2026-10-13"
+      "hash": "f32fe239330d7299",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-mt-juliet": {
-      "hash": "80886afa91f60ff8",
-      "changed": "2026-10-13"
+      "hash": "66e75db1c9c51881",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-murfreesboro": {
-      "hash": "8d84f0e61e0dfc16",
-      "changed": "2026-10-13"
+      "hash": "f490196129b443ed",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-gallatin": {
-      "hash": "75dfdeeb205b1b34",
-      "changed": "2026-10-13"
+      "hash": "127eb54db77080dd",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-lebanon": {
-      "hash": "228b216190757868",
-      "changed": "2026-10-13"
+      "hash": "32471dcde70d4cf0",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-smyrna": {
-      "hash": "789c71da7ab965cc",
-      "changed": "2026-10-13"
+      "hash": "96baab4c921663fd",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-nolensville": {
-      "hash": "8ead5da3dd6a4596",
-      "changed": "2026-10-13"
+      "hash": "57c898e21da9c110",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-spring-hill": {
-      "hash": "a639090bc6513a7f",
-      "changed": "2026-10-13"
+      "hash": "30610182f27b1a00",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-belle-meade": {
-      "hash": "50f1b5da84f2c4cb",
-      "changed": "2026-10-13"
+      "hash": "6a8aad7534be4c7f",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-goodlettsville": {
-      "hash": "a530fb0a50fe88c2",
-      "changed": "2026-10-13"
+      "hash": "626036af89776a51",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-white-house": {
-      "hash": "b092bfff782c80c1",
-      "changed": "2026-10-13"
+      "hash": "3437aeb9527de660",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-portland": {
-      "hash": "beebe7fbdf123180",
-      "changed": "2026-10-13"
+      "hash": "10d733cec6f79c0d",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-la-vergne": {
-      "hash": "0756a09b49783aa8",
-      "changed": "2026-10-13"
+      "hash": "8bac65ef055fbfc3",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-green-hills": {
-      "hash": "86bc45f528dbe6a2",
-      "changed": "2026-10-13"
+      "hash": "67a15c1d4bd9c7ad",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-hermitage": {
-      "hash": "aa9bcb92f59bc578",
-      "changed": "2026-10-13"
+      "hash": "52961e5ed339e27e",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/custom-closets-old-hickory": {
-      "hash": "49f816b10bafeee9",
-      "changed": "2026-10-13"
+      "hash": "6ffcd17568262f2f",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/warranty": {
-      "hash": "0ab34df690e28626",
-      "changed": "2026-10-11"
+      "hash": "4a03ccf4516b9588",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/blog/wall-mounted-vs-floor-based-closet-systems": {
       "hash": "62c496f647492ffd",
@@ -259,44 +259,44 @@
       "changed": "2026-10-09"
     },
     "https://nationalclosetco.com/about": {
-      "hash": "b4999a5942c43d45",
-      "changed": "2026-10-09"
+      "hash": "6602fdb3d47eb4eb",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/reviews": {
       "hash": "cbbdcf8d88d40c69",
       "changed": "2026-10-09"
     },
     "https://nationalclosetco.com/faq": {
-      "hash": "c144a6e8086fc800",
-      "changed": "2026-10-13"
+      "hash": "0e2eebf8b6996ba2",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/blog/best-closet-company": {
-      "hash": "9d804b4a27cada5a",
-      "changed": "2026-10-14"
+      "hash": "7b41062766c33dd3",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/blog/closet-installation-cost": {
-      "hash": "f909eeb494a01c5a",
-      "changed": "2026-10-14"
+      "hash": "c841def040095184",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/blog/contractor-cost-to-build-a-closet": {
-      "hash": "2827bb27a86fe2f2",
-      "changed": "2026-10-14"
+      "hash": "5b22a2c197a50aa1",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/blog/custom-pantry-design": {
-      "hash": "5ac0dca6f951280c",
-      "changed": "2026-10-14"
+      "hash": "99546075497ee21d",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/blog/home-depot-lowes-closet-installation": {
-      "hash": "3ccb7c25cab1eb83",
-      "changed": "2026-10-14"
+      "hash": "61cce56aaa0919a4",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/blog/what-closet-company-does-costco-use": {
-      "hash": "8e802577116904d6",
-      "changed": "2026-10-14"
+      "hash": "f264a30da5d74972",
+      "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/privacy": {
-      "hash": "5345e8b580d098c9",
-      "changed": "2026-10-09"
+      "hash": "030bcef939d0277b",
+      "changed": "2026-10-20"
     }
   }
 }

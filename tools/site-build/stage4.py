@@ -293,7 +293,7 @@ CAB_FAQ = [
   ('How long do custom cabinets take?',
    'Design and selections come first. Once the drawings are approved, your cabinetry is built to order and installation follows; larger projects and stained finishes take longer than a single painted run. You get a written schedule with your quote, and we tell you as soon as anything changes.'),
   ('Do you build custom cabinets near me in the Nashville area?',
-   'Yes. We build custom cabinets across Nashville and all of Middle Tennessee, including Gallatin, Hendersonville, Franklin, Brentwood, Murfreesboro, Mt. Juliet, Lebanon, Spring Hill, Nolensville, Smyrna, Green Hills and Belle Meade, and within about 90 miles of Gallatin. Call or text 629-298-8241 to confirm your area.'),
+   'Yes. We build custom cabinets across Nashville and all of Middle Tennessee, including Gallatin, Hendersonville, Franklin, Brentwood, Murfreesboro, Mt. Juliet, Lebanon, Spring Hill, Nolensville, Smyrna, Green Hills and Belle Meade, and within about 90 miles of Gallatin. Call or text 615-857-5668 to confirm your area.'),
 ]
 
 def strip_tags(s): return re.sub(r'<[^>]+>', '', s).replace('&amp;', '&').replace('\\\'', "'")
@@ -547,7 +547,7 @@ def update_sitemap_llms_forms():
         s = sub1(s, '- Do you build more than closets? Yes — garages, pantries, home offices, laundry/mudrooms, and media/wall units.',
                  '- Do you build more than closets? Yes — custom cabinets (kitchens, baths, laundry, mudrooms, built-ins, media walls), garages, pantries, home offices, laundry/mudrooms, and media/wall units.\n- Do you build custom cabinets? Yes — kitchen cabinets and islands, bathroom vanities, laundry and mudroom cabinetry, built-in hutches and media walls, designed free in your home and installed by our own team.\n- How much do custom cabinets cost? Priced per project by linear footage, door style, finish and fittings; an exact written price comes with the free in-home design.', p)
         s = sub1(s, '- Pricing guide: https://nationalclosetco.com/custom-closet-cost-nashville', '- Custom cabinets (kitchens, baths, laundry, mudrooms, built-ins): https://nationalclosetco.com/custom-cabinets-nashville\n- Custom pantries: https://nationalclosetco.com/custom-pantry-nashville\n- Pricing guide: https://nationalclosetco.com/custom-closet-cost-nashville', p)
-        s = s.replace('- Is there a custom closet company near me? We serve homeowners across the U.S. — call/text 629-298-8241 to confirm your area.', '- Is there a custom closet company near me? We serve homeowners across Nashville and Middle Tennessee, within about 90 miles of Gallatin, TN — call/text 629-298-8241 to confirm your area.')
+        s = s.replace('- Is there a custom closet company near me? We serve homeowners across the U.S. — call/text 615-857-5668 to confirm your area.', '- Is there a custom closet company near me? We serve homeowners across Nashville and Middle Tennessee, within about 90 miles of Gallatin, TN — call/text 615-857-5668 to confirm your area.')
         open(p, 'w', encoding='utf-8').write(s); print('llms.txt updated')
     # the post-submit "What space?" select in the lead form
     p = 'js/main.js'; s = open(p, encoding='utf-8').read()
@@ -713,7 +713,7 @@ def build_about_page(C):
       {"@context": "https://schema.org", "@type": "AboutPage", "@id": SITE + "/about#about", "url": SITE + "/about", "name": "About National Closet Company",
        "description": desc, "mainEntity": {"@id": SITE + "/#org"}, "isPartOf": {"@id": SITE + "/#website"}, "primaryImageOfPage": SITE + "/img/ncc-truck-og.jpg"},
       {"@context": "https://schema.org", "@type": "Organization", "@id": SITE + "/#org", "name": "National Closet Company", "alternateName": "National Closet Co.", "url": SITE + "/",
-       "foundingDate": "2012", "telephone": "+1-629-298-8241", "email": "hello@nationalclosetco.com",
+       "foundingDate": "2012", "telephone": "+1-615-857-5668", "email": "hello@nationalclosetco.com",
        "founder": {"@id": SITE + "/#founder"},
        "employee": [{"@id": SITE + "/#founder"}],
        "knowsAbout": ["Custom closets", "Custom cabinets", "Custom pantries", "Garage storage", "Home offices", "Kitchen cabinets"]},

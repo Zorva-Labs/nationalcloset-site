@@ -25,10 +25,7 @@ ALERT_FROM_USER = "crm@nationalclosetco.com"
 # 0.03 = 3%. Clamped 0–25%. Change here and redeploy to adjust — no code change.
 # Set to 0: prices are entered with any markup already included (no auto-markup).
 QUOTE_MARKUP_RATE = "0"
-# Stripe publishable key is public (safe in client/source). Secret key +
-# webhook signing secret are encrypted Pages secrets (STRIPE_SECRET_KEY,
-# STRIPE_WEBHOOK_SECRET) — NOT here.
-STRIPE_PUBLISHABLE_KEY = "pk_live_51TdEjnFwmijYgch1dzNcdPvBh4ecSA1sYWmRKBSJt3ORYjemAodChYzNYqsL48DCAJv480dzo9xEZsdSzBkr8Mdb00zWlgeHeN"
+# No Stripe since 2026-10-21: invoices are paid by check, recorded in the CRM.
 
 # D1 binding used by the Pages Functions in /functions/api/*
 [[d1_databases]]

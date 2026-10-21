@@ -9,7 +9,7 @@ const TERMS_BY_TYPE = {
 <p>All custom closets, cabinetry and storage systems listed in this agreement are made-to-order. Manufacturer lead times typically run two to six weeks from order placement. We will keep you informed of any changes to the schedule.</p>
 
 <h3>Deposit &amp; Payment</h3>
-<p>The total contract price is paid in three installments: 50% at signing (the deposit — or, if greater, the amount required to cover materials, shipping and payment-processing fees for the order), which releases the order to our manufacturing partners; 25% when all materials have arrived and the installation date is set; and 25% on the day of installation. You may pay in full at signing or at any point afterward, and you may pay any installment early, with no penalty or added fee. We accept card, bank transfer (ACH) and digital wallets online, plus check or cash in person, with no added processing fee.</p>
+<p>The total contract price is paid in three installments: 50% at signing (the deposit — or, if greater, the amount required to cover materials and shipping for the order), which releases the order to our manufacturing partners; 25% when all materials have arrived and the installation date is set; and 25% on the day of installation. You may pay in full at signing or at any point afterward, and you may pay any installment early, with no penalty or added fee. Payments are made by check, payable to James Blair, and handed to your Project Manager.</p>
 
 <h3>Measurement &amp; Fit</h3>
 <p>National Closet Company measures every space on-site and is responsible for the fit of any system we build from those measurements. Measurements are taken to the sixteenth of an inch and recorded in this agreement.</p>
@@ -38,7 +38,7 @@ const TERMS_BY_TYPE = {
 <p>If a customer-supplied product is damaged or defective when unboxed, National Closet Company will document the damage and assist with the return claim, but is not responsible for replacement or refund. The retailer's return policy applies.</p>
 
 <h3>Payment</h3>
-<p>No deposit is required for install-only service. Payment in full is due upon completion of installation. We accept card, bank transfer (ACH) and digital wallets online, plus check, cash, Venmo and Cash App in person, with no added processing fee.</p>
+<p>No deposit is required for install-only service. Payment in full is due upon completion of installation, by check payable to James Blair.</p>
 
 <h3>Workmanship Warranty</h3>
 <p>Our installation work is warranted for <strong>ninety (90) days</strong> against defects in workmanship. If a bracket, shelf pin, rod or drawer slide we installed fails within that window, we will return and make it right at no charge. Customer-supplied products carry only their own manufacturer warranty.</p>
@@ -58,7 +58,7 @@ const TERMS_BY_TYPE = {
 <p>This is a <strong>repair</strong> agreement. National Closet Company will repair existing closets and storage systems at the customer's premises as itemized in the scope above. We service any brand — Hunter Douglas, Norman, Somfy, Graber, Levolor, Bali, Lutron, Hampton Bay, builder-grade — and stock common parts on the truck.</p>
 
 <h3>Payment</h3>
-<p>Payment is due upon completion of the repair visit. The service-call fee covers the trip and the first 30 minutes of work; additional time and parts are itemized separately. We accept check, cash, ACH, Venmo, and Cash App.</p>
+<p>Payment is due upon completion of the repair visit. The service-call fee covers the trip and the first 30 minutes of work; additional time and parts are itemized separately. Payment is by check, payable to James Blair.</p>
 
 <h3>Workmanship Warranty</h3>
 <p>Our repair work is warranted for <strong>ninety (90) days</strong>. If the repaired component fails within 90 days, we will return and re-repair at no charge. The warranty does not cover unrelated failures of the same product.</p>

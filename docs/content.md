@@ -26,7 +26,7 @@
 - Until 2026-09-26 every page kept its own copy in its JSON-LD, and five had drifted from what they show (`CHANGELOG.md`).
 
 ## The words
-- **Payment terms:** never reintroduce Klarna or monthly-financing copy. There are three payments: 50% at signing, 25% when the materials are in and the install is scheduled, 25% on install day (the contract wording is in `docs/crm.md`).
+- **Payment terms:** never reintroduce Klarna or monthly-financing copy. There are three payments: 50% at signing, 25% when the materials are in and the install is scheduled, 25% on install day, each by check (since 2026-10-21; no card, ACH or digital-wallet copy; the contract wording is in `docs/crm.md`).
 - **Services:** never re-add Murphy beds or wall beds. Custom cabinets are a service, and the lifetime warranty covers them; cabinets are priced per project, with no ranges without the owner's numbers.
 - **No SMS from us:** review requests are email only (`docs/automations.md`). The "Text a photo" `sms:` link is the customer texting us, and stays.
 - The ballpark ranges on the home page are the owner's (`docs/design.md` → Components).

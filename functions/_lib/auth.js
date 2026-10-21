@@ -1,5 +1,6 @@
 // Shared auth + crypto helpers for the National Closet Company CRM.
 // Pages Functions skips files in directories that start with "_".
+import { canCall, normalizeRole } from "./roles.js";
 
 const PBKDF2_ITERATIONS = 100_000;
 const SESSION_DAYS = 7;
@@ -81,7 +82,8 @@ export async function currentUser(request, db) {
   if (!token) return null;
   const row = await db
     .prepare(
-      `SELECT u.id, u.email, u.display_name, s.expires_at
+      `SELECT u.id, u.email, u.display_name, u.role, s.expires_at,
+              (SELECT t.id FROM team_members t WHERE LOWER(t.email) = LOWER(u.email) LIMIT 1) AS team_member_id
        FROM sessions s
        JOIN admin_users u ON u.id = s.user_id
        WHERE s.token = ?1`
@@ -94,7 +96,11 @@ export async function currentUser(request, db) {
     await db.prepare(`DELETE FROM sessions WHERE token = ?1`).bind(token).run();
     return null;
   }
-  return { id: row.id, email: row.email, displayName: row.display_name };
+  // A login with no recognisable role gets the narrowest one, never admin.
+  return {
+    id: row.id, email: row.email, displayName: row.display_name,
+    role: normalizeRole(row.role) || "installer", teamMemberId: row.team_member_id || null,
+  };
 }
 
 // --------------------------------------------------------------
@@ -106,6 +112,14 @@ export async function requireAuth(context) {
     return new Response(JSON.stringify({ error: "Not authenticated." }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
+    });
+  }
+  // The role gate for every CRM endpoint (_lib/roles.js).
+  const url = new URL(context.request.url);
+  if (!canCall(user.role, context.request.method, url.pathname)) {
+    return new Response(JSON.stringify({ error: "Your login doesn't have access to this.", role: user.role }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
   }
   return user;

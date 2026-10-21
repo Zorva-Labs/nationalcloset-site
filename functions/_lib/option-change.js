@@ -2,12 +2,11 @@
 // (Helena Kirkendall, PROP-2026-0056, 2026-10-16: signed Option 1, asked for
 // Option 2 before paying anything). Until money moves, the switch is theirs to
 // make online: the contract they signed and its unpaid deposit invoice are
-// voided (the Stripe intent canceled, so the old amount can never be charged),
-// and they sign a new contract for the new option and pay its deposit.
-// Once any payment on the deal is paid, processing or waiting on bank
-// verification, the switch is the office's (a refund or a credit is involved).
+// voided, and they sign a new contract for the new option and pay its deposit.
+// Once any payment on the deal is recorded, the switch is the office's (a
+// refund or a credit is involved). Payments are checks since 2026-10-21
+// (Stripe removed), so D1 is the whole answer.
 import { recordActivity } from "./db.js";
-import { retrievePaymentIntent, cancelPaymentIntent } from "./stripe.js";
 
 const SIGNED = ["signed_by_customer", "fully_executed"];
 
@@ -36,20 +35,9 @@ export async function dealPaidOnFile(db, proposalId) {
   return invs.some((i) => i.status !== "void" && (["paid", "processing"].includes(i.status) || (i.amount_paid_cents || 0) > 0));
 }
 
-// The same question asked of Stripe too, before anything is voided: an intent
-// that succeeded or is processing before the webhook landed, or a bank account
-// waiting on micro-deposit verification, counts as money moving.
-async function dealPaidLive(env, invs) {
-  for (const i of invs) {
-    if (i.status === "void") continue;
-    if (["paid", "processing"].includes(i.status) || (i.amount_paid_cents || 0) > 0) return true;
-    if (i.stripe_payment_intent_id && env.STRIPE_SECRET_KEY) {
-      const pi = await retrievePaymentIntent(env, i.stripe_payment_intent_id).catch(() => null);
-      if (pi && (pi.status === "succeeded" || pi.status === "processing" ||
-                 (pi.status === "requires_action" && pi.next_action?.type === "verify_with_microdeposits"))) return true;
-    }
-  }
-  return false;
+// The same question over an already-read list of the deal's invoices.
+function dealPaidLive(invs) {
+  return invs.some((i) => i.status !== "void" && (["paid", "processing"].includes(i.status) || (i.amount_paid_cents || 0) > 0));
 }
 
 /**
@@ -61,7 +49,7 @@ async function dealPaidLive(env, invs) {
 export async function supersedeDeal(env, proposalId, { actorName = null, toTier = null } = {}) {
   const db = env.DB;
   const invs = await dealInvoices(db, proposalId);
-  if (await dealPaidLive(env, invs)) return { paid: true, voidedContracts: [], voidedInvoices: [] };
+  if (dealPaidLive(invs)) return { paid: true, voidedContracts: [], voidedInvoices: [] };
 
   const contracts = (await db.prepare(
     `SELECT id, number, status, contract_type, total_cents, project_id FROM contracts WHERE proposal_id=?1 AND status != 'void'`
@@ -69,9 +57,6 @@ export async function supersedeDeal(env, proposalId, { actorName = null, toTier 
   const voidedInvoices = [];
   for (const i of invs) {
     if (i.status === "void") continue;
-    if (i.stripe_payment_intent_id && env.STRIPE_SECRET_KEY) {
-      await cancelPaymentIntent(env, i.stripe_payment_intent_id).catch((e) => console.error("[option-change/cancel-pi]", String(e)));
-    }
     await db.prepare(`UPDATE invoices SET status='void', updated_at=datetime('now') WHERE id=?1`).bind(i.id).run();
     await recordActivity(db, {
       entityType: "project", entityId: i.project_id, action: "invoice-voided",

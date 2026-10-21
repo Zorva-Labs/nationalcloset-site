@@ -13,7 +13,7 @@
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc114"></script>
+<script src="/crm/crm-app.js?v=ncc115"></script>
 <script>
 (async () => {
   const user = await SSCrm.mount({
@@ -98,6 +98,7 @@
 async function loadTraffic() {
   const card = document.getElementById("traffic-card");
   if (!card) return;
+  if (SSCrm.role() !== "admin") { card.remove(); return; }  // traffic is admin-only (_lib/roles.js)
   try {
     const { days, error } = await SSCrm.fetchJSON("/api/traffic");
     const body = card.querySelector("div:last-child");

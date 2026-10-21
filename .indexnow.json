@@ -2,13 +2,13 @@
   "host": "nationalclosetco.com",
   "endpoint": "https://www.bing.com/indexnow",
   "version": 2,
-  "submitted": "2026-10-20T14:34:17.902Z",
+  "submitted": "2026-10-21T20:10:56.798Z",
   "google": {
     "property": "sc-domain:nationalclosetco.com",
     "sitemaps": [
       "https://nationalclosetco.com/sitemap.xml"
     ],
-    "submitted": "2026-10-20T14:34:18.641Z"
+    "submitted": "2026-10-21T20:10:57.359Z"
   },
   "bing": {
     "site": "https://nationalclosetco.com/",
@@ -19,8 +19,8 @@
   },
   "urls": {
     "https://nationalclosetco.com/": {
-      "hash": "fad3d22ff2de0aa1",
-      "changed": "2026-10-20"
+      "hash": "4a5c38d3f8b1527a",
+      "changed": "2026-10-21"
     },
     "https://nationalclosetco.com/custom-cabinets-nashville": {
       "hash": "d5a4f75373de525e",
@@ -267,8 +267,8 @@
       "changed": "2026-10-09"
     },
     "https://nationalclosetco.com/faq": {
-      "hash": "0e2eebf8b6996ba2",
-      "changed": "2026-10-20"
+      "hash": "b69db97d61a9987e",
+      "changed": "2026-10-21"
     },
     "https://nationalclosetco.com/blog/best-closet-company": {
       "hash": "7b41062766c33dd3",
@@ -295,8 +295,8 @@
       "changed": "2026-10-20"
     },
     "https://nationalclosetco.com/privacy": {
-      "hash": "030bcef939d0277b",
-      "changed": "2026-10-20"
+      "hash": "f92ac280632c5efa",
+      "changed": "2026-10-21"
     }
   }
 }

@@ -35,7 +35,7 @@ export async function onRequestPost(context) {
           <li>Due the day of installation: <strong>${money(rest - atScheduling)}</strong></li>
           <li>Or pay in full at any time: <strong>${total}</strong> — no fee for paying early</li>` : ""}
         </ul>
-        <p>After you sign online, we'll counter-sign and release the order to our manufacturing partners. Payments can be made by check, cash, ACH, Venmo, or Cash App — we'll coordinate that separately.</p>
+        <p>After you sign online, we'll counter-sign and release the order to our manufacturing partners. Payments are by check, payable to James Blair, handed to your Project Manager.</p>
       `,
     ctaLabel: "Review &amp; Sign",
     ctaUrl: url,

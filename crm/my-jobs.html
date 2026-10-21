@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>My jobs · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc124"/></head>
+<body>
+<script src="/crm/crm-app.js?v=ncc115"></script>
+<script>
+// The installer's home (roles, 2026-10-21): the jobs they are assigned to,
+// from /api/crew/jobs — no prices. Any role can open it ("my" jobs).
+const STATUS = { contracted: "Booked", scheduled_install: "Scheduled", installing: "Installing", completed: "Completed" };
+const e = (s) => SSCrm.esc(s == null ? "" : String(s));
+
+(async () => {
+  const user = await SSCrm.mount({ title: "My jobs", subtitle: "The jobs you're assigned to" });
+  if (!user) return;
+  let r;
+  try { r = await SSCrm.fetchJSON("/api/crew/jobs"); }
+  catch (err) { document.getElementById("page").innerHTML = `<div class="card"><p class="muted">${e(err.message)}</p></div>`; return; }
+  const jobs = r.jobs || [];
+  const open = jobs.filter((j) => j.status !== "completed");
+  const done = jobs.filter((j) => j.status === "completed");
+  document.getElementById("page").innerHTML = r.no_team_member
+    ? `<div class="card"><p class="muted" style="padding:20px;text-align:center">Your login isn't on the team roster yet, so no jobs can be assigned to you. Ask the office to add ${e(user.email)} on the Team page.</p></div>`
+    : !jobs.length
+      ? `<div class="card"><p class="muted" style="padding:20px;text-align:center">No jobs assigned to you yet.</p></div>`
+      : `${list("Coming up", open)}${done.length ? list("Completed", done) : ""}`;
+})();
+
+function list(title, jobs) {
+  if (!jobs.length) return "";
+  return `<div class="card" style="margin-bottom:14px">
+    <div class="card-head"><h2>${e(title)}</h2></div>
+    <div style="display:grid;gap:10px">${jobs.map((j) => `
+      <a href="/crm/my-job.html?id=${j.id}" style="display:block;border:1px solid var(--line);border-radius:var(--r-sm);padding:14px;color:inherit;text-decoration:none">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline">
+          <strong style="font-size:15px">${e(j.contact_name || j.name)}</strong>
+          <span style="font-size:13px;font-weight:700">${j.install_date ? "Install " + SSCrm.fmtDay(j.install_date) : "Install date TBD"}</span>
+        </div>
+        <div style="font-size:13px;color:var(--ink-soft);margin-top:4px">${e(j.name)}${j.status ? ` · ${e(STATUS[j.status] || j.status)}` : ""}</div>
+        ${j.site_address ? `<div style="font-size:13px;color:var(--ink-soft);margin-top:2px">${e(j.site_address)}</div>` : ""}
+        ${(j.assignees || []).length ? `<div style="margin-top:6px">${SSCrm.assigneeChips(j.assignees)}</div>` : ""}
+      </a>`).join("")}</div>
+  </div>`;
+}
+</script>
+</body></html>

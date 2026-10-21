@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pay your invoice · National Closet Company</title>
+  <title>Your invoice · National Closet Company</title>
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="/img/favicon-nc.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <script src="https://js.stripe.com/v3/"></script>
   <style>
     :root{
       --white:#FFFFFF; --paper:#FAF9F6; --fog:#EDECE8; --ink:#16140F; --ink-soft:#3A362F; --muted:#6B6457;
@@ -32,13 +31,7 @@
     .desc{color:var(--ink-soft);font-size:14px;margin:0 0 4px}
     .divider{height:1px;background:var(--line);margin:22px 0 0}
     .pay{padding:22px 24px 26px}
-    #payment-element{margin-bottom:18px}
-    .btn{width:100%;border:0;border-radius:12px;background:var(--clay);color:#fff;font-family:var(--font);font-weight:800;font-size:17px;padding:15px;cursor:pointer;transition:background .15s, transform .05s}
-    .btn:hover{background:var(--clay-deep)}
-    .btn:active{transform:translateY(1px)}
-    .btn:disabled{opacity:.6;cursor:default}
     .msg{font-size:13px;margin:12px 2px 0;color:var(--clay-deep);min-height:18px;text-align:center}
-    .secure{display:flex;align-items:center;justify-content:center;gap:6px;color:var(--muted);font-size:12px;margin-top:16px}
     .state{padding:40px 28px;text-align:center}
     .state .ic{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;background:#ECFDF5;color:#10B981}
     .state.void .ic{background:#F1F5F9;color:#64748B}
@@ -54,13 +47,12 @@
     .plan-opt input{width:18px;height:18px;margin-top:2px;accent-color:var(--clay);cursor:pointer;flex-shrink:0}
     .plan-opt span{display:flex;flex-direction:column;font-size:15px;font-weight:700;color:var(--ink);line-height:1.35}
     .plan-opt small{font-size:12.5px;font-weight:500;color:var(--muted);margin-top:2px}
-    .check-toggle{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;padding:13px 14px;margin:0 0 18px;border:1px solid var(--line);border-radius:12px;user-select:none}
-    .check-toggle input{width:18px;height:18px;accent-color:var(--clay);cursor:pointer;flex-shrink:0}
     .check-panel{border:1.5px solid var(--clay);border-radius:12px;padding:20px 22px;background:#fff}
     .check-panel h3{font-size:17px;font-weight:800;margin:0 0 10px;color:var(--ink)}
     .check-panel .payee{background:var(--fog);border-radius:10px;padding:14px 16px;margin:0 0 12px;font-size:15px;line-height:1.5}
     .check-panel .payee strong{font-size:18px;color:var(--clay-deep)}
     .check-panel p{font-size:13.5px;color:var(--ink-soft);line-height:1.6;margin:0}
+    .check-panel a{color:var(--clay-deep);font-weight:600}
   </style>
 </head>
 <body>
@@ -74,11 +66,13 @@
   </div>
 
   <script>
+    // Invoices are paid by check (Michael, 2026-10-21: Stripe removed). The page
+    // shows what is due and who the check is made out to; the office records
+    // the check in the CRM, and the page then reads "Payment received".
     const token = new URLSearchParams(location.search).get("t");
     const root = document.getElementById("root");
     const money = (c) => "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
-    let stripe, elements;
 
     function checkmark() { return `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`; }
 
@@ -87,23 +81,6 @@
         <div class="ic">${checkmark()}</div>
         <h2>Payment received</h2>
         <p>Thank you! Invoice <strong>${esc(inv.number)}</strong> for <strong>${money(inv.amount_cents)}</strong> is paid.</p>
-      </div></div>`;
-    }
-    function processingState(inv) {
-      root.innerHTML = `<div class="card"><div class="state">
-        <div class="ic">${checkmark()}</div>
-        <h2>Payment received</h2>
-        <p>Thanks! Your payment for invoice <strong>${esc(inv.number)}</strong> is processing and will confirm shortly. You'll get a receipt by email once it clears.</p>
-      </div></div>`;
-    }
-    function microdepositState(url) {
-      url = url || "";
-      root.innerHTML = `<div class="card"><div class="state">
-        <div class="ic">🏦</div>
-        <h2>Almost done — verify your bank</h2>
-        <p>Because you entered your account and routing number, your bank needs to confirm it's really you before the payment goes through.</p>
-        <p>In <strong>1–2 business days</strong> you'll see a <strong>small deposit (about $0.01)</strong> from <strong>STRIPE</strong> in your account, with a <strong>6-digit code</strong> in the description. Come back and enter that code to finish${url ? ` — <a href="${esc(url)}" style="color:var(--clay,#D2683F);font-weight:700">verify your bank here</a>` : ""}.</p>
-        <p style="color:#6c665b;font-size:.92rem;margin-top:14px">We'll email your receipt once it clears. Questions? Call or text <a href="tel:+16158575668" style="color:var(--clay,#D2683F)">615-857-5668</a>.</p>
       </div></div>`;
     }
     function voidState(inv, nextTok) {
@@ -128,16 +105,13 @@
       } catch (e) { return errorState("Could not load this invoice."); }
 
       if (data.paid) return paidState(data.invoice);
-      if (data.processing) return processingState(data.invoice);
-      if (data.microdeposit) return microdepositState(data.verify_url);
       if (data.voided) return voidState(data.invoice, data.replaced_by_token);
 
       const inv = data.invoice;
-      // Only the unpaid balance is charged online; in-person payments may cover part of it.
+      // Only the unpaid balance is due; earlier payments may cover part of it.
       const base = data.due_cents != null ? data.due_cents : inv.amount_cents;
       const alreadyPaid = inv.amount_paid_cents || 0;
       const plan = data.plan || null;  // { deposit_cents, full_cents, current_plan } | null
-      let payAmount = base;            // updated when the deposit/full plan changes
 
       const typeLabel = { deposit: "Deposit", scheduling: "Scheduling payment", balance: "Final payment", full: "Payment", custom: "Invoice" }[inv.type] || "Invoice";
       root.innerHTML = `
@@ -159,57 +133,21 @@
               <label class="plan-opt"><input type="radio" name="plan" value="full" ${plan.current_plan === "full" ? "checked" : ""}/>
                 <span><b>Pay in full</b> · ${money(plan.full_cents)}<small>Settle the whole project now — nothing due later.</small></span></label>
             </div>` : ""}
-            <label class="check-toggle"><input type="checkbox" id="check-toggle"/> I'll pay by check instead</label>
-            <div class="check-panel" id="check-panel" hidden>
+            <div class="check-panel" id="check-panel">
               <h3>Pay by check</h3>
               <div class="payee">Make your check payable to<br/><strong>James Blair</strong> &middot; <span id="chk-amt">${money(base)}</span></div>
               <p>Hand your check to your Project Manager, and we'll mark this invoice paid as soon as it's received. Questions? Call or text <a href="tel:+16158575668">615-857-5668</a>.</p>
             </div>
-            <form id="pay-form">
-              <p style="font-size:13px;font-weight:700;color:var(--ink);margin:0 0 10px">Pay by bank transfer or card</p>
-              <div id="payment-element"></div>
-              <button class="btn" id="pay-btn" type="submit">Pay ${money(base)}</button>
-              <div class="msg" id="msg"></div>
-            </form>
+            <div class="msg" id="msg"></div>
             ${data.change_option_token ? `<p style="font-size:13px;color:var(--muted);margin:14px 0 0;text-align:center">Want a different option? You can switch before you pay. <a href="/proposal/?t=${encodeURIComponent(data.change_option_token)}" style="color:var(--clay-deep,#B04F2A);font-weight:700">Change my option →</a></p>` : ""}
-            <div class="secure" id="secure-row">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              Secured by Stripe
-            </div>
           </div>
         </div>`;
 
-      stripe = Stripe(data.publishable_key);
-      const appearance = {
-        theme: "stripe",
-        variables: { colorPrimary: "#D2683F", fontFamily: "Montserrat, system-ui, sans-serif", borderRadius: "10px", colorText: "#16140F" },
-      };
-      elements = stripe.elements({ clientSecret: data.client_secret, appearance });
-      // Offer every payment method enabled in the Stripe Dashboard, but list
-      // BANK TRANSFER (ACH) first as the preferred option, then card, then the
-      // wallets. (ACH must be enabled in the Stripe Dashboard to appear.)
-      const paymentElement = elements.create("payment", {
-        paymentMethodOrder: ["us_bank_account", "card", "cashapp", "link"],
-      });
-      paymentElement.mount("#payment-element");
-      // "Pay by check" toggle — hides the online payment flow and shows the
-      // check instructions (the office marks the invoice paid once received).
-      const checkToggle = document.getElementById("check-toggle");
-      if (checkToggle) checkToggle.addEventListener("change", () => {
-        const byCheck = checkToggle.checked;
-        document.getElementById("check-panel").hidden = !byCheck;
-        document.getElementById("pay-form").hidden = byCheck;
-        const secure = document.getElementById("secure-row");
-        if (secure) secure.hidden = byCheck;
-      });
-
-      // Deposit / pay-in-full chooser. Switching updates the invoice + the live
-      // PaymentIntent server-side, then reflects the new amount on the page.
+      // Deposit / pay-in-full chooser. Switching updates the invoice server-side,
+      // then shows the new amount to write the check for.
       function setAmountUI(cents) {
-        payAmount = cents;
         const a = document.getElementById("amt-due"); if (a) a.textContent = money(cents);
         const c = document.getElementById("chk-amt"); if (c) c.textContent = money(cents);
-        const b = document.getElementById("pay-btn"); if (b && !b.disabled) b.textContent = `Pay ${money(cents)}`;
       }
       async function choosePlan(which) {
         try {
@@ -220,48 +158,12 @@
           const d = await r.json();
           if (!r.ok || d.error) throw new Error(d.error || "Couldn't update the amount.");
           setAmountUI(d.amount_cents);
-          return true;
-        } catch (err) { document.getElementById("msg").textContent = err.message; return false; }
+        } catch (err) { document.getElementById("msg").textContent = err.message; }
       }
       if (plan) {
         document.querySelectorAll('input[name="plan"]').forEach((r) =>
           r.addEventListener("change", () => { if (r.checked) choosePlan(r.value); }));
       }
-      function selectedPlan() { const r = document.querySelector('input[name="plan"]:checked'); return r ? r.value : null; }
-
-      document.getElementById("pay-form").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById("pay-btn");
-        const msg = document.getElementById("msg");
-        btn.disabled = true; btn.textContent = "Processing…"; msg.textContent = "";
-        // Make sure the server + PaymentIntent match the chosen plan before confirming.
-        if (plan && selectedPlan()) {
-          const ok = await choosePlan(selectedPlan());
-          if (!ok) { btn.disabled = false; btn.textContent = `Pay ${money(payAmount)}`; return; }
-        }
-        const { error, paymentIntent } = await stripe.confirmPayment({
-          elements,
-          confirmParams: { return_url: location.href },
-          redirect: "if_required",
-        });
-        if (error) {
-          msg.textContent = error.message || "Payment failed. Please try again.";
-          btn.disabled = false; btn.textContent = `Pay ${money(payAmount)}`;
-          return;
-        }
-        if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "processing")) {
-          paidState({ number: inv.number, amount_cents: payAmount });
-        } else if (paymentIntent && paymentIntent.status === "requires_action" &&
-                   paymentIntent.next_action && paymentIntent.next_action.type === "verify_with_microdeposits") {
-          // Manually-entered bank account — Stripe must verify it via micro-deposits.
-          // Show a clear "you're almost done" state instead of a cryptic status code.
-          var vurl = ""; try { vurl = paymentIntent.next_action.verify_with_microdeposits.hosted_verification_url; } catch (e) {}
-          microdepositState(vurl);
-        } else {
-          msg.textContent = "We couldn't confirm the payment (" + (paymentIntent ? paymentIntent.status : "unknown") + "). Please try again or call/text 615-857-5668.";
-          btn.disabled = false; btn.textContent = `Pay ${money(payAmount)}`;
-        }
-      });
     }
 
     init();

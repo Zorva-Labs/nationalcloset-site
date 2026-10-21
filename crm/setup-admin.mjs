@@ -2,7 +2,11 @@
 // One-time admin bootstrap.
 //
 // Usage:
-//   node crm/setup-admin.mjs <email> [password]
+//   node crm/setup-admin.mjs <email> [password] [--role admin|sales|installer]
+//
+// A new login is sales unless --role says otherwise; an existing login keeps
+// its role unless --role is given (roles: functions/_lib/roles.js). Logins
+// and roles can also be managed on the CRM's Team page by an admin.
 //
 // If no password is provided, generates one and prints it.
 // Hashes with PBKDF2-SHA256, 100k iterations, 16-byte salt (matches Workers code).
@@ -25,9 +29,13 @@ const env = Object.fromEntries(
   })
 );
 
-const [, , emailArg, pwArg] = process.argv;
-if (!emailArg) {
-  console.error("Usage: node crm/setup-admin.mjs <email> [password]");
+const argv = process.argv.slice(2);
+const ri = argv.indexOf("--role");
+const role = ri >= 0 ? String(argv[ri + 1] || "").toLowerCase() : null;
+if (ri >= 0) argv.splice(ri, 2);
+const [emailArg, pwArg] = argv;
+if (!emailArg || (role && !["admin", "sales", "installer"].includes(role))) {
+  console.error("Usage: node crm/setup-admin.mjs <email> [password] [--role admin|sales|installer]");
   process.exit(1);
 }
 const email = emailArg.trim().toLowerCase();
@@ -38,11 +46,12 @@ const hash = pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, 32, "sha256");
 const saltB64 = salt.toString("base64");
 const hashB64 = hash.toString("base64");
 
-const sql = `INSERT INTO admin_users (email, password_hash, password_salt, display_name)
-             VALUES (?1, ?2, ?3, ?4)
+const sql = `INSERT INTO admin_users (email, password_hash, password_salt, display_name, role)
+             VALUES (?1, ?2, ?3, ?4, COALESCE(?5, 'sales'))
              ON CONFLICT(email) DO UPDATE SET
                password_hash = excluded.password_hash,
-               password_salt = excluded.password_salt`;
+               password_salt = excluded.password_salt,
+               role = COALESCE(?5, admin_users.role)`;
 
 const res = await fetch(
   `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/d1/database/${DB_ID}/query`,
@@ -57,7 +66,7 @@ const res = await fetch(
     },
     body: JSON.stringify({
       sql,
-      params: [email, hashB64, saltB64, email.split("@")[0]],
+      params: [email, hashB64, saltB64, email.split("@")[0], role],
     }),
   }
 );
@@ -70,6 +79,7 @@ if (!body.success) {
 console.log("\n  ✓ Admin user provisioned");
 console.log(`  email:    ${email}`);
 console.log(`  password: ${password}`);
+if (role) console.log(`  role:     ${role}`);
 console.log(`\n  Sign in at: https://nationalclosetco.com/crm/login.html\n`);
 
 function generatePassword() {

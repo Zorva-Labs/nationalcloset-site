@@ -6,15 +6,15 @@
 //   • processing fee → a % of the total or a flat $ amount
 //   • discount       → comes out of profit only (client pays net = gross − discount)
 //   • profit         = net − (materials + shipping + tax + accessories + wall + misc + labor + fee)
-// The deposit is at least 50% of net, grossed up so it still covers card fees.
+// The deposit is at least 50% of net, and never less than the hard costs.
 
 export const MATERIALS_DIVISOR = 2.10; // default materials markup: charged = materials expense × 2.10 (i.e. materials = price ÷ 2.10).
 export const SHIPPING_RATE = 0;        // shipping default 0% (set per job)
 export const TAX_RATE = 0;             // taxes default 0% (set per job)
 export const LABOR_RATE = 0.10;        // installation labor = 10% of the gross job price (the only non-zero default)
 export const MIN_LABOR_CENTS = 35000;  // …but never less than $350
-export const FEE_RATE = 0;             // payment-processing fee default 0% (editable per job; actual Stripe fees still apply when recorded)
-export const DEPOSIT_FEE_RATE = 0.03;  // processing-fee buffer built into the deposit floor so it still covers hard costs after card fees (~3%)
+export const FEE_RATE = 0;             // payment-processing fee default 0% (editable per job; fees recorded on older card payments still count)
+export const DEPOSIT_FEE_RATE = 0;     // no card-fee buffer on the deposit floor: payments are by check since 2026-10-21 (was 0.03)
 export const MATERIALS_DISCOUNT_RATE = 0.03;  // manufacturer discount applied to the materials cost when a job opts in (checkbox)
 
 // The formula rates are adjustable per job (stored on job_financials).

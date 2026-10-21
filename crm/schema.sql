@@ -67,7 +67,8 @@ CREATE TABLE IF NOT EXISTS admin_users (
   password_salt   TEXT NOT NULL,       -- base64 salt
   display_name    TEXT,
   created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-  last_login_at   TEXT
+  last_login_at   TEXT,
+  role            TEXT NOT NULL DEFAULT 'sales'  -- admin | sales | installer (0077, _lib/roles.js)
 );
 
 -- ----------------------------------------------------------------

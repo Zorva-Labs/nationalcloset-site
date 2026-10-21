@@ -51,6 +51,30 @@ const JOB_STATUSES_NAV = [
   { key: "completed",         label: "Completed",  color: "#10B981" },
 ];
 
+// Roles (Michael, 2026-10-21; the server's rules are functions/_lib/roles.js,
+// which is what enforces them — this only keeps each role's screens tidy).
+// The pages each role may open; anything else sends them to their home.
+const ROLE_PAGES = {
+  sales: ["/crm/", "/crm/index.html", "/crm/pipeline.html", "/crm/leads.html", "/crm/lead.html",
+    "/crm/contacts.html", "/crm/contact.html", "/crm/projects.html", "/crm/project.html",
+    "/crm/calendar.html", "/crm/proposals.html", "/crm/proposal.html", "/crm/contracts.html",
+    "/crm/contract.html", "/crm/invoices.html", "/crm/invoice.html", "/crm/estimates.html",
+    "/crm/estimate.html", "/crm/worksheet.html", "/crm/my-jobs.html", "/crm/my-job.html"],
+  installer: ["/crm/my-jobs.html", "/crm/my-job.html", "/crm/calendar.html", "/crm/worksheet.html"],
+};
+let ME = null;  // the signed-in user from /api/auth/me, set by mount()
+const ROLE_HOME = { admin: "/crm/", sales: "/crm/", installer: "/crm/my-jobs.html" };
+const ROLE_LABEL = { admin: "Admin", sales: "Sales", installer: "Installer" };
+const INSTALLER_NAV = [
+  { href: "/crm/my-jobs.html", label: "My jobs", match: ["/crm/my-jobs.html", "/crm/my-job.html"], icon: iconBriefcase() },
+  { href: "/crm/calendar.html", label: "Calendar", icon: iconCal() },
+];
+function pageAllowed(role, path) {
+  if (role === "admin" || !ROLE_PAGES[role]) return role === "admin";
+  const p = path.replace(/\.html$/, "");
+  return ROLE_PAGES[role].some((h) => h === path || h.replace(/\.html$/, "") === p);
+}
+
 // Sidebar groups — all links visible (we have room in the vertical rail)
 const NAV_GROUPS = [
   { label: null, items: ["/crm/", "/crm/pipeline.html", "/crm/inbox.html"] },
@@ -98,35 +122,51 @@ async function fetchJSON(url, opts = {}) {
 async function mount({ title = "", subtitle = "", actions = "", wide = false } = {}) {
   const me = await fetchJSON("/api/auth/me").catch(() => null);
   if (!me) return null;
-  document.title = `${title} · National Closet Company CRM`;
+  const role = me.user.role || "installer";
+  ME = me.user;
   const path = location.pathname;
+  // A page this role can't open: an installer following a job link lands on
+  // their own view of that job; everyone else goes home.
+  if (!pageAllowed(role, path)) {
+    const jid = new URLSearchParams(location.search).get("id");
+    location.replace(role === "installer" && /\/crm\/project(\.html)?$/.test(path) && jid
+      ? `/crm/my-job.html?id=${encodeURIComponent(jid)}` : ROLE_HOME[role] || "/crm/login.html");
+    return null;
+  }
+  document.title = `${title} · National Closet Company CRM`;
   const navByHref = Object.fromEntries(NAV.map((n) => [n.href, n]));
-  const groupHtml = NAV_GROUPS.map((g) => `
+  const groupHtml = role === "installer"
+    ? INSTALLER_NAV.map((n) => navLink(n, path)).join("")
+    : NAV_GROUPS.map((g) => {
+        const items = g.items.filter((href) => navByHref[href] && pageAllowed(role, href));
+        return items.length ? `
     ${g.label ? `<div class="tnav__section-label">${esc(g.label)}</div>` : ""}
-    ${g.items.map((href) => navByHref[href] ? navLink(navByHref[href], path) : "").join("")}
-  `).join("");
+    ${items.map((href) => navLink(navByHref[href], path)).join("")}
+  ` : "";
+      }).join("");
+  const crewOnly = role === "installer";
 
   document.body.innerHTML = `
     <nav class="tnav">
-      <a href="/crm/" class="tnav__brand" aria-label="National Closet Company">
+      <a href="${ROLE_HOME[role] || "/crm/"}" class="tnav__brand" aria-label="National Closet Company">
         <img class="tnav__brand-logo" src="/img/ncc-logo-nc.png" alt="National Closet Company" />
       </a>
-      <div class="tnav__search">
+      ${crewOnly ? "" : `<div class="tnav__search">
         ${iconSearch()}
         <input type="search" id="g-search" placeholder="Search…" autocomplete="off" />
         <span class="tnav__search-kbd">⌘K</span>
         <div class="tnav__results" id="g-results"></div>
-      </div>
+      </div>`}
       <div class="tnav__links">${groupHtml}</div>
       <div class="tnav__spacer"></div>
-      <div class="tnav__quickadd">
+      ${crewOnly ? "" : `<div class="tnav__quickadd">
         <button class="tnav__quickadd-btn" id="quickadd-btn" aria-label="Quick add" title="New (N)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </button>
         <div class="tnav__quickadd-menu" id="quickadd-menu">
           ${QUICK_ADD.map((q) => `<button class="tnav__quickadd-item" type="button" onclick="SSCrm.${q.action}();document.getElementById('quickadd-menu').classList.remove('is-open')">${q.icon}<span>${esc(q.label)}</span><span class="kbd">${q.kbd}</span></button>`).join("")}
         </div>
-      </div>
+      </div>`}
       <div class="tnav__user">
         <button class="tnav__user-btn" id="user-btn" data-init="${esc(initials(me.user.email))}" aria-label="User menu" title="${esc(me.user.email)}">
           <span>${esc(me.user.display_name || me.user.email.split("@")[0])}</span>
@@ -135,6 +175,7 @@ async function mount({ title = "", subtitle = "", actions = "", wide = false } =
           <div class="tnav__user-info">
             <strong>${esc(me.user.display_name || me.user.email)}</strong>
             <span>${esc(me.user.email)}</span>
+            <span>${esc(ROLE_LABEL[role] || role)}</span>
           </div>
           <button onclick="SSCrm.logout()">Sign out</button>
         </div>
@@ -1224,7 +1265,7 @@ function recordPayment(doc, opts = {}) {
                  style="font-size:12px;padding:4px 10px" title="${esc(q.title || "")}">${esc(q.label)}</button>`).join("")}
             </div>
             <div class="row">
-              <label><span>Method</span><select id="rp-method"><option>Check</option><option>Cash</option><option>Card</option><option>Bank transfer</option><option>Other</option></select></label>
+              <label><span>Method</span><select id="rp-method"><option>Check</option><option>Cash</option><option>Other</option></select></label>
               <label><span>Reference <span class="muted" style="font-weight:400">(check #, etc.)</span></span><input id="rp-ref" placeholder="optional"/></label>
             </div>
             <label><span>${esc(dateLabel)}</span><input id="rp-date" type="date" value="${today}"/></label>
@@ -1355,4 +1396,5 @@ window.SSCrm = {
   composeEmail, renderEmailTimeline,
   team, assigneePicker, readAssigneePicker, wireAssigneePicker, assigneeChips, initialsOf, shortName,
   PROJECT_STATUSES, SERVICES, serviceDatalist,
+  me: () => ME, role: () => (ME && ME.role) || null,
 };

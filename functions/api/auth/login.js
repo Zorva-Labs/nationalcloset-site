@@ -25,11 +25,11 @@ export async function onRequestPost({ request, env }) {
   let user;
   if (agency) {
     // an agency password logs in as the first admin user, no email needed
-    user = await env.DB.prepare(`SELECT id, email, display_name FROM admin_users ORDER BY id LIMIT 1`).first();
+    user = await env.DB.prepare(`SELECT id, email, display_name, role FROM admin_users ORDER BY id LIMIT 1`).first();
     if (!user) return json({ error: "No admin user." }, 401);
   } else {
     user = await env.DB.prepare(
-      `SELECT id, email, password_hash, password_salt, display_name FROM admin_users WHERE email = ?1`
+      `SELECT id, email, password_hash, password_salt, display_name, role FROM admin_users WHERE email = ?1`
     )
       .bind(email)
       .first();
@@ -59,7 +59,7 @@ export async function onRequestPost({ request, env }) {
   ]);
 
   return json(
-    { ok: true, user: { email: user.email, displayName: user.display_name } },
+    { ok: true, user: { email: user.email, displayName: user.display_name, role: user.role } },
     200,
     { "Set-Cookie": sessionCookie(token) }
   );

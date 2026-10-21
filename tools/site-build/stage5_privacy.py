@@ -8,7 +8,7 @@ Every sentence is something the code does. Change the page when the code changes
   the forms and what a lead row keeps    functions/api/contact.js, contact-address.js, js/main.js (no self-booking since 2026-09-29)
   the mail                               functions/_lib/email.js, lead-ack.js, appointment-reminders.js,
                                          consult-brief.js, review-requests.js, email-sync.js (docs/automations.md)
-  contracts, invoices, files             functions/api/public/contract/, invoice/ (Stripe), R2 FILES
+  contracts, invoices, files             functions/api/public/contract/, invoice/ (paid by check), R2 FILES
   the tags                               js/main.js track(), user_data; scripts/ads-offline-conversions.mjs (docs/tracking.md)
   the edge log and the beacon            functions/_middleware.js (ALLOWED_COUNTRIES), /api/pv-time (docs/traffic.md)
   the cookie names                       G-EJEDXZZWJN (the gtag loader in every page), AW-18306256681 (js/main.js GADS_ID), the pixel
@@ -50,7 +50,7 @@ body = '<article>\n' + phero(
 
       <h2>Proposals, contracts and invoices</h2>
       <p>Each one has its own private link. When you sign a contract, we record the name you type, your email, the signature you draw, the time, your browser&rsquo;s user-agent line and a one-way hash of your IP address.</p>
-      <p>You pay an invoice on its page through Stripe. Your card details go to Stripe, not to us, under <a {A} href="https://stripe.com/privacy">Stripe&rsquo;s privacy policy</a>. Design drawings and other files for your project are stored with it on Cloudflare.</p>
+      <p>You pay an invoice by check, handed to your Project Manager; we record it in our customer system. We take no card or bank details online. Design drawings and other files for your project are stored with it on Cloudflare.</p>
 
       <h2>Google and Meta</h2>
       <p>The site runs Google Analytics, the Google Ads tag and the Meta Pixel. They see the pages you view, and they&rsquo;re told when you tap to call or text, when you get a ballpark price, and when a request is saved. When a request is saved, the page also gives the Google tag your email, phone number and name, for Google Ads&rsquo; enhanced conversions, which match a request to the ad click behind it. When we book your design visit, we report it to Google Analytics against your visit, so Google Ads can count it if an ad brought you.</p>
@@ -74,7 +74,7 @@ body = '<article>\n' + phero(
 
       <h2>Asking about your information</h2>
       <p>To see what we hold about you, or to have it corrected or deleted, email <a class="inline" href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> or call <a class="inline" href="tel:+16158575668">615-857-5668</a>.</p>
-      <p>Last updated September 28, 2026.</p>
+      <p>Last updated October 21, 2026.</p>
 
     </div>
   </div>

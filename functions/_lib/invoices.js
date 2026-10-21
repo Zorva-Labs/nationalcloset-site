@@ -1,10 +1,9 @@
 // Invoice lifecycle: create deposit/balance/custom invoices, compute amounts
 // from the project's authoritative contract (or accepted proposal), and email
-// the customer a branded pay link. Stripe PaymentIntents are created lazily on
-// the public pay page; here we just create the invoice record + notify.
+// the customer a branded invoice link. Customers pay by check (Stripe removed
+// 2026-10-21); the office records the check in the CRM (markInvoicePaid).
 import { genToken, nextSequence, formatDocNumber } from "./tokens.js";
 import { sendEmail, sendStaffAlert, staffInbox, makeMessageId, brandedEmail, escapeHtml } from "./email.js";
-import { retrievePaymentIntent } from "./stripe.js";
 import { logOutboundEmail } from "./email-log.js";
 import { recordActivity } from "./db.js";
 import { markProjectBooked } from "./lifecycle.js";
@@ -21,13 +20,11 @@ function money(cents) {
 const INV_TYPE_LABEL = { deposit: "deposit", scheduling: "scheduling payment", balance: "final payment", full: "payment", custom: "payment" };
 function methodLabel(m) {
   if (m === "us_bank_account" || m === "bank") return "bank transfer (ACH)";
-  if (m === "card") return "card";
-  return m || "card";
+  return m || "check";
 }
 
-// Email the office (sendStaffAlert → STAFF_EMAIL) on EVERY payment event — when an ACH/async
-// payment starts processing, when any payment clears, and if a payment fails.
-// kind is "processing" | "paid" | "failed".
+// Email the office (sendStaffAlert → STAFF_EMAIL) when a payment is recorded.
+// kind is "paid"; "processing" and "failed" are left from the online-payment days.
 async function notifyStaffPayment(env, { invoice, project, kind, method, amountCents }) {
   const who = project?.contact_name || "A customer";
   const proj = project?.name || "their project";
@@ -66,65 +63,6 @@ async function notifyStaffPayment(env, { invoice, project, kind, method, amountC
     templateKind: `payment_${kind}_staff`,
     status: (res?.skipped || res?.error) ? "failed" : "sent",
   }).catch(() => {});
-}
-
-// Mark an invoice as PROCESSING — an async payment (ACH bank transfer, or a
-// redirect method) has started but hasn't settled. Notifies the office. The job
-// is NOT booked and the invoice is NOT counted as paid until it clears
-// (markInvoicePaid via the webhook). Idempotent — won't re-notify.
-export async function markInvoiceProcessing(env, invoice, { method = "us_bank_account", paymentIntentId, when } = {}) {
-  const db = env.DB;
-  const fresh = await db.prepare(`SELECT status FROM invoices WHERE id=?1`).bind(invoice.id).first().catch(() => null);
-  const cur = fresh?.status || invoice.status;
-  if (["paid", "processing", "void"].includes(cur)) return { already: true };
-  await db.prepare(
-    `UPDATE invoices SET status='processing', paid_method=?1, stripe_payment_intent_id=COALESCE(?2, stripe_payment_intent_id), updated_at=datetime('now') WHERE id=?3`
-  ).bind(method, paymentIntentId || null, invoice.id).run();
-  await recordActivity(db, {
-    entityType: "project", entityId: invoice.project_id, action: "invoice-processing",
-    actorKind: "customer", actorName: "Stripe",
-    details: { invoice_id: invoice.id, number: invoice.number, method },
-  }).catch(() => {});
-
-  // Promote it to a JOB now — even though the money hasn't cleared — so it moves
-  // out of the lead pipeline immediately (a deposit/full payment was initiated).
-  // The contract's deposit_paid flag stays OFF until it actually settles
-  // (markInvoicePaid). Guarded so we don't re-book an already-booked job.
-  if (["deposit", "full"].includes(invoice.type)) {
-    const proj = await db.prepare(`SELECT status FROM projects WHERE id=?1`).bind(invoice.project_id).first().catch(() => null);
-    const JOB = ["contracted", "scheduled_install", "installing", "completed"];
-    if (proj && !JOB.includes(proj.status)) {
-      await markProjectBooked(db, invoice.project_id, invoice.contract_id).catch((e) => console.error("[invoice/book-processing]", String(e)));
-    }
-  }
-
-  const project = await db.prepare(
-    `SELECT p.*, c.name AS contact_name, c.email AS contact_email FROM projects p JOIN contacts c ON c.id=p.contact_id WHERE p.id=?1`
-  ).bind(invoice.project_id).first().catch(() => null);
-  await notifyStaffPayment(env, { invoice, project, kind: "processing", method, amountCents: invoice.amount_cents }).catch(() => {});
-  return { ok: true };
-}
-
-// A processing payment failed (e.g. an ACH bank transfer bounced). Revert the
-// invoice to 'open' so it's payable again and alert the office. We do NOT
-// auto-unbook the job — the office decides — but the email flags it. No-op if
-// the invoice is already paid or void.
-export async function markInvoiceFailed(env, invoice, { method = "us_bank_account" } = {}) {
-  const db = env.DB;
-  const fresh = await db.prepare(`SELECT status FROM invoices WHERE id=?1`).bind(invoice.id).first().catch(() => null);
-  const cur = fresh?.status || invoice.status;
-  if (cur === "paid" || cur === "void") return { already: true };
-  await db.prepare(`UPDATE invoices SET status='open', updated_at=datetime('now') WHERE id=?1`).bind(invoice.id).run();
-  await recordActivity(db, {
-    entityType: "project", entityId: invoice.project_id, action: "invoice-payment-failed",
-    actorKind: "customer", actorName: "Stripe",
-    details: { invoice_id: invoice.id, number: invoice.number, method },
-  }).catch(() => {});
-  const project = await db.prepare(
-    `SELECT p.*, c.name AS contact_name, c.email AS contact_email FROM projects p JOIN contacts c ON c.id=p.contact_id WHERE p.id=?1`
-  ).bind(invoice.project_id).first().catch(() => null);
-  await notifyStaffPayment(env, { invoice, project, kind: "failed", method, amountCents: invoice.amount_cents }).catch(() => {});
-  return { ok: true };
 }
 
 // Pre-discount GROSS cost basis for one deal — the number its deposit is
@@ -450,14 +388,15 @@ export async function sendInvoiceEmail(env, invoice, project) {
       </table>
       <p>${invoice.description}.</p>
       ${note}
-      <p>You can pay securely online using the button below — pay by card, bank or digital wallet.</p>
+      <p>Please make your check for <strong>${money(due)}</strong> payable to <strong>James Blair</strong> and hand it to your Project Manager. We'll mark the invoice paid as soon as it's received. The button below opens your invoice.</p>
     `,
-    ctaLabel: `Pay ${money(due)}`,
+    ctaLabel: "View invoice",
     ctaUrl: payUrl,
   });
   const text = `Invoice ${invoice.number}: ${money(due)} due.`
     + (disc > 0 ? `\nIncludes a ${money(disc)} discount${project.final_discount_note ? ` (${project.final_discount_note})` : ""}.` : "")
-    + (noteText ? `\n${noteText}` : "") + `\nPay securely: ${payUrl}`;
+    + (noteText ? `\n${noteText}` : "")
+    + `\nPlease make your check payable to James Blair and hand it to your Project Manager.\nYour invoice: ${payUrl}`;
   const messageId = makeMessageId();
   const to = project.contact_name ? `${project.contact_name} <${project.contact_email}>` : project.contact_email;
 
@@ -502,14 +441,14 @@ export async function sendPaymentReceipt(env, invoice, { amountCents, method = "
         <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Paid to date</td><td style="padding:4px 0">${money(paid)}</td></tr>
         <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Balance due</td><td style="padding:4px 0;font-weight:700;font-size:18px">${money(balance)}</td></tr>
       </table>
-      <p>Your remaining balance of <strong>${money(balance)}</strong> can be paid online anytime using the button below.</p>
+      <p>Your remaining balance of <strong>${money(balance)}</strong> can be paid by check, payable to <strong>James Blair</strong>, handed to your Project Manager.</p>
     `,
-    ctaLabel: `Pay remaining ${money(balance)}`,
+    ctaLabel: "View invoice",
     ctaUrl: `${SITE_URL}/invoice/?t=${invoice.view_token}`,
   });
   const text = `Payment received: ${money(amountCents)} toward ${invoice.number}.\n`
     + `Paid to date: ${money(paid)} of ${money(total)}.\nBalance due: ${money(balance)}.\n`
-    + `Pay the remaining balance: ${SITE_URL}/invoice/?t=${invoice.view_token}`;
+    + `Pay the rest by check, payable to James Blair: ${SITE_URL}/invoice/?t=${invoice.view_token}`;
   const messageId = makeMessageId();
   const to = project.contact_name ? `${project.contact_name} <${project.contact_email}>` : project.contact_email;
   const res = await sendEmail(env, { to, subject, html, text, messageId });
@@ -522,75 +461,17 @@ export async function sendPaymentReceipt(env, invoice, { amountCents, method = "
   return { ok: !failed };
 }
 
-// Resend the ACH micro-deposit bank-verification link. When a customer pays by
-// a manually-entered US bank account, Stripe holds the PaymentIntent in
-// requires_action / verify_with_microdeposits until they confirm two small
-// (<$1) deposits. Stripe has no API to "resend" its own verification email, but
-// the hosted_verification_url stays valid — so we fetch it live and email it.
-// Returns { skipped, reason } when the invoice isn't actually awaiting
-// verification, so the caller can show a clear message.
-export async function sendBankVerificationEmail(env, invoice, project) {
-  const db = env.DB;
-  if (!invoice.stripe_payment_intent_id) return { skipped: true, reason: "no_payment" };
-  if (!project) {
-    project = await db.prepare(
-      `SELECT p.*, c.name AS contact_name, c.email AS contact_email FROM projects p JOIN contacts c ON c.id=p.contact_id WHERE p.id=?1`
-    ).bind(invoice.project_id).first();
-  }
-  if (!project?.contact_email) return { skipped: true, reason: "no_email" };
-
-  const pi = await retrievePaymentIntent(env, invoice.stripe_payment_intent_id).catch(() => null);
-  if (!pi) return { skipped: true, reason: "stripe_error" };
-  const na = pi.next_action || {};
-  if (pi.status !== "requires_action" || na.type !== "verify_with_microdeposits") {
-    return { skipped: true, reason: "not_pending_verification", status: pi.status };
-  }
-  const verifyUrl = na.verify_with_microdeposits?.hosted_verification_url;
-  if (!verifyUrl) return { skipped: true, reason: "no_verify_url" };
-
-  const first = (project.contact_name || "there").split(" ")[0];
-  const subject = `Confirm your bank to finish your payment (${invoice.number})`;
-  const html = brandedEmail({
-    title: "One quick step to finish your payment",
-    body: `
-      <p>Hi ${first},</p>
-      <p>Thanks for choosing to pay invoice <strong>${invoice.number}</strong> (${money(invoice.amount_cents)}) by bank transfer (ACH). To verify your bank account, our payment processor (Stripe) sent <strong>two small deposits</strong> — each under $1.00 — to your account. They usually arrive within <strong>1–2 business days</strong>.</p>
-      <p>Once you see them, click the button below and enter the two amounts to confirm your bank and complete your payment:</p>
-      <p style="font-size:13px;color:#6B6457">On your bank statement the deposits may appear from <strong>STRIPE</strong> or <strong>&ldquo;ACCTVERIFY&rdquo;</strong>. If the button doesn't work, paste this link into your browser:<br><a href="${verifyUrl}" style="color:#C0552B;word-break:break-all">${verifyUrl}</a></p>
-    `,
-    ctaLabel: "Confirm my bank",
-    ctaUrl: verifyUrl,
-  });
-  const text = `Hi ${first},\n\n`
-    + `To finish paying invoice ${invoice.number} (${money(invoice.amount_cents)}) by bank transfer, confirm the two small deposits (each under $1.00) Stripe sent to your account. They usually arrive within 1-2 business days.\n\n`
-    + `Confirm your bank here: ${verifyUrl}\n\n`
-    + `On your statement the deposits may show as STRIPE or "ACCTVERIFY".\n\n`
-    + `Questions? Reply to this email or call/text 615-857-5668.\nNational Closet Company`;
-  const messageId = makeMessageId();
-  const to = project.contact_name ? `${project.contact_name} <${project.contact_email}>` : project.contact_email;
-  const res = await sendEmail(env, { to, subject, html, text, messageId });
-  const failed = res?.skipped || res?.error || (res?.status && res.status >= 400);
-  await logOutboundEmail(env, {
-    to, subject, html, text, messageId,
-    projectId: invoice.project_id, contactId: project.contact_id, leadId: project.lead_id || null,
-    templateKind: "invoice_bank_verification", status: failed ? "failed" : "sent",
-    errorCode: failed ? (res?.reason || "send_error") : null,
-    errorMessage: failed ? (res?.error || "send_failed").toString().slice(0, 240) : null,
-  }).catch(() => {});
-  return { ok: !failed };
-}
-
-// Mark an invoice paid (called by the Stripe webhook or a manual admin action).
-export async function markInvoicePaid(env, invoice, { method = "card", paymentIntentId, paidAt, sendReceipt = true, feeCents } = {}) {
+// Mark an invoice paid (the office recording a check, or another payment, in the CRM).
+export async function markInvoicePaid(env, invoice, { method = "check", paymentIntentId, paidAt, sendReceipt = true, feeCents } = {}) {
   const db = env.DB;
   // Re-check the live status (the passed row may be stale) so the webhook and
   // the on-page sync can't both run the booking/receipt twice.
   const fresh = await db.prepare(`SELECT status, amount_cents, amount_paid_cents FROM invoices WHERE id=?1`).bind(invoice.id).first().catch(() => null);
   if ((fresh?.status || invoice.status) === "paid") return { already: true };
   // paidAt lets an admin record an in-person payment on the date it was actually
-  // collected; falls back to now (e.g. Stripe webhook).
+  // collected; falls back to now.
   const when = paidAt || null;
-  // This call settles the invoice IN FULL (online payment, or a manual payment
+  // This call settles the invoice IN FULL (a check, or another payment
   // that covers the balance) — record the remaining amount as a ledger entry.
   const total = fresh?.amount_cents ?? invoice.amount_cents ?? 0;
   const priorPaid = fresh?.amount_paid_cents ?? invoice.amount_paid_cents ?? 0;
@@ -643,7 +524,7 @@ export async function markInvoicePaid(env, invoice, { method = "card", paymentIn
 
   await recordActivity(db, {
     entityType: "project", entityId: invoice.project_id, action: "invoice-paid",
-    actorKind: "customer", actorName: "Stripe",
+    actorKind: "admin", actorName: "Payment recorded",
     details: { invoice_id: invoice.id, number: invoice.number, amount_cents: invoice.amount_cents, method },
   }).catch(() => {});
 

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Job · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc124"/></head>
+<body>
+<script src="/crm/crm-app.js?v=ncc115"></script>
+<script>
+// One job as the crew sees it (roles, 2026-10-21): /api/crew/jobs/:id — the
+// customer, the site, the date, the crew, the scope without prices, what was
+// promised, the drawings, the visits and the staff notes. Read-only.
+const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
+const e = (s) => SSCrm.esc(s == null ? "" : String(s));
+const STATUS = { contracted: "Booked", scheduled_install: "Scheduled", installing: "Installing", completed: "Completed" };
+const SCOPE = { custom_order: "Walls as-is — no wall repair", wallprep: "Includes wall repair & paint",
+                install_only: "Install only — customer-supplied", repair: "Repair / service visit" };
+
+(async () => {
+  const user = await SSCrm.mount({ title: "Job" });
+  if (!user) return;
+  let s;
+  try { s = await SSCrm.fetchJSON(`/api/crew/jobs/${id}`); }
+  catch (err) { document.getElementById("page").innerHTML = `<div class="card"><p class="muted">This job isn't one of yours, or it no longer exists.</p></div>`; return; }
+  const p = s.project;
+  document.getElementById("page-title").textContent = p.contact_name || p.name;
+  SSCrm.setCrumbs([{ label: "My jobs", href: "/crm/my-jobs.html" }, { label: p.contact_name || p.name }]);
+  document.querySelector(".page-head .actions").innerHTML =
+    `<a class="btn secondary" href="/crm/worksheet.html?id=${p.id}">🖨 Install worksheet</a>`;
+  const mat = [["Ordered", p.materials_ordered_at], ["Received", p.materials_received_at],
+               ["Missing parts", p.materials_missing_at], ["Damaged", p.materials_damaged_at], ["Installed", p.materials_installed_at]];
+  const map = p.site_address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.site_address)}` : "";
+  document.getElementById("page").innerHTML = `
+    <div class="card" style="margin-bottom:14px">
+      <div style="display:grid;gap:8px;font-size:14px">
+        <div><strong>${p.install_date ? "Install " + SSCrm.fmtDay(p.install_date) : "Install date TBD"}</strong> · ${e(STATUS[p.status] || p.status || "")}</div>
+        <div>${e(p.name)}${p.po_number ? ` · PO ${e(p.po_number)}` : ""}</div>
+        ${s.contract_type ? `<div>${e(SCOPE[s.contract_type] || s.contract_type)}</div>` : ""}
+        ${p.wall_paint ? `<div>${SSCrm.painterBadge(p)}</div>` : ""}
+        ${p.contact_phone ? `<div>📞 <a href="tel:${e(p.contact_phone)}">${e(p.contact_phone)}</a></div>` : ""}
+        ${p.site_address ? `<div>📍 <a href="${map}" target="_blank" rel="noopener">${e(p.site_address)} ↗</a></div>` : ""}
+        ${(s.assignees || []).length ? `<div><strong>Crew</strong> · ${SSCrm.assigneeChips(s.assignees)}</div>` : ""}
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><h2>Scope of work${s.scope && s.scope.title ? ` · ${e(s.scope.title)}` : ""}</h2></div>
+      ${s.scope && s.scope.lines.length ? `<div class="tbl"><table><thead><tr><th style="width:56px">Qty</th><th>Item</th><th>Room</th></tr></thead>
+        <tbody>${s.scope.lines.map((l) => `<tr><td><strong>${e(l.quantity)}</strong></td><td>${e(l.description)}</td><td>${e(l.room || "")}</td></tr>`).join("")}</tbody></table></div>`
+        : `<p class="muted">No line items on the accepted proposal.</p>`}
+    </div>
+
+    ${s.job_notes ? `<div class="card" style="margin-bottom:14px"><div class="card-head"><h2>Promised to the customer</h2></div>
+      <div style="white-space:pre-wrap;font-size:14px;line-height:1.6">${e(s.job_notes)}</div></div>` : ""}
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-head"><h2>Materials</h2></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:13px">${mat.map(([lbl, at]) =>
+        `<span class="pill" style="${at ? "" : "opacity:.75"}">${at ? "☑" : "☐"} ${lbl}${at ? " · " + SSCrm.fmtDay(at) : ""}</span>`).join("")}</div>
+    </div>
+
+    ${(s.drawings || []).length ? `<div class="card" style="margin-bottom:14px"><div class="card-head"><h2>Drawings</h2></div>
+      <div style="display:grid;gap:6px">${s.drawings.map((d) => `<a href="/api/attachments/${d.id}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;min-height:44px">📄 ${e(d.filename || "Drawing")}</a>`).join("")}</div></div>` : ""}
+
+    ${(s.appointments || []).length ? `<div class="card" style="margin-bottom:14px"><div class="card-head"><h2>Visits</h2></div>
+      <div style="display:grid;gap:8px;font-size:13px">${s.appointments.map((a) => `<div>
+        <strong>${SSCrm.fmtDateTime(a.start_at)}</strong> · ${e((a.type || "").replace(/_/g, " "))} · ${SSCrm.pill(a.status)}
+        ${(a.assignees || []).length ? ` · ${SSCrm.assigneeChips(a.assignees)}` : ""}
+        ${a.notes ? `<div style="color:var(--ink-soft);margin-top:2px">${e(a.notes)}</div>` : ""}</div>`).join("")}</div></div>` : ""}
+
+    ${(s.notes || []).length ? `<div class="card"><div class="card-head"><h2>Staff notes</h2></div>
+      <div style="display:grid;gap:10px;font-size:13px">${s.notes.map((n) => `<div style="border-top:1px dashed var(--line);padding-top:8px">
+        <div style="white-space:pre-wrap">${e(n.body)}</div><div class="muted" style="font-size:11px;margin-top:2px">${e(n.author || "—")} · ${SSCrm.fmtDateTime(n.created_at)}</div></div>`).join("")}</div></div>` : ""}
+  `;
+})();
+</script>
+</body></html>

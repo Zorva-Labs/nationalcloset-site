@@ -69,7 +69,7 @@
 </div>
 <div class="sheet" id="sheet">Loading…</div>
 
-<script src="/crm/crm-app.js?v=ncc114"></script>
+<script src="/crm/crm-app.js?v=ncc115"></script>
 <script>
 const pid = parseInt(new URLSearchParams(location.search).get("id"), 10);
 const e = (s) => SSCrm.esc(s == null ? "" : String(s));
@@ -83,27 +83,22 @@ function toggleInternal() {
 
 (async () => {
   if (!pid) { document.getElementById("sheet").textContent = "Missing job id."; return; }
-  document.getElementById("back").href = `/crm/project.html?id=${pid}`;
-  // fetchJSON bounces to login on 401, so this doubles as the auth gate
-  const s = await SSCrm.fetchJSON(`/api/projects/${pid}`);
+  // fetchJSON bounces to login on 401, so this doubles as the auth gate. The
+  // crew endpoint is the job without money, so an installer can print it too.
+  const [me, s] = await Promise.all([SSCrm.fetchJSON("/api/auth/me"), SSCrm.fetchJSON(`/api/crew/jobs/${pid}`)]);
   DATA = s;
+  const crew = me && me.user && me.user.role === "installer";
+  const jobHref = crew ? `/crm/my-job.html?id=${pid}` : `/crm/project.html?id=${pid}#tab=overview`;
+  document.getElementById("back").href = jobHref;
   SSCrm.setCrumbs([
-    { label: "Jobs", href: "/crm/projects.html" },
-    { label: (s.project && s.project.name) || "Job", href: `/crm/project.html?id=${pid}#tab=overview` },
+    crew ? { label: "My jobs", href: "/crm/my-jobs.html" } : { label: "Jobs", href: "/crm/projects.html" },
+    { label: (s.project && s.project.name) || "Job", href: jobHref },
     { label: "Install worksheet" },
   ]);
 
-  // Line items come from the accepted proposal's selected tier.
-  let lines = [], tierTitle = "";
-  const acc = (s.proposals || []).find((p) => p.status === "accepted") || (s.proposals || [])[0];
-  if (acc) {
-    try {
-      const pr = await SSCrm.fetchJSON(`/api/proposals/${acc.id}`);
-      const tier = (pr.tiers || []).find((t) => t.tier === (pr.proposal.selected_tier || "good")) || (pr.tiers || [])[0];
-      if (tier) { lines = (tier.lines || []).filter((l) => (l.line_total_cents || 0) >= 0); tierTitle = tier.title || ""; }
-    } catch (_) {}
-  }
-  const k = (s.contracts || []).find((c) => c.status === "fully_executed") || (s.contracts || [])[0];
+  // Line items come from the accepted proposal's selected option (the API picks it).
+  const lines = (s.scope && s.scope.lines) || [], tierTitle = (s.scope && s.scope.title) || "";
+  const k = s.contract_type ? { contract_type: s.contract_type } : null;
   const TYPE = { custom_order:"Walls as-is — no wall repair", wallprep:"INCLUDES wall repair &amp; paint",
                  install_only:"Install only — customer-supplied", repair:"Repair / service visit" };
   render(s, lines, tierTitle, k, TYPE);

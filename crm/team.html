@@ -3,9 +3,13 @@
 <title>Team · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
 <link rel="stylesheet" href="/crm/crm-app.css?v=ncc124"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc114"></script>
+<script src="/crm/crm-app.js?v=ncc115"></script>
 <script>
 let roster = [];
+let logins = [], meId = null;  // CRM sign-ins and their roles (/api/logins, admin only)
+const ROLE_OPTS = [["admin", "Admin — everything"], ["sales", "Sales — leads, jobs, calendar, proposals, contracts, invoices"], ["installer", "Installer — their assigned jobs and calendar"]];
+const ROLE_SHORT = { admin: "Admin", sales: "Sales", installer: "Installer" };
+const loginFor = (email) => logins.find((l) => String(l.email).toLowerCase() === String(email || "").toLowerCase());
 
 (async () => {
   const user = await SSCrm.mount({
@@ -22,6 +26,7 @@ async function load() {
     const r = await SSCrm.fetchJSON("/api/team?all=1");
     roster = r.team || [];
   } catch (e) { SSCrm.toast(e.message || "Could not load the team", "error"); roster = []; }
+  try { const l = await SSCrm.fetchJSON("/api/logins"); logins = l.logins || []; meId = l.me; } catch (e) { logins = []; }
   render();
 }
 
@@ -37,6 +42,12 @@ function render() {
         so a visit never goes out unannounced. The wording is
         <a href="/crm/templates.html?tab=email">Templates → Consult brief</a>.
       </p>
+      <p class="muted" style="font-size:13px;line-height:1.6;margin:10px 0 0">
+        <strong>CRM access</strong> is who can sign in and what they see. <strong>Admin</strong>: everything.
+        <strong>Sales</strong>: leads, clients, jobs, the calendar, proposals, contracts and invoices.
+        <strong>Installer</strong>: only the jobs they're assigned to (no prices) and those jobs on the calendar.
+        A new password is shown once — pass it on yourself.
+      </p>
     </div>
 
     ${active.length ? `<div class="card">
@@ -45,6 +56,14 @@ function render() {
     </div>` : `<div class="card"><p class="muted" style="text-align:center;padding:30px">
       Nobody on the team yet. <button class="btn primary sm" onclick="addMember()" style="margin-left:10px">+ Add team member</button>
     </p></div>`}
+
+    ${orphanLogins().length ? `<div class="card" style="margin-top:14px">
+      <div class="card-head"><h3>Other sign-ins</h3></div>
+      <p class="muted" style="font-size:12px;margin:0 0 10px">Logins whose email isn't on the team. An installer here can't be assigned jobs until they're added above with the same email.</p>
+      <div class="tbl"><table><thead><tr><th>Email</th><th>CRM access</th></tr></thead><tbody>
+        ${orphanLogins().map((l) => `<tr><td>${SSCrm.esc(l.email)}</td><td>${accessCell({ email: l.email })}</td></tr>`).join("")}
+      </tbody></table></div>
+    </div>` : ""}
 
     ${former.length ? `<div class="card" style="margin-top:14px">
       <div class="card-head"><h3>No longer active</h3></div>
@@ -57,13 +76,14 @@ function render() {
 
 function memberTable(list) {
   return `<div class="tbl"><table><thead><tr>
-      <th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th style="text-align:right">&nbsp;</th>
+      <th>Name</th><th>Email</th><th>Phone</th><th>Title</th><th>CRM access</th><th style="text-align:right">&nbsp;</th>
     </tr></thead><tbody>
     ${list.map((m) => `<tr>
       <td style="font-weight:600">${SSCrm.esc(m.name)}</td>
       <td><a href="mailto:${SSCrm.esc(m.email)}">${SSCrm.esc(m.email)}</a></td>
       <td>${m.phone ? `<a href="tel:${SSCrm.esc(m.phone)}">${SSCrm.esc(m.phone)}</a>` : `<span class="muted">—</span>`}</td>
       <td class="muted">${SSCrm.esc(m.role || "—")}</td>
+      <td>${accessCell(m)}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="btn ghost sm" data-edit="${m.id}">Edit</button>
         ${m.active
@@ -74,7 +94,78 @@ function memberTable(list) {
   </tbody></table></div>`;
 }
 
+function orphanLogins() {
+  const emails = new Set(roster.map((m) => String(m.email).toLowerCase()));
+  return logins.filter((l) => !emails.has(String(l.email).toLowerCase()));
+}
+
+// The sign-in for a person: their role (a picker) with Reset / Remove, or "Give login".
+function accessCell(m) {
+  const l = loginFor(m.email);
+  if (!l) return m.active === 0 ? `<span class="muted">—</span>` : `<button class="btn ghost sm" data-give="${SSCrm.esc(m.email)}" data-name="${SSCrm.esc(m.name || "")}">Give login</button>`;
+  const self = l.id === meId;
+  return `<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+    <select data-role-for="${l.id}" ${self ? "disabled title=\"You can't change your own access\"" : ""} style="min-height:36px">
+      ${ROLE_OPTS.map(([v]) => `<option value="${v}" ${l.role === v ? "selected" : ""}>${ROLE_SHORT[v]}</option>`).join("")}
+    </select>
+    <button class="btn ghost sm" data-reset="${l.id}" data-email="${SSCrm.esc(l.email)}">Reset password</button>
+    ${self ? "" : `<button class="btn ghost sm" data-unlog="${l.id}" data-email="${SSCrm.esc(l.email)}">Remove login</button>`}
+  </div>`;
+}
+
+async function loginAction(body) {
+  return SSCrm.fetchJSON("/api/logins", { method: "POST", body: JSON.stringify(body) });
+}
+
+// A password is shown once, here; nothing stores it in the clear.
+function showPassword(email, password, head) {
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `<div class="modal" style="max-width:460px">
+    <div class="modal-head">${SSCrm.esc(head)}</div>
+    <div class="modal-body">
+      <p style="margin:0 0 10px;font-size:13px">Sign-in for <strong>${SSCrm.esc(email)}</strong> at ${SSCrm.esc(location.origin)}/crm/login.html</p>
+      <div style="font:700 20px/1.3 ui-monospace,Menlo,monospace;letter-spacing:.04em;background:var(--bg-soft,#f4f2ee);border-radius:8px;padding:14px;text-align:center;user-select:all">${SSCrm.esc(password)}</div>
+      <p class="muted" style="font-size:12px;margin:10px 0 0">Copy it now and give it to them. It won't be shown again.</p>
+    </div>
+    <div class="modal-foot"><button class="btn ghost" data-copy>Copy</button><button class="btn primary" data-done>Done</button></div>
+  </div>`;
+  document.body.appendChild(bg);
+  bg.querySelector("[data-copy]").onclick = () => navigator.clipboard.writeText(password).then(() => SSCrm.toast("Copied", "success"), () => {});
+  bg.querySelector("[data-done]").onclick = () => bg.remove();
+}
+
+function giveLogin(email, name) {
+  modal({
+    head: "Give " + SSCrm.esc(name || email) + " a CRM login",
+    bodyHtml: `<div class="form"><label><span>What can they see?</span>
+      <select id="l-role">${ROLE_OPTS.map(([v, label]) => `<option value="${v}" ${v === "installer" ? "selected" : ""}>${SSCrm.esc(label)}</option>`).join("")}</select></label>
+      <p class="muted" style="font-size:12px;margin:0">They sign in with ${SSCrm.esc(email)} and a password made up for them, shown next.</p></div>`,
+    saveLabel: "Create login",
+    onSave: async (bg) => {
+      const r = await loginAction({ action: "create", email, display_name: name, role: bg.querySelector("#l-role").value });
+      showPassword(r.email, r.password, "Login created");
+    },
+  });
+}
+
 function wire() {
+  document.querySelectorAll("[data-give]").forEach((b) => b.onclick = () => giveLogin(b.dataset.give, b.dataset.name));
+  document.querySelectorAll("[data-role-for]").forEach((sel) => sel.onchange = async () => {
+    try { await loginAction({ action: "set_role", id: parseInt(sel.dataset.roleFor, 10), role: sel.value }); SSCrm.toast("Access changed to " + ROLE_SHORT[sel.value], "success"); }
+    catch (e) { SSCrm.toast(e.message || "Could not change access", "error"); }
+    await load();
+  });
+  document.querySelectorAll("[data-reset]").forEach((b) => b.onclick = async () => {
+    if (!(await SSCrm.confirmDialog(`Make a new password for ${b.dataset.email}? The old one stops working and they're signed out.`))) return;
+    try { const r = await loginAction({ action: "reset_password", id: parseInt(b.dataset.reset, 10) }); showPassword(r.email, r.password, "New password"); }
+    catch (e) { SSCrm.toast(e.message || "Could not reset", "error"); }
+  });
+  document.querySelectorAll("[data-unlog]").forEach((b) => b.onclick = async () => {
+    if (!(await SSCrm.confirmDialog(`Remove the CRM login for ${b.dataset.email}? They're signed out and can't sign in again. They stay on the team.`))) return;
+    try { await loginAction({ action: "remove", id: parseInt(b.dataset.unlog, 10) }); SSCrm.toast("Login removed", "success"); await load(); }
+    catch (e) { SSCrm.toast(e.message || "Could not remove", "error"); }
+  });
   document.querySelectorAll("[data-edit]").forEach((b) => b.onclick = () => editMember(parseInt(b.dataset.edit, 10)));
   document.querySelectorAll("[data-off]").forEach((b) => b.onclick = () => setActive(parseInt(b.dataset.off, 10), false));
   document.querySelectorAll("[data-on]").forEach((b) => b.onclick = () => setActive(parseInt(b.dataset.on, 10), true));
@@ -87,7 +178,7 @@ function memberForm(m = {}) {
       <input id="t-email" type="email" value="${SSCrm.esc(m.email || "")}"/></label>
     <div class="row">
       <label><span>Phone <span class="muted" style="font-weight:400;font-size:11px">· optional</span></span><input id="t-phone" type="tel" value="${SSCrm.esc(m.phone || "")}"/></label>
-      <label><span>Role <span class="muted" style="font-weight:400;font-size:11px">· optional</span></span>
+      <label><span>Title <span class="muted" style="font-weight:400;font-size:11px">· optional; CRM access is set on the list</span></span>
         <input id="t-role" value="${SSCrm.esc(m.role || "")}" placeholder="owner, manager, designer, installer" list="role-list"/>
         <datalist id="role-list"><option>owner</option><option>manager</option><option>designer</option><option>installer</option></datalist>
       </label>

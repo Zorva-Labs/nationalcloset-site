@@ -1,12 +1,17 @@
 // GET    /api/attachments/[id]      — stream the PDF (admin; ?dl=1 forces download)
 // DELETE /api/attachments/[id]      — remove the file from R2 + the metadata row
 import { requireAuth, json } from "../../_lib/auth.js";
+import { isInstaller, canSeeProject } from "../../_lib/roles.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const id = parseInt(context.params.id, 10);
   const row = await context.env.DB.prepare(`SELECT * FROM proposal_attachments WHERE id=?1`).bind(id).first();
   if (!row) return new Response("Not found", { status: 404 });
+  // An installer downloads only the drawings of a job they are assigned to.
+  if (isInstaller(auth) && !(row.project_id && (await canSeeProject(context.env.DB, auth, row.project_id)))) {
+    return new Response("Not found", { status: 404 });
+  }
   const obj = await context.env.FILES.get(row.r2_key);
   if (!obj) return new Response("File missing", { status: 404 });
   const dl = new URL(context.request.url).searchParams.get("dl");

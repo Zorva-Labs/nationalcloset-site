@@ -6,6 +6,7 @@ import { bumpLeadStatusForward } from "../../_lib/lifecycle.js";
 import { sendAppointmentConfirmation, isClientVisit } from "../../_lib/appointment-emails.js";
 import { getAssigneeMap, setAssignees } from "../../_lib/team.js";
 import { wallPaintSql } from "../../_lib/painter.js";
+import { isInstaller, assignedProjectIds } from "../../_lib/roles.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context);
@@ -60,7 +61,20 @@ export async function onRequestGet(context) {
   for (const r of rows) r.assignees = apptCrew[r.id] || [];
   for (const e of installEvents) e.assignees = jobCrew[e.project_id] || [];
 
-  const all = [...rows, ...installEvents].sort((a, b) => (a.start_at || "").localeCompare(b.start_at || ""));
+  let all = [...rows, ...installEvents].sort((a, b) => (a.start_at || "").localeCompare(b.start_at || ""));
+  // An installer's calendar is their jobs only: those jobs' installs, the
+  // visits on those jobs (by job, or by the lead the job came from), and any
+  // visit they are on themselves (_lib/roles.js).
+  if (isInstaller(auth)) {
+    const mine = await assignedProjectIds(DB, auth);
+    const leadIds = mine.length ? ((await DB.prepare(
+      `SELECT lead_id FROM projects WHERE lead_id IS NOT NULL AND id IN (${mine.map(() => "?").join(",")})`
+    ).bind(...mine).all()).results || []).map((r) => r.lead_id) : [];
+    all = all.filter((e) => e.is_install
+      ? mine.includes(e.project_id)
+      : (mine.includes(e.project_id) || (e.lead_id && leadIds.includes(e.lead_id))
+         || (e.assignees || []).some((m) => m.id === auth.teamMemberId)));
+  }
   return json({ appointments: all });
 }
 

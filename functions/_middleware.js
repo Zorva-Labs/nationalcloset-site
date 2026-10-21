@@ -5,7 +5,7 @@ import { classifyChannel } from "./_lib/channel.js";
 // Always allowed regardless of country:
 //   - Search / AI crawlers (Google, Bing, OpenAI, Anthropic, Perplexity, …) by
 //     user-agent, so SEO + AEO/GEO indexing keeps working worldwide.
-//   - Machine-to-machine + owner surfaces (Stripe webhook, internal cron, the
+//   - Machine-to-machine + owner surfaces (internal cron, the
 //     CRM and its auth/data API) so payments, automation, and admin login never
 //     get blocked by geography (the CRM is auth-protected anyway).
 //

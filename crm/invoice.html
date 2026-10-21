@@ -62,7 +62,7 @@
   </style>
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc114"></script>
+<script src="/crm/crm-app.js?v=ncc115"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/projects.html";
@@ -127,8 +127,7 @@ function render() {
         : `<button class="btn secondary" onclick="editing=true;render()">✏️ Edit</button>`)}
       <button class="btn secondary" onclick="window.print()">🖨️ Print / PDF</button>
       ${locked ? "" : `<button class="btn ghost" onclick="resend()">✉️ Send</button>`}
-      ${locked || !iv.stripe_payment_intent_id ? "" : `<button class="btn ghost" onclick="resendBankVerify()" title="Resend the ACH micro-deposit verification link (only works while a bank payment is awaiting verification)">🏦 Resend bank verification</button>`}
-      <button class="btn ghost" onclick="copyLink('${e(payUrl)}')">Copy pay link</button>
+      <button class="btn ghost" onclick="copyLink('${e(payUrl)}')">Copy invoice link</button>
       ${locked ? "" : `<button class="btn ghost" onclick="recordPayment()">💵 Record payment</button><button class="btn ghost" onclick="voidInv()">Void</button>`}
     </div>
 
@@ -202,7 +201,7 @@ function render() {
       </div>
 
       <div class="inv-foot">
-        Pay securely online at <a href="${e(payUrl)}">${e(payUrl)}</a> — card, bank transfer (ACH) or digital wallet, with no added processing fee.<br>
+        Please make your check payable to <strong>James Blair</strong> and hand it to your Project Manager.<br>
         National Closet Company · Gallatin, TN · 615-857-5668
       </div>
     </div>
@@ -240,16 +239,7 @@ async function resend() {
   try { await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "resend" }) }); SSCrm.toast("Invoice emailed", "success"); }
   catch (err) { SSCrm.toast(err.message || "Could not send", "error"); }
 }
-// Resend the ACH micro-deposit bank-verification link. Only succeeds while the
-// bank payment is genuinely awaiting verification; otherwise the API returns a
-// clear message (already confirmed, paid another way, etc.).
-async function resendBankVerify() {
-  try {
-    await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "resend_bank_verification" }) });
-    SSCrm.toast("Bank-verification email sent", "success");
-  } catch (err) { SSCrm.toast(err.message || "Could not send verification email", "error"); }
-}
-// Record a payment collected in person (cash, check, card on a reader, Venmo…).
+// Record a payment collected in person (a check, as a rule; cash or other now and then).
 function recordPayment() {
   const iv = data.invoice;
   const today = new Date().toISOString().slice(0, 10);
@@ -266,11 +256,8 @@ function recordPayment() {
         </label>
         <label class="rp-lbl">Payment method
           <select id="rp-method" class="inv-field" style="width:100%">
-            <option>Cash</option>
             <option>Check</option>
-            <option>Card (in person)</option>
-            <option>Venmo / Zelle / Cash App</option>
-            <option>Bank transfer (ACH)</option>
+            <option>Cash</option>
             <option>Other</option>
           </select>
         </label>
@@ -319,7 +306,7 @@ async function voidInv() {
   try { await SSCrm.fetchJSON("/api/invoices/" + id, { method: "POST", body: JSON.stringify({ action: "void" }) }); SSCrm.toast("Invoice voided", "success"); editing = false; await load(); }
   catch (err) { SSCrm.toast(err.message || "Could not void", "error"); }
 }
-function copyLink(url) { navigator.clipboard.writeText(url).then(() => SSCrm.toast("Pay link copied", "success"), () => SSCrm.toast(url, "info")); }
+function copyLink(url) { navigator.clipboard.writeText(url).then(() => SSCrm.toast("Invoice link copied", "success"), () => SSCrm.toast(url, "info")); }
 </script>
 </body>
 </html>

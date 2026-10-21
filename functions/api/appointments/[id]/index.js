@@ -3,6 +3,7 @@ import { recordActivity } from "../../../_lib/db.js";
 import { sendAppointmentConfirmation } from "../../../_lib/appointment-emails.js";
 import { sendConsultBrief } from "../../../_lib/consult-brief.js";
 import { getAssignees, setAssignees } from "../../../_lib/team.js";
+import { canSeeAppointment, isInstaller } from "../../../_lib/roles.js";
 
 // POST /api/appointments/[id]
 //   { action: "send_confirmation" } — (re)send the client the consultation /
@@ -47,6 +48,10 @@ export async function onRequestGet(context) {
        FROM appointments a WHERE a.id = ?1`
   ).bind(id).first();
   if (!row) return json({ error: "Not found" }, 404);
+  // An installer opens only a visit they are on or one of their jobs' visits.
+  if (isInstaller(auth) && !(await canSeeAppointment(context.env.DB, auth, { id: row.id, project_id: row.job_id }))) {
+    return json({ error: "Not found" }, 404);
+  }
   return json({ appointment: row, assignees: await getAssignees(context.env.DB, "appointment", id) });
 }
 

@@ -82,10 +82,10 @@
     "notes": "Lead event fires on a real form save; the July–Aug 2026 paid campaign (83% of sessions, zero leads) has ended"
   },
   "billing": {
-    "stripeCustomer": null,
-    "stripeSubscription": null,
-    "plan": null,
-    "notes": ""
+    "stripeCustomer": "cus_V3p3PeXrdvb9C2",
+    "stripeSubscription": "sub_1UNuYDDmvNoGaAxPcTX1mu3H",
+    "plan": "$495/mo",
+    "notes": "Terry McCarthy's one customer (all his sites). National Closet website, domains, ads and email, price_1USrlNDmvNoGaAxPKwnkImp0 $495/mo since 2026-10-21 (was $1,024, archived), first charge 10/28, then the 28th."
   },
   "geo": "US",
   "launched": "2026-06",

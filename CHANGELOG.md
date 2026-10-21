@@ -2,6 +2,10 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-21 (Subscription to $495/mo)
+- Asked: Michael, "change the national closet subscription for Terry McCarthy to $495 instead of $1,024."
+- Stripe `sub_1UNuYDDmvNoGaAxPcTX1mu3H` (on Terry's customer `cus_V3p3PeXrdvb9C2`) now bills a new $495/mo price `price_1USrlNDmvNoGaAxPKwnkImp0` on the same product; swapped with `proration_behavior=none` while still in its trial, so nothing was billed for the change. The $1,024 price is archived. The first charge on 10/28 previews at $495. `site.json → billing` filled in (it was empty). No site change, no deploy.
+
 ## 2026-10-20 (New business number: 615-857-5668)
 - Asked: Terry McCarthy's email "National Closet Company - phone number" (2026-10-20): 615-857-5668 is the number for the directories (Google Business Profile and the others), the website and all digital advertising.
 - 629-298-8241 is Nashville's Web Design's own line, so every place it stood for the business now says 615-857-5668 (`tel:`/`sms:` +16158575668, schema `+1-615-857-5668`): all 70 pages, the 404 and geo-block pages, `js/main.js` (the text-a-photo pill and the form's error), the customer pages (`estimate/`, `proposal/`, `contract/`, `invoice/`, `book/`, `thanks/`), every mail and calendar invite the functions send, the CRM's contract, invoice, worksheet and report letterhead, the page factory (`chrome.py`, `stage1.py`, `stage4.py`, `stage5_privacy.py`, sections), `llms.txt`, `site.json → client.phone`, and the printed review card (PDF re-rendered). The `AGENCY` block in `crm/traffic.html` (the Ads tab's offer) keeps 629-298-8241 on purpose: that one is the agency.

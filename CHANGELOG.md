@@ -2,6 +2,11 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-21 (Mike Cornwell's CRM login)
+- Asked: Michael, "Yes, create Mike Cornwell's installer login and give me the password."
+- Login #5, cornwellmike98@gmail.com, role installer, made through `/api/logins` on the live CRM; the password went to Michael in the session and is not kept anywhere. His email matches team member #5, so the jobs he is assigned to show on his My jobs page. Checked live: he signs in as an installer, leads answer 403, and he has no jobs assigned yet.
+- Still owed: assign him to his jobs (the job's Overview → crew).
+
 ## 2026-10-21 (CRM roles; invoices paid by check, Stripe removed)
 - Asked: Michael, "I need to create roles for sales, installers and admin. Admin has access to everything and would be the hello@ account. Sales role needs access to leads, jobs, calendar, scheduling, proposals, contracts and invoices. Installers only neead to see the job details they are assigned to and schedule/calendar for those jobs." Then "also remove the connection to stripe and just set invoices to accept a check" and "remove the wording in the footer of the invoice about the payment /stripe".
 - **Roles.** Migration 0077 adds `admin_users.role` (applied to the live D1 before the deploy): hello@ and Terry McCarthy are admin. `functions/_lib/roles.js` holds the rules and `requireAuth` enforces them with a 403 on every CRM endpoint, so anything not listed is admin-only. Sales: leads, clients, jobs, the calendar and scheduling, proposals, contracts, invoices, estimates. Installer: `/crm/my-jobs.html` and `/crm/my-job.html` (new), the install worksheet and a read-only calendar of their own jobs, all from `/api/crew/jobs`, which carries no prices. The CRM nav follows the role (`crm-app.js?v=ncc115`). Logins are managed on `/crm/team.html` → CRM access (`/api/logins`, admin only): give a login, change the role, reset the password, remove. `setup-admin.mjs` takes `--role`.

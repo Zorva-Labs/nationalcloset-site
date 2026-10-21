@@ -15,7 +15,9 @@ function isExpired(p) {
   if (!p) return false;
   if (p.status === "accepted" || p.status === "declined") return false;
   if (p.status === "expired") return true;
-  if (!p.valid_until) return false;
+  // A draft is on no clock (the sweep skips it too): a re-opened proposal still
+  // carries its old valid_until, and the salesman may hand it over on a tablet.
+  if (p.status === "draft" || !p.valid_until) return false;
   const s = String(p.valid_until).trim();
   const iso = s.includes("T") ? s : s.replace(" ", "T") + (s.length <= 10 ? "T00:00:00Z" : "Z");
   const d = new Date(iso);

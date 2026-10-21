@@ -135,14 +135,14 @@ const EXPIRY_DAYS = 2;
 function isExpired(p) {
   if (p.status === "accepted" || p.status === "declined") return false;
   if (p.expired === true || p.status === "expired") return true;
-  if (!p.valid_until) return false;
+  if (p.status === "draft" || !p.valid_until) return false;  // a draft is on no clock (tablet hand-over)
   const s = String(p.valid_until).trim();
   const iso = s.includes("T") ? s : s.replace(" ", "T") + (s.length <= 10 ? "T00:00:00Z" : "Z");
   const d = new Date(iso);
   return !isNaN(d.getTime()) && d.getTime() <= Date.now();
 }
 function expiryDateStr(p) {
-  if (!p.valid_until) return "";
+  if (p.status === "draft" || !p.valid_until) return "";
   const s = String(p.valid_until).trim();
   const iso = s.includes("T") ? s : s.replace(" ", "T") + (s.length <= 10 ? "T00:00:00Z" : "Z");
   const d = new Date(iso);

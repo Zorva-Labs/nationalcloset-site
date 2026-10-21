@@ -111,6 +111,9 @@ function render() {
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink)" title="One invoice for the full amount at signing instead of the 50% / 25% / 25% schedule"><input type="checkbox" id="pay-in-full" ${p.payment_plan === "full" ? "checked" : ""}/> Pay in full <span class="muted" style="font-size:11px">· one invoice, no 50/25/25</span></label>
       <button class="btn secondary" onclick="saveAll()">💾 Save proposal</button>
       ${canSend ? `<button class="btn primary" onclick="saveThenSend()">📧 Save &amp; Send to customer →</button>` : ""}
+      ${canSend
+        ? `<button class="btn secondary" onclick="saveThenOpen()" title="Save, then open the customer's page in a new tab to hand over on a tablet">📲 Save &amp; open for customer ↗</button>`
+        : (!isAccepted ? `<button class="btn secondary" onclick="openForCustomer()" title="Open the customer's page in a new tab to hand over on a tablet">📲 Open for customer ↗</button>` : "")}
       ${isAccepted ? `<button class="btn success" onclick="convertToContract()">Convert to Contract →</button>` : ""}
       ${p.status !== "draft" && p.status !== "accepted" ? `<span class="muted" style="font-size:13px">Status: <strong>${SSCrm.esc(p.status)}</strong> — re-open the proposal in Drafts to send again.</span>` : ""}
     </div>
@@ -353,7 +356,23 @@ async function saveAll() {
     SSCrm.toast("Saved", "success");
     state = await SSCrm.fetchJSON("/api/proposals/" + id);
     render();
-  } catch (e) { SSCrm.toast(e.message, "error"); }
+    return true;
+  } catch (e) { SSCrm.toast(e.message, "error"); return false; }
+}
+// Hand-over on a tablet: the salesman saves and opens the customer's own page
+// (/proposal/?t=…), where the customer picks an option, accepts and signs. The
+// tab is opened before the save on purpose: Safari on an iPad blocks a
+// window.open that comes after an await. No email goes out.
+function customerUrl() { return `${location.origin}/proposal/?t=${encodeURIComponent(state.proposal.view_token)}`; }
+function openForCustomer() {
+  const w = window.open(customerUrl(), "_blank");
+  if (!w) location.href = customerUrl();
+}
+async function saveThenOpen() {
+  const w = window.open("", "_blank");
+  const ok = await saveAll();
+  if (!ok) { if (w) w.close(); return; }
+  if (w) w.location.href = customerUrl(); else location.href = customerUrl();
 }
 async function sendProposal() {
   if (!(await SSCrm.confirmDialog("Send this proposal to the customer?"))) return;

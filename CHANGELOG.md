@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-21 (Proposal: Save & open for customer)
+- Asked: Michael, "on the proposal screen add a button to open the proposal next to the send and save button. make it save and open link so that the customer can complete the booking on a tablet that the salesman hands them."
+- `crm/proposal.html`: "📲 Save & open for customer ↗" beside Save proposal and Save & Send on a draft ("Open for customer ↗" once sent). It saves, then opens `/proposal/?t=<token>` in a new tab; no email is sent. The tab is opened before the save because iPad Safari blocks a popup after an await; if it is blocked anyway the CRM tab goes to the customer page. `saveAll()` now returns true/false so a failed save never opens the page.
+- A draft is never expired on the customer page (`proposal/index.html`) or in `/api/public/proposal` — a re-opened draft kept its old `valid_until` and showed "Proposal expired" on the tablet. The expiry sweep already skipped drafts.
+- Checked on the local CRM (`nationalcloset-local-crm`): the button saves and lands on the proposal with Accept & sign. Deployed c089d12b. Nothing public changed, so no submit.
+
 ## 2026-10-21 (Subscription to $495/mo)
 - Asked: Michael, "change the national closet subscription for Terry McCarthy to $495 instead of $1,024."
 - Stripe `sub_1UNuYDDmvNoGaAxPcTX1mu3H` (on Terry's customer `cus_V3p3PeXrdvb9C2`) now bills a new $495/mo price `price_1USrlNDmvNoGaAxPKwnkImp0` on the same product; swapped with `proration_behavior=none` while still in its trial, so nothing was billed for the change. The $1,024 price is archived. The first charge on 10/28 previews at $495. `site.json → billing` filled in (it was empty). No site change, no deploy.

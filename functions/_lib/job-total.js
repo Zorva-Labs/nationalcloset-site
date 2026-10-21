@@ -47,18 +47,3 @@ export function acceptedTierSql(col, pid = "p.id") {
 export function finalDiscountSql(pid = "p.id") {
   return `COALESCE((SELECT fd.final_discount_cents FROM projects fd WHERE fd.id=${pid}), 0)`;
 }
-
-// Cost basis and discount for the profit math, one rule for the job card, the
-// jobs list and Reports: the accepted tier's subtotal is the gross and the gap
-// to its total is the proposal's discount (an older tier stored a with-tax
-// total above the subtotal, which is no discount); with no tier, the contract
-// total. The final-payment discount adds to the discount, never past the gross.
-export function costBasis(tierGross, tierNet, fallbackGross, finalDiscount = 0) {
-  let gross, discount;
-  if (tierGross != null || tierNet != null) {
-    const s = tierGross || 0, t = tierNet || 0;
-    if (s > t) { gross = s; discount = s - t; } else { gross = t || s; discount = 0; }
-  } else { gross = fallbackGross || 0; discount = 0; }
-  discount = Math.min(gross, discount + Math.max(0, finalDiscount || 0));
-  return { gross, discount };
-}

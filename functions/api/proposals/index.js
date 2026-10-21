@@ -3,7 +3,6 @@ import { genToken, nextSequence, formatDocNumber } from "../../_lib/tokens.js";
 import { recordActivity } from "../../_lib/db.js";
 import { syncLeadQuotedFromProposal } from "../../_lib/lifecycle.js";
 import { proposalTiersForKind, defaultContractTypeForKind, introForKind } from "../../_lib/proposal-tiers.js";
-import { resolveFinancials } from "../../_lib/financials.js";
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -13,13 +12,11 @@ export async function onRequestGet(context) {
   // Headline tier = the selected option if one is picked, else the highest-total
   // option. (D1 rejects a correlated pr.selected_tier inside a subquery ORDER BY,
   // so the selected tier is pulled via WHERE and the top tier via ORDER BY; we
-  // pick between them in JS.) net = proposed total, gross (subtotal) = cost basis.
+  // pick between them in JS.) net = proposed total.
   let sql = `SELECT pr.*, p.name AS project_name, c.name AS contact_name, c.email AS contact_email,
                (SELECT t.total_cents    FROM proposal_tiers t WHERE t.proposal_id=pr.id AND t.tier=pr.selected_tier LIMIT 1) AS sel_net,
-               (SELECT t.subtotal_cents FROM proposal_tiers t WHERE t.proposal_id=pr.id AND t.tier=pr.selected_tier LIMIT 1) AS sel_gross,
                (SELECT t.title          FROM proposal_tiers t WHERE t.proposal_id=pr.id AND t.tier=pr.selected_tier LIMIT 1) AS sel_title,
-               (SELECT t.total_cents    FROM proposal_tiers t WHERE t.proposal_id=pr.id ORDER BY t.total_cents DESC LIMIT 1) AS top_net,
-               (SELECT t.subtotal_cents FROM proposal_tiers t WHERE t.proposal_id=pr.id ORDER BY t.total_cents DESC LIMIT 1) AS top_gross
+               (SELECT t.total_cents    FROM proposal_tiers t WHERE t.proposal_id=pr.id ORDER BY t.total_cents DESC LIMIT 1) AS top_net
              FROM proposals pr
              JOIN projects p ON p.id = pr.project_id
              JOIN contacts c ON c.id = p.contact_id WHERE 1=1`;
@@ -29,17 +26,12 @@ export async function onRequestGet(context) {
   sql += ` ORDER BY pr.created_at DESC LIMIT 200`;
   const rows = (await context.env.DB.prepare(sql).bind(...binds).all()).results || [];
 
-  // Proposed total + estimated profit (formula-based; proposals are pre-job).
+  // Proposed total (the option picked, else the top option).
   for (const r of rows) {
     const net = (r.sel_net != null) ? r.sel_net : r.top_net;
-    const grossRaw = (r.sel_net != null) ? r.sel_gross : r.top_gross;
     const tot = net != null ? net : (r.selected_total_cents || 0);
-    const sub = grossRaw != null ? grossRaw : tot;
-    const gross = sub > tot ? sub : tot;
-    const discount = sub > tot ? sub - tot : 0;
     r.proposed_total_cents = tot;
     r.selected_title = r.selected_tier ? (r.sel_title || null) : null;  // name of the option the client picked
-    r.profit_cents = tot ? resolveFinancials(gross, discount, null).profit_cents : null;
   }
   return json({ proposals: rows });
 }

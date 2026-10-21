@@ -3,7 +3,7 @@
 <title>Jobs · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
 <link rel="stylesheet" href="/crm/crm-app.css?v=ncc124"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc115"></script>
+<script src="/crm/crm-app.js?v=ncc116"></script>
 <script>
 // A project only counts as a "Job" once the contract is signed AND the deposit
 // is paid (status 'contracted'). Until then the deal stays a LEAD in the
@@ -64,8 +64,6 @@ function rowHtml(p) {
     <td>${p.contact_city ? SSCrm.esc(p.contact_city) : `<span class="muted">—</span>`}</td>
     <td>${p.po_number ? SSCrm.esc(p.po_number) : `<span class="muted">—</span>`}</td>
     <td class="money">${total != null ? SSCrm.fmtMoney(total) : `<span class="muted">—</span>`}</td>
-    <td class="money">${p.net_profit_cents != null ? `<span style="color:#15803D;font-weight:600">${SSCrm.fmtMoney(p.net_profit_cents)}</span>` : `<span class="muted">—</span>`}</td>
-    <td class="money">${p.labor_cents != null ? SSCrm.fmtMoney(p.labor_cents) : `<span class="muted">—</span>`}</td>
     <td class="money">${balanceCell}</td>
     <td style="white-space:nowrap">${matCell}</td>
     <td>${SSCrm.pill(p.status)}</td>
@@ -73,21 +71,21 @@ function rowHtml(p) {
     <td class="muted">${SSCrm.fmtDate(p.updated_at)}</td>
   </tr>`;
 }
-const THEAD = `<thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>City</th><th>PO #</th><th class="money">Total</th><th class="money">Net profit</th><th class="money">Labor</th><th class="money">Balance</th><th>Materials</th><th>Status</th><th>Install date</th><th>Updated</th></tr></thead>`;
+const THEAD = `<thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>City</th><th>PO #</th><th class="money">Total</th><th class="money">Balance</th><th>Materials</th><th>Status</th><th>Install date</th><th>Updated</th></tr></thead>`;
 const tableHtml = (list) => `<div class="tbl"><table>${THEAD}<tbody>${list.map(rowHtml).join("")}</tbody></table></div>`;
 const sectionTitle = (t, n) => `<h3 style="margin:22px 0 10px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft)">${t} <span class="muted" style="font-weight:400;text-transform:none;letter-spacing:0">${n}</span></h3>`;
 
 function totalsBar(open, completed) {
-  const sum = (list) => list.reduce((a, p) => ({ n: a.n + 1, total: a.total + (p.job_total_cents || 0), profit: a.profit + (p.net_profit_cents || 0) }), { n: 0, total: 0, profit: 0 });
+  const sum = (list) => list.reduce((a, p) => ({ n: a.n + 1, total: a.total + (p.job_total_cents || 0) }), { n: 0, total: 0 });
   const o = sum(open), c = sum(completed);
   const tile = (label, value, sub, color) => `<div style="flex:1;min-width:150px;background:var(--bg-soft,#f7f7f5);border:1px solid var(--line);border-radius:10px;padding:12px 14px">
     <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
     <div style="font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;color:${color || "var(--ink)"}">${value}</div>
     <div class="muted" style="font-size:11px">${sub}</div></div>`;
   return `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px">
-    ${tile("Open net profit", m(o.profit), `${o.n} job${o.n === 1 ? "" : "s"} · ${m(o.total)} value · projected`, "#15803D")}
-    ${tile("Completed net profit", m(c.profit), `${c.n} job${c.n === 1 ? "" : "s"} · ${m(c.total)} value`, "#15803D")}
-    ${tile("Total net profit", m(o.profit + c.profit), `${o.n + c.n} jobs · ${m(o.total + c.total)} value`, "#15803D")}
+    ${tile("Open jobs", m(o.total), `${o.n} job${o.n === 1 ? "" : "s"} · value`)}
+    ${tile("Completed jobs", m(c.total), `${c.n} job${c.n === 1 ? "" : "s"} · value`)}
+    ${tile("All jobs", m(o.total + c.total), `${o.n + c.n} jobs · value`)}
   </div>`;
 }
 

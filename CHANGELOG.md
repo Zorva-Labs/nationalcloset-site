@@ -2,6 +2,14 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-21 (no profit or labor math; deposit always 50%)
+- **Asked (Michael):** "remove all calculations for profit, labor etc..." Asked where, he chose **remove for everyone**; asked about the deposit, which had a materials floor, he chose **always 50%**.
+- **Removed:** the job card's "Expenses & profit" card; the Jobs list's Net profit and Labor columns and profit tiles (now Open jobs, Completed jobs and All jobs by value); the proposals list's Profit column; the Reports P&L view with its PDF, CSV and API (`functions/api/reports/index.js`); estimated installer labor on Payables (its KPIs are now total, overdue, not yet due and oldest); modeled job costs on Cash flow; `functions/api/projects/[id]/financials.js`; the cost formula, `resolveFinancials` and `costBasis`; the wallprep and option-change writes to `job_financials`. Reports opens on Leads.
+- **Deposit:** `depositForTotal` is now 50% of what the customer pays, no materials floor and no pre-discount basis (contracts, invoices, proposal acceptance, `/proposal/` and the calculator). The contract terms in `functions/api/contracts/index.js`, `_lib/lifecycle.js` and the two live templates (migration 0078, applied) lost "or, if greater, the amount required to cover the materials and shipping". Contracts already sent or signed keep their terms. CRM labels read "50% deposit at signing".
+- **`calc.html`** is now a plain payment schedule: total, optional discount, pay in full, then the three payments.
+- **Kept:** the D1 rows in `job_financials` and `proposals.cost_rates` (unread), bills under Expenses (real payables), the installer vendor role.
+- Checked locally at 1280 and 375 px (Reports tabs, Jobs list, job page, calculator: $10,001 → $5,000.50 / $2,500.25 / $2,500.25) and live (the removed APIs 404, the others carry no cost fields). Deployed b7019fd6. `crm-app.js` → `?v=ncc116`.
+
 ## 2026-10-21 (Mike Cornwell's CRM login)
 - Asked: Michael, "Yes, create Mike Cornwell's installer login and give me the password."
 - Login #5, cornwellmike98@gmail.com, role installer, made through `/api/logins` on the live CRM; the password went to Michael in the session and is not kept anywhere. His email matches team member #5, so the jobs he is assigned to show on his My jobs page. Checked live: he signs in as an installer, leads answer 403, and he has no jobs assigned yet.

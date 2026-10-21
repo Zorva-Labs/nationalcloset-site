@@ -1,35 +1,12 @@
-// GET    /api/projects/[id]/vendors  — vendors assigned to a job + the cost each
-//                                       role carries + whether a bill exists yet
+// GET    /api/projects/[id]/vendors  — vendors assigned to a job + whether a bill exists yet
 // POST   /api/projects/[id]/vendors   { vendor_id, role }   — assign / replace
 // DELETE /api/projects/[id]/vendors?role=installer          — unassign
-//
-// Role → cost mapping (mirrors the job cost model):
-//   manufacturer → materials cost (paid up front when ordered)
-//   installer    → labor cost     (A/P after the job is complete)
 import { requireAuth, json } from "../../../_lib/auth.js";
-import { getProjectBilling } from "../../../_lib/invoices.js";
-import { acceptedTierSql } from "../../../_lib/job-total.js";
-import { resolveFinancials } from "../../../_lib/financials.js";
 
 export const JOB_VENDOR_ROLES = [
   { role: "manufacturer", label: "Manufacturer", cost: "materials", blurb: "Supplies the materials — paid up front when the job is ordered." },
   { role: "installer", label: "Installer", cost: "labor", blurb: "Installs the job — paid after the job is complete (accounts payable)." },
 ];
-
-// Gross (pre-discount) cost basis + dollar discount — same logic as the
-// financials endpoint's defaultBasis.
-async function defaultBasis(env, projectId) {
-  const tier = await env.DB.prepare(
-    `SELECT ${acceptedTierSql("subtotal_cents", "?1")} AS gross, ${acceptedTierSql("total_cents", "?1")} AS net`
-  ).bind(projectId).first().catch(() => null);
-  if (tier && (tier.gross || tier.net)) {
-    const sub = tier.gross || 0, tot = tier.net || 0;
-    if (sub > tot) return { grossCents: sub, discountCents: sub - tot };
-    return { grossCents: tot || sub, discountCents: 0 };
-  }
-  const b = await getProjectBilling(env.DB, projectId).catch(() => null);
-  return { grossCents: b?.totalCents || 0, discountCents: 0 };
-}
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -37,11 +14,6 @@ export async function onRequestGet(context) {
   const { DB } = context.env;
   const project = await DB.prepare(`SELECT id, status FROM projects WHERE id=?1`).bind(id).first();
   if (!project) return json({ error: "Not found" }, 404);
-
-  const row = await DB.prepare(`SELECT * FROM job_financials WHERE project_id=?1`).bind(id).first().catch(() => null);
-  const basis = await defaultBasis(context.env, id);
-  const fin = resolveFinancials(basis.grossCents, basis.discountCents, row);
-  const costFor = { materials: fin.materials_cents, labor: fin.labor_cents };
 
   // Assigned vendors for this job.
   const assigned = (await DB.prepare(
@@ -66,7 +38,6 @@ export async function onRequestGet(context) {
     }
     roles.push({
       role: def.role, label: def.label, cost: def.cost, blurb: def.blurb,
-      cost_cents: costFor[def.cost] || 0,
       vendor: a ? { id: a.vendor_id, name: a.name, company: a.company, role: a.vendor_role } : null,
       bill,
     });

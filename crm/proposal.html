@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/crm/crm-app.css?v=ncc124" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc115"></script>
+<script src="/crm/crm-app.js?v=ncc116"></script>
 <script>
 const id = parseInt(new URLSearchParams(location.search).get("id"), 10);
 if (!id) location.href = "/crm/proposals.html";
@@ -163,7 +163,7 @@ function renderTier(t, i) {
       <th class="num" style="width:110px">Total</th><th style="width:32px"></th>
     </tr></thead>
     <tbody class="tier-lines">${(t.lines || []).map(tierLineRow).join("") || tierLineRow({})}</tbody></table></div>
-    <div class="add" style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="addTierLine(this)">+ Add line</button><button onclick="addDiscountLine(this)" title="Add a discount — comes out of profit; the cost basis stays on the pre-discount price">− Add discount</button>${t.tier !== "good" ? `<button onclick="copyFromOption1(this)" title="Copy Option 1's line items here and add a Wall Finishing line">⧉ Copy Option 1 + Wall Finishing</button>` : ""}</div>
+    <div class="add" style="display:flex;gap:8px;flex-wrap:wrap"><button onclick="addTierLine(this)">+ Add line</button><button onclick="addDiscountLine(this)" title="Add a discount — taken off this option's total">− Add discount</button>${t.tier !== "good" ? `<button onclick="copyFromOption1(this)" title="Copy Option 1's line items here and add a Wall Finishing line">⧉ Copy Option 1 + Wall Finishing</button>` : ""}</div>
     <div style="border-top:1px solid var(--line-soft);margin-top:10px;padding-top:10px">
       <div style="display:flex;justify-content:space-between;font-weight:700"><span>Total <span style="font-weight:400;color:var(--ink-soft);font-size:12px">· incl. shipping, tax &amp; install${mkPct() > 0 ? ` &amp; ${mkPct()}% markup` : ""}</span></span><span class="tier-total money">${SSCrm.fmtMoney(t.total_cents || 0)}</span></div>
     </div>
@@ -171,8 +171,7 @@ function renderTier(t, i) {
 }
 
 function tierLineRow(l) {
-  // Discounts are stored as negative line items (come out of profit; the cost
-  // basis stays on the pre-discount gross). Render them as a distinct row.
+  // Discounts are stored as negative line items. Render them as a distinct row.
   if (l && (l.__discount || (l.line_total_cents != null && l.line_total_cents < 0) || (l.unit_price_cents != null && l.unit_price_cents < 0))) {
     const unit = (l && l.unit_price_cents != null) ? l.unit_price_cents : 0;
     // A discount can be typed as a dollar amount or as a % of this option's

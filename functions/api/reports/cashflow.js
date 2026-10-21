@@ -1,13 +1,8 @@
 // GET /api/reports/cashflow?from=YYYY-MM-DD&to=YYYY-MM-DD
 //   Cash IN (customer payments → invoice_payments) and cash OUT (bill payments →
 //   expense_payments) over the range, with a per-month breakdown and a category
-//   split of spending. Also returns est_costs — the P&L formula's modeled job
-//   costs for won jobs in the range — as a comparison until bills are logged.
+//   split of spending. Real money only: no modeled job costs (2026-10-21, Michael).
 import { requireAuth, json } from "../../_lib/auth.js";
-import { resolveFinancials } from "../../_lib/financials.js";
-import { contractTotalSql, acceptedTierSql } from "../../_lib/job-total.js";
-
-const WON = ["contracted", "scheduled_install", "installing", "completed"];
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -36,24 +31,5 @@ export async function onRequestGet(context) {
   ).bind(from, to).all()).results || [];
   const out_by_category = catRows.map((r) => ({ category: r.cat, amount: r.c }));
 
-  // Modeled job costs (formula) for won jobs created in range — comparison only.
-  const jobRows = (await context.env.DB.prepare(
-    `SELECT jf.price_cents, jf.discount_cents, jf.materials_cents, jf.shipping_cents, jf.tax_cents, jf.labor_cents, jf.misc_cents,
-            jf.price_auto, jf.discount_auto, jf.materials_auto, jf.shipping_auto, jf.tax_auto, jf.labor_auto, jf.wall_total_cents,
-            ${contractTotalSql()} AS contract_total,
-            ${acceptedTierSql("subtotal_cents")} AS tier_gross,
-            ${acceptedTierSql("total_cents")} AS tier_net
-       FROM projects p LEFT JOIN job_financials jf ON jf.project_id = p.id
-      WHERE p.status IN (${WON.map(() => "?").join(",")}) AND date(p.created_at) BETWEEN ? AND ?`
-  ).bind(...WON, from, to).all()).results || [];
-  let est_costs = 0;
-  for (const r of jobRows) {
-    let gross, discount;
-    if (r.tier_gross != null || r.tier_net != null) { const s = r.tier_gross || 0, t = r.tier_net || 0; if (s > t) { gross = s; discount = s - t; } else { gross = t || s; discount = 0; } }
-    else { gross = r.contract_total || 0; discount = 0; }
-    const fin = resolveFinancials(gross, discount, r.price_cents != null ? r : null);
-    est_costs += fin.expenses_cents;
-  }
-
-  return json({ from, to, cash_in, cash_out, net: cash_in - cash_out, by_month, out_by_category, est_costs });
+  return json({ from, to, cash_in, cash_out, net: cash_in - cash_out, by_month, out_by_category });
 }

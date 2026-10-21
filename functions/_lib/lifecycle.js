@@ -9,10 +9,10 @@ import { depositForTotal } from "./financials.js";
 const RENTAL_CLAUSE = `<h3>Rental or Leased Property</h3><p>If this property is rented or leased, you confirm that you have obtained the property owner's or landlord's written permission for National Closet Company to remove any existing shelving, cabinets or fixtures and to install our systems in their place. Obtaining this permission is the customer's responsibility, and National Closet Company is not liable for any dispute arising from the lack of it.</p>`;
 
 // The payment policy for any contract that carries a custom material order:
-// 50% up front (or whatever covers materials + shipping, if that's more),
+// 50% up front,
 // 25% when the install is scheduled, 25% the day of install. Kept in one const
 // so custom_order and wallprep can't drift apart.
-const PAYMENT_SCHEDULE = `<h3>Payment Schedule</h3><p>The total contract price is paid in three installments:</p><ul><li><strong>50% due at signing</strong> (the &ldquo;Deposit&rdquo;) — or, if greater, the amount required to cover the materials and shipping for this order. Manufacturing and scheduling begin only after the Deposit is received.</li><li><strong>25% due when installation is scheduled</strong> — invoiced once all materials have arrived and the install date is set.</li><li><strong>25% due the day of installation.</strong></li></ul><p><strong>Paying in full.</strong> Instead of the schedule above, you may pay in full at signing or at any point afterward, and you may pay any individual installment early. There is no penalty or added fee for paying early. Payments are made by check, payable to James Blair.</p><p>The Deposit is non-refundable once materials are released to the manufacturer.</p>`;
+const PAYMENT_SCHEDULE = `<h3>Payment Schedule</h3><p>The total contract price is paid in three installments:</p><ul><li><strong>50% due at signing</strong> (the &ldquo;Deposit&rdquo;). Manufacturing and scheduling begin only after the Deposit is received.</li><li><strong>25% due when installation is scheduled</strong> — invoiced once all materials have arrived and the install date is set.</li><li><strong>25% due the day of installation.</strong></li></ul><p><strong>Paying in full.</strong> Instead of the schedule above, you may pay in full at signing or at any point afterward, and you may pay any individual installment early. There is no penalty or added fee for paying early. Payments are made by check, payable to James Blair.</p><p>The Deposit is non-refundable once materials are released to the manufacturer.</p>`;
 
 // Used when the proposal was marked pay-in-full: a single payment replaces the
 // 50/25/25 schedule above.
@@ -94,12 +94,9 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
   const number = formatDocNumber("C", year, seq);
   const token = genToken(16);
   const totalCents = tier.total_cents || 0;
-  // Deposit is figured from the pre-discount GROSS (tier subtotal), so a
-  // discount (which lives between subtotal and total) never lowers it.
-  const grossBasis = (tier.subtotal_cents || 0) > totalCents ? tier.subtotal_cents : totalCents;
   // Pay-in-full → deposit is the whole total (one 100% invoice); otherwise the
-  // usual ≥50% hard-cost deposit.
-  const depositCents = paymentPlan === "full" ? totalCents : depositForTotal(grossBasis, totalCents);
+  // usual 50% deposit.
+  const depositCents = paymentPlan === "full" ? totalCents : depositForTotal(totalCents);
 
   const r = await db.prepare(
     `INSERT INTO contracts (project_id, proposal_id, number, view_token, status, contract_type, total_cents, deposit_cents,
@@ -130,30 +127,6 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
   // No separate tax or shipping line — the quote's line-item prices are all-
   // inclusive (shipping, tax and installation), so the contract lines already
   // reconcile to the contract total.
-
-  // Option 2 (wallprep): split the accepted amount so the job screen prices the
-  // CLOSET on the ÷divisor formula and the WALL FINISHING as its own line.
-  // Option 2 = Option 1's closet lines + the wall-finishing line, so the wall
-  // amount is (Option 2 subtotal − Option 1 subtotal) and the closet is Option 1's
-  // subtotal — description-independent, robust to renamed wall lines. Writing it
-  // onto job_financials as the charged lines (price = the whole Option 2, closet
-  // = materials charged, wall = wall charged) keeps the card, jobs list, reports
-  // and P&L consistent from one source, with the wall counted as income. (Until
-  // 2026-10-03 the price was the closet alone and the wall sat in
-  // wall_total_cents; resolveFinancials folds those rows back in.)
-  if (contractType === "wallprep") {
-    const good = await db.prepare(`SELECT subtotal_cents FROM proposal_tiers WHERE proposal_id=?1 AND tier='good'`).bind(proposal.id).first().catch(() => null);
-    const option2Sub = tier.subtotal_cents || totalCents || 0;
-    const closetCents = (good && good.subtotal_cents != null) ? good.subtotal_cents : option2Sub;
-    const wallCents = Math.max(0, option2Sub - closetCents);
-    if (wallCents > 0) {
-      await db.prepare(
-        `INSERT INTO job_financials (project_id, price_cents, price_auto, materials_charged_cents, wall_charged_cents, wall_total_cents, updated_at)
-         VALUES (?1, ?2, 0, ?3, ?4, 0, datetime('now'))
-         ON CONFLICT(project_id) DO UPDATE SET price_cents=?2, price_auto=0, materials_charged_cents=?3, wall_charged_cents=?4, wall_total_cents=0, updated_at=datetime('now')`
-      ).bind(proposal.project_id, closetCents + wallCents, closetCents, wallCents).run().catch(() => {});
-    }
-  }
 
   // Advance the project status — accepting a proposal moves the job into
   // "proposed", unless it is already booked: a second proposal accepted on a

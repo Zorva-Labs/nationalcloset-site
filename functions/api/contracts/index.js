@@ -9,7 +9,7 @@ const TERMS_BY_TYPE = {
 <p>All custom closets, cabinetry and storage systems listed in this agreement are made-to-order. Manufacturer lead times typically run two to six weeks from order placement. We will keep you informed of any changes to the schedule.</p>
 
 <h3>Deposit &amp; Payment</h3>
-<p>The total contract price is paid in three installments: 50% at signing (the deposit — or, if greater, the amount required to cover materials and shipping for the order), which releases the order to our manufacturing partners; 25% when all materials have arrived and the installation date is set; and 25% on the day of installation. You may pay in full at signing or at any point afterward, and you may pay any installment early, with no penalty or added fee. Payments are made by check, payable to James Blair, and handed to your Project Manager.</p>
+<p>The total contract price is paid in three installments: 50% at signing (the deposit), which releases the order to our manufacturing partners; 25% when all materials have arrived and the installation date is set; and 25% on the day of installation. You may pay in full at signing or at any point afterward, and you may pay any installment early, with no penalty or added fee. Payments are made by check, payable to James Blair, and handed to your Project Manager.</p>
 
 <h3>Measurement &amp; Fit</h3>
 <p>National Closet Company measures every space on-site and is responsible for the fit of any system we build from those measurements. Measurements are taken to the sixteenth of an inch and recorded in this agreement.</p>
@@ -118,18 +118,7 @@ export async function onRequestPost(context) {
   } else if (contractType === "install_only" || contractType === "repair" || contractType === "service_call") {
     depositCents = 0;  // no deposit for service work — paid on completion
   } else {
-    // Deposit from the pre-discount GROSS (a discount must not lower it). When
-    // this contract comes from a proposal, use that tier's subtotal as the basis.
-    let grossBasis = totalCents;
-    if (body.proposal_id) {
-      const tier = await context.env.DB.prepare(
-        `SELECT t.subtotal_cents AS gross, t.total_cents AS net
-           FROM proposals p JOIN proposal_tiers t ON t.proposal_id=p.id AND t.tier=p.selected_tier
-          WHERE p.id=?1`
-      ).bind(body.proposal_id).first().catch(() => null);
-      if (tier && tier.gross > tier.net) grossBasis = tier.gross;
-    }
-    depositCents = depositForTotal(grossBasis, totalCents);  // ≥50%, covers materials
+    depositCents = depositForTotal(totalCents);  // 50% of the total
   }
 
   // Load the default template for this contract type from the editable document_templates table.

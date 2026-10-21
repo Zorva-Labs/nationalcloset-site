@@ -65,22 +65,6 @@ async function notifyStaffPayment(env, { invoice, project, kind, method, amountC
   }).catch(() => {});
 }
 
-// Pre-discount GROSS cost basis for one deal — the number its deposit is
-// figured from. The accepted proposal's selected tier stores the gross in
-// subtotal_cents and the discounted client price in total_cents; the discount
-// lives in the gap and must NOT lower the deposit. Falls back to the net total
-// when there's no accepted tier (e.g. a manual contract with no discount).
-async function dealGrossBasis(db, proposalId, fallbackNet) {
-  if (!proposalId) return fallbackNet || 0;
-  const tier = await db.prepare(
-    `SELECT t.subtotal_cents AS gross, t.total_cents AS net
-       FROM proposals p JOIN proposal_tiers t ON t.proposal_id=p.id AND t.tier=p.selected_tier
-      WHERE p.id=?1`
-  ).bind(proposalId).first().catch(() => null);
-  if (tier && (tier.gross || tier.net)) return tier.gross > tier.net ? tier.gross : (tier.net || tier.gross);
-  return fallbackNet || 0;
-}
-
 const RANK = `ORDER BY CASE status WHEN 'fully_executed' THEN 0 WHEN 'signed_by_customer' THEN 1 WHEN 'sent' THEN 2 ELSE 3 END,
                datetime(created_at) DESC LIMIT 1`;
 
@@ -118,14 +102,12 @@ export async function getProjectBilling(db, projectId, scope = {}) {
   }
   if (k) {
     const dealTotal = k.total_cents || 0;
-    const gross = await dealGrossBasis(db, k.proposal_id, dealTotal);
     return {
       totalCents: net(rawTotal || dealTotal), finalDiscountCents,
       dealTotalCents: dealTotal,
-      // Explicit contract deposit wins (manual override); otherwise the
-      // hard-cost deposit (materials + shipping + taxes) figured from the
-      // pre-discount gross, so a discount never reduces the deposit.
-      depositCents: k.deposit_cents && k.deposit_cents > 0 ? k.deposit_cents : depositForTotal(gross, dealTotal),
+      // Explicit contract deposit wins (manual override); otherwise half of
+      // what the customer pays.
+      depositCents: k.deposit_cents && k.deposit_cents > 0 ? k.deposit_cents : depositForTotal(dealTotal),
       contractId: k.id,
       proposalId: k.proposal_id || null,
       paymentPlan: k.payment_plan || "installments",
@@ -138,10 +120,9 @@ export async function getProjectBilling(db, projectId, scope = {}) {
   ).bind(...(scope.proposalId ? [projectId, scope.proposalId] : [projectId])).first().catch(() => null);
   if (p) {
     const dealTotal = p.selected_total_cents || 0;
-    const gross = await dealGrossBasis(db, p.id, dealTotal);
     return {
       totalCents: net(rawTotal || dealTotal), finalDiscountCents, dealTotalCents: dealTotal,
-      depositCents: depositForTotal(gross, dealTotal), contractId: null, proposalId: p.id,
+      depositCents: depositForTotal(dealTotal), contractId: null, proposalId: p.id,
       paymentPlan: p.payment_plan === "full" ? "full" : "installments",
     };
   }

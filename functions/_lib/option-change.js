@@ -72,15 +72,6 @@ export async function supersedeDeal(env, proposalId, { actorName = null, toTier 
       actorKind: "customer", actorName,
       details: { reason: "option-changed", was: k.status, to_tier: toTier },
     }).catch(() => {});
-    // Option 2 (wallprep) wrote its price onto the job card when it was
-    // accepted (_lib/lifecycle.js). Leaving Option 2 hands the price back to
-    // the contracts, unless someone has since set it by hand.
-    if (k.contract_type === "wallprep") {
-      await db.prepare(
-        `UPDATE job_financials SET price_auto=1, price_cents=0, materials_charged_cents=0, wall_charged_cents=0, updated_at=datetime('now')
-          WHERE project_id=?1 AND price_auto=0 AND price_cents=?2`
-      ).bind(k.project_id, k.total_cents).run().catch(() => {});
-    }
   }
   return { voidedContracts: contracts, voidedInvoices };
 }

@@ -3,11 +3,8 @@
 //   A bill is outstanding when it isn't void and balance (amount − paid) > 0.
 //   Aged from the due date (or bill date if none) to the "as of" date.
 import { requireAuth, json } from "../../_lib/auth.js";
-import { resolveFinancials } from "../../_lib/financials.js";
-import { contractTotalSql, acceptedTierSql } from "../../_lib/job-total.js";
 
 const DAY = 86400000;
-const WON = ["contracted", "scheduled_install", "installing", "completed"];
 
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -57,64 +54,8 @@ export async function onRequestGet(context) {
   bills.sort((a, b) => b.days_past - a.days_past || b.balance_cents - a.balance_cents);
   const categories = Object.entries(byCategory).map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount);
 
-  // Estimated LABOR payable (modeled). Materials, taxes & shipping are paid up
-  // front (when the job is ordered), so they're NOT outstanding payables. The
-  // installer's labor becomes payable AFTER the job is completed — so a
-  // completed job that hasn't yet had a real installer bill logged is an
-  // estimated payable. In-progress jobs are an upcoming commitment, not yet due.
-  // Each job carries its assigned installer (labor) + manufacturer (materials).
-  const jobRows = (await context.env.DB.prepare(
-    `SELECT p.id, p.name, p.status,
-            jf.price_cents, jf.discount_cents, jf.materials_cents, jf.shipping_cents, jf.tax_cents, jf.labor_cents, jf.misc_cents,
-            jf.price_auto, jf.discount_auto, jf.materials_auto, jf.shipping_auto, jf.tax_auto, jf.labor_auto, jf.wall_total_cents,
-            ${contractTotalSql()} AS contract_total,
-            ${acceptedTierSql("subtotal_cents")} AS tier_gross,
-            ${acceptedTierSql("total_cents")} AS tier_net,
-            (SELECT v.name FROM project_vendors pv JOIN vendors v ON v.id=pv.vendor_id WHERE pv.project_id=p.id AND pv.role='installer') AS installer_name,
-            (SELECT pv.vendor_id FROM project_vendors pv WHERE pv.project_id=p.id AND pv.role='installer') AS installer_id,
-            (SELECT v.name FROM project_vendors pv JOIN vendors v ON v.id=pv.vendor_id WHERE pv.project_id=p.id AND pv.role='manufacturer') AS manufacturer_name
-       FROM projects p LEFT JOIN job_financials jf ON jf.project_id = p.id
-      WHERE p.status IN (${WON.map(() => "?").join(",")})`
-  ).bind(...WON).all()).results || [];
-  const est_jobs = [];
-  let est_labor_total = 0, est_labor_upcoming = 0, est_upfront_total = 0;
-  for (const r of jobRows) {
-    let gross, discount;
-    if (r.tier_gross != null || r.tier_net != null) { const s = r.tier_gross || 0, t = r.tier_net || 0; if (s > t) { gross = s; discount = s - t; } else { gross = t || s; discount = 0; } }
-    else { gross = r.contract_total || 0; discount = 0; }
-    if (!gross) continue;
-    const fin = resolveFinancials(gross, discount, r.price_cents != null ? r : null);
-    const upfront = fin.materials_cents + fin.shipping_cents + fin.tax_cents;          // paid up front
-    const completed = r.status === "completed";
-
-    // Has the installer's labor already been logged as a real bill? If so, the
-    // logged bill (in the A/P list above) carries it — don't double-count via
-    // the estimate. We match an installer bill by the assigned installer vendor.
-    let installerBilled = false;
-    if (r.installer_id) {
-      const b = await context.env.DB.prepare(
-        `SELECT COUNT(*) AS n FROM expenses WHERE project_id=?1 AND vendor_id=?2 AND status!='void'`
-      ).bind(r.id, r.installer_id).first().catch(() => null);
-      installerBilled = (b?.n || 0) > 0;
-    }
-
-    const laborOwed = (completed && !installerBilled) ? fin.labor_cents : 0;            // payable after completion, until billed
-    const laborUpcoming = (!completed) ? fin.labor_cents : 0;                           // future commitment, not yet due
-    est_jobs.push({
-      project_id: r.id, name: r.name, status: r.status,
-      installer_name: r.installer_name || null, manufacturer_name: r.manufacturer_name || null,
-      labor_cents: fin.labor_cents, labor_owed_cents: laborOwed, labor_upcoming_cents: laborUpcoming,
-      installer_billed: installerBilled, upfront_cents: upfront,
-    });
-    est_labor_total += laborOwed;
-    est_labor_upcoming += laborUpcoming;
-    est_upfront_total += upfront;
-  }
-  est_jobs.sort((a, b) => b.labor_owed_cents - a.labor_owed_cents || b.labor_upcoming_cents - a.labor_upcoming_cents);
-
   return json({
     as_of: asOf, total_cents: total, overdue_cents: overdue, count: bills.length, oldest_days: oldest, buckets, categories, bills,
-    est_jobs, est_labor_total, est_labor_upcoming, est_upfront_total,
-    grand_payable_cents: total + est_labor_total,
+    grand_payable_cents: total,
   });
 }

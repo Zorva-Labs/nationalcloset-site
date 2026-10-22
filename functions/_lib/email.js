@@ -407,7 +407,7 @@ export function brandedEmail({ title, preheader, body, ctaLabel, ctaUrl, footer,
     ${signature === false ? "" : (signature || DEFAULT_SIGNATURE)}
   </div>
   <div class="footer">
-    ${footer || `National Closet Company · Custom Closets &amp; Closet Systems<br/><a href="tel:+16158575668">615-857-5668</a> · <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> · <a href="https://nationalclosetco.com">nationalclosetco.com</a>`}
+    ${footer || `National Closet Company · Custom Closets &amp; Closet Systems<br/>513 Red River Road, Gallatin, TN 37066<br/><a href="tel:+16158575668">615-857-5668</a> · <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> · <a href="https://nationalclosetco.com">nationalclosetco.com</a>`}
   </div>
 </div>
 </body>

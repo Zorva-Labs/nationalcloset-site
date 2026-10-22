@@ -2,6 +2,13 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-22 (Company address: 513 Red River Road, Gallatin, TN 37066)
+- Asked: Michael, "change the address to 513 Red River Road Gallatin, TN 37066."
+- The site carried no street address before, only "Gallatin, TN". Now: the Organization schema on the home page (`streetAddress`, `postalCode`, and `geo` moved from the Gallatin centroid to the building, 36.3888 / -86.4570, geocoded from the address) in `index.html` and `tools/site-build/sections/head.html`; the footer's contact column on all 74 pages (above the hours); the letterhead and footer of the customer contract page (`contract/index.html`), the CRM contract and invoice prints (`crm/contract.html`, `crm/invoice.html`), the branded email footer (`_lib/email.js`), the report letterhead (`crm/reports.html`), the contract intros in `_lib/lifecycle.js` and `api/contracts/index.js` ("National Closet Company (513 Red River Road, Gallatin, TN 37066)"), and the one live contract template that named where the company is based (migration 0079, applied). `llms.txt` gets an Address line; `site.json → client.address`.
+- Left as they were: the copyright line ("· Gallatin, TN."), the about page's "Based in Gallatin, TN", and the service-area copy ("within about 90 miles of Gallatin, TN"). Contracts already sent or signed keep their terms.
+- Deployed 855d389b, checked live (footer, schema, llms.txt, contract page), submitted.
+- Still owed: the same address on the Google Business Profile and anywhere else outside the site (Bing Places, directories), which this change does not touch.
+
 ## 2026-10-21 (Subscription to $1,011/mo)
 - Asked: Michael, "adjust the national closet subscription for terry mccarthy to $1011 monthly on the 28th of every month starting 10/28/2026."
 - Stripe `sub_1UNuYDDmvNoGaAxPcTX1mu3H` (Terry's customer `cus_V3p3PeXrdvb9C2`) now bills a new $1,011/mo price `price_1UTBRqDmvNoGaAxP9JhOyIf9` on the same product, swapped with `proration_behavior=none` while still in its trial, so nothing was billed for the change; the $495 price is archived. The anchor was already 10/28/2026 20:00 UTC, so the first charge previews at $1,011 on 10/28 and then the 28th of every month. `site.json → billing` updated. No site change, no deploy.

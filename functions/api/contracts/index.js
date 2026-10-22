@@ -134,10 +134,10 @@ export async function onRequestPost(context) {
     tplScope = tpl.scope_html || "";
   } else {
     const fallbacks = {
-      custom_order:   { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the supply and installation of custom closets, cabinetry and storage systems at the project address listed.", window: "Weeks 4–6 from contract execution" },
-      install_only:   { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the professional installation of closets and storage systems supplied by the customer at the project address listed.", window: "Scheduled within 1–2 weeks of customer-supplied products arriving on site" },
-      repair:         { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the repair service detailed in the scope of work below.", window: "Single visit, typically within 1 week" },
-      service_call:   { intro: "This agreement is between National Closet Company (Gallatin, TN) and the customer below for the service call detailed below.", window: "Single visit, scheduled at signing" },
+      custom_order:   { intro: "This agreement is between National Closet Company (513 Red River Road, Gallatin, TN 37066) and the customer below for the supply and installation of custom closets, cabinetry and storage systems at the project address listed.", window: "Weeks 4–6 from contract execution" },
+      install_only:   { intro: "This agreement is between National Closet Company (513 Red River Road, Gallatin, TN 37066) and the customer below for the professional installation of closets and storage systems supplied by the customer at the project address listed.", window: "Scheduled within 1–2 weeks of customer-supplied products arriving on site" },
+      repair:         { intro: "This agreement is between National Closet Company (513 Red River Road, Gallatin, TN 37066) and the customer below for the repair service detailed in the scope of work below.", window: "Single visit, typically within 1 week" },
+      service_call:   { intro: "This agreement is between National Closet Company (513 Red River Road, Gallatin, TN 37066) and the customer below for the service call detailed below.", window: "Single visit, scheduled at signing" },
     };
     tplIntro = fallbacks[contractType].intro;
     tplTerms = TERMS_BY_TYPE[contractType] || TERMS_BY_TYPE.custom_order;

@@ -159,7 +159,7 @@ function renderReplaced(k, nextTok, propTok) {
       ${nextTok ? `<a href="/contract/?t=${encodeURIComponent(nextTok)}" style="display:inline-block;margin-top:18px;padding:16px 24px;background:var(--color-champagne);color:var(--color-ink);border-radius:10px;font-weight:800;text-decoration:none">Open your current contract →</a>`
         : propTok ? `<a href="/proposal/?t=${encodeURIComponent(propTok)}" style="display:inline-block;margin-top:18px;padding:16px 24px;background:var(--color-champagne);color:var(--color-ink);border-radius:10px;font-weight:800;text-decoration:none">Choose your option →</a>` : ""}
     </div>
-    <div class="doc-foot">National Closet Company · Custom Closets &amp; Closet Systems · Gallatin, TN · 615-857-5668 · hello@nationalclosetco.com · nationalclosetco.com</div>`;
+    <div class="doc-foot">National Closet Company · Custom Closets &amp; Closet Systems · 513 Red River Road, Gallatin, TN 37066 · 615-857-5668 · hello@nationalclosetco.com · nationalclosetco.com</div>`;
 }
 
 function changeOptionLink() {
@@ -177,7 +177,7 @@ function render(k, lines) {
       <div class="doc-brand"><img src="/img/ncc-logo-nc.png" alt="National Closet Company"/><span>National Closet Co.<small>Custom Closets &amp; Closet Systems</small></span></div>
       <div class="doc-biz" style="text-align:right;font-size:0.78rem;color:var(--color-ink-soft);line-height:1.65">
         <div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--color-ink);margin-bottom:5px">${esc(k.number)}</div>
-        Gallatin, TN<br/>615-857-5668<br/>hello@nationalclosetco.com<br/>nationalclosetco.com
+        513 Red River Road<br/>Gallatin, TN 37066<br/>615-857-5668<br/>hello@nationalclosetco.com<br/>nationalclosetco.com
       </div>
     </div>
     <h1>Custom closet <em>agreement.</em></h1>
@@ -241,7 +241,7 @@ function render(k, lines) {
       </div>
     `}
 
-    <div class="doc-foot">National Closet Company · Custom Closets &amp; Closet Systems · Gallatin, TN · 615-857-5668 · hello@nationalclosetco.com · nationalclosetco.com</div>
+    <div class="doc-foot">National Closet Company · Custom Closets &amp; Closet Systems · 513 Red River Road, Gallatin, TN 37066 · 615-857-5668 · hello@nationalclosetco.com · nationalclosetco.com</div>
   `;
 
   if (!isSigned) previewSig();

@@ -2,6 +2,10 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-21 (Subscription to $1,011/mo)
+- Asked: Michael, "adjust the national closet subscription for terry mccarthy to $1011 monthly on the 28th of every month starting 10/28/2026."
+- Stripe `sub_1UNuYDDmvNoGaAxPcTX1mu3H` (Terry's customer `cus_V3p3PeXrdvb9C2`) now bills a new $1,011/mo price `price_1UTBRqDmvNoGaAxP9JhOyIf9` on the same product, swapped with `proration_behavior=none` while still in its trial, so nothing was billed for the change; the $495 price is archived. The anchor was already 10/28/2026 20:00 UTC, so the first charge previews at $1,011 on 10/28 and then the 28th of every month. `site.json → billing` updated. No site change, no deploy.
+
 ## 2026-10-21 (no profit or labor math; deposit always 50%)
 - **Asked (Michael):** "remove all calculations for profit, labor etc..." Asked where, he chose **remove for everyone**; asked about the deposit, which had a materials floor, he chose **always 50%**.
 - **Removed:** the job card's "Expenses & profit" card; the Jobs list's Net profit and Labor columns and profit tiles (now Open jobs, Completed jobs and All jobs by value); the proposals list's Profit column; the Reports P&L view with its PDF, CSV and API (`functions/api/reports/index.js`); estimated installer labor on Payables (its KPIs are now total, overdue, not yet due and oldest); modeled job costs on Cash flow; `functions/api/projects/[id]/financials.js`; the cost formula, `resolveFinancials` and `costBasis`; the wallprep and option-change writes to `job_financials`. Reports opens on Leads.

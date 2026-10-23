@@ -548,11 +548,11 @@ html.printing .tbl{overflow:visible}
           <div class="card__body" id="edge-visits"></div>
         </article>
         <article class="card span-4" id="card-channels">
-          <div class="card__head"><div><h3>Where visitors came from</h3><p class="card__help">What brought each visit, and how many of them sent a form. <b>Direct</b> is someone who typed the address or used a bookmark.</p></div></div>
+          <div class="card__head"><div><h3>Where visitors came from</h3><p class="card__help">What brought each visit, and how many of them sent a form. <b>Direct/ChatGPT</b> means the browser sent no referrer at all &mdash; most of that is now an AI assistant: ChatGPT and the like send none when a link is opened in the app or pasted, and the rest is typed addresses, bookmarks, texts and QR codes. So <b>AI assistants</b> counts only the ones that do send a referrer, and is the floor, not the total.</p></div></div>
           <div class="card__body" id="edge-channels"></div>
         </article>
         <article class="card span-7" id="card-leads">
-          <div class="card__head"><div><h3>Forms</h3><p class="card__help">Every form sent from the website, newest first, as saved in the CRM &mdash; who sent it, what they asked about, where they came from and the page their visit began on. Calls to the number aren&rsquo;t logged on this site.</p></div></div>
+          <div class="card__head"><div><h3>Forms</h3><p class="card__help">Every form sent from the website, newest first, as saved in the CRM &mdash; who sent it, what they asked about, where they came from and the page their visit began on. Calls to the number aren&rsquo;t logged on this site. <b>Unknown</b> means no visit cookie came back with it: a page left open since the browser last closed, or a browser that keeps none.</p></div></div>
           <div class="card__body" id="edge-leads"></div>
         </article>
         <div class="col span-5">
@@ -1387,7 +1387,7 @@ const CH_GROUPS = [
   { key: 'social', label: 'Social media', color: 'var(--s-magenta)' },
   { key: 'reviews', label: 'Reviews & directories', color: 'var(--s-green)' },
   { key: 'ai', label: 'AI assistants', color: 'var(--s-violet)' },
-  { key: 'direct', label: 'Direct', color: 'var(--s-gray)' },
+  { key: 'direct', label: 'Direct/ChatGPT', color: 'var(--s-gray)' },
 ];
 const GROUP = Object.fromEntries(CH_GROUPS.map((g) => [g.key, g]));
 function groupOf(ch) {
@@ -1401,7 +1401,10 @@ function groupOf(ch) {
   if (/^(yelp|bbb|houzz|angi|thumbtack|homeadvisor)/i.test(c)) return 'reviews';
   return 'other';
 }
-const chName = (c) => ({ 'Google (organic)': 'Google search', 'AI search': 'AI assistants' })[c] || c || 'Unknown';
+/* Direct is shown as Direct/ChatGPT (Michael, 2026-10-23): a visit with no
+   referrer is most often an AI assistant now, and the old label had people
+   reading it as "they already knew us". The stored channel stays 'Direct'. */
+const chName = (c) => ({ 'Google (organic)': 'Google search', 'AI search': 'AI assistants', Direct: 'Direct/ChatGPT' })[c] || c || 'Unknown';
 const STATES = { AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado', CT: 'Connecticut', DE: 'Delaware', DC: 'Washington, DC', FL: 'Florida', GA: 'Georgia', HI: 'Hawaii', ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana', ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi', MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey', NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma', OR: 'Oregon', PA: 'Pennsylvania', RI: 'Rhode Island', SC: 'South Carolina', SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming', PR: 'Puerto Rico' };
 const DEVICE_COLOR = { mobile: 'var(--s-blue)', desktop: 'var(--s-orange)', tablet: 'var(--s-aqua)' };
 const cap1 = (s) => String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1);

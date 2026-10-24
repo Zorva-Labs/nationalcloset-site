@@ -82,8 +82,8 @@
   "billing": {
     "stripeCustomer": "cus_V3p3PeXrdvb9C2",
     "stripeSubscription": "sub_1UNuYDDmvNoGaAxPcTX1mu3H",
-    "plan": "$1,011/mo",
-    "notes": "Terry McCarthy's one customer (all his sites). National Closet website, domains, ads and email, price_1UTBRqDmvNoGaAxP9JhOyIf9 $1,011/mo since 2026-10-21 (was $495 earlier that day, $1,024 before; both archived), first charge 10/28/2026, then the 28th of every month."
+    "plan": "National Closet website, domains, ads and email — $1,000/mo (price_1UU9wrDmvNoGaAxPUyIZ8DNW, prod_VOhy8BA1jnVQ7Z)",
+    "notes": "Terry McCarthy's one customer (all his sites). National Closet website, domains, ads and email, price_1UTBRqDmvNoGaAxP9JhOyIf9 $1,011/mo since 2026-10-21 (was $495 earlier that day, $1,024 before; both archived), first charge 10/28/2026, then the 28th of every month. $1,011 → $1,000/mo on 2026-10-24, before its first charge (Michael; the old price price_1UTBRqDmvNoGaAxP9JhOyIf9 is archived)."
   },
   "geo": "US",
   "launched": "2026-06",

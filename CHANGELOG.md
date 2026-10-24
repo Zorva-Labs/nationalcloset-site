@@ -2,6 +2,11 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-24 — billing: $1,011 → $1,000/mo
+
+- **Why:** Michael's list of Terry McCarthy's subscriptions (2026-10-24), every one billing monthly from 10/28/2026.
+- **What (Stripe, cus_V3p3PeXrdvb9C2):** `sub_1UNuYDDmvNoGaAxPcTX1mu3H`, $1,011 → $1,000/mo; first charge 10/28/2026, then the 28th of every month, on Terry's Mastercard 6830. `site.json → billing` updated.
+
 ## 2026-10-23 — Direct is called Direct/ChatGPT on /traffic
 
 - **Why:** Michael, across the estate ("every site present and in the future"). A visit with no referrer is most often an AI assistant now — ChatGPT and the rest send none when a link is opened inside their app or pasted — so that traffic has always landed in Direct, while `/traffic` explained Direct as "someone who typed the address or used a bookmark". Wrong, and read as "they already knew us".

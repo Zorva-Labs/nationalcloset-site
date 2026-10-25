@@ -11,6 +11,7 @@
 // same Gmail thread: same subject, and In-Reply-To/References pointing at the
 // first alert's Message-ID, which is derived from the lead id.
 import { sendStaffAlert } from "./email.js";
+import { sourceTag } from "./visit.js";
 
 const CRM_URL = "https://nationalclosetco.com/crm/";
 const alertMessageId = (leadId) => `<lead-${leadId}.alert@nationalclosetco.com>`;
@@ -35,8 +36,16 @@ function addressLines(l) {
   return [l.address_street, line2].filter(Boolean);
 }
 
-// lead: { id, name, phone, email, interest, message, address_*, source }
+// lead: { id, name, phone, email, interest, message, address_*, source, visit?, sourceText?, sourceHtml?, channel? }
 // update: true for the follow-up from the details step.
+//
+// The caller (api/contact.js) reads the visit (visitOf, _lib/visit.js) and passes
+// it with its "Where this lead came from" block as text and HTML (sourceText,
+// sourceHtml): the block goes in the body and the channel at the end of the
+// subject — staff only, never the customer's acknowledgment (Michael,
+// 2026-10-24: every lead carries its traffic source). The details-step
+// follow-up has no visit; it passes lead.channel (the row's) so its subject
+// still matches the first alert and Gmail keeps both in one thread.
 export async function sendLeadAlert(env, lead, { update = false } = {}) {
   const name = lead.name || "(no name)";
   const email = lead.email || "";
@@ -58,6 +67,7 @@ export async function sendLeadAlert(env, lead, { update = false } = {}) {
       ? `New free consultation request from the website.`
       : `New free consultation request from the website. They gave a name and phone number — text or call them to set the visit.`;
 
+  const visit = lead.visit || (lead.channel ? { channel: lead.channel } : null);
   const width = Math.max(...rows.map(([k]) => k.length)) + 2;
   const text =
 `${intro}
@@ -65,7 +75,7 @@ export async function sendLeadAlert(env, lead, { update = false } = {}) {
 ${rows.map(([k, t]) => `${(k + ":").padEnd(width)}${t}`).join("\n")}
 ${lead.message ? `\nNote from the customer:\n${lead.message}\n` : ""}
 Open the lead in the CRM: ${CRM_URL}
-`;
+${lead.sourceText ? `\n${lead.sourceText}\n` : ""}`;
 
   const html = `
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#16140F;max-width:600px;line-height:1.55">
@@ -80,13 +90,14 @@ Open the lead in the CRM: ${CRM_URL}
     ${lead.phone ? `<a href="sms:${esc(lead.phone)}" style="display:inline-block;margin:0 8px 8px 0;padding:10px 18px;background:#D2683F;color:#FAF9F6;text-decoration:none;font-size:13px;font-weight:700;border-radius:6px">Text ${esc(name.split(/\s+/)[0])}</a>` : ""}
     <a href="${CRM_URL}" style="display:inline-block;margin:0 0 8px;padding:10px 18px;background:#16140F;color:#FAF9F6;text-decoration:none;font-size:13px;font-weight:700;border-radius:6px">Open in CRM</a>
   </p>
+  ${lead.sourceHtml || ""}
 </div>`;
 
   const first = lead.id ? alertMessageId(lead.id) : undefined;
   return sendStaffAlert(env, {
     label: "National Closet Co. Website",
     replyTo: /^\S+@\S+\.\S+$/.test(email) ? email : undefined,
-    subject: `New consultation request — ${name}`,
+    subject: `New consultation request — ${name}${sourceTag(visit)}`,
     text, html,
     ...(update ? { inReplyTo: first, references: first } : { messageId: first }),
   });

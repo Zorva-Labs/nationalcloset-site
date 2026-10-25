@@ -81,7 +81,7 @@ export async function onRequestPost({ request, env }) {
   // without a word, and the only email was the name-and-phone alert.
   try {
     const full = await env.DB.prepare(
-      `SELECT id, name, phone, email, interest, message, address_street, address_city, address_state, address_zip, source_page AS source FROM leads WHERE id = ?1`
+      `SELECT id, name, phone, email, interest, message, address_street, address_city, address_state, address_zip, source_page AS source, channel FROM leads WHERE id = ?1`
     ).bind(lead.id).first();
     if (full) await sendLeadAlert(env, full, { update: true });
   } catch (e) { console.error("[contact-address] staff alert failed:", e?.message || e); }

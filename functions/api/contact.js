@@ -10,6 +10,8 @@ import { upsertContact } from "../_lib/db.js";
 import { genToken } from "../_lib/tokens.js";
 import { logOutboundEmail } from "../_lib/email-log.js";
 import { spamReason, botReason, turnstileReason } from "../_lib/spam.js";
+import { visitOf, sourceText, sourceHtml } from "../_lib/visit.js";
+import { saveLeadVisit } from "../_lib/lead-visit.js";
 
 
 export async function onRequestPost({ request, env }) {
@@ -114,6 +116,8 @@ Message: ${message || "(none)"}
   // 1) Persist the lead to D1 first — this is the source of truth. If this
   // fails we DO surface an error to the customer (otherwise the lead would
   // disappear silently).
+  // Where the lead came from (_lib/visit.js): on the row below and in the staff alert.
+  const visit = visitOf(request);
   let dbOk = false;
   let dbError = null;
   let leadId = null;
@@ -188,6 +192,9 @@ Message: ${message || "(none)"}
         .first();
       leadId = leadRow?.id || null;
       dbOk = true;
+      // Where the lead came from: the visit cookie and the edge, on the row.
+      // Its own statement, so a failure here keeps the lead (_lib/lead-visit.js).
+      await saveLeadVisit(env.DB, leadId, visit);
     } catch (e) {
       console.error("D1 lead insert failed:", e?.message || e);
       dbError = e?.message || "db_unknown";
@@ -202,7 +209,7 @@ Message: ${message || "(none)"}
   // step sends a follow-up in the same thread (_lib/lead-alert.js). sendEmail
   // never throws, so a mail failure only logs; the lead is already saved.
   await sendLeadAlert(env, {
-    id: leadId, name, phone, email, interest, message, source,
+    id: leadId, name, phone, email, interest, message, source, visit, sourceText: sourceText(visit), sourceHtml: sourceHtml(visit),
     address_street: addressStreet, address_city: addressCity, address_state: addressState, address_zip: addressZip,
   });
 

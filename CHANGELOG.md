@@ -2,6 +2,15 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-24 — every lead carries where it came from
+
+- **Asked:** Michael, across the estate: "all forms are supposed to send the traffic info with the lead form info." On the stored lead row and in the lead alert.
+- **Why this site was blind:** `functions/_middleware.js` logged page views but never set the first-touch `ts_src` cookie, so nothing downstream could know the visit behind a form post.
+- **What:** `_middleware.js` `sourceCookie()` (same payload as traffic-kit's, this file's `classifyChannel` so a lead and its `/crm/traffic` row agree; people only, first touch wins). `_lib/visit.js` is the kit's copy. `_lib/lead-visit.js` saves the visit on the row after the insert in `/api/contact`, leaving `utm_source`, `utm_medium` and `gclid` as the form sent them (the kit's own save would have overwritten the click id with 0/1). `_lib/lead-alert.js` and `/api/lead` add the "Where this lead came from" block to the staff alert's text and HTML and the channel to the subject (`· Google Ads`); the `/api/contact-address` follow-up carries the row's channel so the thread subject still matches. The customer's acknowledgment is unchanged.
+- **Migration 0080 `crm/migrations/0080_lead_source.sql`, applied to `nationalcloset-crm`:** 15 columns on `leads` (channel, referrer_host, landing, device, first_seen, browser, os, language, geo_city, geo_region, geo_postal, metro, timezone, isp, asn); the kit's list minus `utm_source`, `utm_medium` and `gclid`, which already existed.
+- **Checked:** the real endpoints against a mocked request (cookie plus `request.cf`), D1 and mail — the UPDATE, the block in text and HTML, the subject, "Unknown" without a cookie, a lead kept when the columns are missing, the follow-up's subject; the cookie's rules against bots, internal navigation, `/api/`, `/crm/`, static files and token pages. Live: the home page answers with `ts_src`, a stylesheet does not. No real lead was submitted. One test page view (`utm_source=nwdcheck`) is in the `pageviews` log.
+- **Owed:** `site-kit check` still fails on `functions/api/leads/index.js` and `leads/import.js` (the CRM's manual add and import, behind sign-in, with no visit to carry); left alone as asked, the check needs to skip authenticated endpoints. Leads before today have no source. The CRM lead card does not show the new columns yet.
+
 ## 2026-10-24 — billing: $1,011 → $1,000/mo
 
 - **Why:** Michael's list of Terry McCarthy's subscriptions (2026-10-24), every one billing monthly from 10/28/2026.

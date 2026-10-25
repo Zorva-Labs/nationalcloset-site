@@ -273,6 +273,13 @@ async function handle(context) {
          the default traffic view here (traffic-kit, 2026-09-24). */
       if (res && res.status === 200 && ct.includes("text/html") && !isPrefetch(request) && !notPerson(request, request.headers.get("user-agent"))) {
         logPageview(context, url, country);
+        // First touch: remember where this visit began, for the lead form (below).
+        const cookie = sourceCookie(request, url);
+        if (cookie) {
+          const out = new Response(res.body, res);
+          out.headers.append("Set-Cookie", cookie);
+          return out;
+        }
       }
     } catch (e) { /* never let logging affect the response */ }
     return res;
@@ -340,6 +347,57 @@ function logPageview(context, url, country) {
       ).run().catch(() => {})
     );
   } catch (e) { /* never break the request over analytics */ }
+}
+
+/* Where a lead came from has to be recorded on the lead itself. The channel is
+   only known on the entry hit; by the time the form is sent the visitor may be
+   three pages deep with an internal referrer. So the entry context goes in a
+   first-party session cookie here and /api/contact and /api/lead read it back
+   (the browser sends it with the same-origin POST) — functions/_lib/visit.js.
+   Same payload and same cookie as traffic-kit's sourceCookie(); the channel is
+   this file's own classifyChannel(), so a lead and its /crm/traffic row agree.
+   Session cookie, HttpOnly, no identifier. First touch wins: never overwritten.
+   Only a real person's page view reaches this: bots, prefetches, scripts,
+   static files, /api/, /crm/ and the customer's token pages never do. */
+function sourceCookie(req, url) {
+  try {
+    if (req.method !== "GET") return null;
+    const p = url.pathname;
+    if (p.startsWith("/api/") || p.startsWith("/crm/") || p === "/calc" || p === "/calc.html") return null;
+    if (/^\/(invoice|proposal|contract|estimate)(\/|$)/.test(p)) return null;
+    if (isStaticAsset(p)) return null;
+    if ((req.headers.get("cookie") || "").includes("ts_src=")) return null;   // first touch wins
+    const dest = req.headers.get("sec-fetch-dest");
+    if (dest && dest !== "document") return null;
+
+    const ourHost = url.hostname.replace(/^www\./, "").toLowerCase();
+    let refHost = "";
+    const ref = req.headers.get("referer") || "";
+    if (ref) { try { refHost = new URL(ref).hostname.replace(/^www\./, "").toLowerCase(); } catch (e) {} }
+    if (refHost === ourHost) return null;   // internal navigation, not an entry
+
+    const gclid = url.searchParams.get("gclid") || url.searchParams.get("wbraid") || url.searchParams.get("gbraid");
+    const utmSource = url.searchParams.get("utm_source");
+    const utmMedium = url.searchParams.get("utm_medium");
+    const s = (req.headers.get("user-agent") || "").toLowerCase();
+    const device = /ipad|tablet|playbook|silk|(android(?!.*mobile))/.test(s) ? "tablet"
+      : /mobi|iphone|ipod|android|blackberry|windows phone/.test(s) ? "mobile" : "desktop";
+    const payload = {
+      c: classifyChannel(utmSource, gclid, refHost),
+      r: refHost.slice(0, 120),
+      g: gclid ? 1 : 0,
+      l: p.slice(0, 200),
+      d: device,
+      t: new Date().toISOString(),
+      s: (utmSource || "").slice(0, 60) || undefined,
+      m: (utmMedium || "").slice(0, 60) || undefined,
+    };
+    const value = encodeURIComponent(JSON.stringify(payload));
+    if (value.length > 1200) return null;
+    return `ts_src=${value}; Path=/; HttpOnly; Secure; SameSite=Lax`;
+  } catch (e) {
+    return null;
+  }
 }
 
 // classifyChannel() lives in ./_lib/channel.js so the engagement beacon uses the same rules.

@@ -4,6 +4,7 @@
 
 import { spamReason, botReason, turnstileReason } from "../_lib/spam.js";
 import { sendStaffAlert } from "../_lib/email.js";
+import { visitOf, sourceTag, sourceText, sourceHtml } from "../_lib/visit.js";
 
 // Internal alert delivered to hello@, sent as hello@ via the Gmail API — an
 // authenticated self-send, so Gmail delivers it to the inbox normally. Reply-To
@@ -67,6 +68,10 @@ export async function onRequestPost({ request, env }) {
     return json({ ok: false, error: "missing_fields" }, 400);
   }
 
+  // Where the lead came from (_lib/visit.js): this endpoint stores no row, so the
+  // alert mail is the only place it lands. Staff only.
+  const visit = visitOf(request);
+
   const rows = [
     ["Name", name],
     ["Phone / text", phone],
@@ -91,16 +96,18 @@ export async function onRequestPost({ request, env }) {
           .join("")}
       </table>
       <p style="margin-top:16px">${email ? `<a href="mailto:${esc(email)}?subject=${encodeURIComponent("Re: your free design request — National Closet Company")}" style="display:inline-block;padding:10px 18px;background:#D2683F;color:#faf9f6;text-decoration:none;font-weight:700;border-radius:6px">Reply to ${esc(name)}</a>` : `<span style="color:#6c665b;font-size:12px">No email given — call or text the customer.</span>`}</p>
+      ${sourceHtml(visit)}
     </div>`;
 
   const text =
     `New website lead — National Closet Company\n\n` +
-    rows.map(([k, v]) => `${k}: ${v}`).join("\n");
+    rows.map(([k, v]) => `${k}: ${v}`).join("\n") +
+    `\n\n${sourceText(visit)}`;
 
   const res = await sendStaffAlert(env, {
     label: "National Closet Co. Website",
     replyTo: email || undefined,
-    subject: `New website lead — ${name}${project ? " · " + project : ""}`,
+    subject: `New website lead — ${name}${project ? " · " + project : ""}${sourceTag(visit)}`,
     html,
     text,
   });

@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-25 — the team: Riley Woodhouse, Anthony's and Terry's titles, Terry's address
+
+- **Asked:** Michael: add Riley Woodhouse (riley@nationalclosetco.com, 615-517-0063) as a sales rep with sales access; Anthony Potts is General Manager with admin access; Terry McCarthy is the owner with admin access, on terry@nationalclosetco.com.
+- **What (live D1, no code change):** `team_members` #6 Riley Woodhouse, Sales Rep, and a `sales` login (`admin_users` #6, made with `crm/setup-admin.mjs --role sales`; the password went to Michael to hand over and is not kept in `~/.env`). Anthony's roster title `manager` → `General Manager`; his login (hello@, #1) was already admin. Terry's roster row (#3) and his login (#2) moved from tmccarthy33@yahoo.com to terry@nationalclosetco.com, title `Owner`, still admin; his password and his job assignments are unchanged (assignments key on the roster id).
+- **Still owed:** Terry signs in with the new address from now on. Mail the CRM sends to the team (the consult brief, assignment notices) now goes to terry@ and riley@, so those Workspace mailboxes have to exist.
+
 ## 2026-10-24 — every lead carries where it came from
 
 - **Asked:** Michael, across the estate: "all forms are supposed to send the traffic info with the lead form info." On the stored lead row and in the lead alert.

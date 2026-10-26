@@ -2,10 +2,10 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
-## 2026-10-26 — billing: $1,000 → $1,040/mo
+## 2026-10-26 — billing: $1,000 → $1,150/mo
 
-- **Asked:** Michael, "add $40 a month to the existing the national closet subscription for Terry McCarthy."
-- **What (Stripe, cus_V3p3PeXrdvb9C2):** `sub_1UNuYDDmvNoGaAxPcTX1mu3H` moved to a new $1,040/mo price on the same product (`price_1UUpghDmvNoGaAxPhN97FJAM`), `proration_behavior=none`; the $1,000 price `price_1UU9wrDmvNoGaAxPUyIZ8DNW` is archived. Still one line on the invoice. It was before the first charge (trialing to 10/28/2026 20:00 UTC), so nothing was prorated; the invoice preview reads $1,040.00 on 10/28, then the 28th of every month, on Terry's Mastercard 6830. `site.json → billing` updated.
+- **Asked:** Michael, "add $40 a month to the existing the national closet subscription for Terry McCarthy", then "change it to $1150 total."
+- **What (Stripe, cus_V3p3PeXrdvb9C2):** `sub_1UNuYDDmvNoGaAxPcTX1mu3H` went to $1,040/mo (`price_1UUpghDmvNoGaAxPhN97FJAM`), then the same day to **$1,150/mo** (`price_1UUpiJDmvNoGaAxPWQoIK7io`, same product, `proration_behavior=none`); the $1,000 and $1,040 prices are archived. Still one line on the invoice. Both changes were before the first charge (trialing to 10/28/2026 20:00 UTC), so nothing was prorated; the invoice preview reads $1,150.00 on 10/28, then the 28th of every month, on Terry's Mastercard 6830. `site.json → billing` updated.
 
 ## 2026-10-25 — the team: Riley Woodhouse, Anthony's and Terry's titles, Terry's address
 

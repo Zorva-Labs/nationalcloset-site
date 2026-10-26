@@ -6,7 +6,7 @@ Newest first. One entry per session that changed this repo: what changed, why, w
 
 - **Asked:** Michael: add Riley Woodhouse (riley@nationalclosetco.com, 615-517-0063) as a sales rep with sales access; Anthony Potts is General Manager with admin access; Terry McCarthy is the owner with admin access, on terry@nationalclosetco.com.
 - **What (live D1, no code change):** `team_members` #6 Riley Woodhouse, Sales Rep, and a `sales` login (`admin_users` #6, made with `crm/setup-admin.mjs --role sales`; the password went to Michael to hand over and is not kept in `~/.env`). Anthony's roster title `manager` → `General Manager`; his login (hello@, #1) was already admin. Terry's roster row (#3) and his login (#2) moved from tmccarthy33@yahoo.com to terry@nationalclosetco.com, title `Owner`, still admin; his password and his job assignments are unchanged (assignments key on the roster id).
-- **Still owed:** Terry signs in with the new address from now on. Mail the CRM sends to the team (the consult brief, assignment notices) now goes to terry@ and riley@, so those Workspace mailboxes have to exist.
+- **Still owed:** Terry signs in with the new address from now on. The consult brief goes to each assignee's roster address, and to the whole active roster when nobody is assigned, so terry@ and riley@ get it from now on (Riley included on unassigned visits): those Workspace mailboxes have to exist.
 
 ## 2026-10-24 — every lead carries where it came from
 

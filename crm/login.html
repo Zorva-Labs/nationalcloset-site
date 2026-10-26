@@ -53,8 +53,15 @@
           credentials: "same-origin",
           body: JSON.stringify(data),
         });
-        const body = await res.json();
-        if (!res.ok) throw new Error(body.error || "Sign in failed.");
+        // login-error: start
+        // Only our own JSON says whether the password was right. Anything else (the
+        // US-only gate's 403 page, a Cloudflare block, an outage) turned the request
+        // away before the password was checked, and must not read as a wrong one.
+        const body = await res.json().catch(() => null);
+        if (!res.ok || !body) throw new Error(body?.error || (res.status === 403
+          ? "Sign-in was blocked before the password was checked (HTTP 403). This page opens only from the US: if you are on a VPN, turn it off and try again."
+          : `Sign-in did not reach the server (HTTP ${res.status}), so the password was not checked. Try again in a minute.`));
+        // login-error: end
         const next = new URLSearchParams(location.search).get("next") || "/crm/";
         location.href = next;
       } catch (err) {

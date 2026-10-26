@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-26 — /traffic sign-in: stray spaces ignored, a blocked sign-in says so
+
+- **Why:** Michael, 2026-10-26: Terry's password was not opening Noctis Aurora's `/traffic`, yet that live sign-in accepted both agency passwords and the site's own. Two ways a right password reads as wrong were closed on every site: a space or line break pasted in with it, and a request refused before the password was checked (the US-only gate, a Cloudflare block), which the form reported as "That password is not right."
+- **What:** `functions/api/auth/login.js` (`login-trim` block): the agency check takes the trimmed password; an admin user's password, stored hashed, is tried as typed first and trimmed second, so no existing password can be refused. `crm/login.html` (`login-error` block): a non-JSON answer used to surface as a JSON parse error, and now names the HTTP status and says the password was not checked.
+- **Owed:** nothing.
+
 ## 2026-10-26 — billing: $1,000 → $1,150/mo
 
 - **Asked:** Michael, "add $40 a month to the existing the national closet subscription for Terry McCarthy", then "change it to $1150 total."

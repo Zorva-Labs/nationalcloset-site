@@ -17,7 +17,14 @@ export async function onRequestPost({ request, env }) {
   }
   const email = (data.email || "").toString().trim().toLowerCase();
   const password = (data.password || "").toString();
-  const agency = password && agencyPasswords(env).some((p) => safeEqual(p, password));
+  // login-trim: start
+  // A password pasted from a text or an email often brings a space or a line
+  // break with it, and so can a phone keyboard. Ours never start or end with
+  // whitespace, so the agency check takes the trimmed one; an account password
+  // is stored hashed and might, so it is tried as typed first, trimmed second.
+  const typed = password.trim();
+  const agency = typed && agencyPasswords(env).some((p) => safeEqual(p, typed));
+  // login-trim: end
   if (!password || (!email && !agency)) {
     return json({ error: "Email and password are required." }, 400);
   }
@@ -39,7 +46,8 @@ export async function onRequestPost({ request, env }) {
       return json({ error: "Invalid email or password." }, 401);
     }
 
-    const ok = await verifyPassword(password, user.password_salt, user.password_hash);
+    const ok = (await verifyPassword(password, user.password_salt, user.password_hash))
+      || (typed !== password && typed !== '' && (await verifyPassword(typed, user.password_salt, user.password_hash)));
     if (!ok) {
       await new Promise((r) => setTimeout(r, 200));
       return json({ error: "Invalid email or password." }, 401);

@@ -2,6 +2,13 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-26 — CRM sign-in: a Show button in the password box
+
+- **What:** the CRM sign-in (`crm/login.html`) has a Show / Hide button inside the password box, so a password typed on a phone can be read back before it is sent. The page loads `js/show-password.js`, a copy of traffic-kit's `extras/show-password.js` (7b52481). Change it there and copy it out.
+- **Why:** Michael, 2026-10-26: "Show the password on all login screens".
+- **Checked:** in the browser pane at 375px, the button sat inside the box's right edge and flipped the box to text and back. Nothing was wider than the viewport.
+- **Owed:** nothing.
+
 ## 2026-10-26 — /traffic sign-in: stray spaces ignored, a blocked sign-in says so
 
 - **Why:** Michael, 2026-10-26: Terry's password was not opening Noctis Aurora's `/traffic`, yet that live sign-in accepted both agency passwords and the site's own. Two ways a right password reads as wrong were closed on every site: a space or line break pasted in with it, and a request refused before the password was checked (the US-only gate, a Cloudflare block), which the form reported as "That password is not right."

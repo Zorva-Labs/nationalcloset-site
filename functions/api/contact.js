@@ -226,7 +226,7 @@ Message: ${message || "(none)"}
   // so any non-save is a hard error that tells the customer to call.
   if (!dbOk) {
     return json(
-      { error: "We had trouble saving your request. Please call us at 615-857-5668.", detail: dbError || (env.DB ? "db_unavailable" : "db_unbound") },
+      { error: "We had trouble saving your request. Please call us at 615-488-3575.", detail: dbError || (env.DB ? "db_unavailable" : "db_unbound") },
       503
     );
   }

@@ -16,7 +16,7 @@ export async function sendLeadAck(env, { name, email, interest, leadId = null, c
     body: `
       <p>Hi ${escapeHtml(first)},</p>
       <p>Thank you for contacting National Closet Company${escapeHtml(about)}. We've received your request, and a member of our family-owned team will text or call within one business day to set up your free in-home design.</p>
-      <p>If you'd like to talk sooner, just call or text us at <strong>615-857-5668</strong>.</p>
+      <p>If you'd like to talk sooner, just call or text us at <strong>615-488-3575</strong>.</p>
       <p>We look forward to helping you build a beautiful custom space at a price that makes sense.</p>
       <p>Warmly,<br>Michael Blair<br>National Closet Company</p>`,
     signature: false,
@@ -26,7 +26,7 @@ export async function sendLeadAck(env, { name, email, interest, leadId = null, c
 
 Thank you for contacting National Closet Company${about}. We've received your request, and a member of our family-owned team will text or call within one business day to set up your free in-home design.
 
-If you'd like to talk sooner, just call or text us at 615-857-5668.
+If you'd like to talk sooner, just call or text us at 615-488-3575.
 
 Warmly,
 Michael Blair

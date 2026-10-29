@@ -37,18 +37,18 @@ export async function sendAppointmentConfirmation(env, appt, { leadId = null, co
       ${appt.rooms ? `<p><strong>Rooms / scope:</strong> ${escapeHtml(appt.rooms)}</p>` : ""}
       ${appt.notes ? `<p><strong>Notes:</strong> ${escapeHtml(appt.notes)}</p>` : ""}
       <p>We'll take measurements, design a 3D version of the space, and leave you with a quote — no obligation.</p>
-      <p>If anything changes, you can <a href="${cancelUrl}">reschedule or cancel here</a>, or call/text us at <a href="tel:+16158575668">615-857-5668</a>.</p>
+      <p>If anything changes, you can <a href="${cancelUrl}">reschedule or cancel here</a>, or call/text us at <a href="tel:+16154883575">615-488-3575</a>.</p>
       <p style="margin-top:24px">Looking forward to meeting you,<br/>— National Closet Company</p>`,
   });
   const text = `Your ${visitLabel} is confirmed for ${when}.\n\n` +
     (address ? `We'll come to:\n${address}\n\n` : "") +
     (appt.rooms ? `Rooms/scope: ${appt.rooms}\n\n` : "") +
-    `Reschedule/cancel: ${cancelUrl}\nQuestions: 615-857-5668\n`;
+    `Reschedule/cancel: ${cancelUrl}\nQuestions: 615-488-3575\n`;
   const ics = buildIcs({
     uid: `appt-${appt.id}@nationalclosetco.com`,
     start: appt.start_at, end: appt.end_at,
     summary: `National Closet Company · ${isMeasure ? "Measure & Design" : "In-Home Consultation"}`,
-    description: `Your ${visitLabel} with National Closet Company.\\n\\nQuestions? Call 615-857-5668.\\n\\nReschedule or cancel: ${cancelUrl}`,
+    description: `Your ${visitLabel} with National Closet Company.\\n\\nQuestions? Call 615-488-3575.\\n\\nReschedule or cancel: ${cancelUrl}`,
     location: address || "Your home",
     organizer: "hello@nationalclosetco.com", organizerName: "National Closet Company",
     url: cancelUrl,

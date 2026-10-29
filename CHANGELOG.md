@@ -2,6 +2,22 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-29 — New business number: 615-488-3575
+
+- **Asked:** Michael, 2026-10-29: "Change the phone number for NCC in all locations to 615-488-3575".
+- **What:** 615-857-5668 (set 2026-10-20) is replaced everywhere it stood for the business, in its three forms: `(615) 488-3575`, `615-488-3575`, and `tel:`/`sms:` `+16154883575` (schema `+1-615-488-3575`). That covers 105 files:
+  - all 70 pages, the blog, the 404 and geo-block pages (`functions/_middleware.js`), and `js/main.js`;
+  - the customer pages (`estimate/`, `proposal/`, `contract/`, `invoice/`, `book/`, `thanks/`) and every mail the functions send;
+  - the CRM letterheads (contract, invoice, worksheet, reports) and the page factory (`tools/site-build/`);
+  - `llms.txt` and `site.json → client.phone`;
+  - the printed review card (`tools/review-card/review-card.pdf`, re-rendered).
+- **Live D1:** migration 0082 moved the number in the 16 email templates and the 1 document template that carried it. A recount found none left. Mail already sent, proposals and contracts, and the team roster are untouched. Migration 0076 and the CHANGELOG keep the old number as history.
+- **Checked:** `dist/` has no copy of the old number. The live home page, the Franklin page, `llms.txt` and a booking link read only the new one. Submitted: IndexNow (34 URLs), Search Console and Bing.
+- **Still owed, outside the repo:**
+  - the Google Business Profile, Bing Places, Apple Business Connect, Facebook and the other directory listings;
+  - the call asset in Google Ads 8968122786, and the Meta page.
+  - The site invites customers to text photos, so 615-488-3575 needs to take texts.
+
 ## 2026-10-28 — Nashville Luxury Closets & Cabinets shares the CRM, tagged NLC
 
 - **What:** leads from nashvilleluxuryclosets.com now arrive in this CRM through `POST /api/intake/lead`, which checks a shared secret (`INTAKE_SECRET`). Each one is marked NLC.

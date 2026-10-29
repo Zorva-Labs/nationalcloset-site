@@ -156,7 +156,7 @@ export async function onRequestPost(context) {
     const wasSigned = isSignedContract(current);
     const sup = await supersedeDeal(context.env, p.id, { actorName: p.contact_name || "Customer", toTier: body.tier });
     if (sup.paid) {
-      return json({ error: "A payment is already on this option, so we'll make the change for you. Call or text 615-857-5668 and we'll update your order." }, 409);
+      return json({ error: "A payment is already on this option, so we'll make the change for you. Call or text 615-488-3575 and we'll update your order." }, 409);
     }
 
     await db.prepare(

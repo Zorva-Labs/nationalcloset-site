@@ -5,12 +5,12 @@ import re, html, json, os
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # the checkout this file is in (a worktree edits itself)
 PIN = 'ncc129'
 SITE = 'https://nationalclosetco.com'
-PHONE = '615-857-5668'; TEL = 'tel:+16158575668'
+PHONE = '615-488-3575'; TEL = 'tel:+16154883575'
 # Who built and hosts the site. The footer credit is the whole sentence as one nofollow link;
 # the homepage WebSite node names the agency as creator, provider and maintainer.
 BUILDER = dict(name="Nashville's Web Design", url='https://nashvilleswebdesign.com', id='https://nashvilleswebdesign.com/#organization',
                credit="Web Design, SEO and Hosting by Nashville's Web Design")
-SMS = 'sms:+16158575668?&body=' + 'Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F'
+SMS = 'sms:+16154883575?&body=' + 'Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F'
 
 SRC = open(f'{ROOT}/custom-closets-nashville.html', encoding='utf-8').read()
 BODY = SRC[SRC.find('<body'):]

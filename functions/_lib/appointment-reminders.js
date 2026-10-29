@@ -21,8 +21,8 @@ import {
 } from "./event-notices.js";
 
 const SITE_URL = "https://nationalclosetco.com";
-const PHONE = "615-857-5668";
-const PHONE_HREF = "tel:+16158575668";
+const PHONE = "615-488-3575";
+const PHONE_HREF = "tel:+16154883575";
 
 // DB datetimes are stored as LOCAL CENTRAL wall-clock strings with NO timezone
 // suffix (see _lib/dates.js) — so read the clock time straight off the string;

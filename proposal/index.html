@@ -167,11 +167,11 @@ function renderExpired(p) {
       <p>No problem at all — we'd be glad to put together fresh pricing for you. Tell us anything that's changed (optional) and we'll send an updated proposal right away.</p>
       <textarea id="req-msg" placeholder="Anything you'd like us to know? (optional)"></textarea>
       <button class="btn" type="button" onclick="requestUpdate()">Request an updated proposal</button>
-      <p style="margin-top:22px;font-size:.9rem;color:var(--muted)">Prefer to talk it through? Call or text <a href="tel:+16158575668">615-857-5668</a>.</p>
+      <p style="margin-top:22px;font-size:.9rem;color:var(--muted)">Prefer to talk it through? Call or text <a href="tel:+16154883575">615-488-3575</a>.</p>
     </div>
     <div class="doc-foot">
       National Closet Company · Custom Closets &amp; Closet Systems<br/>
-      <a href="tel:+16158575668">615-857-5668</a> · <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> · <a href="https://nationalclosetco.com">nationalclosetco.com</a> · <a href="/privacy">Privacy</a>
+      <a href="tel:+16154883575">615-488-3575</a> · <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> · <a href="https://nationalclosetco.com">nationalclosetco.com</a> · <a href="/privacy">Privacy</a>
     </div>`;
 }
 
@@ -185,7 +185,7 @@ async function requestUpdate() {
     document.querySelector(".expired-card").innerHTML = `
       <div class="badge">Request sent</div>
       <h2>Thanks — we're on it.</h2>
-      <p>We've got your request and will send over an updated proposal shortly. Keep an eye on your inbox, or call/text us at <a href="tel:+16158575668">615-857-5668</a> if you'd like to chat sooner.</p>`;
+      <p>We've got your request and will send over an updated proposal shortly. Keep an eye on your inbox, or call/text us at <a href="tel:+16154883575">615-488-3575</a> if you'd like to chat sooner.</p>`;
   } catch (e) { alert(e.message); if (btn) { btn.disabled = false; btn.textContent = "Request an updated proposal"; } }
 }
 
@@ -273,18 +273,18 @@ function render(p, tiers, attachments) {
     ${isAccepted ? (locked ? `
       <div class="accept">
         <h2>You're all set — your contract is signed.</h2>
-        <p>Thanks! Your order is locked in and we'll be in touch to schedule your install. Need to change your option or anything else? Just call or text <a href="tel:+16158575668">615-857-5668</a>.</p>
+        <p>Thanks! Your order is locked in and we'll be in touch to schedule your install. Need to change your option or anything else? Just call or text <a href="tel:+16154883575">615-488-3575</a>.</p>
       </div>
     ` : signed ? `
       <div class="accept">
         <h2>Your contract is signed. Your deposit is next.</h2>
-        <p><strong>Want a different option?</strong> Choose it above. You'll sign a new contract for that option and pay its deposit, and the contract you signed is canceled. Nothing has been charged yet. Questions? Call or text <a href="tel:+16158575668">615-857-5668</a>.</p>
+        <p><strong>Want a different option?</strong> Choose it above. You'll sign a new contract for that option and pay its deposit, and the contract you signed is canceled. Nothing has been charged yet. Questions? Call or text <a href="tel:+16154883575">615-488-3575</a>.</p>
         ${window.__payInv ? `<a class="btn accept-btn" href="/invoice/?t=${encodeURIComponent(window.__payInv)}" style="min-height:56px;font-size:1.1rem;padding:16px 34px;text-decoration:none;display:inline-block">Pay your deposit →</a>` : ""}
       </div>
     ` : `
       <div class="accept">
         <h2>Accepted — one step left</h2>
-        <p>${window.__contractToken ? "Sign your contract to book the job and reserve your install — it only takes a minute." : "We'll send your contract over shortly to sign and book the job."} <strong>Changed your mind?</strong> Choose a different option above — nothing is final until you sign. Questions? Call or text <a href="tel:+16158575668">615-857-5668</a>.</p>
+        <p>${window.__contractToken ? "Sign your contract to book the job and reserve your install — it only takes a minute." : "We'll send your contract over shortly to sign and book the job."} <strong>Changed your mind?</strong> Choose a different option above — nothing is final until you sign. Questions? Call or text <a href="tel:+16154883575">615-488-3575</a>.</p>
         ${window.__contractToken ? `<a class="btn accept-btn" href="/contract/?t=${encodeURIComponent(window.__contractToken)}" style="min-height:56px;font-size:1.1rem;padding:16px 34px;text-decoration:none;display:inline-block">Go to your contract to sign →</a>` : ""}
       </div>
     `) : (p.selected_tier ? `
@@ -295,12 +295,12 @@ function render(p, tiers, attachments) {
       </div>` : `
       <div class="accept accept--soft">
         <h2>${many ? "Choose an option above to continue" : "Select your proposal above to continue"}</h2>
-        <p>Pick your option and you'll go straight to your contract to sign — quick and easy. Questions? Call or text <a href="tel:+16158575668">615-857-5668</a>.</p>
+        <p>Pick your option and you'll go straight to your contract to sign — quick and easy. Questions? Call or text <a href="tel:+16154883575">615-488-3575</a>.</p>
       </div>`)}
 
     <div class="doc-foot">
       National Closet Company · Custom Closets &amp; Closet Systems<br/>
-      <a href="tel:+16158575668">615-857-5668</a> · <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> · <a href="https://nationalclosetco.com">nationalclosetco.com</a> · <a href="/privacy">Privacy</a>
+      <a href="tel:+16154883575">615-488-3575</a> · <a href="mailto:hello@nationalclosetco.com">hello@nationalclosetco.com</a> · <a href="https://nationalclosetco.com">nationalclosetco.com</a> · <a href="/privacy">Privacy</a>
     </div>
   `;
 }
@@ -320,7 +320,7 @@ async function continueToContract(tier) {
   try {
     const res = await fetch("/api/public/proposal/" + token, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "continue", tier }) });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Could not continue. Please call or text 615-857-5668.");
+    if (!res.ok) throw new Error(data.error || "Could not continue. Please call or text 615-488-3575.");
     if (data.contract_token) {
       document.getElementById("root").innerHTML = `
         <div style="text-align:center;padding:90px 20px">

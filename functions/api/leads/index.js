@@ -1,5 +1,6 @@
 import { requireAuth, json } from "../../_lib/auth.js";
 import { upsertContact, recordActivity } from "../../_lib/db.js";
+import { BRANDS } from "../../_lib/brands.js";
 
 const ALLOWED_STATUSES = new Set([
   "new",
@@ -36,6 +37,12 @@ export async function onRequestGet(context) {
       where.push(`status NOT IN ('booked', 'installed', 'lost')`);
     }
   }
+  // ?brand=NCC|NLC — which company the lead came to (migration 0081)
+  const brand = (url.searchParams.get("brand") || "").toUpperCase();
+  if (BRANDS.has(brand)) {
+    where.push(`brand = ?${binds.length + 1}`);
+    binds.push(brand);
+  }
   if (search) {
     const like = `%${search}%`;
     const i = binds.length + 1;
@@ -47,7 +54,7 @@ export async function onRequestGet(context) {
     SELECT id, created_at, updated_at, name, phone, email,
            address_street, address_city, address_state, address_zip, location,
            interest, message, source_page, status, assigned_to, quoted_amount_cents,
-           utm_source, utm_medium, utm_campaign, gclid, referrer
+           utm_source, utm_medium, utm_campaign, gclid, referrer, brand
     FROM leads
     ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
     ORDER BY datetime(created_at) DESC

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Jobs · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc124"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc125"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc116"></script>
+<script src="/crm/crm-app.js?v=ncc117"></script>
 <script>
 // A project only counts as a "Job" once the contract is signed AND the deposit
 // is paid (status 'contracted'). Until then the deal stays a LEAD in the
@@ -58,7 +58,7 @@ function rowHtml(p) {
   const paint = SSCrm.painterBadge(p);
   const needsPainter = paint && !p.painter_booked_at;
   return `<tr class="clickable${needsPainter ? " needs-painter" : ""}" onclick="location.href='/crm/project.html?id=${p.id}'">
-    <td><strong>${SSCrm.esc(p.contact_name || "—")}</strong>${paint ? `<div style="margin-top:4px">${paint}</div>` : ""}</td>
+    <td><strong>${SSCrm.esc(p.contact_name || "—")}</strong>${SSCrm.brandTag(p.brand)}${paint ? `<div style="margin-top:4px">${paint}</div>` : ""}</td>
     <td>${p.contact_email ? `<a href="mailto:${SSCrm.esc(p.contact_email)}" onclick="event.stopPropagation()">${SSCrm.esc(p.contact_email)}</a>` : `<span class="muted">—</span>`}</td>
     <td>${p.contact_phone ? `<a href="tel:${SSCrm.esc(p.contact_phone)}" onclick="event.stopPropagation()">${SSCrm.esc(p.contact_phone)}</a>` : `<span class="muted">—</span>`}</td>
     <td>${p.contact_city ? SSCrm.esc(p.contact_city) : `<span class="muted">—</span>`}</td>

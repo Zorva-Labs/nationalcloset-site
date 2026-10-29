@@ -34,9 +34,9 @@ export async function onRequestGet(context) {
     const siteAddress = [lead.address_street, [lead.address_city, lead.address_state].filter(Boolean).join(", "), lead.address_zip].filter(Boolean).join(", ") || null;
     const projectName = lead.interest ? `${lead.interest} — ${lead.name}` : `Whole house — ${lead.name}`;
     const r = await DB.prepare(
-      `INSERT INTO projects (contact_id, lead_id, name, description, status, site_address)
-       VALUES (?1, ?2, ?3, ?4, 'new', ?5) RETURNING id`
-    ).bind(contactId, leadId, projectName, lead.message || null, siteAddress).first();
+      `INSERT INTO projects (contact_id, lead_id, name, description, status, site_address, brand)
+       VALUES (?1, ?2, ?3, ?4, 'new', ?5, ?6) RETURNING id`
+    ).bind(contactId, leadId, projectName, lead.message || null, siteAddress, lead.brand || "NCC").first();
     await DB.prepare(`UPDATE leads SET contact_id=?1 WHERE id=?2 AND contact_id IS NULL`).bind(contactId, leadId).run();
     project = await DB.prepare(`SELECT * FROM projects WHERE id=?1`).bind(r.id).first();
     await recordActivity(DB, {

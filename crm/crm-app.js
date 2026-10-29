@@ -486,6 +486,9 @@ const PILL_LABELS = {
   scheduled: "Consult Booked", tier_selected: "Option selected", signed_by_customer: "Signed",
   fully_executed: "Executed", processing: "Processing",
 };
+// The company a lead or job belongs to (migration 0081): NCC rows show
+// nothing, a Nashville Luxury Closets & Cabinets row shows "NLC".
+function brandTag(b) { return b === "NLC" ? `<span class="brand-tag" title="Nashville Luxury Closets &amp; Cabinets">NLC</span>` : ""; }
 function pill(s) { const label = PILL_LABELS[s] || (s || "").replace(/_/g, " "); return `<span class="pill" data-s="${esc(s)}">${esc(label)}</span>`; }
 function initials(email) { return (email || "?").slice(0, 1).toUpperCase(); }
 async function logout() {
@@ -1395,6 +1398,6 @@ window.SSCrm = {
   quickAddLead, quickAddContact, quickAddJob, quickAddAppointment, quickAddEstimate, quickAddProposal, quickAddContract,
   composeEmail, renderEmailTimeline,
   team, assigneePicker, readAssigneePicker, wireAssigneePicker, assigneeChips, initialsOf, shortName,
-  PROJECT_STATUSES, SERVICES, serviceDatalist,
+  PROJECT_STATUSES, SERVICES, serviceDatalist, brandTag,
   me: () => ME, role: () => (ME && ME.role) || null,
 };

@@ -9,11 +9,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc124" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc125" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc116"></script>
+<script src="/crm/crm-app.js?v=ncc117"></script>
 <script>
 // Lead pipeline ends at "Proposal" or "Lost". Once the contract is signed
 // the lead is auto-bumped to "booked" by the contract-sign handler — at
@@ -179,6 +179,7 @@ function renderOverviewTab() {
       <hr class="sep"/>
       <div class="kv-grid" style="display:grid;grid-template-columns:140px minmax(0,1fr);gap:8px 14px;font-size:13px;color:var(--ink-soft)">
         <div class="muted">Submitted</div><div>${SSCrm.fmtDateTime(l.created_at)}</div>
+        <div class="muted">Company</div><div>${l.brand === "NLC" ? "Nashville Luxury Closets &amp; Cabinets" : "National Closet Company"}${SSCrm.brandTag(l.brand)}</div>
         <div class="muted">Source page</div><div>${SSCrm.esc(l.source_page || "web")}</div>
         ${l.utm_source ? `<div class="muted">UTM source</div><div>${SSCrm.esc(l.utm_source)}${l.utm_medium ? " / " + SSCrm.esc(l.utm_medium) : ""}</div>` : ""}
         ${l.utm_campaign ? `<div class="muted">UTM campaign</div><div>${SSCrm.esc(l.utm_campaign)}</div>` : ""}

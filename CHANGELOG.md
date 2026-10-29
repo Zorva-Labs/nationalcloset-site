@@ -2,6 +2,16 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-10-28 — Nashville Luxury Closets & Cabinets shares the CRM, tagged NLC
+
+- **What:** leads from nashvilleluxuryclosets.com now arrive in this CRM through `POST /api/intake/lead`, which checks a shared secret (`INTAKE_SECRET`). Each one is marked NLC.
+  - The tag is `leads.brand` and `projects.brand` (migration 0081, applied; the 52 existing leads are NCC). A job made from an NLC lead is NLC.
+  - The NLC badge (`SSCrm.brandTag`) shows on Leads, Pipeline, the lead page (with a Company row), Jobs and the job page. Leads has a company filter (`?brand=`).
+  - The CRM asset versions moved to ncc125 (css) and ncc117 (js).
+- **Why:** Terry McCarthy, email 2026-10-28: "We could probably use the same CRM. Just need to do something to delineate whether it's a NCC or NLC lead, sale, service job, etc." Michael, 2026-10-28: "this site will share the crm with ncc but needs to be identifiable as being from this site".
+- **Tested:** a test lead from the NLC form came in as lead 98: brand NLC, interest Pantry, source `nlc /contact/`. It was deleted afterward. The intake refuses no key, a wrong key and brand NCC (401, 401, 400).
+- **Still owed:** proposals, contracts, invoices, the reminder emails and the customer pages still say National Closet Company for an NLC job. The reports don't split by company yet (`docs/crm.md` → Two companies).
+
 ## 2026-10-26 — CRM sign-in: a Show button in the password box
 
 - **What:** the CRM sign-in (`crm/login.html`) has a Show / Hide button inside the password box, so a password typed on a phone can be read back before it is sent. The page loads `js/show-password.js`, a copy of traffic-kit's `extras/show-password.js` (7b52481). Change it there and copy it out.
@@ -101,7 +111,7 @@ Newest first. One entry per session that changed this repo: what changed, why, w
 - Asked: "I need a way for jobs that booked option 2 to stand out so we know to book the painter."
 - Option 2 is the `wallprep` contract (closet plus wall repair and paint). A job with one signed now shows "🎨 Book painter" in four places: on its page, as a banner with a "✓ Painter booked" button; on the Jobs list, as a badge, an amber edge and a banner naming the jobs; on the dashboard, under "Needs your attention" (→ `/crm/projects.html?painter=1`); and on the calendar, on its install day. Ticking it stamps `projects.painter_booked_at` (migration 0075, applied to the live D1), and the flag turns into a quiet "Painter booked" with an undo.
 - Flagged at launch: Lesia Wood, Wonda Askew, Derek Smith, Helena Kirkendall. Amy Hill's Option 2 job is completed, so it isn't flagged.
-- `crm-app.css?v=ncc124`, `crm-app.js?v=ncc114`. Checked on a local D1 at 375px and desktop: banner, badge, tick and undo, the dashboard count, the calendar mark. Contrast 6.4:1 and better, taps 44px, no sideways scroll.
+- `crm-app.css?v=ncc125`, `crm-app.js?v=ncc114`. Checked on a local D1 at 375px and desktop: banner, badge, tick and undo, the dashboard count, the calendar mark. Contrast 6.4:1 and better, taps 44px, no sideways scroll.
 
 ## 2026-10-17 (Mike Cornwell on the team)
 - Asked: "add mike cornwell from vendors as a team member to be added to jobs."

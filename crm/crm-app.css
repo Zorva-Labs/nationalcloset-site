@@ -404,6 +404,13 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
   white-space: nowrap;
 }
 .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+/* NLC = Nashville Luxury Closets & Cabinets, the d/b/a that shares the CRM
+   (migration 0081); its own teal, white on #003F4B is 11.9:1. */
+.brand-tag {
+  display: inline-block; vertical-align: middle; margin-left: 6px;
+  font-size: 10px; font-weight: 700; letter-spacing: .04em; line-height: 1;
+  padding: 3px 6px; border-radius: 4px; color: #fff; background: #003F4B;
+}
 .pill[data-s="new"]                { color: var(--s-new); }
 .pill[data-s="contacted"]          { color: #0369A1; background: #E0F2FE; border-color: #BAE6FD; }
 .pill[data-s="replied"]            { color: var(--s-quoted); background: #FEF9C3; border-color: #FDE68A; }

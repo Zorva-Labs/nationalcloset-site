@@ -54,9 +54,9 @@ export async function onRequestPost(context) {
     ).bind(contactId, projectName, siteAddress, project.id).run();
   } else {
     const projectRow = await DB.prepare(
-      `INSERT INTO projects (contact_id, lead_id, name, description, status, site_address)
-       VALUES (?1, ?2, ?3, ?4, 'quoted', ?5) RETURNING id`
-    ).bind(contactId, leadId, projectName, lead.message || null, siteAddress).first();
+      `INSERT INTO projects (contact_id, lead_id, name, description, status, site_address, brand)
+       VALUES (?1, ?2, ?3, ?4, 'quoted', ?5, ?6) RETURNING id`
+    ).bind(contactId, leadId, projectName, lead.message || null, siteAddress, lead.brand || "NCC").first();
     project = { id: projectRow.id };
   }
   const projectId = project.id;

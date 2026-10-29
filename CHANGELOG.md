@@ -15,7 +15,8 @@ Newest first. One entry per session that changed this repo: what changed, why, w
 - **Checked:** `dist/` has no copy of the old number. The live home page, the Franklin page, `llms.txt` and a booking link read only the new one. Submitted: IndexNow (34 URLs), Search Console and Bing.
 - **Still owed, outside the repo:**
   - the Google Business Profile, Bing Places, Apple Business Connect, Facebook and the other directory listings;
-  - the call asset in Google Ads 8968122786, and the Meta page.
+  - the Meta page.
+  - The call asset in Google Ads 8968122786 (asset 387791012088) still reads (629) 298-8241, the agency line. Michael, 2026-10-29: leave it while the campaign is paused. Swap it before the campaign runs again.
   - The site invites customers to text photos, so 615-488-3575 needs to take texts.
 
 ## 2026-10-28 — Nashville Luxury Closets & Cabinets shares the CRM, tagged NLC

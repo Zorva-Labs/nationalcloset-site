@@ -19,9 +19,12 @@ export const MORNING_FROM_HOUR = 7;
 // The crew brief is never skipped.
 export const FRESH_BOOKING_HOURS = 6;
 
-// Appointment types that are a visit to a customer. All four are on the CRM's
-// quick-add; consultations and measures are the ones booked today.
-export const CUSTOMER_VISIT_TYPES = ["consultation", "measure", "install", "service"];
+// Appointment types that are a visit to a customer: the customer gets the
+// reminders and the crew the brief. Repair is the calendar's name for a service
+// visit since 2026-11-02; measure and service stay for older rows. The other
+// calendar types (vacation, phone_call, meeting, follow_up, unavailable) send
+// nothing.
+export const CUSTOMER_VISIT_TYPES = ["consultation", "measure", "install", "service", "repair"];
 export const CLOSED_STATUSES = ["canceled", "cancelled", "no_show", "no-show", "completed", "done"];
 
 // Which notices are due at this Central moment. Each window says which day's

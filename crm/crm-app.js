@@ -781,12 +781,83 @@ async function quickAddJob() {
   } catch (e) { toast(e.message, "error"); }
 }
 
+// The kinds of event the calendar holds (Michael, 2026-11-02). One list for the
+// booking form, the edit form, the legend and every label; the colors are the
+// [data-type] rules in crm-app.css. `customer`: it is with a customer, so the
+// form asks who; `allDay`: it starts as a whole-day block (and may run for days).
+// Only a consultation (or an old measure) emails the customer a confirmation;
+// the reminders and the crew brief follow CUSTOMER_VISIT_TYPES in
+// functions/_lib/event-notices.js (consultation, install, repair).
+const EVENT_TYPES = [
+  { value: "vacation",     label: "Vacation",     customer: false, allDay: true, nameLabel: "Title" },
+  { value: "phone_call",   label: "Phone Call",   customer: true,  dur: 15,  nameLabel: "Who the call is with" },
+  { value: "meeting",      label: "Meeting",      customer: false, dur: 60,  nameLabel: "Title" },
+  { value: "consultation", label: "Consultation", customer: true,  dur: 60,  nameLabel: "Customer name" },
+  { value: "install",      label: "Install",      customer: true,  dur: 240, nameLabel: "Customer name" },
+  { value: "repair",       label: "Repair",       customer: true,  dur: 120, nameLabel: "Customer name" },
+  { value: "follow_up",    label: "Follow Up",    customer: true,  dur: 30,  nameLabel: "Customer name" },
+  { value: "unavailable",  label: "Unavailable",  customer: false, allDay: true, nameLabel: "Title" },
+];
+// Types from before the list, still on old rows.
+const LEGACY_EVENT_LABELS = { measure: "Measure", service: "Service call", installation: "Install", service_call: "Service call", other: "Other" };
+// The visits whose crew gets the brief (CUSTOMER_VISIT_TYPES on the server).
+const BRIEFED_TYPES = ["consultation", "measure", "install", "service", "repair"];
+function eventType(v) { return EVENT_TYPES.find((t) => t.value === v) || null; }
+function eventTypeLabel(v) {
+  const t = eventType(v);
+  return t ? t.label : (LEGACY_EVENT_LABELS[v] || String(v || "Appointment").replace(/_/g, " "));
+}
+function eventTypeOptions(current) {
+  const list = EVENT_TYPES.map((t) => t.value);
+  if (current && !list.includes(current)) list.push(current);
+  return list.map((v) => `<option value="${esc(v)}" ${v === current ? "selected" : ""}>${esc(eventTypeLabel(v))}</option>`).join("");
+}
+// "YYYY-MM-DD" + "HH:MM" + minutes → the naive "YYYY-MM-DDTHH:MM:00" the DB stores.
+function eventEnd(dateStr, timeStr, mins) {
+  const [Y, M, D] = dateStr.split("-").map(Number);
+  const [h, m] = timeStr.split(":").map(Number);
+  const dt = new Date(Y, M - 1, D, h, m + (parseInt(mins, 10) || 0), 0);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}T${p(dt.getHours())}:${p(dt.getMinutes())}:00`;
+}
+// An all-day event runs from 00:00 on its first day to 23:59 on its last.
+function allDaySpan(from, through) {
+  if (!through || through < from) through = from;
+  const days = Math.round((Date.parse(through + "T00:00:00Z") - Date.parse(from + "T00:00:00Z")) / 86400000) + 1;
+  return { start_at: `${from}T00:00:00`, end_at: `${through}T23:59:00`, duration_min: days * 1440, all_day: 1 };
+}
+// Show the fields a type uses and relabel the rest. `prefix` is the form's id
+// prefix ("qa-" for quick add, "e-" for edit).
+function applyEventTypeFields(root, prefix) {
+  const t = eventType(root.querySelector(`#${prefix}type`).value) || { customer: true, nameLabel: "Customer name" };
+  const allDay = root.querySelector(`#${prefix}allday`).checked;
+  root.querySelectorAll("[data-for-customer]").forEach((el) => { el.hidden = !t.customer; });
+  root.querySelectorAll("[data-for-timed]").forEach((el) => { el.hidden = allDay; });
+  root.querySelectorAll("[data-for-allday]").forEach((el) => { el.hidden = !allDay; });
+  root.querySelectorAll("[data-for-rooms]").forEach((el) => { el.hidden = !t.customer || t.value === "phone_call"; });
+  const nameLbl = root.querySelector(`#${prefix}name-label`);
+  if (nameLbl) nameLbl.textContent = t.nameLabel;
+  const emailLbl = root.querySelector(`#${prefix}email-label`);
+  if (emailLbl) emailLbl.textContent = t.value === "consultation" ? "Email" : "Email (optional)";
+  const addrLbl = root.querySelector(`#${prefix}addr-label`);
+  if (addrLbl) addrLbl.textContent = t.value === "meeting" ? "Where (optional)" : "Site address (optional)";
+  root.querySelectorAll("[data-for-place]").forEach((el) => { el.hidden = !(t.customer || t.value === "meeting"); });
+  const crewLbl = root.querySelector("[data-crew] > span");
+  if (crewLbl) crewLbl.textContent = t.allDay ? "Who" : "Assigned to";
+  const hint = root.querySelector(`#${prefix}crew-hint`);
+  if (hint) hint.textContent = BRIEFED_TYPES.includes(t.value)
+    ? "Whoever is ticked gets the brief — client, phone, address and notes — on the morning of the visit."
+    : t.allDay ? "Tick whoever is off. It shows on the calendar and the phone feed; no email goes out."
+    : "Whoever is ticked sees it on their calendar. No email goes out.";
+}
+
 async function quickAddAppointment(prefill = {}) {
   const bg = document.createElement("div");
   bg.className = "modal-bg";
-  // Pre-fill with tomorrow 10:00 Central
+  // Pre-fill with the day clicked, else tomorrow, 10:00 Central
   const tomorrow = new Date(Date.now() + 86400000);
-  const defaultDate = tomorrow.toISOString().slice(0, 10);
+  const defaultDate = prefill.date || tomorrow.toISOString().slice(0, 10);
+  const startType = eventType(prefill.type) ? prefill.type : "consultation";
   // Links carried onto the appointment so it ties back to the contact / lead / job.
   const link = { contact_id: prefill.contact_id || null, lead_id: prefill.lead_id || null, project_id: prefill.project_id || null };
   // Who is going. Rendered before the modal is inserted so the checkboxes are
@@ -794,85 +865,111 @@ async function quickAddAppointment(prefill = {}) {
   const crewHtml = await assigneePicker({ selected: prefill.assignee_ids || [], label: "Assigned to" });
   bg.innerHTML = `
     <div class="modal" style="max-width:520px">
-      <div class="modal-head">Book appointment</div>
+      <div class="modal-head">Add to the calendar</div>
       <div class="modal-body">
         <div class="form">
-          <button type="button" class="btn secondary" id="qa-pick" style="width:100%;margin-bottom:2px">📇 Pick from address book</button>
-          <p class="muted" style="font-size:12px;margin:0 0 4px">…or type a new customer below.</p>
-          <label><span>Customer name</span><input id="qa-name" autofocus required value="${esc(prefill.name || "")}"/></label>
-          <div class="row">
-            <label><span>Email</span><input id="qa-email" type="email" required value="${esc(prefill.email || "")}"/></label>
+          <label><span>Type</span><select id="qa-type">${eventTypeOptions(startType)}</select></label>
+          <div data-for-customer>
+            <button type="button" class="btn secondary" id="qa-pick" style="width:100%;margin-bottom:2px">📇 Pick from address book</button>
+            <p class="muted" style="font-size:12px;margin:4px 0 0">…or type a new customer below.</p>
+          </div>
+          <label><span id="qa-name-label">Customer name</span><input id="qa-name" autofocus required value="${esc(prefill.name || "")}"/></label>
+          <div class="row" data-for-customer>
+            <label><span id="qa-email-label">Email</span><input id="qa-email" type="email" value="${esc(prefill.email || "")}"/></label>
             <label><span>Phone</span><input id="qa-phone" type="tel" value="${esc(prefill.phone || "")}"/></label>
           </div>
-          <div class="row">
+          <label class="check" style="display:flex;gap:8px;align-items:center;flex-direction:row"><input id="qa-allday" type="checkbox" style="width:auto"/> <span style="margin:0">All day</span></label>
+          <div class="row-3 ev-when" data-for-timed>
             <label><span>Date</span><input id="qa-date" type="date" value="${defaultDate}" required/></label>
             <label><span>Start time</span><input id="qa-time" type="time" value="10:00" required/></label>
-          </div>
-          <div class="row">
             <label><span>Duration (min)</span><input id="qa-dur" type="number" value="60" min="15" step="15"/></label>
-            <label><span>Type</span>
-              <select id="qa-type"><option value="consultation">Consultation</option><option value="measure">Measure</option><option value="install">Install</option><option value="service">Service</option></select>
-            </label>
           </div>
-          <label><span>Site address (optional)</span><input id="qa-addr" value="${esc(prefill.site_address || "")}"/></label>
-          <label><span>Rooms (optional)</span><input id="qa-rooms" placeholder="Living, primary BR, 2 baths"/></label>
+          <div class="row" data-for-allday hidden>
+            <label><span>From</span><input id="qa-from" type="date" value="${defaultDate}"/></label>
+            <label><span>Through</span><input id="qa-through" type="date" value="${defaultDate}"/></label>
+          </div>
+          <label data-for-place><span id="qa-addr-label">Site address (optional)</span><input id="qa-addr" value="${esc(prefill.site_address || "")}"/></label>
+          <label data-for-rooms><span>Rooms (optional)</span><input id="qa-rooms" placeholder="Living, primary BR, 2 baths"/></label>
+          <label><span>Notes (optional)</span><textarea id="qa-notes" rows="2"></textarea></label>
           ${crewHtml}
-          <p class="muted" style="font-size:12px;margin:-2px 0 0">Whoever is ticked gets the brief — client, phone, address and notes — on the morning of the visit.</p>
+          <p class="muted" id="qa-crew-hint" style="font-size:12px;margin:-2px 0 0"></p>
         </div>
       </div>
       <div class="modal-foot">
         <button class="btn ghost" data-cancel>Cancel</button>
-        <button class="btn primary" data-save>Book it</button>
+        <button class="btn primary" data-save>Add it</button>
       </div>
     </div>
   `;
   document.body.appendChild(bg);
   wireAssigneePicker(bg);
+  const $ = (id) => bg.querySelector("#qa-" + id);
+  // Picking a type sets its usual length and whether it is all day; the
+  // address shows for customer visits and for a meeting (its place).
+  const onType = () => {
+    const t = eventType($("type").value);
+    $("allday").checked = !!t.allDay;
+    if (t.dur) $("dur").value = t.dur;
+    if (!t.customer && !$("name").value.trim() && t.value !== "meeting") $("name").placeholder = t.label;
+    else $("name").placeholder = "";
+    applyEventTypeFields(bg, "qa-");
+  };
+  $("type").onchange = onType;
+  $("allday").onchange = () => { applyEventTypeFields(bg, "qa-"); };
+  $("date").onchange = () => { $("from").value = $("date").value; $("through").value = $("date").value; };
+  $("from").onchange = () => { if ($("through").value < $("from").value) $("through").value = $("from").value; };
+  onType();
   const close = () => bg.remove();
   bg.querySelector("[data-cancel]").onclick = close;
   bg.addEventListener("click", (e) => { if (e.target === bg) close(); });
   // Address-book picker: fills the fields and links the appointment to that contact.
-  bg.querySelector("#qa-pick").onclick = async () => {
+  $("pick").onclick = async () => {
     bg.style.display = "none";
     const c = await pickContact();
     bg.style.display = "";
     if (!c) return;
-    bg.querySelector("#qa-name").value = c.name || "";
-    bg.querySelector("#qa-email").value = c.email || "";
-    bg.querySelector("#qa-phone").value = c.phone || "";
+    $("name").value = c.name || "";
+    $("email").value = c.email || "";
+    $("phone").value = c.phone || "";
     const addr = c.address || c.site_address || [c.address_street, c.address_city, c.address_state, c.address_zip].filter(Boolean).join(", ");
-    if (addr) bg.querySelector("#qa-addr").value = addr;
+    if (addr) $("addr").value = addr;
     link.contact_id = c.id;
   };
   bg.querySelector("[data-save]").onclick = async () => {
-    const date = bg.querySelector("#qa-date").value;
-    const time = bg.querySelector("#qa-time").value;
-    const dur = parseInt(bg.querySelector("#qa-dur").value || "60", 10);
-    const [h, m] = time.split(":").map((n) => parseInt(n, 10));
-    const totalMin = h * 60 + m + dur;
-    const endTime = `${String(Math.floor(totalMin / 60)).padStart(2, "0")}:${String(totalMin % 60).padStart(2, "0")}`;
+    const t = eventType($("type").value);
+    const allDay = $("allday").checked;
+    let when;
+    if (allDay) {
+      if (!$("from").value) { toast("Pick a date", "error"); return; }
+      when = allDaySpan($("from").value, $("through").value);
+    } else {
+      const date = $("date").value, time = $("time").value;
+      if (!date || !time) { toast("Pick a date and time", "error"); return; }
+      const dur = parseInt($("dur").value || "60", 10) || 60;
+      when = { start_at: `${date}T${time}:00`, end_at: eventEnd(date, time, dur), duration_min: dur, all_day: 0 };
+    }
     const body = {
-      name: bg.querySelector("#qa-name").value.trim(),
-      email: bg.querySelector("#qa-email").value.trim(),
-      phone: bg.querySelector("#qa-phone").value.trim() || null,
-      start_at: `${date}T${time}:00`,
-      end_at: `${date}T${endTime}:00`,
-      duration_min: dur,
-      type: bg.querySelector("#qa-type").value,
-      site_address: bg.querySelector("#qa-addr").value.trim() || null,
-      rooms: bg.querySelector("#qa-rooms").value.trim() || null,
+      ...when,
+      type: t.value,
+      name: $("name").value.trim() || (t.customer ? "" : t.label),
+      email: t.customer ? $("email").value.trim() : "",
+      phone: t.customer ? ($("phone").value.trim() || null) : null,
+      site_address: (t.customer || t.value === "meeting") ? ($("addr").value.trim() || null) : null,
+      rooms: (t.customer && t.value !== "phone_call") ? ($("rooms").value.trim() || null) : null,
+      notes: $("notes").value.trim() || null,
       status: "confirmed",
       source: "admin",
-      contact_id: link.contact_id,
-      lead_id: link.lead_id,
-      project_id: link.project_id,
+      contact_id: t.customer ? link.contact_id : null,
+      lead_id: t.customer ? link.lead_id : null,
+      project_id: t.customer ? link.project_id : null,
       assignee_ids: readAssigneePicker(bg) || [],
     };
-    if (!body.name || !body.email) { toast("Name + email required", "error"); return; }
+    if (!body.name) { toast(t.nameLabel + " is required", "error"); return; }
+    if (t.value === "consultation" && !body.email) { toast("A consultation needs the customer's email for the confirmation", "error"); return; }
     try {
       await fetchJSON("/api/appointments", { method: "POST", body: JSON.stringify(body) });
       bg.remove();
-      toast("Appointment booked", "success");
+      toast(`${t.label} added`, "success");
       if (location.pathname.includes("/calendar")) location.reload();
       else location.href = "/crm/calendar.html";
     } catch (e) { toast(e.message, "error"); }
@@ -1396,6 +1493,7 @@ window.SSCrm = {
   fetchJSON, mount, setCrumbs, jobCrumbs, painterBadge, fmtMoney, fmtMoneyShort, parseMoney, fmtDate, fmtDay, fmtDateTime, fmtTime, esc, pill, logout, toast, confirmDialog,
   pickContact, pickJob, openModal, recordPayment,
   quickAddLead, quickAddContact, quickAddJob, quickAddAppointment, quickAddEstimate, quickAddProposal, quickAddContract,
+  EVENT_TYPES, BRIEFED_TYPES, eventType, eventTypeLabel, eventTypeOptions, eventEnd, allDaySpan, applyEventTypeFields,
   composeEmail, renderEmailTimeline,
   team, assigneePicker, readAssigneePicker, wireAssigneePicker, assigneeChips, initialsOf, shortName,
   PROJECT_STATUSES, SERVICES, serviceDatalist, brandTag,

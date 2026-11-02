@@ -54,6 +54,7 @@ const VISIT_LABEL = {
   measure: "measure & design visit",
   install: "install",
   service: "service visit",
+  repair: "repair visit",
 };
 
 // One reminder for one appointment. `day` is "today" or "tomorrow".
@@ -75,6 +76,7 @@ export function renderVisitReminder(a, day) {
     measure: `<p>We'll take measurements, design a 3D version of the space, and leave you with a quote — no obligation. Plan on about 45–60 minutes.</p>`,
     install: `<p>Before the crew arrives, please clear the space and the area around it, and make sure there is a clear way in for us.</p>`,
     service: "",
+    repair: "",
   }[type] || "";
   const change = isDesignVisit
     ? `<p>If ${day} no longer works, you can <a href="${cancelUrl}">reschedule or cancel here</a>, or call/text us at <a href="${PHONE_HREF}">${PHONE}</a>.</p>`

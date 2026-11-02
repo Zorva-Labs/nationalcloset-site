@@ -117,6 +117,7 @@ export function visitLabel(type) {
   if (t === "measure") return "measure & design visit";
   if (t === "install") return "install";
   if (t === "service") return "service visit";
+  if (t === "repair") return "repair visit";
   return "in-home consultation";
 }
 

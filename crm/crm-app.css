@@ -481,6 +481,8 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 .form textarea { resize: vertical; min-height: 80px; font-family: var(--font); }
 .form .row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
 .form .row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+/* A field a form hides for this choice (the calendar's event types) — .row's grid would beat [hidden]. */
+.form [hidden] { display: none !important; }
 .form-actions { display: flex; gap: 8px; margin-top: 8px; }
 
 /* ============================================================
@@ -601,15 +603,28 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 /* Calendar events are colored by TYPE first (a consult and an install must be
    tellable apart at a glance), with status as an override for cancelled. Each
    uses a solid left bar + tinted fill + dark ink of the same hue, so the text
-   always clears WCAG contrast on the pale fill. */
+   always clears WCAG contrast on the pale fill. One set of variables per type
+   (SSCrm.EVENT_TYPES), shared by the chip, the legend and the phone's dot. */
 .cal-event { font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 4px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-left: 3px solid; }
 .cal-event:hover { filter: brightness(0.97); }
-/* Consultation — blue */
-.cal-event, .cal-event[data-type="consultation"] { background: #DBEAFE; color: #1E40AF; border-left-color: #2563EB; }
+.cal-event, .cal-legend i { background: var(--ev-bg); color: var(--ev-ink); border-left-color: var(--ev-bar); }
+/* Consultation — blue (also the default for a type with no rule) */
+:where(.cal-event, .cal-legend i), [data-type="consultation"] { --ev-bg: #DBEAFE; --ev-ink: #1E40AF; --ev-bar: #2563EB; }
 /* Install — amber/orange, clearly distinct from a consult */
-.cal-event[data-type="install"] { background: #FEEBC8; color: #9A3412; border-left-color: #EA580C; }
-/* Measure / follow-up visits — teal */
-.cal-event[data-type="measure"], .cal-event[data-type="measurement"], .cal-event[data-type="followup"], .cal-event[data-type="follow_up"] { background: #CCFBF1; color: #115E59; border-left-color: #0D9488; }
+[data-type="install"], [data-type="installation"] { --ev-bg: #FEEBC8; --ev-ink: #9A3412; --ev-bar: #EA580C; }
+/* Follow up / measure — teal */
+[data-type="follow_up"], [data-type="followup"], [data-type="measure"], [data-type="measurement"] { --ev-bg: #CCFBF1; --ev-ink: #115E59; --ev-bar: #0D9488; }
+/* Repair / service — red */
+[data-type="repair"], [data-type="service"], [data-type="service_call"] { --ev-bg: #FEE2E2; --ev-ink: #991B1B; --ev-bar: #DC2626; }
+/* Phone call — green */
+[data-type="phone_call"] { --ev-bg: #DCFCE7; --ev-ink: #166534; --ev-bar: #16A34A; }
+/* Meeting — violet */
+[data-type="meeting"] { --ev-bg: #EDE9FE; --ev-ink: #5B21B6; --ev-bar: #7C3AED; }
+/* Vacation — pink */
+[data-type="vacation"] { --ev-bg: #FCE7F3; --ev-ink: #9D174D; --ev-bar: #DB2777; }
+/* Unavailable — slate, hatched so it reads as blocked time, not a visit */
+[data-type="unavailable"] { --ev-bg: #E5E7EB; --ev-ink: #1F2937; --ev-bar: #4B5563; }
+.cal-event[data-type="unavailable"], .cal-legend i[data-type="unavailable"] { background: repeating-linear-gradient(135deg, #E5E7EB 0 5px, #F3F4F6 5px 10px); }
 /* Status overrides (win regardless of type) */
 .cal-event[data-s="cancelled"], .cal-event[data-s="declined"] { background: #F1F5F9 !important; color: #64748B !important; border-left-color: #94A3B8 !important; text-decoration: line-through; }
 .cal-event[data-s="completed"], .cal-event[data-s="installed"] { filter: saturate(0.7) brightness(0.99); opacity: 0.82; }
@@ -617,11 +632,14 @@ h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; margin: 0; color: var(--ink
 /* Legend under the month header */
 .cal-legend { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 0 0 12px; font-size: 12px; color: var(--ink-soft); }
 .cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
-.cal-legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; border-left: 3px solid; }
-.cal-legend .lg-consult { background: #DBEAFE; border-left-color: #2563EB; }
-.cal-legend .lg-install { background: #FEEBC8; border-left-color: #EA580C; }
+.cal-legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; border-left: 3px solid var(--ev-bar); }
+/* The type's label in the day list and the event card */
+.ev-type { font-weight: 600; font-size: 13px; color: var(--ev-ink); }
 .cal-more { font-size: 11px; color: var(--ink-soft); font-weight: 500; padding: 2px 4px; }
 @media (max-width: 700px) {
+  /* The event form's date / time / length: the date on its own line on a phone */
+  .form .ev-when { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .form .ev-when > :first-child { grid-column: 1 / -1; }
   .cal-day { min-height: 70px; padding: 4px; }
   .cal-event { font-size: 10px; padding: 2px 4px; }
   .cal-day-num { font-size: 11px; }
@@ -1126,6 +1144,7 @@ hr.sep { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
   .cal-event {
     width: 8px; height: 8px; padding: 0; border-radius: 50%;
     border-left: 0; font-size: 0; line-height: 0; flex: none;
+    background: var(--ev-bar) !important;
   }
   .cal-event > * { display: none; }
   .cal-more { flex: 0 0 100%; font-size: 10px; padding: 0 2px; }

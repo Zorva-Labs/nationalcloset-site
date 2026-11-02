@@ -61,9 +61,12 @@ export async function onRequestPatch(context) {
   const body = await context.request.json().catch(() => ({}));
   const fields = [];
   const binds = [];
-  const allowed = ["status", "start_at", "end_at", "duration_min", "notes", "rooms", "site_address", "name", "phone", "email", "type"];
+  const allowed = ["status", "start_at", "end_at", "duration_min", "notes", "rooms", "site_address", "name", "phone", "email", "type", "all_day"];
   for (const k of allowed) {
-    if (body[k] !== undefined) { fields.push(`${k} = ?${binds.length + 1}`); binds.push(body[k]); }
+    if (body[k] === undefined) continue;
+    // email and name are NOT NULL; a vacation or a meeting has no email.
+    const v = k === "all_day" ? (body[k] ? 1 : 0) : (k === "email" && body[k] == null) ? "" : body[k];
+    fields.push(`${k} = ?${binds.length + 1}`); binds.push(v);
   }
   // Who is going out. Its own table, so it is handled apart from the column
   // updates — and a save that only changes the crew is a valid save.

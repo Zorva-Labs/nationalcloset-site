@@ -19,7 +19,7 @@ Every visit on the CRM calendar with a customer is announced twice, to the custo
 
 | | Day before (9am–8pm) | Morning of (7am) |
 |---|---|---|
-| Appointment (consultation, measure, install, service): customer | reminder, "tomorrow at …" | reminder, "today at …" |
+| Appointment (consultation, measure, install, service, repair): customer | reminder, "tomorrow at …" | reminder, "today at …" |
 | Appointment: crew (assignees, else the whole roster) | consult brief, "Tomorrow …" | consult brief, "Today …" |
 | Install date on a job (`projects.install_date`): customer | "Your install is tomorrow", clear the space | the `job_installing` stage email, sent when the job moves at 7am |
 
@@ -29,7 +29,7 @@ Every visit on the CRM calendar with a customer is announced twice, to the custo
 - No crew brief for a job's install date yet: installs on jobs carry a date, not a time, and the brief's "WHEN" line needs one. Only appointment rows are briefed.
 
 ## The consult brief
-- **Consult brief** (`_lib/consult-brief.js`): the day before and the morning of every appointment (consultation, measure, install, service; the windows above), every assigned team member is emailed the client's name, phone, email, the time, the address linked to Google Maps, rooms, notes, who else is going and a `/crm/calendar.html?appt=<id>` deep link. Sent as crm@ (`alertSender`), one email per assignee, **never to the client**, and deliberately not written to `email_messages` — that table is the client conversation; the record is an `activity_log` entry on the appointment. Nobody assigned → the whole active roster, and the email says so.
+- **Consult brief** (`_lib/consult-brief.js`): the day before and the morning of every appointment (consultation, measure, install, service, repair — not a phone call, meeting, follow-up or time off; the windows above), every assigned team member is emailed the client's name, phone, email, the time, the address linked to Google Maps, rooms, notes, who else is going and a `/crm/calendar.html?appt=<id>` deep link. Sent as crm@ (`alertSender`), one email per assignee, **never to the client**, and deliberately not written to `email_messages` — that table is the client conversation; the record is an `activity_log` entry on the appointment. Nobody assigned → the whole active roster, and the email says so.
 - Wording is the `consult_brief` row in `email_templates` with a byte-identical `FALLBACK` in the module (keep the two in step; migrations 0070 + 0071 are the source). Never write "Today" into it — the manual send can go out days early; use `{{day_word}}` / `{{day_relative}}` / `{{greeting}}`. A token the sender doesn't supply is blanked, never mailed as a literal.
 - Guarded by its `event_notices` rows (`crew_eve`, `crew_morning`), claimed before sending (`centralNow()` uses the IANA zone, not a flat -5). Manual early send: `POST /api/appointments/[id] {action:"send_team_brief"}` ("Send crew brief" on the appointment), which claims no row, so the scheduled briefs still go.
 

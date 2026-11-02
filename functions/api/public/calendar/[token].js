@@ -30,7 +30,7 @@ export async function onRequest(context) {
   const fiveYearsAhead = new Date(now.getTime() + 5 * 365 * 86400 * 1000).toISOString();
 
   const { results } = await context.env.DB.prepare(
-    `SELECT id, contact_id, project_id, lead_id, type, start_at, end_at,
+    `SELECT id, contact_id, project_id, lead_id, type, start_at, end_at, all_day,
             duration_min, status, name, email, phone, site_address, rooms, notes, updated_at
        FROM appointments
        WHERE start_at >= ?1 AND start_at <= ?2

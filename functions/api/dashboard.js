@@ -34,6 +34,7 @@ export async function onRequestGet(context) {
     FROM appointments a
     LEFT JOIN contacts c ON c.id = a.contact_id
     WHERE a.start_at >= ?1 AND a.start_at < ?2 AND a.status IN ('pending','confirmed')
+      AND COALESCE(a.type, '') NOT IN ('vacation', 'unavailable')   -- time off, not a visit
     ORDER BY a.start_at ASC LIMIT 10
   `).bind(today + "T00:00:00", weekAhead + "T23:59:59").all()).results || [];
 

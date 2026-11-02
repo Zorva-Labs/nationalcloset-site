@@ -69,6 +69,12 @@ const TYPE_LABEL = {
   measure:      "Measure",
   install:      "Install",
   service:      "Service call",
+  repair:       "Repair",
+  follow_up:    "Follow Up",
+  phone_call:   "Phone Call",
+  meeting:      "Meeting",
+  vacation:     "Vacation",
+  unavailable:  "Unavailable",
 };
 
 export function buildAppointmentFeed(appointments) {
@@ -96,7 +102,8 @@ export function buildAppointmentFeed(appointments) {
     if (a.status === "cancelled" || a.status === "no-show") continue; // could keep w/ STATUS:CANCELLED — for now omit
 
     const typeLabel = TYPE_LABEL[a.type] || a.type || "Appointment";
-    const summary = `${typeLabel} — ${a.name || "(no name)"}`;
+    // A vacation titled "Vacation" reads as just that, not "Vacation — Vacation".
+    const summary = !a.name || a.name === typeLabel ? typeLabel : `${typeLabel} — ${a.name}`;
     const descLines = [
       a.phone ? `Phone: ${a.phone}` : "",
       a.email ? `Email: ${a.email}` : "",
@@ -108,7 +115,7 @@ export function buildAppointmentFeed(appointments) {
 
     // Stable UID — same appointment edited in CRM updates on phone via UID match.
     // Installs are keyed on the project so their UID is stable across edits too.
-    const uid = a.all_day ? `install-${a.project_id}@nationalclosetco.com` : `appt-${a.id}@nationalclosetco.com`;
+    const uid = String(a.id).startsWith("install-") ? `install-${a.project_id}@nationalclosetco.com` : `appt-${a.id}@nationalclosetco.com`;
 
     out.push("BEGIN:VEVENT");
     out.push(`UID:${uid}`);
@@ -120,7 +127,9 @@ export function buildAppointmentFeed(appointments) {
       // Date-only all-day event. DTEND is exclusive (the next day) per RFC 5545.
       const day = fmtDate(a.start_at);
       out.push(`DTSTART;VALUE=DATE:${day}`);
-      out.push(`DTEND;VALUE=DATE:${nextDay(a.start_at)}`);
+      // A job's install is one day; an all-day appointment (a vacation) runs
+      // through its end_at's date.
+      out.push(`DTEND;VALUE=DATE:${nextDay(a.end_at || a.start_at)}`);
     } else {
       out.push(`DTSTART;TZID=America/Chicago:${fmtLocal(a.start_at)}`);
       out.push(`DTEND;TZID=America/Chicago:${fmtLocal(a.end_at)}`);

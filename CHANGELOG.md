@@ -2,6 +2,24 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-02 — CRM calendar: eight event types, all-day and multi-day events
+
+- **Asked:** Michael, 2026-11-02: "we need to be able to add different types of events to the calendar. Vacation, Phone Call, Meeting, Consultation, Install, Repair, Follow Up, Unavailable."
+- **What:**
+  - "+ Add event" on the calendar opens one form for all eight types. Each type shows the fields it uses. A customer type has the address book, email, phone, address and rooms. A Meeting has a title and a place. Vacation and Unavailable have a title, all day, From/Through dates and who is off.
+  - Clicking a day and then "+ Add event" starts the form on that day. The edit form can change the type and switch between all day and timed. Cancel says "Cancel Vacation", "Cancel Repair" and so on.
+  - Each type has its own color on the grid, the legend, the day list and the event card. On a phone, the month dots now show the type's strong color; before, they were the pale fill.
+  - The list is `EVENT_TYPES` in `crm/crm-app.js`, and the colors are the `[data-type]` rules in `crm-app.css` (`docs/crm.md` → Getting around). Asset versions are now ncc126 (css) and ncc118 (js).
+- **Server:**
+  - Only a consultation needs a customer email now; the other types can be saved without one.
+  - `appointments.all_day` (migration 0083, applied to the live D1 before the deploy; all 57 existing rows are 0). The API returns any event that overlaps the window, so a week's vacation shows on each of its days.
+  - The phone feed sends all-day events as date-only events through their last day, with labels for the new types.
+  - Repair gets the customer's day-before and morning-of reminders and the crew brief, the same as install. Phone Call, Meeting, Follow Up, Vacation and Unavailable send no mail.
+  - The dashboard's "upcoming visits" leaves out Vacation and Unavailable.
+  - A customer picking an install slot is now blocked only by another customer visit, not by a phone call or someone's time off. Before, any event at that hour turned the slot down at submit, even though the slot list had offered it.
+- **Checked:** on the local CRM (wrangler pages dev over the local D1), every type saved through the API; a consultation with no email was refused; a vacation added and then extended through the form showed on each day; the feed was right for each type; nothing was wider than the screen at 375px. Live: the calendar serves the new assets and `/api/appointments` answers 401 signed out. No public page changed, so nothing was submitted.
+- **Owed:** Vacation and Unavailable don't block the dates offered to a customer scheduling their install (`public/install-slots`). Turn that on only if Michael asks.
+
 ## 2026-10-29 — New business number: 615-488-3575
 
 - **Asked:** Michael, 2026-10-29: "Change the phone number for NCC in all locations to 615-488-3575".

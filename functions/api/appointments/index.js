@@ -17,9 +17,11 @@ export async function onRequestGet(context) {
   const to = url.searchParams.get("to") || "2999-12-31";
   const status = url.searchParams.get("status");
 
+  // Everything that overlaps the window, so a week's vacation that began last
+  // month still shows on this month's days.
   let sql = `SELECT a.*, c.name AS contact_name FROM appointments a
              LEFT JOIN contacts c ON c.id = a.contact_id
-             WHERE a.start_at >= ?1 AND a.start_at <= ?2`;
+             WHERE a.start_at <= ?2 AND COALESCE(a.end_at, a.start_at) >= ?1`;
   const binds = [from + "T00:00:00", to + "T23:59:59"];
   if (status) { sql += ` AND a.status = ?3`; binds.push(status); }
   sql += ` ORDER BY a.start_at ASC LIMIT 500`;
@@ -83,39 +85,42 @@ export async function onRequestPost(context) {
   if (auth instanceof Response) return auth;
   const { DB } = context.env;
   const body = await context.request.json().catch(() => ({}));
-  const required = ["start_at", "end_at", "name", "email"];
+  // A vacation, a meeting or a phone call has no customer email; only a visit
+  // that sends the customer a confirmation needs one.
+  const type = body.type || "consultation";
+  const required = ["start_at", "end_at", "name", ...(isClientVisit(type) ? ["email"] : [])];
   for (const k of required) {
     if (!body[k]) return json({ error: `Missing ${k}` }, 400);
   }
-  const contactId = await upsertContact(DB, {
-    name: body.name, email: body.email, phone: body.phone,
-    address: body.address || null,
-  });
+  const contactId = body.email
+    ? await upsertContact(DB, { name: body.name, email: body.email, phone: body.phone, address: body.address || null })
+    : (body.contact_id || null);
   const cancelToken = genToken(16);
   const r = await DB
     .prepare(
       `INSERT INTO appointments (contact_id, lead_id, project_id, type, start_at, end_at, duration_min, status, source,
-        name, email, phone, site_address, rooms, notes, cancel_token)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)
+        name, email, phone, site_address, rooms, notes, cancel_token, all_day)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)
        RETURNING id`
     )
     .bind(
       contactId,
       body.lead_id || null,
       body.project_id || null,
-      body.type || "consultation",
+      type,
       body.start_at,
       body.end_at,
       body.duration_min || 60,
       body.status || "confirmed",
       body.source || "admin",
       body.name,
-      body.email,
+      body.email || "",
       body.phone || null,
       body.site_address || null,
       body.rooms || null,
       body.notes || null,
       cancelToken,
+      body.all_day ? 1 : 0,
     )
     .first();
   // Auto-advance any lead this appointment is for to "consult". Two ways the
@@ -127,7 +132,7 @@ export async function onRequestPost(context) {
     const lead = await DB.prepare(`SELECT id FROM leads WHERE LOWER(email)=?1 ORDER BY id DESC LIMIT 1`).bind(body.email.toLowerCase()).first().catch(() => null);
     if (lead) leadIdForBump = lead.id;
   }
-  if (leadIdForBump && (body.type || "consultation") === "consultation") {
+  if (leadIdForBump && type === "consultation") {
     await bumpLeadStatusForward(DB, leadIdForBump, "consult", { actor: { kind: "admin", id: auth.id, name: auth.email } });
   }
 
@@ -141,15 +146,15 @@ export async function onRequestPost(context) {
   await recordActivity(DB, {
     entityType: "appointment", entityId: r.id, action: "created",
     actorKind: "admin", actorId: auth.id, actorName: auth.email,
-    details: { lead_id: leadIdForBump, type: body.type || "consultation" },
+    details: { lead_id: leadIdForBump, type },
   });
 
   // Email the client their appointment details (consultation / measure visits).
   // Best-effort — never blocks the booking response. Logged to the client's CRM
   // timeline so the conversation is captured from the first touch.
-  if (isClientVisit(body.type) && body.email) {
+  if (isClientVisit(type) && body.email) {
     const appt = {
-      id: r.id, type: body.type || "consultation", start_at: body.start_at, end_at: body.end_at,
+      id: r.id, type, start_at: body.start_at, end_at: body.end_at,
       name: body.name, email: body.email, site_address: body.site_address, rooms: body.rooms, notes: body.notes,
       cancel_token: cancelToken,
     };

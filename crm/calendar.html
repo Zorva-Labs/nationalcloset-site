@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Calendar · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc125"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc126"/></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc117"></script>
+<script src="/crm/crm-app.js?v=ncc118"></script>
 <script>
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DOW_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -17,7 +17,7 @@ const readOnly = () => SSCrm.role() === "installer";
     title: "Calendar",
     subtitle: "Month view — click a day to add, click an event to view",
     actions: `<button class="btn secondary" onclick="showSubscribeInstructions()">📱 Sync to phone</button>
-              <button class="btn primary" onclick="SSCrm.quickAddAppointment()">+ Manual appointment</button>`,
+              <button class="btn primary" onclick="SSCrm.quickAddAppointment()">+ Add event</button>`,
     wide: true,
   });
   if (!user) return;
@@ -62,11 +62,11 @@ async function render() {
 
   const { appointments } = await SSCrm.fetchJSON(`/api/appointments?from=${from}&to=${to}`);
 
-  // Bucket appointments by YYYY-MM-DD
+  // Bucket appointments by YYYY-MM-DD. An all-day event (a vacation) goes on
+  // every day it covers.
   const byDate = {};
   for (const a of appointments) {
-    const d = (a.start_at || "").slice(0, 10);
-    (byDate[d] ||= []).push(a);
+    for (const d of eventDays(a, from, to)) (byDate[d] ||= []).push(a);
   }
 
   // Build the 6-row × 7-col grid
@@ -107,8 +107,7 @@ async function render() {
         </div>
       </div>
       <div class="cal-legend">
-        <span><i class="lg-consult"></i> Consultation</span>
-        <span><i class="lg-install"></i> Install</span>
+        ${SSCrm.EVENT_TYPES.map((t) => `<span><i data-type="${t.value}"></i> ${SSCrm.esc(t.label)}</span>`).join("")}
       </div>
       <div class="cal-dow-row">${DOW_NAMES.map((d) => `<div class="cal-dow">${d}</div>`).join("")}</div>
       <div class="cal-month-grid">${cells.map((c) => renderCell(c, byDate, todayStr)).join("")}</div>
@@ -139,9 +138,40 @@ function renderCell(c, byDate, todayStr) {
   const more = events.length - shown.length;
   return `<div class="${classes.join(" ")}" data-date="${iso}">
     <div class="cal-day-num">${c.date.getUTCDate()}</div>
-    ${shown.map((a) => `<div class="cal-event" data-id="${a.id}" data-type="${SSCrm.esc(a.type || "consultation")}" data-s="${SSCrm.esc(a.status)}"${a.is_install ? ` data-project="${a.project_id}"` : ""} title="${SSCrm.esc(a.name)} — ${a.is_install ? (a.wall_paint ? "Install, wall repair and paint" + (a.painter_booked_at ? " (painter booked)" : " (book the painter)") : "Install") : SSCrm.esc(a.type)}${crewTitle(a.assignees)}">${a.is_install ? "🔧 " : ""}${a.is_install && a.wall_paint ? "🎨 " : ""}<span class="cal-event-time">${prettyTime(a.start_at)}</span> ${SSCrm.esc((a.name || "").split(" ")[0])}${crewDots(a.assignees)}</div>`).join("")}
+    ${shown.map((a) => `<div class="cal-event" data-id="${a.id}" data-type="${SSCrm.esc(a.type || "consultation")}" data-s="${SSCrm.esc(a.status)}"${a.is_install ? ` data-project="${a.project_id}"` : ""} title="${SSCrm.esc(a.name)} — ${a.is_install ? (a.wall_paint ? "Install, wall repair and paint" + (a.painter_booked_at ? " (painter booked)" : " (book the painter)") : "Install") : SSCrm.esc(SSCrm.eventTypeLabel(a.type))}${crewTitle(a.assignees)}">${a.is_install ? "🔧 " : ""}${a.is_install && a.wall_paint ? "🎨 " : ""}${a.all_day ? "" : `<span class="cal-event-time">${prettyTime(a.start_at)}</span> `}${SSCrm.esc(chipName(a))}${crewDots(a.assignees)}</div>`).join("")}
     ${more > 0 ? `<div class="cal-more">+${more} more</div>` : ""}
   </div>`;
+}
+
+// The days an event covers inside [from, to]: one for a timed event, each day
+// from start to end for an all-day one.
+function eventDays(a, from, to) {
+  const first = (a.start_at || "").slice(0, 10);
+  if (!a.all_day) return [first];
+  const last = (a.end_at || a.start_at || "").slice(0, 10);
+  const out = [];
+  for (let d = first < from ? from : first; d <= last && d <= to; d = nextIso(d)) out.push(d);
+  return out;
+}
+function nextIso(iso) {
+  const d = new Date(iso + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+// The chip's words: a customer's first name, or the event's own title for
+// time off and meetings ("Vacation", "Team meeting").
+function chipName(a) {
+  const t = SSCrm.eventType(a.type);
+  if (t && !t.customer) return a.name || t.label;
+  return (a.name || "").split(" ")[0];
+}
+// "10:00a — 11:00a", "All day", or "Mon, Nov 3 – Fri, Nov 7" for a run of days.
+function whenText(a) {
+  if (!a.all_day) return `${prettyTime(a.start_at)} — ${prettyTime(a.end_at)}`;
+  const s = (a.start_at || "").slice(0, 10), e = (a.end_at || a.start_at || "").slice(0, 10);
+  if (s === e) return "All day";
+  const f = (iso) => new Date(iso + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+  return `All day, ${f(s)} – ${f(e)}`;
 }
 
 function prevMonth() {
@@ -208,10 +238,10 @@ async function openDay(iso) {
             <div style="margin-top:6px">${SSCrm.assigneeChips(a.assignees)}</div>
             <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">${SSCrm.pill(a.status)}${SSCrm.painterBadge(a)}</div>
           </div>` : `
-          <div style="border:1px solid var(--line);border-radius:var(--r-sm);padding:12px;cursor:pointer" onclick="openAppt(${a.id})">
-            <div style="font-weight:600;color:var(--accent-text);font-size:13px">${prettyTime(a.start_at)} — ${prettyTime(a.end_at)}</div>
+          <div data-type="${SSCrm.esc(a.type || "consultation")}" style="border:1px solid var(--line);border-left:3px solid var(--ev-bar);border-radius:var(--r-sm);padding:12px;cursor:pointer" onclick="openAppt(${a.id})">
+            <div style="font-weight:600;color:var(--accent-text);font-size:13px">${whenText(a)}</div>
             <div style="margin-top:4px;font-weight:600">${SSCrm.esc(a.name)}</div>
-            <div style="font-size:12px;color:var(--ink-soft)">${SSCrm.esc(a.type)} · ${a.duration_min}m${a.phone ? " · " + SSCrm.esc(a.phone) : ""}</div>
+            <div style="font-size:12px;color:var(--ink-soft)"><span class="ev-type">${SSCrm.esc(SSCrm.eventTypeLabel(a.type))}</span>${a.all_day ? "" : ` · ${a.duration_min}m`}${a.phone ? " · " + SSCrm.esc(a.phone) : ""}</div>
             <div style="margin-top:6px">${SSCrm.assigneeChips(a.assignees)}</div>
             ${a.site_address ? `<div style="font-size:12px;color:var(--ink-soft);margin-top:2px"><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.site_address)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:inherit;text-decoration:underline">${SSCrm.esc(a.site_address)} ↗</a></div>` : ""}
             <div style="margin-top:6px">${SSCrm.pill(a.status)}</div>
@@ -219,36 +249,29 @@ async function openDay(iso) {
       </div>
       <div class="modal-foot">
         <button class="btn ghost" data-close>Close</button>
-        ${readOnly() ? "" : `<button class="btn primary" data-add>+ Add appointment</button>`}
+        ${readOnly() ? "" : `<button class="btn primary" data-add>+ Add event</button>`}
       </div>
     </div>
   `;
   document.body.appendChild(bg);
   bg.querySelector("[data-close]").onclick = () => bg.remove();
   const addBtn = bg.querySelector("[data-add]");
-  if (addBtn) addBtn.onclick = () => { bg.remove(); SSCrm.quickAddAppointment(); };
+  if (addBtn) addBtn.onclick = () => { bg.remove(); SSCrm.quickAddAppointment({ date: iso }); };
   bg.addEventListener("click", (e) => { if (e.target === bg) bg.remove(); });
 }
 
 // Click on a specific event → show details + actions
-const APPT_TYPES = ["consultation", "measure", "installation", "follow_up", "service_call", "other"];
 const APPT_STATUSES = ["confirmed", "completed", "cancelled"];
-
-// Recompute an end datetime string from a date + time + duration (minutes),
-// keeping the naive "YYYY-MM-DDTHH:MM:SS" format the DB stores.
-function apptEnd(dateStr, timeStr, mins) {
-  const [Y, M, D] = dateStr.split("-").map(Number);
-  const [h, m] = timeStr.split(":").map(Number);
-  const dt = new Date(Y, M - 1, D, h, m + (parseInt(mins, 10) || 0), 0);
-  const p = (n) => String(n).padStart(2, "0");
-  return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}T${p(dt.getHours())}:${p(dt.getMinutes())}:00`;
-}
 
 async function openAppt(id) {
   const data = await SSCrm.fetchJSON("/api/appointments/" + id);
   const a = data.appointment;
   let crew = data.assignees || [];
+  // A consult (or an old measure) has a customer confirmation; the visits in
+  // BRIEFED_TYPES have the crew brief. Time off, calls and meetings have neither.
   const isVisit = ["consultation", "measure"].includes((a.type || "").toLowerCase());
+  const isBriefed = SSCrm.BRIEFED_TYPES.includes((a.type || "").toLowerCase());
+  const typeLabel = SSCrm.eventTypeLabel(a.type);
   const bg = document.createElement("div");
   bg.className = "modal-bg";
   document.body.appendChild(bg);
@@ -261,17 +284,17 @@ async function openAppt(id) {
         <div class="modal-head">${SSCrm.esc(a.name)}</div>
         <div class="modal-body">
           <div style="display:grid;gap:10px;font-size:13px">
-            <div><strong>When</strong> · ${SSCrm.fmtDateTime(a.start_at)} (${a.duration_min}m)</div>
-            <div><strong>Type</strong> · ${SSCrm.esc((a.type || "").replace(/_/g, " "))}</div>
+            <div><strong>When</strong> · ${a.all_day ? (whenText(a) === "All day" ? `${prettyDate(a.start_at.slice(0, 10))}, all day` : whenText(a)) : `${SSCrm.fmtDateTime(a.start_at)} (${a.duration_min}m)`}</div>
+            <div data-type="${SSCrm.esc(a.type || "consultation")}"><strong>Type</strong> · <span class="ev-type">${SSCrm.esc(typeLabel)}</span></div>
             <div><strong>Status</strong> · ${SSCrm.pill(a.status)}</div>
             ${a.phone ? `<div><strong>Phone</strong> · <a href="tel:${SSCrm.esc(a.phone)}">${SSCrm.esc(a.phone)}</a></div>` : ""}
             ${a.email ? `<div><strong>Email</strong> · <a href="mailto:${SSCrm.esc(a.email)}">${SSCrm.esc(a.email)}</a></div>` : ""}
             ${a.site_address ? `<div><strong>Where</strong> · <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.site_address)}" target="_blank" rel="noopener">${SSCrm.esc(a.site_address)} ↗</a></div>` : ""}
             ${a.rooms ? `<div><strong>Rooms</strong> · ${SSCrm.esc(a.rooms)}</div>` : ""}
             ${a.notes ? `<div><strong>Notes</strong> · ${SSCrm.esc(a.notes)}</div>` : ""}
-            <div><strong>Going</strong> · ${SSCrm.assigneeChips(crew)} ${ro ? "" : `<button class="btn ghost sm" data-assign style="margin-left:4px">${crew.length ? "Change" : "Assign"}</button>`}</div>
+            <div><strong>${a.all_day ? "Who" : "Going"}</strong> · ${SSCrm.assigneeChips(crew)} ${ro ? "" : `<button class="btn ghost sm" data-assign style="margin-left:4px">${crew.length ? "Change" : "Assign"}</button>`}</div>
             <div data-assign-host hidden></div>
-            ${isVisit ? `<div class="muted" style="font-size:12px">${a.team_brief_sent_at
+            ${isBriefed ? `<div class="muted" style="font-size:12px">${a.team_brief_sent_at
               ? `Crew brief sent ${fmtStampUtc(a.team_brief_sent_at)}.`
               : `The crew brief goes out automatically on the morning of the visit.`}</div>` : ""}
           </div>
@@ -282,9 +305,9 @@ async function openAppt(id) {
             : a.job_id ? `<a class="btn secondary" href="/crm/project.html?id=${a.job_id}#tab=overview">Open job →</a>` : a.lead_id ? `<a class="btn secondary" href="/crm/lead.html?id=${a.lead_id}">Open lead →</a>` : ""}
           ${ro ? "" : `<button class="btn primary" data-edit>✎ Edit</button>
           ${(a.email && isVisit) ? `<button class="btn secondary" data-confirm>✉ Send confirmation</button>` : ""}
-          ${isVisit ? `<button class="btn secondary" data-brief title="Email the client's details, address and map link to the crew now">✉ Send crew brief</button>` : ""}
+          ${isBriefed ? `<button class="btn secondary" data-brief title="Email the client's details, address and map link to the crew now">✉ Send crew brief</button>` : ""}
           ${a.status !== "completed" ? `<button class="btn secondary" data-status="completed">Mark completed</button>` : ""}
-          ${a.status !== "cancelled" ? `<button class="btn danger" data-status="cancelled">Cancel Consult</button>` : ""}`}
+          ${a.status !== "cancelled" ? `<button class="btn danger" data-status="cancelled">Cancel ${SSCrm.esc(typeLabel)}</button>` : ""}`}
         </div>
       </div>`;
     bg.querySelector("[data-close]").onclick = () => bg.remove();
@@ -346,31 +369,35 @@ async function openAppt(id) {
     const start = (a.start_at || "").slice(0, 16);       // YYYY-MM-DDTHH:MM
     const date = start.slice(0, 10);
     const time = start.slice(11, 16) || "09:00";
-    const types = [...new Set([...(a.type ? [a.type] : []), ...APPT_TYPES])];
     const opt = (v, cur) => `<option value="${SSCrm.esc(v)}" ${v === cur ? "selected" : ""}>${SSCrm.esc(v.replace(/_/g, " "))}</option>`;
     bg.innerHTML = `
       <div class="modal" style="max-width:520px">
-        <div class="modal-head">Edit appointment</div>
+        <div class="modal-head">Edit ${SSCrm.esc(typeLabel.toLowerCase())}</div>
         <div class="modal-body"><div class="form">
-          <label><span>Name</span><input id="e-name" value="${SSCrm.esc(a.name || "")}"/></label>
           <div class="row">
-            <label><span>Phone</span><input id="e-phone" type="tel" value="${SSCrm.esc(a.phone || "")}"/></label>
-            <label><span>Email</span><input id="e-email" type="email" value="${SSCrm.esc(a.email || "")}"/></label>
-          </div>
-          <div class="row">
-            <label><span>Type</span><select id="e-type">${types.map((t) => opt(t, a.type)).join("")}</select></label>
+            <label><span>Type</span><select id="e-type">${SSCrm.eventTypeOptions(a.type || "consultation")}</select></label>
             <label><span>Status</span><select id="e-status">${APPT_STATUSES.map((s) => opt(s, a.status)).join("")}</select></label>
           </div>
-          <div class="row">
-            <label><span>Date</span><input id="e-date" type="date" value="${date}"/></label>
-            <label><span>Start time</span><input id="e-time" type="time" value="${time}"/></label>
-            <label><span>Duration (min)</span><input id="e-dur" type="number" min="15" step="15" value="${a.duration_min || 60}"/></label>
+          <label><span id="e-name-label">Name</span><input id="e-name" value="${SSCrm.esc(a.name || "")}"/></label>
+          <div class="row" data-for-customer>
+            <label><span>Phone</span><input id="e-phone" type="tel" value="${SSCrm.esc(a.phone || "")}"/></label>
+            <label><span id="e-email-label">Email</span><input id="e-email" type="email" value="${SSCrm.esc(a.email || "")}"/></label>
           </div>
-          <label><span>Site address</span><input id="e-addr" value="${SSCrm.esc(a.site_address || "")}"/></label>
-          <label><span>Rooms</span><input id="e-rooms" value="${SSCrm.esc(a.rooms || "")}"/></label>
+          <label class="check" style="display:flex;gap:8px;align-items:center;flex-direction:row"><input id="e-allday" type="checkbox" style="width:auto" ${a.all_day ? "checked" : ""}/> <span style="margin:0">All day</span></label>
+          <div class="row-3 ev-when" data-for-timed>
+            <label><span>Date</span><input id="e-date" type="date" value="${date}"/></label>
+            <label><span>Start time</span><input id="e-time" type="time" value="${a.all_day ? "09:00" : time}"/></label>
+            <label><span>Duration (min)</span><input id="e-dur" type="number" min="15" step="15" value="${a.all_day ? 60 : (a.duration_min || 60)}"/></label>
+          </div>
+          <div class="row" data-for-allday>
+            <label><span>From</span><input id="e-from" type="date" value="${date}"/></label>
+            <label><span>Through</span><input id="e-through" type="date" value="${(a.all_day ? (a.end_at || a.start_at) : a.start_at || "").slice(0, 10)}"/></label>
+          </div>
+          <label data-for-place><span id="e-addr-label">Site address</span><input id="e-addr" value="${SSCrm.esc(a.site_address || "")}"/></label>
+          <label data-for-rooms><span>Rooms</span><input id="e-rooms" value="${SSCrm.esc(a.rooms || "")}"/></label>
           <label><span>Notes</span><textarea id="e-notes" rows="3">${SSCrm.esc(a.notes || "")}</textarea></label>
           ${crewHtml}
-          <p class="muted" style="font-size:12px;margin:-2px 0 0">Whoever is ticked gets the brief — client, phone, address and notes — on the morning of the visit.</p>
+          <p class="muted" id="e-crew-hint" style="font-size:12px;margin:-2px 0 0"></p>
         </div></div>
         <div class="modal-foot">
           <button class="btn ghost" data-cancel>Cancel</button>
@@ -378,25 +405,42 @@ async function openAppt(id) {
         </div>
       </div>`;
     SSCrm.wireAssigneePicker(bg);
+    // Switching the type keeps what was typed; it only shows the fields that
+    // type uses. Old types (measure, service) have no entry and show them all.
+    const fields = () => SSCrm.applyEventTypeFields(bg, "e-");
+    bg.querySelector("#e-type").onchange = () => {
+      const t = SSCrm.eventType(bg.querySelector("#e-type").value);
+      if (t && !!t.allDay !== bg.querySelector("#e-allday").checked) bg.querySelector("#e-allday").checked = !!t.allDay;
+      fields();
+    };
+    bg.querySelector("#e-allday").onchange = fields;
+    fields();
     bg.querySelector("[data-cancel]").onclick = renderView;
     bg.querySelector("[data-save]").onclick = async () => {
       const g = (i) => bg.querySelector("#e-" + i).value;
-      const dateV = g("date"), timeV = g("time"), dur = parseInt(g("dur"), 10) || 60;
-      if (!dateV || !timeV) { SSCrm.toast("Pick a date and time", "error"); return; }
-      const startAt = `${dateV}T${timeV}:00`;
+      let when;
+      if (bg.querySelector("#e-allday").checked) {
+        if (!g("from")) { SSCrm.toast("Pick a date", "error"); return; }
+        when = SSCrm.allDaySpan(g("from"), g("through"));
+      } else {
+        const dateV = g("date"), timeV = g("time"), dur = parseInt(g("dur"), 10) || 60;
+        if (!dateV || !timeV) { SSCrm.toast("Pick a date and time", "error"); return; }
+        when = { start_at: `${dateV}T${timeV}:00`, end_at: SSCrm.eventEnd(dateV, timeV, dur), duration_min: dur, all_day: 0 };
+      }
       const body = {
         name: g("name").trim(), phone: g("phone").trim() || null, email: g("email").trim() || null,
         type: g("type"), status: g("status"),
-        start_at: startAt, end_at: apptEnd(dateV, timeV, dur), duration_min: dur,
+        ...when,
         site_address: g("addr").trim() || null, rooms: g("rooms").trim() || null, notes: g("notes").trim() || null,
         assignee_ids: SSCrm.readAssigneePicker(bg) || [],
       };
       if (!body.name) { SSCrm.toast("Name is required", "error"); return; }
+      if (body.type === "consultation" && !body.email) { SSCrm.toast("A consultation needs the customer's email", "error"); return; }
       const saveBtn = bg.querySelector("[data-save]"); saveBtn.disabled = true; saveBtn.textContent = "Saving…";
       try {
         const r = await SSCrm.fetchJSON("/api/appointments/" + id, { method: "PATCH", body: JSON.stringify(body) });
         if (r && r.assignees) crew = r.assignees;
-        SSCrm.toast("Appointment updated", "success");
+        SSCrm.toast(`${SSCrm.eventTypeLabel(body.type)} updated`, "success");
         bg.remove(); render();
       } catch (e) {
         SSCrm.toast(e.message || "Could not save", "error");

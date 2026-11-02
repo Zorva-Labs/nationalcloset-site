@@ -6,6 +6,7 @@ import { recordActivity } from "../../../../_lib/db.js";
 import { sendEmail, sendStaffAlert, brandedEmail, escapeHtml } from "../../../../_lib/email.js";
 import { buildIcs } from "../../../../_lib/ical.js";
 import { fmtPretty } from "../../../../_lib/dates.js";
+import { CUSTOMER_VISIT_TYPES } from "../../../../_lib/event-notices.js";
 
 const SITE_URL = "https://nationalclosetco.com";
 
@@ -68,9 +69,12 @@ export async function onRequestPost(context) {
   if ((dayCount?.n || 0) >= 2) {
     return json({ error: "That day already has two installs scheduled — please pick another." }, 409);
   }
-  // 4. Specific slot must be free.
+  // 4. Specific slot must be free. Only customer visits take it: a phone call,
+  // a meeting or someone's vacation on the calendar is not a crew booking, and
+  // the slot list (install-slots) never counted them.
   const conflict = await context.env.DB
-    .prepare(`SELECT id FROM appointments WHERE status IN ('pending','confirmed') AND start_at < ?1 AND end_at > ?2`)
+    .prepare(`SELECT id FROM appointments WHERE status IN ('pending','confirmed') AND start_at < ?1 AND end_at > ?2
+                AND LOWER(COALESCE(type,'consultation')) IN (${CUSTOMER_VISIT_TYPES.map((t) => `'${t}'`).join(",")})`)
     .bind(endAt, startAt).first();
   if (conflict) return json({ error: "That time was just taken — please pick another." }, 409);
 

@@ -18,7 +18,8 @@ Newest first. One entry per session that changed this repo: what changed, why, w
   - The dashboard's "upcoming visits" leaves out Vacation and Unavailable.
   - A customer picking an install slot is now blocked only by another customer visit, not by a phone call or someone's time off. Before, any event at that hour turned the slot down at submit, even though the slot list had offered it.
 - **Checked:** on the local CRM (wrangler pages dev over the local D1), every type saved through the API; a consultation with no email was refused; a vacation added and then extended through the form showed on each day; the feed was right for each type; nothing was wider than the screen at 375px. Live: the calendar serves the new assets and `/api/appointments` answers 401 signed out. No public page changed, so nothing was submitted.
-- **Owed:** Vacation and Unavailable don't block the dates offered to a customer scheduling their install (`public/install-slots`). Turn that on only if Michael asks.
+- **Decided:** Vacation and Unavailable leave the install dates open to customers (`public/install-slots` counts only installs). Michael, 2026-11-02: "Leave them open".
+- **Owed:** nothing.
 
 ## 2026-10-29 — New business number: 615-488-3575
 

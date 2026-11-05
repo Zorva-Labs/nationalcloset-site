@@ -7,7 +7,8 @@
 // 2. Tie it to who called: a known number links to its lead and client; a
 //    press-1 caller with no lead gets one, in the New column.
 // 3. Tell the office, once: a voicemail, or a caller who chose an option and
-//    got no one, goes to STAFF_EMAIL. An answered call has already been handled.
+//    got no one, goes to STAFF_EMAIL, copied to CALL_ALERT_CC. An answered call
+//    has already been handled.
 //
 // Nothing goes to the caller: no acknowledgment, and no text (the owner
 // declined SMS from this CRM). Signed: an unsigned post is refused.
@@ -143,7 +144,7 @@ export async function onRequestPost({ request, env }) {
     if (claim && claim.meta && claim.meta.changes) {
       let sent = false, why = null;
       try {
-        const res = await sendStaffAlert(env, { label: "National Closet Co. Phones", ...alertFor(row, new URL(request.url).origin) });
+        const res = await sendStaffAlert(env, { label: "National Closet Co. Phones", cc: env.CALL_ALERT_CC || undefined, ...alertFor(row, new URL(request.url).origin) });
         sent = !res.skipped && !res.error;
         if (!sent) why = String(res.reason || res.error || "unknown").slice(0, 300);
       } catch (err) {

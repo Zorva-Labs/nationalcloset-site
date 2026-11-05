@@ -2,6 +2,13 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-04 — Call alerts copy Terry; Anthony's number and David's meeting
+
+- **Asked:** Michael, 2026-11-04: "hello@ is the correct email to get the voicemails and cc terry@nationalclosetco.com. 615-706-7701 is Anthony's number. We have a meeting with David on Monday but his system will have it's own number."
+- **What:** the voicemail and missed-call mail from `/api/callrail` now goes to hello@ with a copy to terry@. `sendStaffAlert` takes `cc`, and the address is the new var `CALL_ALERT_CC` in `wrangler.toml`. Other staff alerts (leads, contracts, payments) are unchanged and go to hello@ alone. The menu needs no change: option 2 rings Anthony as Terry asked.
+- **Checked:** the real webhook code, with a stub database and stub mail transport, writes `To: hello@` and `Cc: terry@`. After the deploy the variable reads as set on the live project, and an unsigned post still gets a 401. No real alert has been sent yet, so terry@ receiving one is still to confirm on the first voicemail.
+- **Still owed:** the meeting with David Bruce is Monday 2026-11-09. His system has its own number, which goes on option 1's spillover and after-hours steps in place of voicemail. Still to settle with him: where the agent sends what it collects, and what it says to a caller who presses 1 with a service question. The sales person's number is still owed too; option 1 rings Anthony until then.
+
 ## 2026-11-04 — Phone menu on (615) 488-3575, and every call in the CRM
 
 - **Asked:** Terry McCarthy, email "NCC phone system question", 2026-11-04: press 1 to schedule a free estimate, press 2 for service, press 3 to leave a message. Option 1 rings the sales person, then spills over to David Bruce's voice agent, and after hours goes straight to the agent ("We don't need the voice agent trying to sort out service calls"). "Anthony will be service for now." He also asked whether CallRail works with the CRM. Michael: "build it all out like terry wants."
@@ -20,7 +27,7 @@ Newest first. One entry per session that changed this repo: what changed, why, w
 - **Still owed:**
   - David Bruce's phone number or SIP address, and where the agent sends what it collects. Until then option 1's spillover and after-hours calls go to voicemail.
   - The sales person's number (Terry is hiring). Option 1 rings 615-706-7701 until then.
-  - Confirmation that 615-706-7701 is Anthony's phone, and that hello@ is the right place for the voicemail mail. CallRail's own notifications reach no one at NCC.
+  - Confirmation that 615-706-7701 is Anthony's phone, and that hello@ is the right place for the voicemail mail (both answered the same day, in the entry above). CallRail's own notifications reach no one at NCC.
   - Voicemail transcripts: off since Premium Conversation Intelligence was removed on 2026-11-02, so a voicemail is a recording to play.
 - **Found, not fixed:** the disabled 615-857-5668 tracker took 35 of NCC's last 37 calls, so wherever that number is still printed, calls go nowhere; the Business Profile and directories weren't checked. `POST /api/leads` binds a missing phone or email as NULL into NOT NULL columns, so "+ New lead" without both looks like it fails. Opening a lead may create a job through `/api/leads/:id/project` (seen locally as a Jobs breadcrumb); worth a look now that press-1 leads are made automatically.
 

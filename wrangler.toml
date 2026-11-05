@@ -21,6 +21,8 @@ MAIL_DEFAULT_REPLY = "hello@nationalclosetco.com"
 # self-addressed. See functions/_lib/email.js sendStaffAlert().
 STAFF_EMAIL = "hello@nationalclosetco.com"
 ALERT_FROM_USER = "crm@nationalclosetco.com"
+# The voicemail and missed-call mail from /api/callrail goes to STAFF_EMAIL with this copy (Michael, 2026-11-04).
+CALL_ALERT_CC = "terry@nationalclosetco.com"
 # Flat markup baked into every customer quote (proposals + estimates). Fraction:
 # 0.03 = 3%. Clamped 0–25%. Change here and redeploy to adjust — no code change.
 # Set to 0: prices are entered with any markup already included (no auto-markup).

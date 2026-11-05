@@ -163,12 +163,13 @@ export async function sendEmail(env, opts) {
 // Gmail treats the inbound copy as a duplicate (which is also why forwarding
 // crm@ back to hello@ can never work). With a second sender, "Reply" in hello@
 // reaches the customer and the reply is captured by the CRM's Sent sync.
-export async function sendStaffAlert(env, { label = "National Closet Co. CRM", subject, html, text, replyTo, attachments, messageId, inReplyTo, references }) {
+export async function sendStaffAlert(env, { label = "National Closet Co. CRM", cc, subject, html, text, replyTo, attachments, messageId, inReplyTo, references }) {
   const sender = alertSender(env);
   return sendEmail(env, {
     from: `${label} <${sender}>`,
     sendAs: sender,
     to: staffInbox(env),
+    cc,
     subject, html, text, replyTo, attachments, messageId, inReplyTo, references,
   });
 }

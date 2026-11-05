@@ -2,6 +2,28 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-04 — Phone menu on (615) 488-3575, and every call in the CRM
+
+- **Asked:** Terry McCarthy, email "NCC phone system question", 2026-11-04: press 1 to schedule a free estimate, press 2 for service, press 3 to leave a message. Option 1 rings the sales person, then spills over to David Bruce's voice agent, and after hours goes straight to the agent ("We don't need the voice agent trying to sort out service calls"). "Anthony will be service for now." He also asked whether CallRail works with the CRM. Michael: "build it all out like terry wants."
+- **The menu (CallRail, Terry's account):** the advanced flow "NCC Phone Menu" (`e4d1ca26-f34a-4c1c-9dd5-4d8dacd43e63`), live on (615) 488-3575 and (615) 392-1316. NLC's number and flow are untouched. "Default Call Flow" stays with no numbers as the way back.
+  - Press 1: tag Menu - Estimate, then in the hours below rings 615-706-7701 for 20 seconds, then voicemail. After hours: voicemail.
+  - Press 2: tag Menu - Service, then the same hours, dial and voicemail. The voice agent is never on this branch.
+  - Press 3: tag Menu - Message, then voicemail. Press nothing: voicemail.
+  - Hours are the website's: weekdays 8 to 6, Saturday 9 to 4, Central.
+  - The person answering hears a prompt and presses 1 to take the call. That is CallRail's "Prevent voicemails and automated systems from answering", so a cell phone's own voicemail can't swallow the call. The caller doesn't hear it. The old whisper ("Call from National Closet Company Website") isn't on the new flow.
+- **The CRM:** `/crm/calls` lists every call with the option chosen, the result and the recording, with a filter by option and a Calls tab on the lead page (`docs/crm.md` → Phone calls).
+  - `POST /api/callrail` is a signed CallRail webhook (integration 2720607, post-call and call-modified). It stores the call first, links a known number to its lead and client, and makes a lead for a press-1 caller who has none.
+  - A voicemail, or a caller who chose an option and got no one, emails `STAFF_EMAIL` once. Nothing goes to the caller and no text is sent.
+  - Migration 0084 (`calls`), applied to the live D1. Secret `CALLRAIL_SIGNING_KEY` (`~/.env` `CALLRAIL_SIGNING_KEY_NATIONALCLOSET`). Sales sees Calls; an installer gets a 403. Asset version js ncc119.
+- **Checked:** signed payloads against the local functions: bad signature refused, press-1 voicemail makes one lead and a resend makes no second, a known number links, an answered service call makes no lead and no mail, a hang-up is only stored, spam makes no lead, Make a lead is idempotent, installer 403, sales 200, no overflow at 375px. On live: unsigned post 401, signed outbound call skipped, no call id 400, `/api/calls` without a login 401. The flow was read back branch by branch in the builder and through the API. `calls` holds 0 rows on live.
+- **Not checked:** no real call has been placed. The first one confirms the shape of `tags` in CallRail's payload and the alert mail on live.
+- **Still owed:**
+  - David Bruce's phone number or SIP address, and where the agent sends what it collects. Until then option 1's spillover and after-hours calls go to voicemail.
+  - The sales person's number (Terry is hiring). Option 1 rings 615-706-7701 until then.
+  - Confirmation that 615-706-7701 is Anthony's phone, and that hello@ is the right place for the voicemail mail. CallRail's own notifications reach no one at NCC.
+  - Voicemail transcripts: off since Premium Conversation Intelligence was removed on 2026-11-02, so a voicemail is a recording to play.
+- **Found, not fixed:** the disabled 615-857-5668 tracker took 35 of NCC's last 37 calls, so wherever that number is still printed, calls go nowhere; the Business Profile and directories weren't checked. `POST /api/leads` binds a missing phone or email as NULL into NOT NULL columns, so "+ New lead" without both looks like it fails. Opening a lead may create a job through `/api/leads/:id/project` (seen locally as a Jobs breadcrumb); worth a look now that press-1 leads are made automatically.
+
 ## 2026-11-02 — CRM calendar: eight event types, all-day and multi-day events
 
 - **Asked:** Michael, 2026-11-02: "we need to be able to add different types of events to the calendar. Vacation, Phone Call, Meeting, Consultation, Install, Repair, Follow Up, Unavailable."

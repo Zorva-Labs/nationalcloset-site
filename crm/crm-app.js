@@ -9,6 +9,7 @@ const NAV = [
   { href: "/crm/pipeline.html", label: "Pipeline", icon: iconKanban() },
   { href: "/crm/inbox.html",  label: "Inbox", icon: iconMail() },
   { href: "/crm/leads.html",  label: "Leads", icon: iconLead(), expandable: "leads" },
+  { href: "/crm/calls.html",  label: "Calls", icon: iconPhone() },
   { href: "/crm/contacts.html", label: "Clients", icon: iconUsers() },
   { href: "/crm/vendors.html", label: "Vendors", icon: iconTruck() },
   { href: "/crm/projects.html", label: "Jobs", icon: iconBriefcase(), expandable: "jobs" },
@@ -55,7 +56,7 @@ const JOB_STATUSES_NAV = [
 // which is what enforces them — this only keeps each role's screens tidy).
 // The pages each role may open; anything else sends them to their home.
 const ROLE_PAGES = {
-  sales: ["/crm/", "/crm/index.html", "/crm/pipeline.html", "/crm/leads.html", "/crm/lead.html",
+  sales: ["/crm/", "/crm/index.html", "/crm/pipeline.html", "/crm/leads.html", "/crm/lead.html", "/crm/calls.html",
     "/crm/contacts.html", "/crm/contact.html", "/crm/projects.html", "/crm/project.html",
     "/crm/calendar.html", "/crm/proposals.html", "/crm/proposal.html", "/crm/contracts.html",
     "/crm/contract.html", "/crm/invoices.html", "/crm/invoice.html", "/crm/estimates.html",
@@ -79,7 +80,7 @@ function pageAllowed(role, path) {
 const NAV_GROUPS = [
   { label: null, items: ["/crm/", "/crm/pipeline.html", "/crm/inbox.html"] },
   { label: "Address book", items: ["/crm/contacts.html", "/crm/vendors.html"] },
-  { label: "Leads & jobs", items: ["/crm/leads.html", "/crm/projects.html"] },
+  { label: "Leads & jobs", items: ["/crm/leads.html", "/crm/calls.html", "/crm/projects.html"] },
   { label: "Sales", items: ["/crm/estimates.html", "/crm/proposals.html", "/crm/contracts.html", "/crm/invoices.html", "/crm/expenses.html"] },
   { label: "Operations", items: ["/crm/calendar.html"] },
   { label: "Insights", items: ["/crm/reports.html", "/crm/traffic.html"] },
@@ -488,6 +489,18 @@ const PILL_LABELS = {
 };
 // The company a lead or job belongs to (migration 0081): NCC rows show
 // nothing, a Nashville Luxury Closets & Cabinets row shows "NLC".
+// Phone calls from CallRail (/crm/calls.html and a lead's Calls tab). The colors
+// are the lead pills' own, already measured.
+const CALL_CHOICES = { estimate: ["Free estimate", "consult"], service: ["Service", "contacted"], message: ["Message", "replied"] };
+function fmtPhone(n) { const d = String(n || "").replace(/\D/g, ""); return d.length >= 10 ? `(${d.slice(-10, -7)}) ${d.slice(-7, -4)}-${d.slice(-4)}` : String(n || ""); }
+function callChoice(c) { const h = CALL_CHOICES[c.menu_choice]; return h ? `<span class="pill" data-s="${h[1]}">${h[0]}</span>` : `<span style="color:var(--ink-soft)">No selection</span>`; }
+function callResult(c) {
+  const secs = Number(c.duration) || 0;
+  const len = secs >= 60 ? `${Math.round(secs / 60)} min` : `${secs} sec`;
+  if (c.spam) return "Spam";
+  if (c.voicemail) return `Voicemail · ${len}`;
+  return c.answered ? `Answered · ${len}` : "Missed";
+}
 function brandTag(b) { return b === "NLC" ? `<span class="brand-tag" title="Nashville Luxury Closets &amp; Cabinets">NLC</span>` : ""; }
 function pill(s) { const label = PILL_LABELS[s] || (s || "").replace(/_/g, " "); return `<span class="pill" data-s="${esc(s)}">${esc(label)}</span>`; }
 function initials(email) { return (email || "?").slice(0, 1).toUpperCase(); }
@@ -558,6 +571,7 @@ function iconBox() { return `<svg width="14" height="14" viewBox="0 0 24 24" fil
 function iconMail() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>`; }
 function iconActivity() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`; }
 function iconReports() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`; }
+function iconPhone() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>`; }
 function iconTraffic() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`; }
 function iconSearch() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`; }
 function iconInvoice() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>`; }
@@ -1496,6 +1510,6 @@ window.SSCrm = {
   EVENT_TYPES, BRIEFED_TYPES, eventType, eventTypeLabel, eventTypeOptions, eventEnd, allDaySpan, applyEventTypeFields,
   composeEmail, renderEmailTimeline,
   team, assigneePicker, readAssigneePicker, wireAssigneePicker, assigneeChips, initialsOf, shortName,
-  PROJECT_STATUSES, SERVICES, serviceDatalist, brandTag,
+  PROJECT_STATUSES, SERVICES, serviceDatalist, brandTag, fmtPhone, callChoice, callResult,
   me: () => ME, role: () => (ME && ME.role) || null,
 };

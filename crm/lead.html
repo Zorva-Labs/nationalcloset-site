@@ -13,7 +13,7 @@
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc118"></script>
+<script src="/crm/crm-app.js?v=ncc119"></script>
 <script>
 // Lead pipeline ends at "Proposal" or "Lost". Once the contract is signed
 // the lead is auto-bumped to "booked" by the contract-sign handler — at
@@ -114,6 +114,7 @@ function render() {
       ${tab("contract", "Contract", contracts.length)}
       ${tab("invoices", "Invoices", invoices.length)}
       ${tab("messages", "Messages")}
+      ${tab("calls", "Calls")}
       ${tab("notes", "Notes", notes.length)}
     </nav>
     <div class="job__body" id="tab-body"></div>`;
@@ -131,6 +132,7 @@ function switchTab(tabName) {
   else if (tabName === "contract") body.innerHTML = renderContractTab();
   else if (tabName === "invoices") body.innerHTML = renderInvoicesTab();
   else if (tabName === "messages") { body.innerHTML = `<div class="card"><div class="card-head"><h2>Messages</h2><span class="muted" style="font-size:12px">${state.lead.email ? "" : "Add an email to enable"}</span></div><div id="email-timeline"></div></div>`; mountTimeline(); }
+  else if (tabName === "calls") { body.innerHTML = `<div class="card"><div class="card-head"><h2>Calls</h2></div><div id="call-list" class="muted" style="font-size:13px">Loading…</div></div>`; mountCalls(); }
   else if (tabName === "notes") body.innerHTML = renderNotesTab();
   else body.innerHTML = renderOverviewTab();
 }
@@ -316,6 +318,23 @@ async function createLeadInvoice(type) {
 }
 
 // ───────── Messages tab ─────────
+// Every call CallRail has tied to this lead (/api/calls, migration 0084).
+async function mountCalls() {
+  const host = document.getElementById("call-list");
+  try {
+    const { calls } = await SSCrm.fetchJSON(`/api/calls?lead_id=${id}`);
+    const e = SSCrm.esc;
+    host.innerHTML = calls.length ? `<div class="tbl"><table>
+      <thead><tr><th>When</th><th>Menu</th><th>Result</th><th>Recording</th></tr></thead>
+      <tbody>${calls.map((c) => `<tr>
+        <td style="white-space:nowrap">${e(SSCrm.fmtDateTime(c.started_at))}</td>
+        <td>${SSCrm.callChoice(c)}</td>
+        <td style="white-space:nowrap">${e(SSCrm.callResult(c))}</td>
+        <td>${c.recording_url ? `<a href="${e(c.recording_url)}" target="_blank" rel="noopener">Listen</a>` : "—"}</td>
+      </tr>`).join("")}</tbody></table></div>` : "No calls from this number yet.";
+  } catch (err) { host.textContent = err.message; }
+}
+
 function mountTimeline() {
   const l = state.lead;
   const emailHost = document.getElementById("email-timeline");

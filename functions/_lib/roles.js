@@ -1,7 +1,7 @@
 // CRM roles (Michael, 2026-10-21). Every login in `admin_users` has one:
 //
 //   admin     — everything. hello@nationalclosetco.com and the owner's login.
-//   sales     — leads, clients, jobs, the calendar and scheduling, proposals,
+//   sales     — leads, phone calls, clients, jobs, the calendar and scheduling, proposals,
 //               contracts and invoices. No expenses/bills, vendors, reports,
 //               traffic, inbox, team or template editing, lead import.
 //   installer — only the jobs they are assigned to (team_members ↔ the login
@@ -31,6 +31,7 @@ const RULES = {
   sales: {
     ALLOW: [
       ["/api/leads", "*"],
+      ["/api/calls", "*"],            // the phone calls and making a lead from one
       ["/api/contacts", "*"],
       ["/api/projects", "*"],
       ["/api/appointments", "*"],

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calls · National Closet Company CRM</title>
+  <meta name="robots" content="noindex, nofollow" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+<noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc126" />
+  <link rel="icon" href="/img/favicon-nc.png" />
+</head>
+<body>
+<script src="/crm/crm-app.js?v=ncc119"></script>
+<script>
+(async () => {
+  const url = new URL(location.href);
+  const active = url.searchParams.get("choice") || "";
+  const OPTIONS = [["", "All calls"], ["estimate", "Free estimate"], ["service", "Service"], ["message", "Message"], ["none", "No selection"]];
+
+  const user = await SSCrm.mount({
+    title: "Calls",
+    subtitle: "Every call to the phone menu",
+    actions: `<select id="choice-filter" title="Menu option" style="padding:8px 12px;border:1px solid var(--line-strong);border-radius:var(--r-sm);font-size:13px;background:var(--bg)">
+      ${OPTIONS.map(([v, l]) => `<option value="${v}" ${active === v ? "selected" : ""}>${l}</option>`).join("")}
+    </select>`,
+    wide: true,
+  });
+  if (!user) return;
+
+  document.getElementById("choice-filter").addEventListener("change", (e) => {
+    if (e.target.value) url.searchParams.set("choice", e.target.value); else url.searchParams.delete("choice");
+    history.replaceState({}, "", url);
+    load();
+  });
+  await load();
+
+  function who(c) {
+    const e = SSCrm.esc;
+    if (c.lead_id) return `<a href="/crm/lead.html?id=${c.lead_id}">${e(c.lead_name || "Open lead")}</a>`;
+    if (c.contact_id) return `<a href="/crm/contact.html?id=${c.contact_id}">${e(c.contact_name || "Open client")}</a>`;
+    return `<button class="btn secondary sm" data-lead="${c.id}">Make a lead</button>`;
+  }
+
+  async function load() {
+    const params = new URLSearchParams();
+    const choice = url.searchParams.get("choice"); if (choice) params.set("choice", choice);
+    const { calls } = await SSCrm.fetchJSON("/api/calls?" + params);
+    const page = document.getElementById("page");
+    if (!calls.length) { page.innerHTML = `<div class="tbl"><div class="empty">No calls ${choice ? "with that option" : "yet"}.</div></div>`; return; }
+    const e = SSCrm.esc;
+    page.innerHTML = `<div class="tbl"><table>
+      <thead><tr><th>Caller</th><th>When</th><th>Menu</th><th>Result</th><th>Recording</th><th>Lead or client</th></tr></thead>
+      <tbody>${calls.map((c) => `<tr>
+        <td>
+          <a href="tel:${e(c.caller_number || "")}" style="font-weight:600">${e(SSCrm.fmtPhone(c.caller_number) || "No number")}</a>
+          <div style="font-size:12px;color:var(--ink-soft);margin-top:2px">${e([c.caller_name, [c.caller_city, c.caller_state].filter(Boolean).join(", ")].filter(Boolean).join(" · "))}</div>
+        </td>
+        <td style="white-space:nowrap">${e(SSCrm.fmtDateTime(c.started_at))}</td>
+        <td>${SSCrm.callChoice(c)}</td>
+        <td style="white-space:nowrap">${e(SSCrm.callResult(c))}</td>
+        <td>${c.recording_url ? `<a href="${e(c.recording_url)}" target="_blank" rel="noopener">Listen</a>` : `<span style="color:var(--ink-soft)">—</span>`}</td>
+        <td>${who(c)}</td>
+      </tr>`).join("")}</tbody>
+    </table></div>`;
+    page.querySelectorAll("[data-lead]").forEach((btn) => btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      try {
+        const { id } = await SSCrm.fetchJSON(`/api/calls/${btn.dataset.lead}/lead`, { method: "POST" });
+        location.href = `/crm/lead.html?id=${id}`;
+      } catch (err) { btn.disabled = false; SSCrm.toast(err.message, "error"); }
+    }));
+  }
+})();
+</script>
+</body>
+</html>

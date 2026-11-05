@@ -10,7 +10,7 @@ import { classifyChannel } from "./_lib/channel.js";
 //     get blocked by geography (the CRM is auth-protected anyway).
 //
 // Everything else (marketing pages, customer portals, the public /api/public/*
-// endpoints) is blocked outside the US with a 403.
+// endpoints) is blocked outside the US, Canada and the UK with a 403.
 
 // GEO_ALLOW (wrangler.toml) names the countries; empty means no gate. Since 2026-10-11 the
 // list is read from there, not written here, so every site's gate is set in one place.
@@ -404,7 +404,7 @@ function sourceCookie(req, url) {
 function blockedPage() {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Available in the United States</title>
+<title>Not available in your region</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&display=swap" rel="stylesheet"/>

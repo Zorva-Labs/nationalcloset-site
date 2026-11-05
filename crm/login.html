@@ -56,7 +56,7 @@
         });
         // login-error: start
         // Only our own JSON says whether the password was right. Anything else (the
-        // US-only gate's 403 page, a Cloudflare block, an outage) turned the request
+        // geo gate's 403 page, a Cloudflare block, an outage) turned the request
         // away before the password was checked, and must not read as a wrong one.
         const body = await res.json().catch(() => null);
         if (!res.ok || !body) throw new Error(body?.error || (res.status === 403

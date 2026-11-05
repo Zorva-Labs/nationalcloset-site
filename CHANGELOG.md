@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-05 — Geo gate opened to Canada and the UK
+
+- **What:** `GEO_ALLOW` went from `US` to `US,CA,GB` (GB is Cloudflare's code for the UK). The middleware and the lead endpoint read it, so both opened together. The privacy page's gate sentence and the /traffic country help follow it, and the block page's title now says "Not available in your region".
+- **Why:** Michael, 2026-11-05: "open up all sites to USA, Canada and UK." It is the estate default now (rulebook rule 44).
+- **Owed:** nothing.
+
 ## 2026-11-04 — Call alerts copy Terry; Anthony's number and David's meeting
 
 - **Asked:** Michael, 2026-11-04: "hello@ is the correct email to get the voicemails and cc terry@nationalclosetco.com. 615-706-7701 is Anthony's number. We have a meeting with David on Monday but his system will have it's own number."

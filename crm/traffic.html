@@ -591,7 +591,7 @@ html.printing .tbl{overflow:visible}
           <div class="card__body" id="edge-refs"></div>
         </article>
         <article class="card span-4" id="card-countries">
-          <div class="card__head"><div><h3>Countries</h3><p class="card__help" id="edge-countries-help">By country. The site is shown only in the United States, so anything else is a crawler or someone on a VPN.</p></div></div>
+          <div class="card__head"><div><h3>Countries</h3><p class="card__help" id="edge-countries-help">By country. The site is shown only in the United States, Canada and the United Kingdom, so anything else is a crawler or someone on a VPN.</p></div></div>
           <div class="card__body" id="edge-countries"></div>
           <div class="card__foot" id="edge-cf"></div>
         </article>
@@ -719,7 +719,7 @@ html.printing .tbl{overflow:visible}
           <div class="card__body" id="ga4-events"></div>
         </article>
         <article class="card span-6" id="card-ga-countries">
-          <div class="card__head"><div><h3>Visitors by country</h3><p class="card__help">Where Google placed each visitor. The site is shown only in the United States, so anything else is a crawler or a VPN.</p></div></div>
+          <div class="card__head"><div><h3>Visitors by country</h3><p class="card__help">Where Google placed each visitor. The site is shown only in the United States, Canada and the United Kingdom, so anything else is a crawler or a VPN.</p></div></div>
           <div class="card__body" id="ga4-countries"></div>
         </article>
         <article class="card span-6" id="card-ga-devices">
@@ -1546,7 +1546,7 @@ function renderEdge() {
   guard('edge-time', () => { $('edge-time').innerHTML = barList(fp.engagement, { label: (r) => esc(r.path), title: (r) => r.path, value: (r) => r.avg_seconds, show: (r) => fmt.secs(r.avg_seconds), sub: (r) => fmt.plural(r.samples, 'visit'), empty: 'Not enough visits yet. Each page needs a couple before its average means anything.' }); });
   guard('edge-refs', () => { $('edge-refs').innerHTML = barList((fp.referrers || []).filter((r) => !/(^|\.)(google|bing|duckduckgo|yahoo|ecosia|brave)\./i.test(String(r.host || ''))), { label: (r) => esc(r.host), title: (r) => r.host, value: (r) => r.n, color: 'var(--s-orange)', empty: 'No other site has sent a visitor in this window.' }); });
   guard('edge-countries', () => {
-    if (d.geoGate) $('edge-countries-help').textContent = `By country. The site is shown only in ${d.geoGate === 'US' ? 'the United States' : d.geoGate}, so anything else is a crawler or someone on a VPN.`;
+    if (d.geoGate) $('edge-countries-help').textContent = `By country. The site is shown only in ${d.geoGate === 'US,CA,GB' ? 'the United States, Canada and the United Kingdom' : d.geoGate === 'US' ? 'the United States' : d.geoGate}, so anything else is a crawler or someone on a VPN.`;
     $('edge-countries').innerHTML = barList((fp.countries || []).map((c) => ({ label: countryName(c.country), value: c.n })), { label: (r) => esc(r.label), empty: 'No location data yet.' });
     const e = d.edge;
     $('edge-cf').innerHTML = e?.configured && e.totals

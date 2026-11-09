@@ -493,9 +493,6 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .mobicta a { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 1rem; font-weight: 800; font-size: 0.95rem; min-height: 56px; }
 .mobicta a.call { background: var(--ink); color: #fff; }
 .mobicta a.quote { background: var(--clay-deep); color: #fff; }
-.mobicta a.photo { background: #fff; color: var(--ink); }
-.mobicta--3, .mobicta:has(a.photo) { grid-template-columns: 1fr 1.15fr 1fr; }
-.mobicta--3 a, .mobicta:has(a.photo) a { font-size: 0.86rem; padding: 0.9rem 0.4rem; }
 
 /* ---------- Page hero (interior pages) ---------- */
 .phero { padding-top: calc(var(--nav-h) + 3rem); padding-bottom: var(--sp-5); background: var(--fog); position: relative; overflow: hidden; }
@@ -791,7 +788,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .proof-chips { display: flex; flex-wrap: wrap; gap: .5rem .9rem; font-weight: 700; font-size: .92rem; color: var(--ink-soft); }
 .proof-chips span::before { content: "✓ "; color: var(--clay); font-weight: 800; }
 
-/* ---- Lead audit, Sept 2026: two-field form, ballpark card, text-a-photo pill ---- */
+/* ---- Lead audit, Sept 2026: two-field form, ballpark card, text pill (removed 2026-11-09) ---- */
 .addr-step { margin-top: 1.2rem; padding-top: 1.1rem; border-top: 1px solid var(--line); text-align: left; }
 .addr-step__or { margin: .6rem 0 .9rem; font-size: .9rem; color: var(--muted); text-align: center; }
 .addr-step__more summary { cursor: pointer; font-weight: 700; font-size: .92rem; color: var(--clay-deep); list-style: none; text-align: center; }
@@ -807,14 +804,7 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .bp__from { margin: .7rem 0 0; padding: .6rem .8rem; border-radius: 10px; background: var(--clay-wash); color: var(--clay-deep); font-weight: 700; font-size: .92rem; }
 .bp__range { font-family: var(--display); font-weight: 900; font-size: clamp(1.7rem, 4vw, 2.3rem); color: var(--clay-deep); letter-spacing: -.02em; margin: .3rem 0 0; }
 .bp .form-note { margin-top: .7rem; }
-.txtpill { position: fixed; right: 18px; bottom: 18px; z-index: 890; display: none; align-items: center; gap: .7rem; padding: .7rem 1rem .7rem .8rem; border-radius: 100px; background: var(--ink); color: #fff; text-decoration: none; box-shadow: 0 18px 40px -18px rgba(0,0,0,.55); transition: transform .25s var(--ease); }
-.txtpill:hover { transform: translateY(-2px); }
-.txtpill__ico { font-size: 1.35rem; line-height: 1; }
-.txtpill b { display: block; font-size: .9rem; font-weight: 800; line-height: 1.15; }
-.txtpill small { display: block; font-size: .74rem; color: rgba(255,255,255,.72); line-height: 1.2; }
-@media (min-width: 940px) { .txtpill { display: inline-flex; } }
-@media (prefers-reduced-motion: reduce) { .txtpill { transition: none; } }
-.form-note { display: block; line-height: 1.5; }
+@media (min-width: 940px) { @media (prefers-reduced-motion: reduce) { .form-note { display: block; line-height: 1.5; }
 .form-note a { white-space: nowrap; }
 /* ---- financing figures (Sept 2026) ---- */
 .tile__mo { grid-column: 1 / -1; font-size: .84rem; color: var(--muted); }
@@ -1340,7 +1330,6 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
     <p class="fin-note">Every project is paid in three parts: <strong>50% at signing</strong> (which releases your order to manufacturing), <strong>25% when your materials have arrived</strong> and your installation is scheduled, and <strong>25% on install day</strong>. No interest, no credit application — and you can pay in full or pay any installment early at any time, with no penalty or fee.</p>
     <div class="est__actions" style="margin-top:1.4rem" data-reveal>
       <a class="btn btn--primary" href="/#consult">Book my free design visit <span class="arr">→</span></a>
-      <a class="btn btn--ghost" href="sms:+16154883575?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20can%20you%20help%3F">📷 Text us a photo of your closet</a>
     </div>
   </div>
 </section>
@@ -1609,12 +1598,11 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
 </footer>
 
 <!-- ================= STICKY MOBILE CTA ================= -->
-<div class="mobicta mobicta--3">
+<div class="mobicta">
   <a class="call" href="tel:+16154883575">📞 Call</a>
-  <a class="photo" href="sms:+16154883575?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20can%20you%20help%3F">📷 Text a photo</a>
   <a class="quote" href="/#consult">✨ Book a visit</a>
 </div>
 
-<script src="/js/main.js?v=ncc130" defer></script>
+<script src="/js/main.js?v=ncc131" defer></script>
 </body>
 </html>

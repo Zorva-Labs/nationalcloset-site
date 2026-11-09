@@ -3,7 +3,7 @@ head template, FAQ item, and the new site navigation. Everything is lifted from 
 live city page so new pages match the rest of the site exactly."""
 import re, html, json, os
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # the checkout this file is in (a worktree edits itself)
-PIN = 'ncc130'
+PIN = 'ncc131'
 SITE = 'https://nationalclosetco.com'
 PHONE = '615-488-3575'; TEL = 'tel:+16154883575'
 # Who built and hosts the site. The footer credit is the whole sentence as one nofollow link;
@@ -165,7 +165,6 @@ def estimator(compact=False):
   </div>
   <div class="est__actions">
     <a class="btn btn--primary" href="#consult">Get My Exact Price — Free <span class="arr">→</span></a>
-    <a class="btn btn--ghost" href="{SMS}">📷 Text us a photo of your closet</a>
   </div>
 </div>'''
 

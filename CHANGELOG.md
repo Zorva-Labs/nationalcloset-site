@@ -2,6 +2,19 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-09 — "Text a photo" removed from the site
+
+- **Asked:** Michael, 2026-11-09: "remove the text us a photo from the site".
+- **Removed:**
+  - The "📷 Text a photo" button in the phone action bar on all 72 pages. The bar is back to two buttons, Call and Book a visit (`mobicta--3` dropped).
+  - The floating "Text us a photo of your closet" pill on desktop, and the code in `js/main.js` that added both to any page missing them (`?v=ncc131`, `PIN` in `chrome.py`).
+  - The "Text us a photo of your closet" button beside "Book my free design visit" on the home page and `/free-design`, and in the retired estimator in `chrome.py`.
+  - The privacy page's line about "Text a photo" (`privacy.html` and `stage5_privacy.py`).
+  - The CSS for the pill and the photo button (`styles.css`, re-synced into `index.html`).
+- **Kept:** the `sms:` click event in `main.js` (no sms link on the public pages now, so it is idle) and the call button.
+- **Checks:** no "Text a photo" or "photo of your closet" left in `dist/`; browser pane at 375 (two-column bar, 187px each, no horizontal scroll) and desktop (no pill). Deployed and submitted (IndexNow 2 URLs).
+- **Also:** emailed Terry McCarthy (tmccarthy33@yahoo.com) the two logos, `img/ncc-logo.png` (full) and `img/ncc-logo-nc.png` (NC mark), on Michael's word. Both are web files (652px and 240px); there is no larger source in the repo.
+
 ## 2026-11-08 — No prices anywhere on the public site
 
 - **Asked:** Michael, 2026-11-08: "remove pricing". Asked which prices, he picked "All prices sitewide": the pricing guide tables, the home page estimator, the city and competitor pages, and the posts with their short answers. The $6,700 walk-in and the national brands' $12,000–$17,000 quotes go too.

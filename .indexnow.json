@@ -2,13 +2,13 @@
   "host": "nationalclosetco.com",
   "endpoint": "https://www.bing.com/indexnow",
   "version": 2,
-  "submitted": "2026-11-09T03:15:31.224Z",
+  "submitted": "2026-11-09T17:43:27.760Z",
   "google": {
     "property": "sc-domain:nationalclosetco.com",
     "sitemaps": [
       "https://nationalclosetco.com/sitemap.xml"
     ],
-    "submitted": "2026-11-09T03:15:31.976Z"
+    "submitted": "2026-11-09T17:43:28.884Z"
   },
   "bing": {
     "site": "https://nationalclosetco.com/",
@@ -19,8 +19,8 @@
   },
   "urls": {
     "https://nationalclosetco.com/": {
-      "hash": "4cd4707a32dd8ce8",
-      "changed": "2026-11-08"
+      "hash": "bef0aa82706534bd",
+      "changed": "2026-11-09"
     },
     "https://nationalclosetco.com/custom-cabinets-nashville": {
       "hash": "35fb769a1ddb2106",
@@ -295,8 +295,8 @@
       "changed": "2026-11-08"
     },
     "https://nationalclosetco.com/privacy": {
-      "hash": "e21b528f98889cd2",
-      "changed": "2026-11-08"
+      "hash": "d3ac43bb5089d396",
+      "changed": "2026-11-09"
     }
   }
 }

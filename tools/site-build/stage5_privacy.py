@@ -69,7 +69,6 @@ body = '<article>\n' + phero(
       <ul class="bullets">
         <li>Cloudflare hosts the site and our customer system. Its Turnstile check reads signals from your browser to tell a person from a spam program before a form is sent. On the live site it also adds a small script of its own to each page, Cloudflare Web Analytics, which reports how quickly the page loaded, and which page it was, back to Cloudflare; it sets no cookies.</li>
         <li>Most pages load their typefaces from Google Fonts, so Google sees your IP address when your browser fetches them.</li>
-        <li>&ldquo;Text a photo&rdquo; opens your phone&rsquo;s messages. The text reaches our phone through your carrier, not through this site.</li>
       </ul>
 
       <h2>Asking about your information</h2>

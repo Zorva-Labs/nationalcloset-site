@@ -134,7 +134,6 @@
      note behind a disclosure, plus the email or space only if a form didn't
      send them. A designer texts to set the visit (there is no self-booking,
      since 2026-09-29). */
-  var SMS_URL = "sms:+16154883575?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20can%20you%20help%3F";
   function mountDetailsStep(success, token, lead) {
     if (success.querySelector(".addr-step")) return;
     var inp = 'style="width:100%;min-width:0;padding:11px 13px;border:1.5px solid var(--line,#E4E1DA);border-radius:8px;font:inherit;font-size:15px;background:#fff"';
@@ -679,9 +678,8 @@
   });
 })();
 
-/* ---------- Homepage design-request card (#ballpark) + the always-on "text a photo" button (Sept 2026) ---------- */
+/* ---------- Homepage design-request card (#ballpark) (Sept 2026; the "text a photo" button and pill were removed 2026-11-09, Michael) ---------- */
 (function () {
-  var SMS_URL = "sms:+16154883575?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20can%20you%20help%3F";
 
   // The hero card: two taps (the space, then the size) and then the contact
   // fields. No price is shown anywhere on the site since 2026-11-08 (Michael:
@@ -713,23 +711,6 @@
     });
   });
 
-  // "Text us a photo" is the most distinctive thing the site offers and it
-  // lived in one button on one section. On phones it joins the bottom action
-  // bar; on desktop it is a small fixed pill (Messages on a Mac handles sms:).
-  var bar = document.querySelector(".mobicta");
-  if (bar && !bar.querySelector(".photo")) {
-    var a = document.createElement("a");
-    a.className = "photo"; a.href = SMS_URL; a.textContent = "📷 Text a photo";
-    var q = bar.querySelector(".quote");
-    if (q) bar.insertBefore(a, q); else bar.appendChild(a);
-    bar.classList.add("mobicta--3");
-  }
-  if (!document.querySelector(".txtpill") && !/^\/(crm|book)(\/|$)/.test(location.pathname)) {
-    var pill = document.createElement("a");
-    pill.className = "txtpill"; pill.href = SMS_URL;
-    pill.innerHTML = '<span class="txtpill__ico" aria-hidden="true">📷</span><span><b>Text us a photo of your closet</b><small>615-488-3575 · a designer texts you back</small></span>';
-    document.body.appendChild(pill);
-  }
   document.addEventListener("click", function (e) {
     var a = e.target && e.target.closest && e.target.closest('a[href^="sms:"]');
     if (a && typeof gtag === "function") { try { gtag("event", "contact", { method: "sms", link_url: "sms" }); } catch (err) {} }

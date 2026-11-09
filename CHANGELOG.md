@@ -2,6 +2,44 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-08 — No prices anywhere on the public site
+
+- **Asked:** Michael, 2026-11-08: "remove pricing". Asked which prices, he picked "All prices sitewide": the pricing guide tables, the home page estimator, the city and competitor pages, and the posts with their short answers. The $6,700 walk-in and the national brands' $12,000–$17,000 quotes go too.
+- **Home page:**
+  - The hero "ballpark" form is now "Start your free closet design". The space and size taps still fill `project` and `msg` (now "Design request from the homepage: Pantry, large."), and the name, phone and email are still required.
+  - Saving, `success:true` and the tags are unchanged. The success panel thanks the customer instead of showing a range.
+  - The price tiles and the estimator gave way to "How we price a custom closet": what sets the price, the 50/25/25 terms, and the two buttons.
+  - Also changed: the "from $1,000/$2,000" hero chips, the $2,290 reach-in caption, the $6,700 post card, and the FAQ ranges. "Real homes · real prices" is now "Real homes · designed in 3D first".
+- **`js/main.js`** (`?v=ncc130`, and `PIN` in `chrome.py`):
+  - The estimator code is gone, along with the hero's `RANGES` and `money()` and the success handler's range output. `ballpark_space` still fires.
+  - The texting pill says "a designer texts you back". The prefilled text on every page now reads "can you help?" instead of "what would it run?".
+- **Pricing guide** (`/custom-closet-cost-nashville`):
+  - Retitled "Custom Closet Cost in Nashville: What Sets the Price" (title, h1, og, headline, description).
+  - The price table, the figure captions' ranges and the estimator section are gone.
+  - New sections: "Why don't we publish a price chart?" and "Where does the money go in a closet?". Its four FAQ answers about cost were rewritten.
+- **Other pages:**
+  - `/faq`: eight answers rewritten, including Home Depot's published ranges and the "$2,000 walk-in" payment example.
+  - `/about`, `/our-work` (description, eyebrow, captions) and `/gallery` (two alt texts and captions).
+  - `/custom-pantry-nashville`, `/custom-cabinets-nashville` (the "we publish starting prices" lines), `/privacy` (the ballpark mention) and `llms.txt` (a Pricing section that says we don't publish prices).
+  - The 19 city FAQs (both cost answers).
+  - All 8 competitor pages: the "starting prices published" row, the $6,700 figure card with its alt text, and a separate FAQ answer on each. `/california-closets-alternative` also lost its range table and the "price ranges" in its descriptions.
+- **`/free-design`:** the tiles, the estimator, the "$6,700" lead and the "Walk-in closets from $2,000" check are gone, and so is the JSON-LD `Offer` with `"price": "1000"`.
+- **Posts:** 24 posts edited, with the slugs unchanged.
+  - Six retitled (title, h1, og, headline, breadcrumb, and the `/closet-cases` card and Blog node): large-walk-in-closet-6700, fake-discounts-65-percent-off, california-closets-cost, custom-closet-cost, contractor-cost-to-build-a-closet and closet-installation-cost.
+  - 20 short answers in `short-answers.json` rewritten without figures.
+  - The TL;DRs in `tldr.json` too (19 cities, California Closets, cost guide, pantry, closet-cases).
+  - `contractor-cost-to-build-a-closet` also lost the Tennessee license dollar thresholds; it now points to the state board.
+  - `affordable-custom-closet-company` gives the FTC Cooling-Off Rule as "a qualifying sale".
+- **Pictures:** `blog-no-fake-discounts` was a "$12,800 vs $5,350" comparison graphic, used as the fake-discounts post's OG image and its `/closet-cases` card. It is now cropped to the closets: both rooms with "VS" for the OG, ours alone for the card (with new alt text). The other cost-page OG images carry no figures.
+- **Kept:** percentages (a competitor's "40% off", the 65%→54% arithmetic, 50/25/25), the FTC "$25 or more" in three posts, `"priceRange": "$$"`, `calc.html` and the customer's token pages. The rule is now in `CLAUDE.md` and `docs/content.md`.
+- **Checks:** `dist/` holds no dollar figure outside `crm/`, `calc.html` and the Cooling-Off threshold. `chunks.mjs` 61/61 clean; `blog-post answers` 29/29; `blog-post check` passes on three edited posts. The site-kit repeated-sentence count went from 63 to 61, and its ✗ items are all older ones.
+  - Browser pane: the home form at 375 (taps reveal the steps and fill the fields; not submitted, the D1 is live), the pricing section at 1280 and the cost guide at 375 (no horizontal scroll).
+  - Deployed twice (the second for the cropped pictures) and submitted: IndexNow took 61 URLs, then 1.
+- **Still owed / follow-ups:**
+  - `/blog/large-walk-in-closet-6700` still has "6700" in its URL. A 301 to a new slug is Michael's call.
+  - The text OG cards for `contractor-cost-to-build-a-closet`, `closet-installation-cost` and `what-closet-company-does-costco-use` still print the old titles and the phone number 629-298-8241, not 615-488-3575.
+  - The lead mail and the cron Worker's mail carry no price range (checked); the CRM's quotes, invoices and contracts show real money by design.
+
 ## 2026-11-08 — TL;DR and chunks on every content page
 
 - **Asked:** Michael, 2026-11-08: "make sure that all posts and content going forward have TLDR and we are using content chunking. this is the new standard for SEO, AIO, AEO, GEO", with our own sites retrofitted first (`~/fleet/docs/content-standards.md` §5a).

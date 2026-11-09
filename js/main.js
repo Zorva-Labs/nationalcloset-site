@@ -134,7 +134,7 @@
      note behind a disclosure, plus the email or space only if a form didn't
      send them. A designer texts to set the visit (there is no self-booking,
      since 2026-09-29). */
-  var SMS_URL = "sms:+16154883575?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F";
+  var SMS_URL = "sms:+16154883575?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20can%20you%20help%3F";
   function mountDetailsStep(success, token, lead) {
     if (success.querySelector(".addr-step")) return;
     var inp = 'style="width:100%;min-width:0;padding:11px 13px;border:1.5px solid var(--line,#E4E1DA);border-radius:8px;font:inherit;font-size:15px;background:#fff"';
@@ -374,12 +374,6 @@
           form.style.display = "none";
           success.classList.add("show");
           success.scrollIntoView({ behavior: "smooth", block: "center" });
-          if (form.hasAttribute("data-ballpark")) {
-            var out = success.querySelector("[data-bp-out]");
-            if (out) out.textContent = form.getAttribute("data-bp-range") || "";
-            var moOut = success.querySelector("[data-bp-mo]");
-            if (moOut) moOut.textContent = form.getAttribute("data-bp-mo") || "";
-          }
           if (token) mountDetailsStep(success, token, payload);
         }
       }
@@ -660,45 +654,13 @@
 })();
 
 
-/* ---------- Before/after sliders, cost estimator, gallery + blog filters (Sept 2026) ---------- */
+/* ---------- Before/after sliders, gallery + blog filters (Sept 2026; the cost estimator removed 2026-11-08) ---------- */
 (function () {
   // Before/after: the range input drives the --x custom property the CSS clips on.
   document.querySelectorAll("[data-ba]").forEach(function (ba) {
     var r = ba.querySelector(".ba__range"); if (!r) return;
     var set = function () { ba.style.setProperty("--x", r.value + "%"); };
     r.addEventListener("input", set); set();
-  });
-
-  // Cost estimator. Ranges mirror the published cost guide; size picks a slice of
-  // the range and finish scales it. Rounded to $100. Never a quote — the copy says
-  // the designer confirms the exact price at the free in-home design.
-  var RANGES = { reachin: [1000, 3000], walkin: [2000, 10000], pantry: [1000, 5000], garage: [2500, 8000], office: [2000, 7000], laundry: [1500, 6000] };
-  var SIZE = { small: [0, 0.34], medium: [0.25, 0.7], large: [0.6, 1] };
-  var FINISH = { standard: 1, wood: 1.12, premium: 1.3 };
-  document.querySelectorAll("[data-estimator]").forEach(function (est) {
-    var type = est.querySelector('[data-est="type"]');
-    var out = est.querySelector('[data-est="range"]');
-    if (!type || !out) return;
-    function pick(group) { var on = est.querySelector('[data-est="' + group + '"] .on'); return on ? on.getAttribute("data-v") : null; }
-    function money(n) { n = Math.round(n / 100) * 100; return "$" + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
-    function half(n) { return "$" + String(Math.round(n / 2)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
-    function calc() {
-      var rg = RANGES[type.value] || RANGES.walkin, s = SIZE[pick("size")] || SIZE.medium, f = FINISH[pick("finish")] || 1;
-      var span = rg[1] - rg[0];
-      var lo = Math.round((rg[0] + span * s[0]) * f / 100) * 100, hi = Math.round((rg[0] + span * s[1]) * f / 100) * 100;
-      out.textContent = money(lo) + " – " + money(hi) + (hi > rg[1] ? "+" : "");
-      var moEl = est.querySelector('[data-est="monthly"]');
-      if (moEl) moEl.textContent = "Paid in three: about " + half(lo) + " – " + half(hi) + " at signing, then 25% when your install is scheduled and 25% on install day.";
-      try { if (typeof gtag === "function") gtag("event", "estimate", { space: type.value, size: pick("size"), finish: pick("finish"), low: lo, high: hi }); } catch (e) {}
-    }
-    est.querySelectorAll(".est__chips button").forEach(function (b) {
-      b.addEventListener("click", function () {
-        b.parentNode.querySelectorAll("button").forEach(function (x) { x.classList.remove("on"); });
-        b.classList.add("on"); calc();
-      });
-    });
-    type.addEventListener("change", calc);
-    calc();
   });
 
   // Filter chips: [data-filters="#grid"] buttons with data-filter; items carry data-cat="a b".
@@ -717,33 +679,22 @@
   });
 })();
 
-/* ---------- Homepage ballpark card + the always-on "text a photo" button (Sept 2026) ---------- */
+/* ---------- Homepage design-request card (#ballpark) + the always-on "text a photo" button (Sept 2026) ---------- */
 (function () {
-  var SMS_URL = "sms:+16154883575?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20what%20would%20it%20run%3F";
+  var SMS_URL = "sms:+16154883575?&body=Hi%20National%20Closet%20Co%2C%20here%27s%20a%20photo%20of%20my%20closet%20%E2%80%94%20can%20you%20help%3F";
 
-  // The hero card: two taps for a typical installed range, then a name and a
-  // phone number to see it — the estimate is the hook, the phone is the lead.
-  // Same ranges as the full estimator further down the page.
-  var RANGES = { reachin: [1000, 3000], walkin: [2000, 10000], pantry: [1000, 5000], garage: [2500, 8000], office: [2000, 7000], laundry: [1500, 6000] };
-  var SIZE = { small: [0, 0.34], medium: [0.25, 0.7], large: [0.6, 1] };
+  // The hero card: two taps (the space, then the size) and then the contact
+  // fields. No price is shown anywhere on the site since 2026-11-08 (Michael:
+  // "remove pricing"); the taps fill the project and the note on the lead.
   var LABEL = { reachin: "Reach-In Closet", walkin: "Walk-In Closet", pantry: "Pantry", garage: "Garage Storage", office: "Home Office", laundry: "Laundry / Mudroom" };
-  var PLURAL = { reachin: "Reach-in closets", walkin: "Walk-in closets", pantry: "Pantries", garage: "Garage systems", office: "Home offices", laundry: "Laundry rooms" };
-  function money(n) { n = Math.round(n / 100) * 100; return "$" + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
   document.querySelectorAll("form[data-ballpark]").forEach(function (form) {
     var type = null, size = "medium";
-    var from = form.querySelector("[data-bp-from]"), step2 = form.querySelector("[data-bp-step2]"), step3 = form.querySelector("[data-bp-step3]");
+    var step2 = form.querySelector("[data-bp-step2]"), step3 = form.querySelector("[data-bp-step3]");
     var proj = form.querySelector('input[name="project"]'), msg = form.querySelector('input[name="msg"]');
     function update() {
       if (!type) return;
-      var rg = RANGES[type], sz = SIZE[size];
-      var span = rg[1] - rg[0];
-      var lo = Math.round((rg[0] + span * sz[0]) / 100) * 100, hi = Math.round((rg[0] + span * sz[1]) / 100) * 100;
-      var range = money(lo) + " – " + money(hi) + (hi >= rg[1] ? "+" : "");
-      if (from) { from.textContent = PLURAL[type] + " start at " + money(rg[0]) + " installed, design included."; from.hidden = false; }
-      form.setAttribute("data-bp-range", range);
-      form.setAttribute("data-bp-mo", "Paid in three: about $" + String(lo / 2).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " – $" + String(hi / 2).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " at signing, then 25% when your install is scheduled and 25% on install day");
       if (proj) proj.value = LABEL[type];
-      if (msg) msg.value = "Ballpark request from the homepage: " + LABEL[type] + ", " + size + " — typical range " + range + ".";
+      if (msg) msg.value = "Design request from the homepage: " + LABEL[type] + ", " + size + ".";
       if (step2) step2.hidden = false;
       if (step3) step3.hidden = false;
     }
@@ -776,7 +727,7 @@
   if (!document.querySelector(".txtpill") && !/^\/(crm|book)(\/|$)/.test(location.pathname)) {
     var pill = document.createElement("a");
     pill.className = "txtpill"; pill.href = SMS_URL;
-    pill.innerHTML = '<span class="txtpill__ico" aria-hidden="true">📷</span><span><b>Text us a photo of your closet</b><small>615-488-3575 · we reply with a ballpark</small></span>';
+    pill.innerHTML = '<span class="txtpill__ico" aria-hidden="true">📷</span><span><b>Text us a photo of your closet</b><small>615-488-3575 · a designer texts you back</small></span>';
     document.body.appendChild(pill);
   }
   document.addEventListener("click", function (e) {

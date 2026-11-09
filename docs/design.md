@@ -9,7 +9,7 @@
 - The nav, in order: Gallery, Our Work, Cabinets (third), Pricing, About, Reviews, Closet Cases.
 
 ## Components (`js/main.js` + `css/styles.css`)
-- `[data-ba]` before/after slider; `[data-estimator]` + `[data-ballpark]` (ranges: walk-in from $2,000, pantry $1,000, reach-in $1,000, garage $2,500, office $2,000, laundry $1,500 — owner-set); `[data-filters]` filter chips; `.cmp` compare table; `.gbadge` rating badge; `.tcard` review card; the `track()` layer (`docs/tracking.md`).
+- `[data-ba]` before/after slider; `[data-ballpark]` the home hero's design-request form (space and size taps fill `project` and `msg`, then the contact fields; it shows no price since 2026-11-08, and the `[data-estimator]` widget and the price tiles are gone — their `.est__*`/`.price-tiles` CSS is left unused, `.est__chips` and `.est__actions` are still used); `[data-filters]` filter chips; `.cmp` compare table; `.gbadge` rating badge; `.tcard` review card; the `track()` layer (`docs/tracking.md`).
 - The mobile bar has three buttons, one of them "Text a photo" (an `sms:` link; a small pill on desktop).
 
 ## The home page's inline stylesheet

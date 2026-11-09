@@ -22,7 +22,7 @@ Part 2's update_homepage() stops on the old home title).
 
 Run from anywhere: python3 tools/site-build/stage4.py
 """
-import re, os, json, glob, html
+import datetime, re, os, json, glob, html
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # the checkout this file is in (a worktree edits itself)
 os.chdir(ROOT)
 
@@ -232,6 +232,58 @@ def sweep_short_answers():
         if s != o: open(p, 'w', encoding='utf-8').write(s); n += 1
     print('short-answer sweep:', n, 'posts')
 
+PAGE_TLDRS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tldr.json')
+TLDR_LABEL = 'TL;DR'   # content-standards §5a (2026-11-08); the posts keep their live label, SHORT_LABEL
+
+def sweep_page_tldrs():
+    """Every content page opens with its TL;DR (content-standards §5a, Michael, 2026-11-08): the text is the
+    page's entry in tldr.json, keyed by the root page's file name, rendered as the first thing in its first
+    .prose (under the title, before the first section heading) or, on the blog index, above the filters.
+    speakable names [data-short-answer] on the page's WebPage node (one is written when the page has none),
+    and an Article (the pricing guide) also takes the text as its abstract. Idempotent."""
+    answers = json.load(open(PAGE_TLDRS, encoding='utf-8'))
+    n = 0
+    for slug, raw in answers.items():
+        p = slug + '.html'
+        assert os.path.exists(p), f'tldr.json names {p}, which does not exist'
+        text = ' '.join(raw.split())
+        assert 40 <= len(text.split()) <= 120, f'{slug}: the TL;DR is {len(text.split())} words (40–120)'
+        s = open(p, encoding='utf-8').read(); o = s
+        box = (f'<aside class="answer-box answer-box--tldr" aria-label="{TLDR_LABEL}">\n'
+               f'        <p class="answer-box__label">{TLDR_LABEL}</p>\n'
+               f'        <p data-short-answer>{html.escape(text, quote=False)}</p>\n'
+               f'      </aside>\n\n      ')
+        s = re.sub(r'<aside class="answer-box.*?</aside>\s*', '', s, flags=re.S)
+        if '<div class="prose">' in s:
+            s, k = re.subn(r'(<div class="prose">\s*)', lambda m: m.group(1) + box, s, count=1)
+        else:
+            s, k = re.subn(r'(\s*)(<div class="filters")', lambda m: m.group(1) + box + m.group(2), s, count=1)
+        assert k == 1, f'{p}: no place for the TL;DR'
+        canon = re.search(r'<link rel="canonical" href="([^"]+)"', s).group(1)
+        title = html.unescape(re.search(r'<title>(.*?)</title>', s, re.S).group(1)).strip()
+        has_page = False
+        def fix(m):
+            nonlocal has_page
+            d = json.loads(m.group(1))
+            nodes = [d] + [x for x in d.get('@graph', []) if isinstance(x, dict)]
+            hit = False
+            for x in nodes:
+                if x.get('@type') == 'WebPage': x['speakable'] = SPEAKABLE; has_page = hit = True
+                if x.get('@type') == 'Article': x['abstract'] = text; x['speakable'] = SPEAKABLE; has_page = hit = True
+            if not hit: return m.group(0)
+            return '<script type="application/ld+json">' + json.dumps(d, ensure_ascii=False) + '</script>'
+        s = re.sub(r'<script type="application/ld\+json">(.*?)</script>', fix, s, flags=re.S)
+        if not has_page:
+            node = {"@context": "https://schema.org", "@type": "WebPage", "@id": canon + '#webpage', "url": canon,
+                    "name": title, "dateModified": datetime.date.today().isoformat(), "speakable": SPEAKABLE}
+            tag = '<script type="application/ld+json">' + json.dumps(node, ensure_ascii=False) + '</script>'
+            head = s[:s.find('</head>')]
+            i = head.rfind('<script type="application/ld+json">'); assert i > 0, p
+            i = s.find('</script>', i) + len('</script>')
+            s = s[:i] + '\n' + tag + s[i:]
+        if s != o: open(p, 'w', encoding='utf-8').write(s); n += 1
+    print('TL;DR sweep:', n, 'pages')
+
 def sync_inline_css():
     """index.html inlines styles.css; keep it identical (the @font-face rules are in styles.css)."""
     p = 'index.html'; s = open(p, encoding='utf-8').read()
@@ -249,6 +301,7 @@ if __name__ == '__main__':
     sweep_credit()
     sweep_posts()
     sweep_short_answers()
+    sweep_page_tldrs()
     sync_inline_css(); print('homepage inline CSS re-synced')
 
 

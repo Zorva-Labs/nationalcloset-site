@@ -2,6 +2,20 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-09 — Google Ads readied for a relaunch (still paused)
+
+- **Asked:** Michael, 2026-11-09: "go ahead and make all recommended changes to the ad", after the plan drafted for Terry (prices out, call number, broad match in fewer groups, a cabinets group).
+- **Changed in customer 8968122786** (`scripts/ads-relaunch-prep-2026-11-09.mjs`, validated, then `--apply`, one atomic batch of 61 operations):
+  - Four new ad groups, all broad match, one RSA each with no price and no phone number: **Closets** (18 keywords → `/free-design`), **Pantries** (7 → `/custom-pantry-nashville`), **Garage, Laundry & Wardrobes** (6 → `/free-design`, the old group's ad text, which carried no price) and the new **Custom Cabinets** (8 → `/custom-cabinets-nashville`). No city-name keywords: the five-county presence targeting covers them.
+  - The six phrase-match groups are paused and renamed "(old, phrase)", intact as history. Their ads still say "Walk-Ins From $2,500", "Walk-In for $6,700, Not $17K" and the like, so never re-enable them as they stand. "Ad group 1" stays paused.
+  - The price asset "NCC starting prices" is unlinked from the campaign (the site has carried no prices since 2026-11-08).
+  - The call asset is (615) 488-3575 (asset 437809197683, counted by "Calls from ads (30s+)") at campaign and account level. The agency line (629) 298-8241 (asset 387791012088) is unlinked from both. This settles the call-asset item of 2026-10-29.
+  - The WhatsApp message asset, which pointed at the agency line, is unlinked.
+  - The campaign negative "kitchen cabinets" (broad) is removed so the cabinets group can serve; 186 negatives remain.
+- **Unchanged:** the campaign is still **paused**; $130/day, Maximize Clicks with the $14 ceiling, Search only, the five counties, 6 a.m. to midnight, the sitelinks, callouts and snippet, the conversions. The daily guard and cutover scripts touch none of this.
+- **Checked:** read back over GAQL: campaign PAUSED with the $14 cap; the four new groups ENABLED with 39 broad keywords and their ads in review (`REVIEW_IN_PROGRESS`); the only call asset at either level is (615) 488-3575; no price or message asset on the campaign.
+- **Owed:** the relaunch itself, only on Michael's word and after the terms are split with BCI (`docs/google-ads.md`). Watch the four new ads clear review. After the first weeks, read the search terms the broad keywords match and add negatives.
+
 ## 2026-11-09 — "Text a photo" removed from the site
 
 - **Asked:** Michael, 2026-11-09: "remove the text us a photo from the site".

@@ -7,16 +7,16 @@
 - `scripts/ads-*.mjs` each assert the account's id and name before any call, and the ones that make changes by hand (`ads-landing-test.mjs`, and `ads-optimize-2026-09-12.mjs`, the record of the 2026-09-12 pass) validate only unless given `--apply`.
 - Conversions, all primary: "Submit lead form" (label `UnZvCNvcxMwcEKmejZlE`), "Phone call lead (website click-to-call)" (`rm_UCOCV2_AcEKmejZlE`, a tap on the number, not a call), "Calls from ads (30s+)" (7752567517), and "National Closet Co (web) booked_consultation", imported from GA4 (`docs/tracking.md`).
 
-## The campaign as it ran
-- Google Ads state (2026-09-13): campaign 24052252978 "NCC Search Campaign", Maximize Clicks with a **$14 CPC ceiling**, $130/day, presence-only geo on Davidson/Williamson/Rutherford/Sumner/Wilson, six phrase-match intent ad groups → `/free-design` (pantry → `/custom-pantry-nashville`), ~190 negatives, schedule 06:00–24:00, all four auto-apply subscriptions paused. Baselines: CTR 6.8%, CPC $10.30, IS 38%.
-- The landing-page test (`scripts/ads-landing-test.mjs --report/--end`: the homepage against `/free-design`, a second RSA in each closet ad group with the ads rotated evenly) was to be decided about 2026-10-04 and stopped with the campaign. `--report` reads it; `--end` pauses the homepage ads and restores Optimize.
+## The campaign now (2026-11-09, still paused)
+- Campaign 24052252978 "NCC Search Campaign": Maximize Clicks with a **$14 CPC ceiling**, $130/day, Search only, presence-only geo on Davidson/Williamson/Rutherford/Sumner/Wilson, 06:00–24:00 every day, all auto-apply subscriptions paused.
+- Four broad-match ad groups (estate rule: consolidated broad match, no city keywords), one RSA each, set up by `scripts/ads-relaunch-prep-2026-11-09.mjs`: **Closets** → `/free-design`, **Pantries** → `/custom-pantry-nashville`, **Garage, Laundry & Wardrobes** → `/free-design`, **Custom Cabinets** → `/custom-cabinets-nashville`. The keyword lists and the ad text are in that script.
+- 186 campaign negatives (DIY and retail brands, browsing words, jobs, cheap/free, products not sold, out-of-area cities, competitor names); "kitchen cabinets" came out on 2026-11-09 for the cabinets group.
+- **No prices and no phone number in any ad** (the site has no prices since 2026-11-08). The price asset is unlinked. The six phrase groups of September, paused and named "(old, phrase)", still carry the old prices: never re-enable them as they stand.
+- Assets: six sitelinks, seven callouts, the services snippet, images, the call asset (615) 488-3575 (asset 437809197683, "Calls from ads (30s+)"). The WhatsApp asset to the agency line is unlinked.
 
-## What the ads say (2026-10-13)
-- **No "half the price" anywhere.** The only national-brand comparison is the one real job: a large walk-in the national brands quoted at $12,000–$17,000, built for $6,700 (`/blog/large-walk-in-closet-6700`; `/free-design` and the homepage carry it, so the ad claim is backed on both landing pages). Changed by `scripts/ads-copy-2026-10-13.mjs`; `ads-optimize-2026-09-12.mjs` is the old copy — never rerun it as is.
-- Closet ad groups (Custom Closets, Closet Company Near Me, Closet Design & Installation, Walk-In & Reach-In, the paused "Ad group 1"): the headline **"Walk-In for $6,700, Not $17K"**, and one description built on the same job (e.g. "A walk-in the national brands quoted at $12K–$17K, we built for $6,700. Free 3D design.").
-- Custom Pantry: "One Honest Price, Upfront". Garage, Laundry & Wardrobes: "No Pressure, No Obligation". The general "Save Thousands on Your Closet" (paused "Ad group 1") is gone too.
-- The rest stands: free in-home 3D design, one honest price and no fake 40%-off games, family-owned and not a franchise, deeper 14″ shelves standard, our own installers, most closets in a day, the "from" prices. Sitelinks, callouts, the structured snippet and the price asset never carried the claim.
-- The old lines stay in the account's asset library as unlinked text assets: Google cannot edit (`IMMUTABLE_FIELD`) or remove a text asset over the API. Nothing serves them.
+## The campaign as it ran (until 2026-09-22)
+- Six phrase-match intent ad groups → `/free-design` (pantry → `/custom-pantry-nashville`), ~190 negatives, the same bidding, budget, geo and schedule. Baselines (2026-09-13): CTR 6.8%, CPC $10.30, IS 38%.
+- The landing-page test (`scripts/ads-landing-test.mjs --report/--end`: the homepage against `/free-design`, a second RSA in each closet ad group with the ads rotated evenly) was to be decided about 2026-10-04 and stopped with the campaign; its ads are in the paused old groups.
 
 ## The daily job
 - launchd `com.zorvalabs.ncc-ads-conversions` (07:15 CT, `~/bin/ncc-ads-conversions.sh`, log `~/Library/Logs/ncc-ads-conversions.log`) first runs `git pull --ff-only` in this checkout (it carries on with the local copy if the pull fails), then `scripts/ads-offline-conversions.mjs` (booked consults → GA4 MP `booked_consultation` → Ads import, 70 h window, ledger `ads_conversion_uploads`), `ads-adgroup-cutover.mjs`, `ads-guard.mjs` (restores TARGET_SPEND/$14 cap, Search-only, paused old ad group, paused auto-apply).

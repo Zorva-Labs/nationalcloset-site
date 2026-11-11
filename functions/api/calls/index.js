@@ -21,7 +21,7 @@ export async function onRequestGet(context) {
 
   const stmt = context.env.DB.prepare(
     `SELECT c.id, c.menu_choice, c.tracking_number, c.caller_number, c.caller_name, c.caller_city, c.caller_state,
-            c.source, c.started_at, c.duration, c.answered, c.voicemail, c.spam, c.recording_url,
+            c.source, c.started_at, c.duration, c.answered, c.voicemail, c.spam, c.recording_url, c.agent, c.intake,
             CASE WHEN c.lead_id > 0 THEN c.lead_id END AS lead_id, l.name AS lead_name,
             c.contact_id, ct.name AS contact_name
        FROM calls c

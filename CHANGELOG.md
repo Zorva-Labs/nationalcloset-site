@@ -2,6 +2,37 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-11 — The phone agent: ring Anthony, then the agent
+
+- **Asked:** Michael, 2026-11-11: "also add the ai agent like we did for the lead gen sites, but make it the number ring to anthony first, then the agent picks up if there's no answer." He chose:
+  - drop the menu;
+  - after hours, the agent answers at once.
+- **In CallRail (Terry's account, as Terry):**
+  - **The new advanced flow:** "NCC Ring Anthony then Agent" (`8cc975a5-3ff5-4a96-a9b0-0ef43dfdb40f`).
+    - It plays "This call may be recorded".
+    - In open hours (weekdays 8–6, Saturday 9–4) it rings Anthony's cell for 20 s with "Prevent voicemails" on.
+    - Then, and at any hour outside those, Voice Assist takes the call.
+  - **What the agent knows and says:** its business profile, greeting, instructions and intake questions were rewritten from the site's facts. It replaced an older "Ashley" greeting.
+    - It keeps the standing calls: no prices, no visit times, no financing, a designer calls or texts to set the visit, and it says it is a virtual assistant when asked.
+    - It asks: name, callback number, existing job or new, what space, address, email, how soon.
+    - The record is `callrail/voice-assist.json`.
+- **In the CRM:**
+  - **Migration 0087 (applied):** `calls.agent` and `calls.intake`.
+  - **`/api/callrail`** reads the agent's answers (`voice_assist_message`) and adds them to what earlier webhooks saved, never wiping them.
+  - **A new project from a new number** becomes a lead (`source_page` "phone agent", with the caller's own name, number, email, address and space). An existing job is marked service.
+  - **One mail:** "Phone agent took a call" goes to hello@ with a copy to Terry.
+  - **`/crm/calls` and the lead page** show "Phone agent" and the answers. The "Menu" column is now "Reason".
+  - Pin `ncc120`. Deployed.
+- **Checked:** locally, with signed sample webhooks:
+  - A post-call without answers sends nothing.
+  - A later call-modified with answers makes the lead and the mail, once.
+  - A call Anthony answers makes neither.
+  - Live: the columns exist, and an unsigned webhook gets 401.
+- **Owed:**
+  - **Assign the flow to the numbers:** (615) 488-3575 (on "Default Call Flow", which was already off the menu) and (615) 392-1316 (still on "NCC Phone Menu"). This waits for Michael's word, then a test call.
+  - **Tell Anthony** he presses 1 to take a call, or it goes to the agent.
+  - **Confirm the webhook shape** from the first real intake.
+
 ## 2026-11-11 — Cloe's call-backs count as leads
 
 - **Asked:** Michael, 2026-11-11: "Yes, add it" (count Cloe's call-backs as a lead in GA4).

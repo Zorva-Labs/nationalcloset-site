@@ -5,17 +5,24 @@
 // 1. Store first: the call is upserted into `calls` by its CallRail id. CallRail
 //    never resends a failed webhook, so a 500 is only for a write that failed.
 // 2. Tie it to who called: a known number links to its lead and client; a
-//    press-1 caller with no lead gets one, in the New column.
-// 3. Tell the office, once: a voicemail, or a caller who chose an option and
-//    got no one, goes to STAFF_EMAIL, copied to CALL_ALERT_CC. An answered call
-//    has already been handled.
+//    new caller who gave the phone agent a new project (or pressed 1 on the
+//    old menu) gets a lead, in the New column.
+// 3. Tell the office, once: what the caller told the phone agent, a voicemail,
+//    or a caller who chose an option and got no one, goes to STAFF_EMAIL,
+//    copied to CALL_ALERT_CC. An answered call has already been handled.
+//
+// Since 2026-11-11 the numbers ring Anthony for 20 s, then CallRail's Voice
+// Assist takes the caller's details; after hours it answers at once
+// (flow "NCC Ring Anthony then Agent"; docs/crm.md → Phone calls). Its intake
+// comes on the call as voice_assist_message, often on a later call-modified
+// webhook than the first post-call one, so the alert waits for it.
 //
 // Nothing goes to the caller: no acknowledgment, and no text (the owner
 // declined SMS from this CRM). Signed: an unsigned post is refused.
 import { json } from "../_lib/auth.js";
 import { sendStaffAlert } from "../_lib/email.js";
 import { signatureOk } from "../_lib/callrail-sign.js";
-import { CHOICE_LABEL, callerNameOf, findCaller, leadFromCall, menuChoiceOf, prettyPhone, realName, tagNames } from "../_lib/calls.js";
+import { CHOICE_LABEL, INTAKE_LABELS, callerNameOf, findCaller, intakeChoice, intakeOf, leadFromCall, menuChoiceOf, prettyPhone, realName, tagNames } from "../_lib/calls.js";
 
 const str = (v, n = 500) => (v == null ? "" : String(v)).trim().slice(0, n);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -27,15 +34,17 @@ function whenCentral(iso) {
 }
 
 function alertFor(row, base) {
-  const who = callerNameOf(row);
-  const phone = prettyPhone(row.caller_number);
-  const what = row.voicemail ? "Voicemail" : "Missed call";
+  const intake = (() => { try { return row.intake ? JSON.parse(row.intake) : null; } catch { return null; } })();
+  const who = (intake && intake.name) || callerNameOf(row);
+  const phone = prettyPhone((intake && intake.callback_phone) || row.caller_number);
+  const what = row.agent ? "Phone agent took a call" : row.voicemail ? "Voicemail" : "Missed call";
   const choice = row.menu_choice ? CHOICE_LABEL[row.menu_choice] : "No selection";
+  const told = intake ? INTAKE_LABELS.filter(([k]) => intake[k] && k !== "name" && k !== "callback_phone") : [];
   const leadUrl = row.lead_id > 0 ? `${base}/crm/lead.html?id=${row.lead_id}` : `${base}/crm/calls.html`;
   const lines = [
     `${what} from ${who}`,
     `Phone: ${phone}`,
-    `Menu: ${choice}`,
+    ...(row.agent ? told.map(([k, l]) => `${l}: ${intake[k]}`) : [`Menu: ${choice}`]),
     `When: ${whenCentral(row.started_at)} Central`,
     row.recording_url ? `Listen: ${row.recording_url}` : "",
     `In the CRM: ${leadUrl}`,
@@ -45,13 +54,14 @@ function alertFor(row, base) {
   const html = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#1F1D1A">
 <p style="margin:0 0 12px;font-weight:700">${esc(what)} from ${esc(who)}</p>
 <table style="border-collapse:collapse;font-size:15px">
-<tr><td ${cell}>Phone</td><td><a href="tel:${esc(row.caller_number)}" ${link}>${esc(phone)}</a></td></tr>
-<tr><td ${cell}>Menu</td><td>${esc(choice)}</td></tr>
+<tr><td ${cell}>Phone</td><td><a href="tel:${esc(String((intake && intake.callback_phone) || row.caller_number || "").replace(/[^\d+]/g, ""))}" ${link}>${esc(phone)}</a></td></tr>
+${row.agent ? told.map(([k, l]) => `<tr><td ${cell}>${esc(l)}</td><td>${esc(intake[k])}</td></tr>`).join("") : `<tr><td ${cell}>Menu</td><td>${esc(choice)}</td></tr>`}
 <tr><td ${cell}>When</td><td>${esc(whenCentral(row.started_at))} Central</td></tr>
 </table>
 <p style="margin:16px 0 0">${row.recording_url ? `<a href="${esc(row.recording_url)}" ${link}>Listen to the recording</a> &nbsp;·&nbsp; ` : ""}<a href="${esc(leadUrl)}" ${link}>Open in the CRM</a></p>
 </div>`;
-  return { subject: `${what}: ${who}, ${choice}`, text: lines.join("\n"), html };
+  const subject = row.agent ? `${what}: ${who}${intake && intake.space ? `, ${intake.space}` : ""}${row.menu_choice === "service" ? " (existing job)" : ""}` : `${what}: ${who}, ${choice}`;
+  return { subject: subject.slice(0, 180), text: lines.join("\n"), html };
 }
 
 export async function onRequestPost({ request, env }) {
@@ -70,17 +80,27 @@ export async function onRequestPost({ request, env }) {
   const db = env.DB;
   const callrailId = str(call.id, 64);
   const tags = tagNames(call);
-  const choice = menuChoiceOf(tags);
+  const intake = intakeOf(call);
+  const choice = menuChoiceOf(tags) || intakeChoice(intake);
 
   // ---- 1. store ------------------------------------------------------------
   let row;
   try {
+    // A later webhook can carry fewer answers than an earlier one: keep what we
+    // already have and let the new one fill in or correct.
+    let intakeJson = intake ? JSON.stringify(intake) : null;
+    if (intake) {
+      const prev = await db.prepare("SELECT intake FROM calls WHERE callrail_id = ?1").bind(callrailId).first().catch(() => null);
+      try { if (prev && prev.intake) intakeJson = JSON.stringify({ ...JSON.parse(prev.intake), ...intake }); } catch { /* keep the new one */ }
+    }
     const player = str(call.recording_player);
     await db.prepare(
       `INSERT INTO calls (callrail_id, menu_choice, tags, tracking_number, caller_number, caller_name, caller_city,
-         caller_state, source, started_at, duration, answered, voicemail, spam, recording_url, raw)
-       VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16)
+         caller_state, source, started_at, duration, answered, voicemail, spam, recording_url, raw, agent, intake)
+       VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18)
        ON CONFLICT(callrail_id) DO UPDATE SET
+         agent = MAX(excluded.agent, agent),
+         intake = COALESCE(excluded.intake, intake),
          menu_choice = COALESCE(excluded.menu_choice, menu_choice),
          tags = COALESCE(excluded.tags, tags),
          caller_name = COALESCE(excluded.caller_name, caller_name),
@@ -98,7 +118,8 @@ export async function onRequestPost({ request, env }) {
       call.duration == null ? null : Number(call.duration) || 0,
       call.answered == null ? null : (call.answered ? 1 : 0),
       call.voicemail ? 1 : 0, call.spam ? 1 : 0,
-      /^https:\/\//.test(player) ? player : null, raw.slice(0, 60000)
+      /^https:\/\//.test(player) ? player : null, raw.slice(0, 60000),
+      intake ? 1 : 0, intakeJson
     ).run();
     row = await db.prepare("SELECT * FROM calls WHERE callrail_id = ?1").bind(callrailId).first();
     if (!row) throw new Error("row not found after upsert");
@@ -119,7 +140,7 @@ export async function onRequestPost({ request, env }) {
       if (leadId) {
         await db.prepare("UPDATE calls SET lead_id = ?1 WHERE id = ?2").bind(leadId, row.id).run();
         row.lead_id = leadId;
-      } else if (row.menu_choice === "estimate" && !row.spam) {
+      } else if (row.menu_choice === "estimate" && !row.spam && (row.agent || !row.answered || /^menu/i.test(row.tags || ""))) {
         // Both webhooks can arrive together: only the one that claims the row makes the lead.
         const claim = await db.prepare("UPDATE calls SET lead_id = 0 WHERE id = ?1 AND lead_id IS NULL").bind(row.id).run();
         if (claim.meta && claim.meta.changes) {
@@ -138,7 +159,8 @@ export async function onRequestPost({ request, env }) {
   }
 
   // ---- 3. tell the office ----------------------------------------------------
-  const worthTelling = !row.spam && !row.notified && (row.voicemail || (!row.answered && row.menu_choice));
+  // The agent's call is told once its intake is in (a later webhook may bring it).
+  const worthTelling = !row.spam && !row.notified && (row.agent || row.voicemail || (!row.answered && row.menu_choice && !row.agent && /^menu/i.test(row.tags || "")));
   if (worthTelling) {
     const claim = await db.prepare("UPDATE calls SET notified = 2 WHERE id = ?1 AND notified = 0").bind(row.id).run().catch(() => null);
     if (claim && claim.meta && claim.meta.changes) {

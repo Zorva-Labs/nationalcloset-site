@@ -494,10 +494,17 @@ const PILL_LABELS = {
 const CALL_CHOICES = { estimate: ["Free estimate", "consult"], service: ["Service", "contacted"], message: ["Message", "replied"] };
 function fmtPhone(n) { const d = String(n || "").replace(/\D/g, ""); return d.length >= 10 ? `(${d.slice(-10, -7)}) ${d.slice(-7, -4)}-${d.slice(-4)}` : String(n || ""); }
 function callChoice(c) { const h = CALL_CHOICES[c.menu_choice]; return h ? `<span class="pill" data-s="${h[1]}">${h[0]}</span>` : `<span style="color:var(--ink-soft)">No selection</span>`; }
+// What the caller told the phone agent, one line (2026-11-11).
+function callIntake(c) {
+  let i = null; try { i = c.intake ? JSON.parse(c.intake) : null; } catch (_) {}
+  if (!i) return "";
+  return [i.name, i.space, i.project, i.address, i.urgency && `when: ${i.urgency}`].filter(Boolean).join(" · ");
+}
 function callResult(c) {
   const secs = Number(c.duration) || 0;
   const len = secs >= 60 ? `${Math.round(secs / 60)} min` : `${secs} sec`;
   if (c.spam) return "Spam";
+  if (c.agent) return `Phone agent · ${len}`;
   if (c.voicemail) return `Voicemail · ${len}`;
   return c.answered ? `Answered · ${len}` : "Missed";
 }
@@ -1510,6 +1517,6 @@ window.SSCrm = {
   EVENT_TYPES, BRIEFED_TYPES, eventType, eventTypeLabel, eventTypeOptions, eventEnd, allDaySpan, applyEventTypeFields,
   composeEmail, renderEmailTimeline,
   team, assigneePicker, readAssigneePicker, wireAssigneePicker, assigneeChips, initialsOf, shortName,
-  PROJECT_STATUSES, SERVICES, serviceDatalist, brandTag, fmtPhone, callChoice, callResult,
+  PROJECT_STATUSES, SERVICES, serviceDatalist, brandTag, fmtPhone, callChoice, callResult, callIntake,
   me: () => ME, role: () => (ME && ME.role) || null,
 };

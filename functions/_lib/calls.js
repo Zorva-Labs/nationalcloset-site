@@ -27,6 +27,54 @@ export function menuChoiceOf(tags) {
   return null;
 }
 
+/* ---- The phone agent's intake (CallRail Voice Assist, 2026-11-11) ----------
+   It arrives on the call as voice_assist_message.contents: { "<question>":
+   "<answer>" }. CallRail's own questions come as name, phone_number and
+   purpose; ours (callrail/voice-assist.json) as Existing_job, What_space,
+   Service_address, Caller_email and How_soon. Matched by what the question is
+   about, so a reworded label still lands. First match wins. */
+const ASKS = [
+  ["email", /e-?mail/i],
+  ["existing", /existing|current job|already/i],
+  ["space", /space|room|area of the home/i],
+  ["callback_phone", /phone|number|reach you|call you back|callback/i],
+  ["urgency", /how soon|when|timeline|timeframe|urgen/i],
+  ["address", /address|location|where/i],
+  ["name", /\bname\b/i],
+  ["project", /purpose|reason|need|project|help|describe/i],
+];
+const clip = (v, n) => (v == null ? "" : String(v)).trim().slice(0, n);
+
+export function intakeOf(call) {
+  const va = call && call.voice_assist_message;
+  const contents = va && typeof va.contents === "object" ? va.contents : null;
+  if (!contents) return null;
+  const out = {};
+  for (const [q, a] of Object.entries(contents)) {
+    const ans = clip(typeof a === "object" && a ? a.answer ?? a.value ?? JSON.stringify(a) : a, 600);
+    if (!ans) continue;
+    const hit = ASKS.find(([, re]) => re.test(q.replace(/_+/g, " ")));
+    if (hit && !out[hit[0]]) out[hit[0]] = ans;
+  }
+  if (out.email) {
+    const e = out.email.replace(/\s+/g, "").toLowerCase();
+    if (/^[^@]+@[^@]+\.[a-z]{2,}$/.test(e)) out.email = e; else delete out.email;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+// "A job you're already working on" → service; anything else → a new project.
+export function intakeChoice(intake) {
+  if (!intake) return null;
+  const x = String(intake.existing || "").toLowerCase();
+  return /exist|current|already|working on|yes/.test(x) && !/\bnew\b/.test(x) ? "service" : "estimate";
+}
+
+export const INTAKE_LABELS = [
+  ["name", "Name"], ["callback_phone", "Callback number"], ["email", "Email"], ["address", "Address"],
+  ["existing", "New or existing"], ["space", "Space"], ["project", "What they need"], ["urgency", "How soon"],
+];
+
 export function lastTen(phone) {
   const d = String(phone || "").replace(/\D/g, "");
   return d.length >= 10 ? d.slice(-10) : "";
@@ -72,22 +120,30 @@ export function callerNameOf(row) {
 // Make the lead for a call and tie the call to it. leads.phone and leads.email
 // are NOT NULL, so a caller with no email is an empty string, as on /api/intake/lead.
 export async function leadFromCall(db, row, actor = {}) {
+  const intake = (() => { try { return row.intake ? JSON.parse(row.intake) : null; } catch { return null; } })();
   const dialed = row.tracking_number ? ` ${prettyPhone(row.tracking_number)}` : "";
-  const choice = row.menu_choice ? ` and chose "${CHOICE_LABEL[row.menu_choice]}"` : "";
-  const how = row.voicemail ? " Left a voicemail." : row.answered ? " The call was answered." : " No one answered and no message was left.";
-  const location = [row.caller_city, row.caller_state].filter(Boolean).join(", ") || null;
+  const choice = row.menu_choice && !row.agent ? ` and chose "${CHOICE_LABEL[row.menu_choice]}"` : "";
+  const how = row.agent ? " No one picked up, and the phone agent took the details."
+    : row.voicemail ? " Left a voicemail." : row.answered ? " The call was answered." : " No one answered and no message was left.";
+  const told = intake
+    ? "\n\n" + INTAKE_LABELS.filter(([k]) => intake[k] && k !== "name" && k !== "email").map(([k, l]) => `${l}: ${intake[k]}`).join("\n")
+    : "";
+  const location = (intake && intake.address) || [row.caller_city, row.caller_state].filter(Boolean).join(", ") || null;
+  const name = (intake && intake.name) || callerNameOf(row);
+  const phone = prettyPhone((intake && intake.callback_phone) || row.caller_number);
   const lead = await db.prepare(
-    `INSERT INTO leads (name, phone, email, location, message, source_page, utm_source, utm_medium, contact_id)
-     VALUES (?1, ?2, '', ?3, ?4, 'phone', 'phone', 'call', ?5) RETURNING id`
+    `INSERT INTO leads (name, phone, email, location, message, interest, source_page, utm_source, utm_medium, contact_id)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'phone', 'call', ?8) RETURNING id`
   ).bind(
-    callerNameOf(row), prettyPhone(row.caller_number), location,
-    `Called${dialed}${choice}.${how}`, row.contact_id || null
+    name, phone, (intake && intake.email) || "", location,
+    `Called${dialed}${choice}.${how}${told}`, (intake && intake.space) || null,
+    row.agent ? "phone agent" : "phone", row.contact_id || null
   ).first();
   await db.prepare("UPDATE calls SET lead_id = ?1, updated_at = datetime('now') WHERE id = ?2").bind(lead.id, row.id).run();
   await recordActivity(db, {
     entityType: "lead", entityId: lead.id, action: "created",
     actorKind: actor.kind || "system", actorId: actor.id || null, actorName: actor.name || null,
-    details: { source: "phone", call: row.id, choice: row.menu_choice },
+    details: { source: row.agent ? "phone agent" : "phone", call: row.id, choice: row.menu_choice },
   }).catch(() => {});
   return lead.id;
 }

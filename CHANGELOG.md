@@ -8,7 +8,7 @@ Newest first. One entry per session that changed this repo: what changed, why, w
 - **Changed:** "NCC Ring Anthony then Agent" was assigned to (615) 488-3575 in CallRail. Its tracker now runs the five steps: greeting → schedule → dial Anthony 20 s → agent, and the agent at once after hours.
   - (615) 392-1316 stays on "NCC Phone Menu".
   - Assigning it made CallRail add a tracker of its own, "Voice Assist Fallback" (615) 469-2734, which runs only the agent. It was left as is. It may count as one more number on the plan.
-- **Told:** email to hello@ and Terry (Michael: "send an email to terry mccarthy and anthony … explaining the system and how it works and how anthony should answer"), sent from michael@nashvilleswebdesign.com, message `1a1cc13fc3ebf7ad`. It covers:
+- **Told:** email to hello@ and Terry (Michael: "send an email to terry mccarthy and anthony … explaining the system and how it works and how anthony should answer"), sent from michael@nashvilleswebdesign.com, message `1a1cc13fc3ebf7ad`; the same letter to Terry's tmccarthy33@yahoo.com on Michael's word, message `1a1cc149c3e01295`. It covers:
   - open and after hours;
   - press 1 to take a call;
   - what the assistant asks and never says;

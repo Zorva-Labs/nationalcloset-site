@@ -2,6 +2,16 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-11 — The phone agent goes live on 488-3575
+
+- **Asked:** Michael, 2026-11-11: "Only 488-3575".
+- **Changed:** "NCC Ring Anthony then Agent" was assigned to (615) 488-3575 in CallRail. Its tracker now runs the five steps: greeting → schedule → dial Anthony 20 s → agent, and the agent at once after hours.
+  - (615) 392-1316 stays on "NCC Phone Menu".
+  - Assigning it made CallRail add a tracker of its own, "Voice Assist Fallback" (615) 469-2734, which runs only the agent. It was left as is. It may count as one more number on the plan.
+- **Owed:**
+  - **A test call:** ring 488-3575 and let it ring out, then check `/crm/calls` and hello@.
+  - **Tell Anthony** to press 1 to take a call.
+
 ## 2026-11-11 — The phone agent: ring Anthony, then the agent
 
 - **Asked:** Michael, 2026-11-11: "also add the ai agent like we did for the lead gen sites, but make it the number ring to anthony first, then the agent picks up if there's no answer." He chose:

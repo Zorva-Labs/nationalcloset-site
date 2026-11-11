@@ -126,6 +126,40 @@
     }
   }
 
+  // Enhanced Conversions: hand Google the customer's own contact details so it
+  // can match a lead to the ad click that drove it. gtag SHA-256-hashes these
+  // client-side before they leave the browser, and the customer gave us them.
+  // Needs Enhanced Conversions switched ON for the action in Google Ads.
+  function setUserData(p) {
+    try {
+      if (typeof gtag !== "function") return;
+      var ud = {};
+      if (p.email) ud.email = String(p.email).trim().toLowerCase();
+      if (p.phone) {
+        var digits = String(p.phone).replace(/\D/g, "");
+        if (digits.length === 10) digits = "1" + digits;
+        if (digits.length === 11 && digits.charAt(0) === "1") ud.phone_number = "+" + digits;
+      }
+      var nm = String(p.name || "").trim().split(/\s+/);
+      if (nm.length >= 2) ud.address = { first_name: nm[0], last_name: nm.slice(1).join(" ") };
+      if (ud.email || ud.phone_number) gtag("set", "user_data", ud);
+    } catch (e) { /* enhanced data is best-effort; never block the conversion */ }
+  }
+
+  // Cloe's call-back, once /api/contact has saved it (success:true; the widget
+  // checks): the same conversion as a form lead, so it counts in GA4, the Ads
+  // "Submit lead form" action and Meta's Lead (Michael, 2026-11-11).
+  // preventDefault tells the widget not to fire its own GA4 event.
+  window.addEventListener("ask:lead", function (ev) {
+    ev.preventDefault();
+    var d = ev.detail || {};
+    setUserData(d);
+    track("generate_lead",
+      { value: 1.0, currency: "USD", form_location: "chat: Cloe" },
+      "lead",
+      { value: 1.0, currency: "USD" });
+  });
+
   /* ---------- Step 2: optional details ----------
      The forms ask for a name and a phone number, with the space optional
      (Michael, 2026-11-11: "shorten the form to generate more leads"; all four
@@ -437,27 +471,8 @@
           // shown the failure message rather than a false "You're all set!".
           if (!res || res.success !== true) { fail(); return; }
 
-          // Enhanced Conversions: hand Google the customer's own contact details
-          // so it can match this lead to the ad click that drove it. gtag
-          // SHA-256-hashes these client-side before they ever leave the browser —
-          // no raw PII is sent — and the customer already gave us this info. This
-          // lifts match rates and clears the Ads action's "needs enhanced data"
-          // flag. Requires Enhanced Conversions to be switched ON for the action
-          // in Google Ads (Google tag method).
-          try {
-            if (typeof gtag === "function") {
-              var ud = {};
-              if (payload.email) ud.email = payload.email.trim().toLowerCase();
-              if (payload.phone) {
-                var digits = payload.phone.replace(/\D/g, "");
-                if (digits.length === 10) digits = "1" + digits;
-                if (digits.length === 11 && digits.charAt(0) === "1") ud.phone_number = "+" + digits;
-              }
-              var nm = (payload.name || "").trim().split(/\s+/);
-              if (nm.length >= 2) ud.address = { first_name: nm[0], last_name: nm.slice(1).join(" ") };
-              if (ud.email || ud.phone_number) gtag("set", "user_data", ud);
-            }
-          } catch (e) { /* enhanced data is best-effort; never block the conversion */ }
+          // Enhanced Conversions (setUserData, above).
+          setUserData(payload);
 
           // Conversion fires only once the lead is actually saved — guaranteed by the
           // res.success gate above, not by any client-side bot check. value/currency

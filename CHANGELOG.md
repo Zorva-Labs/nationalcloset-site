@@ -2,6 +2,25 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-11 — Cloe's call-backs count as leads
+
+- **Asked:** Michael, 2026-11-11: "Yes, add it" (count Cloe's call-backs as a lead in GA4).
+- **Changed:**
+  - Once `/api/contact` saves a call-back (`success:true`), the widget sends the window event `ask:lead`. `js/main.js` takes it and fires what a form lead fires:
+    - enhanced `user_data`;
+    - GA4 `generate_lead` (value 1 USD, `form_location` "chat: Cloe");
+    - the Ads "Submit lead form" label;
+    - Meta `Lead`.
+  - The form's enhanced-data code moved into `setUserData()`, shared by both paths.
+  - The widget used to show "Sent" on any HTTP 200. A bot drop (`{ok:true}` without `success`) now shows the phone number instead, and fires nothing.
+  - The call-back card names the business even before the search index loads.
+  - Pin `ncc133`.
+  - Both widget changes went into site-kit too.
+- **Checked:** local, with the functions over a local D1 and the tags stubbed:
+  - A saved call-back fired `user_data`, `generate_lead`, the Ads conversion and Meta `Lead`, once each.
+  - A stubbed `{ok:true}` reply fired nothing and showed "Sorry, that didn't go through" with the phone number.
+- **Owed:** `/api/pv-event` (the widget's beacon still 404s, harmlessly). Cloe's own Anthropic key.
+
 ## 2026-11-11 — Cloe, the chat assistant; the forms down to name and phone; the hero tightened
 
 - **Asked:** Michael, 2026-11-11: "add the ai chat bot to the site with the new instructions for popup. name her Cloe. also shorten the form to generate more leads and Keep site branding and headline; only tighten spacing so the call to action is clear and above the fold, especially on mobile."

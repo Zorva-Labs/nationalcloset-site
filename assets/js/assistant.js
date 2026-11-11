@@ -284,13 +284,22 @@
   function leadCard(lead, sent) {
     var el = document.createElement('div'); el.className = 'ask-msg ask-lead';
     var rows = [['Name', lead.name], ['Phone', lead.phone], ['Email', lead.email], ['Need', lead.need], ['Where', lead.city], ['When', lead.timing]].filter(function (r) { return r[1]; });
-    el.innerHTML = '<h4>' + (sent ? 'Sent to ' + esc(cfg.name || 'the business') : 'Send this to ' + esc(cfg.name || 'the business') + '?') + '</h4><dl>' + rows.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>'; }).join('') + '</dl>'
+    el.innerHTML = '<h4>' + (sent ? 'Sent to ' : 'Send this to ') + esc(cfg.name || (BOOT && BOOT.name) || 'the business') + (sent ? '' : '?') + '</h4><dl>' + rows.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>'; }).join('') + '</dl>'
       + (sent ? '<p class="ask-note">Thanks. They’ll call you back soon.' + ((cfg.handoff || {}).phone ? ' If it’s urgent, <a href="' + esc(cfg.handoff.phoneHref) + '" data-ask-way="call">call ' + esc(cfg.handoff.phone) + '</a>.' : '') + '</p>'
         : '<div class="ask-row"><button type="button" class="ask-send">Send it</button><span class="ask-note">Nothing is sent until you tap.</span></div>');
     thread.appendChild(el); toEnd();
     if (!sent) el.querySelector('.ask-send').addEventListener('click', function () { sendLead(lead, el); });
     return el;
   }
+  /* A saved call-back is a lead: the site's own tracking takes it from the cancelable
+     window event 'ask:lead' (detail: name, phone, email, city, need) and calls
+     preventDefault() so it is counted once, its own way (its Ads label, Meta, enhanced
+     data). With no listener the kit fires GA4 generate_lead itself. */
+  function leadSaved(lead) {
+    var ev; try { ev = new CustomEvent('ask:lead', { cancelable: true, detail: { name: lead.name || '', phone: lead.phone || '', email: lead.email || '', city: lead.city || '', need: lead.need || '', source: 'assistant' } }); } catch (e) { return; }
+    if (window.dispatchEvent(ev) && typeof window.gtag === 'function') { try { window.gtag('event', 'generate_lead', { form_location: 'assistant' }); } catch (e) {} }
+  }
+
   function sendLead(lead, el) {
     var btn = el.querySelector('.ask-send'); btn.disabled = true; btn.textContent = 'Sending…';
     var L = cfg.lead || {}, parts = String(lead.name || '').trim().split(/\s+/);
@@ -300,8 +309,14 @@
     else if (L.transport === 'formsubmit' && L.endpoint) req = fetch(L.endpoint, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json' }, body: JSON.stringify({ name: lead.name, phone: lead.phone, email: lead.email || '', city: lead.city || '', message: fields.Message, _subject: 'Call-back request from the website assistant', _template: 'table', source: 'Site assistant' }) });
     else req = Promise.reject(new Error('no transport'));
     report('form_submit', 'assistant');
-    req.then(function (r) { if (!r.ok && r.type !== 'opaqueredirect') throw new Error('HTTP ' + r.status); return r; }).then(function () {
+    // Only a real save counts (rulebook 41): the kit's /api/lead answers a bot drop with 200 and
+    // { ok: true }, and success:true only for a saved row, so the api transport reads the body.
+    req.then(function (r) { if (!r.ok && r.type !== 'opaqueredirect') throw new Error('HTTP ' + r.status); return r; }).then(function (r) {
+      if (L.transport !== 'api') return r;
+      return r.json().then(function (j) { if (!j || j.success !== true) throw new Error('not saved'); return r; });
+    }).then(function () {
       report('form_complete', 'assistant');
+      leadSaved(lead);
       for (var i = history.length - 1; i >= 0; i--) if (history[i].lead) { history[i].sent = true; break; }
       saveHistory();
       el.remove(); leadCard(lead, true); keepTyping();

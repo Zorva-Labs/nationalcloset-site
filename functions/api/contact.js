@@ -34,6 +34,17 @@ export async function onRequestPost({ request, env }) {
     return json({ error: "Could not read the request." }, 400);
   }
 
+  // Cloe, the site assistant (functions/api/ask.js, assets/js/assistant.js — the
+  // kit's widget), posts a call-back with its own field names: "First Name",
+  // "Last Name", Phone, Email, City, Message, Source. Read them as the form's.
+  if (!data.name && (data["First Name"] || data["Last Name"])) {
+    data.name = [data["First Name"], data["Last Name"]].filter(Boolean).join(" ");
+    data.phone = data.phone || data.Phone;
+    data.email = data.email || data.Email;
+    data.message = data.message || [data.Message, data.City ? `Area: ${data.City}` : ""].filter(Boolean).join(" — ");
+    data.source = data.source || "chat: Cloe";
+  }
+
   const name = (data.name || "").toString().trim();
   const phone = (data.phone || "").toString().trim();
   const email = (data.email || "").toString().trim();
@@ -95,16 +106,18 @@ Message: ${message || "(none)"}
     return json({ ok: true });
   }
 
-  // Four fields make a lead: name, phone, email and the space (Michael,
-  // 2026-10-05 — a name and a phone alone left the designer nothing to go on).
-  // The forms mark all four required; this answers a caller that skips them.
-  if (!name || !phone || !email || !interest) {
-    return json({ error: "Name, phone, email and the space are required." }, 400);
+  // Two fields make a lead: a name and a phone number (Michael, 2026-11-11:
+  // "shorten the form to generate more leads"; 2026-10-05 to 11-11 it was four —
+  // name, phone, email and the space). The space is optional on the forms, and
+  // the email and address are asked on the step after the save
+  // (/api/contact-address).
+  if (!name || !phone) {
+    return json({ error: "Your name and phone number are required." }, 400);
   }
   if (phone.replace(/\D/g, "").length < 7) {
     return json({ error: "That phone number looks incomplete." }, 400);
   }
-  if (!/^\S+@\S+\.\S+$/.test(email)) {
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) {
     return json({ error: "That email address looks invalid." }, 400);
   }
 

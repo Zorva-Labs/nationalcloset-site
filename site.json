@@ -8,7 +8,8 @@
     "crm",
     "email",
     "google-ads",
-    "meta-ads"
+    "meta-ads",
+    "assistant"
   ],
   "platform": "cloudflare-pages",
   "generator": "python",
@@ -34,14 +35,16 @@
       "TURNSTILE_SECRET",
       "CF_ANALYTICS_TOKEN",
       "TRAFFIC_AGENCY_PASSWORDS",
-      "INTAKE_SECRET"
+      "INTAKE_SECRET",
+      "ANTHROPIC_API_KEY"
     ],
     "vars": {
       "MAIL_FROM": "National Closet Company <hello@nationalclosetco.com>",
       "MAIL_DEFAULT_REPLY": "hello@nationalclosetco.com",
       "STAFF_EMAIL": "hello@nationalclosetco.com",
       "ALERT_FROM_USER": "crm@nationalclosetco.com",
-      "QUOTE_MARKUP_RATE": "0"
+      "QUOTE_MARKUP_RATE": "0",
+      "ASSISTANT_MODEL": "claude-sonnet-5"
     }
   },
   "traffic": {
@@ -59,7 +62,7 @@
     "transport": "crm",
     "to": "hello@nationalclosetco.com",
     "activated": null,
-    "notes": "/api/contact → D1 leads + email; two-field forms (name + phone), optional details via /api/contact-address; Turnstile sitekey 0x4AAAAAAEeAHgFn213WJdnQ + hp_url honeypot (display:none) + hp_ms; bot drops answer 200 {ok:true}, are kept in D1 lead_drops, and only success:true fires tags"
+    "notes": "/api/contact → D1 leads + email; every form is two required fields (name + phone) since 2026-11-11, the space optional, email and address on the step after the save via /api/contact-address; Cloe's call-backs post here too (source 'Site assistant'); Turnstile sitekey 0x4AAAAAAEeAHgFn213WJdnQ + hp_url honeypot (display:none) + hp_ms; bot drops answer 200 {ok:true}, are kept in D1 lead_drops, and only success:true fires tags"
   },
   "mail": {
     "transport": "gmail-service-account",
@@ -120,5 +123,55 @@
     "loginApi": "/api/auth/login",
     "notes": "The CRM login is /api/auth/login; an agency password logs in as the first admin user (2026-10-09). ads false 2026-10-09: the Ads account (8968122786) is not under our manager; Michael: ignore National Closet ad access.",
     "ads": false
+  },
+  "assistant": {
+    "enabled": true,
+    "persona": "Cloe",
+    "model": "claude-sonnet-5",
+    "caps": {
+      "visitor": 30,
+      "day": 400
+    },
+    "handoff": {
+      "phone": "(615) 488-3575",
+      "form": "/#consult",
+      "booking": null,
+      "email": "hello@nationalclosetco.com",
+      "callLabel": "Call (615) 488-3575",
+      "formLabel": "Request a free design visit",
+      "bookingLabel": null
+    },
+    "lead": {
+      "transport": "api",
+      "endpoint": "/api/contact",
+      "emailRequired": false
+    },
+    "ui": {
+      "accent": "#a34927",
+      "accentInk": "#FFFFFF",
+      "label": "Ask Cloe",
+      "position": "right"
+    },
+    "nudge": {
+      "title": "Hi, I'm Cloe. Any questions?",
+      "text": "I'm happy to help with closets, pantries, garages or cabinets.",
+      "button": "Ask Cloe"
+    },
+    "suggested": [
+      "How does the free in-home design work?",
+      "What areas do you serve?",
+      "Do your custom closets come with a warranty?",
+      "How do payments work?",
+      "Do you build pantries and garage storage too?"
+    ],
+    "facts": [],
+    "rules": [
+      "No prices, ranges or estimates of any kind: the site publishes none. Say the exact price comes free at the in-home design visit, and offer to set one up.",
+      "Nobody books a time online. A designer texts or calls to set up the free in-home design visit, usually within one business day; offer to take their name and number for that.",
+      "There is no monthly financing. Payments are three installments: 50% at signing, 25% when materials are ordered and the install is scheduled, 25% on install day, paid by check.",
+      "We do not build Murphy beds or wall beds.",
+      "When someone mentions a cramped closet, a messy pantry or a garage they can't park in, acknowledge it in a few words of your own before you help."
+    ],
+    "notes": "Cloe (Michael, 2026-11-11): site-kit's assistant placed by hand in this repo's layout — assets/js/assistant.js, functions/api/ask.js, scripts/assistant-index.mjs, crm/migrations/0086_assistant_log.sql; build.mjs puts the script tag on every public page and runs the index step. Call-backs post to /api/contact (no email required). docs/assistant.md."
   }
 }

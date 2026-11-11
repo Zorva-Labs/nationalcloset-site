@@ -51,6 +51,11 @@ export async function sendLeadAlert(env, lead, { update = false } = {}) {
   const email = lead.email || "";
   const addr = addressLines(lead);
   const src = sourceLabel(lead.source);
+  // lead.via names an outside program the lead came from ("GoHighLevel",
+  // functions/api/inbound/lead.js); without it the lead is the website's.
+  // Declared before the rows read it (2026-11-11: read first, it threw on every
+  // website lead after the save, so the form answered 500).
+  const via = lead.via || "";
 
   // [label, text, html] — only fields with a value.
   const rows = [["Name", name, `<strong>${esc(name)}</strong>`]];
@@ -61,9 +66,6 @@ export async function sendLeadAlert(env, lead, { update = false } = {}) {
     `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr.join(", "))}" style="color:#D2683F">${addr.map(esc).join("<br/>")}</a>`]);
   if (src && !via) rows.push(["Form", src, esc(src)]);
 
-  // lead.via names an outside program the lead came from ("GoHighLevel",
-  // functions/api/inbound/lead.js); without it the lead is the website's.
-  const via = lead.via || "";
   const intro = via
     ? `New lead from ${via}, posted straight into the CRM.`
     : update

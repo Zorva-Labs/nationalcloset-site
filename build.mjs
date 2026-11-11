@@ -29,7 +29,7 @@ const FILES = [
   /* The IndexNow key — a 32-hex .txt whose content is its name — served from the root. */
   ...fs.readdirSync(ROOT).filter((f) => /^[0-9a-f]{32}\.txt$/.test(f)),
 ];
-const DIRS = ['blog', 'book', 'contract', 'crm', 'css', 'estimate', 'fonts', 'img', 'invoice', 'js', 'proposal', 'thanks'];
+const DIRS = ['assets', 'blog', 'book', 'contract', 'crm', 'css', 'estimate', 'fonts', 'img', 'invoice', 'js', 'proposal', 'thanks'];
 const PRIVATE = (rel) => /(^|\/)\.|(^|\/)migrations\/|\.(md|sql|py|sh|log|toml|bak|orig)$/i.test(rel) || rel === 'crm/setup-admin.mjs'
   /* Originals no page, stylesheet or script references (2026-10-09 scan: 1.2 MB the build should not ship); they stay in the repo. */
   || ORIGINALS.has(rel);
@@ -171,6 +171,25 @@ if (faqStops.length) {
 }
 console.log(`  FAQPage: written from the page's FAQ on ${faqPages} page(s), ${faqQs} question(s)`);
 
+/* Cloe, the site assistant (Michael, 2026-11-11; docs/assistant.md): the widget's
+   script tag goes on every public page here, in dist/, so no page can miss it and
+   the sources stay as the page factory writes them. Not on the customer's token
+   pages, the CRM, /book, /thanks, the thank-you page, the 404, the internal
+   calculator or the paid landing page /free-design (one job: the form). The
+   index step at the end of this file renames it to its content hash. */
+const NO_WIDGET = /^(crm|book|contract|estimate|invoice|proposal|thanks)\/|^(404|thank-you|calc|free-design)\.html$/;
+const WIDGET = '<script src="/assets/js/assistant.js" defer></script>';
+let widgetPages = 0;
+for (const file of walk(OUT).filter((f) => f.endsWith('.html'))) {
+  const rel = path.relative(OUT, file);
+  if (NO_WIDGET.test(rel)) continue;
+  const h = fs.readFileSync(file, 'utf8');
+  if (h.includes('/assets/js/assistant.js') || !h.includes('</body>')) continue;
+  fs.writeFileSync(file, h.replace(/<\/body>(?![\s\S]*<\/body>)/, () => `${WIDGET}\n</body>`));
+  widgetPages++;
+}
+console.log(`  assistant: the widget on ${widgetPages} page(s)`);
+
 /* The sitemap's dates: each URL gets the day its page last changed — never the
    build date, which engines learn to ignore — and each page's WebPage
    dateModified the same. site-kit lastmod reads them from .indexnow.json (what
@@ -180,3 +199,6 @@ if (fs.existsSync(KIT)) {
   const r = spawnSync(process.execPath, [KIT, 'lastmod', ROOT], { stdio: 'inherit' });
   if (r.status) process.exitCode = r.status;
 }
+
+/* the assistant's search index, from dist/ (site-kit assistant) */
+await import('./scripts/assistant-index.mjs');

@@ -285,6 +285,33 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .hero__actions { display: flex; flex-wrap: wrap; gap: 0.8rem; opacity: 0; animation: fadeUp .8s var(--ease) .62s forwards; }
 .hero__proof { display: flex; flex-wrap: wrap; gap: 1.4rem 2rem; align-items: center; padding-top: 0.6rem; opacity: 0; animation: fadeUp .8s var(--ease) .74s forwards; }
 .hero__proof .stars { color: var(--clay-deep); letter-spacing: 2px; }
+/* Hero spacing (Michael, 2026-11-11: "only tighten spacing so the call to action is clear and above
+   the fold, especially on mobile"): the same words and order, less air. The CTA row gets its own gap
+   from the proof chips so it reads as the next step; on phones the top padding, the lines under the
+   headline and the chips close up so the button sits well inside the first screen. */
+.hero { padding-top: calc(var(--nav-h) + 1.75rem); }
+.hero__slogan { margin-top: 0.4rem; }
+.hero .lead { margin-top: 0.8rem; }
+.hero .proof-chips { margin-top: 0.8rem; }
+.hero__actions { margin-top: 1.1rem; }
+.hero .capacity { margin-top: 0.9rem; }
+@media (max-width: 939px) {
+  .hero { padding-top: calc(var(--nav-h) + 1.25rem); padding-bottom: var(--sp-5); }
+  .hero__inner { gap: 1.6rem; }
+  .hero__slogan { margin-top: 0.35rem; }
+  .hero .lead { margin-top: 0.7rem; line-height: 1.45; }
+  .hero .proof-chips { margin-top: 0.75rem; gap: 0.3rem 0.8rem; font-size: 0.86rem; }
+  .hero__actions { margin-top: 1.1rem; gap: 0.6rem; }
+  .hero__actions .btn { flex: 1 1 100%; justify-content: center; padding-top: 0.85rem; padding-bottom: 0.85rem; }
+  .hero .capacity { margin-top: 0.85rem; font-size: 0.95rem; line-height: 1.45; }
+  .hero .doodle-note { margin-top: 0.3rem; }
+  .hero__proof { padding-top: 0.35rem; }
+  .hero__form .form-card { padding: 1.35rem; }
+}
+/* the hero card's name and phone share a row at every width: two short fields, one glance */
+.hero__form .field--row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.hero__form .field--row input { padding-left: 0.7rem; padding-right: 0.7rem; }
+
 .hero__proof b { font-family: var(--display); }
 @keyframes fadeUp { from { opacity:0; transform: translateY(22px);} to { opacity:1; transform: translateY(0);} }
 
@@ -800,11 +827,12 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 .bp .h3 { margin-bottom: .35rem; }
 .bp__sub { margin: 0 0 1rem; font-size: .93rem; color: var(--muted); }
 .bp__q { margin-top: .9rem; }
+.field__opt { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); }
 .bp__lbl { display: block; font-weight: 800; font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: .45rem; }
 .bp__from { margin: .7rem 0 0; padding: .6rem .8rem; border-radius: 10px; background: var(--clay-wash); color: var(--clay-deep); font-weight: 700; font-size: .92rem; }
 .bp__range { font-family: var(--display); font-weight: 900; font-size: clamp(1.7rem, 4vw, 2.3rem); color: var(--clay-deep); letter-spacing: -.02em; margin: .3rem 0 0; }
 .bp .form-note { margin-top: .7rem; }
-@media (min-width: 940px) { @media (prefers-reduced-motion: reduce) { .form-note { display: block; line-height: 1.5; }
+.form-note { display: block; line-height: 1.5; }
 .form-note a { white-space: nowrap; }
 /* ---- financing figures (Sept 2026) ---- */
 .tile__mo { grid-column: 1 / -1; font-size: .84rem; color: var(--muted); }
@@ -836,6 +864,14 @@ h1, h2, h3, h4 { font-family: var(--display); font-weight: 800; line-height: 1.0
 @media (min-width: 900px) { .about-how { grid-template-columns: 1.15fr 0.85fr; align-items: start; } .about-how__media { position: sticky; top: calc(var(--nav-h) + 1.5rem); } }
 .about-how__media img { width: 100%; border-radius: 16px; display: block; }
 .about-how__media figcaption { font-size: 0.88rem; color: var(--muted); margin-top: 0.6rem; }
+
+/* Cloe, the site assistant (assets/js/assistant.js, injected by build.mjs; docs/assistant.md): below
+   1100px the .mobicta call/quote bar holds the bottom 56px, so the launcher and its "any questions?"
+   card sit above it. body + class outranks the widget's own rules, which it adds after this sheet. */
+@media (max-width: 1099px) {
+  body .ask-fab { bottom: calc(56px + 0.75rem + env(safe-area-inset-bottom, 0px)); }
+  body .ask-nudge { bottom: calc(56px + 4.5rem + env(safe-area-inset-bottom, 0px)); }
+}
 </style>
 
 <!-- ============ JSON-LD: Organization + LocalBusiness + WebSite ============ -->
@@ -952,8 +988,8 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
         </h1>
         <p class="no-sale hero__sub"><strong>Saving marriages</strong> one closet at a time.</p>
         <p class="hero__slogan hero__sub">We're Closet Freaks!</p>
-        <p class="lead hero__sub" style="margin-top:1.1rem"><strong>Custom closets, custom cabinets, pantries, garages &amp; home offices</strong> — designed free in your home, installed by our own team, at a price normal families can afford.</p>
-        <p class="hero__sub proof-chips" style="margin-top:1rem"><span>Free in-home 3D design</span><span>One exact price up front</span><span>Lifetime system warranty</span><span>Pay in three installments</span></p>
+        <p class="lead hero__sub"><strong>Custom closets, custom cabinets, pantries, garages &amp; home offices</strong> — designed free in your home, installed by our own team, at a price normal families can afford.</p>
+        <p class="hero__sub proof-chips"><span>Free in-home 3D design</span><span>One exact price up front</span><span>Lifetime system warranty</span><span>Pay in three installments</span></p>
         
         <div class="hero__actions">
           <a class="btn btn--primary" href="/#consult">Book my free design visit <span class="arr">→</span></a>
@@ -972,24 +1008,32 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
         <div class="form-card bp" id="ballpark">
           <form data-lead data-ballpark>
             <h2 class="h3">Start your free closet design</h2>
-            <p class="bp__sub">Tell us the space and roughly how big it is. A designer measures it free, in your home, and gives you the exact price there.</p>
-            <div class="bp__q"><span class="bp__lbl">1 · What space?</span>
-              <div class="est__chips bp__chips" data-bp="type" role="group" aria-label="Space"><button type="button" data-v="walkin">Walk-in closet</button><button type="button" data-v="reachin">Reach-in closet</button><button type="button" data-v="pantry">Pantry</button><button type="button" data-v="garage">Garage</button><button type="button" data-v="office">Home office</button><button type="button" data-v="laundry">Laundry / mudroom</button></div>
-            </div>
-            <div class="bp__q" data-bp-step2 hidden><span class="bp__lbl">2 · How big?</span>
-              <div class="est__chips bp__chips" data-bp="size" role="group" aria-label="Size"><button type="button" data-v="small">Small</button><button type="button" data-v="medium" class="on">Medium</button><button type="button" data-v="large">Large</button></div>
-            </div>
-            <div class="bp__q" data-bp-step3 hidden><span class="bp__lbl">3 · Where should we reach you?</span>
-              <div class="form-grid">
-                <div class="field--row">
-                  <div class="field"><label for="bp-name">Name</label><input id="bp-name" name="name" type="text" autocomplete="name" placeholder="Jane Doe" required /></div>
-                  <div class="field"><label for="bp-phone">Phone / text</label><input id="bp-phone" name="phone" type="tel" autocomplete="tel" placeholder="(615) 488-3575" required /></div>
-                </div>
-                <div class="field"><label for="bp-email">Email</label><input id="bp-email" name="email" type="email" autocomplete="email" placeholder="jane@example.com" required /></div>
-                <input type="hidden" name="project" value="" /><input type="hidden" name="msg" value="" />
-                <button class="btn btn--primary btn--block" type="submit">Request my free design <span class="arr">→</span></button>
-                <p class="form-note">🔒 No spam. A designer texts you within one business day to set up the free visit.</p>
+            <p class="bp__sub">Just your name and number. A designer texts you within one business day to set up a free visit in your home.</p>
+            <div class="form-grid">
+              <div class="field--row">
+                <div class="field"><label for="bp-name">Name</label><input id="bp-name" name="name" type="text" autocomplete="name" placeholder="Jane Doe" required /></div>
+                <div class="field"><label for="bp-phone">Phone / text</label><input id="bp-phone" name="phone" type="tel" autocomplete="tel" placeholder="(615) 488-3575" required /></div>
               </div>
+              <div class="field">
+                <label for="bp-project">What space? <span class="field__opt">(optional)</span></label>
+                <select id="bp-project" name="project">
+                  <option value="" selected>Choose one…</option>
+                  <option>Walk-In Closet</option>
+                  <option>Reach-In Closet</option>
+                  <option>Custom Cabinets</option>
+                  <option>Kitchen Cabinets</option>
+                  <option>Bathroom Vanity</option>
+                  <option>Pantry</option>
+                  <option>Garage Storage</option>
+                  <option>Home Office</option>
+                  <option>Laundry / Mudroom</option>
+                  <option>Media / Wall Unit</option>
+                  <option>Multiple Spaces</option>
+                </select>
+              </div>
+              <input type="hidden" name="msg" value="Design request from the homepage." />
+              <button class="btn btn--primary btn--block" type="submit">Request my free design <span class="arr">→</span></button>
+              <p class="form-note">🔒 No spam. Free, with no obligation.</p>
             </div>
           </form>
           <div class="form-success" role="status" aria-live="polite">
@@ -1490,28 +1534,22 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
                   <input id="lf2-phone" name="phone" type="tel" autocomplete="tel" placeholder="(615) 488-3575" required />
                 </div>
               </div>
-              <div class="field--row">
-                <div class="field">
-                  <label for="lf2-email">Email</label>
-                  <input id="lf2-email" name="email" type="email" autocomplete="email" placeholder="jane@example.com" required />
-                </div>
-                <div class="field">
-                  <label for="lf2-project">What space?</label>
-                  <select id="lf2-project" name="project" required>
-                    <option value="" disabled selected>Choose one…</option>
-                    <option>Walk-In Closet</option>
-                    <option>Reach-In Closet</option>
-                    <option>Custom Cabinets</option>
-                    <option>Kitchen Cabinets</option>
-                    <option>Bathroom Vanity</option>
-                    <option>Pantry</option>
-                    <option>Garage Storage</option>
-                    <option>Home Office</option>
-                    <option>Laundry / Mudroom</option>
-                    <option>Media / Wall Unit</option>
-                    <option>Multiple Spaces</option>
-                  </select>
-                </div>
+              <div class="field">
+                <label for="lf2-project">What space? <span class="field__opt">(optional)</span></label>
+                <select id="lf2-project" name="project">
+                  <option value="" selected>Choose one…</option>
+                  <option>Walk-In Closet</option>
+                  <option>Reach-In Closet</option>
+                  <option>Custom Cabinets</option>
+                  <option>Kitchen Cabinets</option>
+                  <option>Bathroom Vanity</option>
+                  <option>Pantry</option>
+                  <option>Garage Storage</option>
+                  <option>Home Office</option>
+                  <option>Laundry / Mudroom</option>
+                  <option>Media / Wall Unit</option>
+                  <option>Multiple Spaces</option>
+                </select>
               </div>
               <button class="btn btn--primary btn--block" type="submit">Book my free design visit <span class="arr">→</span></button>
               <p class="form-note">🔒 No spam. A designer texts or calls to set up your free in-home design.</p>
@@ -1603,6 +1641,6 @@ src="https://www.facebook.com/tr?id=904015652453670&ev=PageView&noscript=1"
   <a class="quote" href="/#consult">✨ Book a visit</a>
 </div>
 
-<script src="/js/main.js?v=ncc131" defer></script>
+<script src="/js/main.js?v=ncc132" defer></script>
 </body>
 </html>

@@ -2,6 +2,38 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-11 — Cloe, the chat assistant; the forms down to name and phone; the hero tightened
+
+- **Asked:** Michael, 2026-11-11: "add the ai chat bot to the site with the new instructions for popup. name her Cloe. also shorten the form to generate more leads and Keep site branding and headline; only tighten spacing so the call to action is clear and above the fold, especially on mobile."
+- **Cloe** (`docs/assistant.md`):
+  - What it is: site-kit's assistant, copied in as `assets/js/assistant.js`, `functions/api/ask.js` and `scripts/assistant-index.mjs`. `build.mjs` injects it on 70 public pages; not on `/free-design`, the CRM or the customer's pages.
+  - The chat standard: the card "Hi, I'm Cloe. Any questions?" appears 3 s after the first scroll and once a visit, and × hides it for 7 days. It has the voice block and keeps the focus in the box.
+  - Her rules: no prices, no online booking, no financing, no Murphy or wall beds.
+  - Infrastructure: model `claude-sonnet-5` (`ASSISTANT_MODEL`). The Pages secret `ANTHROPIC_API_KEY` holds the estate's shared key for now. D1 `assistant_log` (migration 0086, applied).
+  - Call-backs from the chat post to `/api/contact` with `source_page` "chat: Cloe".
+  - On phones the launcher sits above the call bar.
+  - site-kit gained the `assistant.persona` option for the name (site-kit e457355).
+- **Forms:**
+  - Every lead form (37 pages and the home hero) now asks for name and phone only; "What space?" is optional. The email field is gone (the 2026-10-05 four-field rule is reversed), and the optional thank-you step still offers email and address.
+  - `/api/contact` requires name and phone, and checks an email only when one is sent. It also accepts the chat's call-back fields.
+  - The partner form (`work-with-us.html`) is unchanged.
+- **Home hero:**
+  - Same branding, headline and slogan; the margins and padding are tightened.
+  - The form card reads "Start your free closet design", with name and phone side by side and the button "Request my free design →".
+  - At 375×812 "Book my free design visit" sits at 555–605 px (was 604–660). At 1280×800 the hero buttons end at 792 px (were 833) and the form button at 740.
+- **Found and fixed:**
+  - **A stylesheet bug since 2026-09-17:** `css/styles.css` line 798 opened `@media (min-width: 940px) { @media (prefers-reduced-motion: reduce) {` and never closed it. Every rule after it applied only on desktops with reduced motion. That broke `/about`: its grids and area chips never applied, and the page scrolled sideways at 375 (597 px wide). It is closed now, and `/about` fits.
+  - **`_lib/lead-alert.js` from this morning's API-key work (c4d3f9f):** `via` was read before it was declared, so every `/api/contact` lead returned 500 after saving and sent no alert. It was never deployed (production was 178accd until this deploy; the live D1 has no lead since 2026-11-10). Fixed before this deploy.
+  - Asset pin `ncc131` → `ncc132` on every page and in `chrome.py`.
+- **Checked:**
+  - Local, with the functions over a local D1: the card shows after a scroll; its button opens the chat with the focus in the box; the chat call-back and the short form both save (`success:true`); a missing phone gets 400. No horizontal scroll at 375 on the home page or `/about`.
+  - Live after the deploy: the widget is on the home page and not on `/free-design`, and the card shows at 375. Cloe answered the five standard questions in a warm voice with no prices, said she is the site's assistant when asked, declined the pizza question and confirmed Hendersonville. No live form or call-back was sent.
+  - Submitted: 36 URLs to IndexNow; the sitemap was resubmitted to Search Console and Bing.
+- **Owed:**
+  - Cloe's own Anthropic workspace and key (one per client).
+  - GA4 `generate_lead` for chat call-backs.
+  - `/api/pv-event` for the widget's beacon, which 404s harmlessly.
+
 ## 2026-11-11 — API keys for outside programs to post leads (GoHighLevel)
 
 - **Asked:** Michael, 2026-11-11: "is there a way for another program to insert leads into our crm? Like an API Key from us?", then "leads would be from gohighlevel".

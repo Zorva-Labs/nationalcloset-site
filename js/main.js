@@ -127,12 +127,11 @@
   }
 
   /* ---------- Step 2: optional details ----------
-     The form asks for a name, a phone number, an email and the space (all four
-     required since 2026-10-05, Michael: a name and a phone alone left the
-     designer nothing to go on). The lead is saved and the conversion has fired
-     by the time this renders, so everything here is a bonus: the address and a
-     note behind a disclosure, plus the email or space only if a form didn't
-     send them. A designer texts to set the visit (there is no self-booking,
+     The forms ask for a name and a phone number, with the space optional
+     (Michael, 2026-11-11: "shorten the form to generate more leads"; all four
+     fields were required from 2026-10-05). The lead is saved and the conversion
+     has fired by the time this renders, so everything here is a bonus: the
+     email, the space when it wasn't given, the address and a note. A designer texts to set the visit (there is no self-booking,
      since 2026-09-29). */
   function mountDetailsStep(success, token, lead) {
     if (success.querySelector(".addr-step")) return;
@@ -141,7 +140,7 @@
     box.className = "addr-step";
     box.innerHTML =
       '<p class="addr-step__or">We\u2019ll text you within one business day to find a time.</p>' +
-      '<details class="addr-step__more"><summary>Add your address (optional)</summary>' +
+      '<details class="addr-step__more"><summary>' + (lead.email ? 'Add your address (optional)' : 'Add your email and address (optional)') + '</summary>' +
         '<div class="addr-step__fields">' +
           (lead.email ? '' : '<input class="addr-email" type="email" autocomplete="email" placeholder="Email (for your design and quote)" ' + inp + '>') +
           (lead.interest ? '' : '<select class="addr-project" ' + inp + '><option value="">What space? (optional)</option><option>Walk-In Closet</option><option>Reach-In Closet</option><option>Custom Cabinets</option><option>Kitchen Cabinets</option><option>Bathroom Vanity</option><option>Pantry</option><option>Garage Storage</option><option>Home Office</option><option>Laundry / Mudroom</option><option>Media / Wall Unit</option><option>Multiple Spaces</option></select>') +
@@ -681,35 +680,12 @@
 /* ---------- Homepage design-request card (#ballpark) (Sept 2026; the "text a photo" button and pill were removed 2026-11-09, Michael) ---------- */
 (function () {
 
-  // The hero card: two taps (the space, then the size) and then the contact
-  // fields. No price is shown anywhere on the site since 2026-11-08 (Michael:
-  // "remove pricing"); the taps fill the project and the note on the lead.
-  var LABEL = { reachin: "Reach-In Closet", walkin: "Walk-In Closet", pantry: "Pantry", garage: "Garage Storage", office: "Home Office", laundry: "Laundry / Mudroom" };
-  document.querySelectorAll("form[data-ballpark]").forEach(function (form) {
-    var type = null, size = "medium";
-    var step2 = form.querySelector("[data-bp-step2]"), step3 = form.querySelector("[data-bp-step3]");
-    var proj = form.querySelector('input[name="project"]'), msg = form.querySelector('input[name="msg"]');
-    function update() {
-      if (!type) return;
-      if (proj) proj.value = LABEL[type];
-      if (msg) msg.value = "Design request from the homepage: " + LABEL[type] + ", " + size + ".";
-      if (step2) step2.hidden = false;
-      if (step3) step3.hidden = false;
-    }
-    form.querySelectorAll('[data-bp="type"] button').forEach(function (b) {
-      b.addEventListener("click", function () {
-        b.parentNode.querySelectorAll("button").forEach(function (x) { x.classList.remove("on"); });
-        b.classList.add("on"); type = b.getAttribute("data-v"); update();
-        try { if (typeof gtag === "function") gtag("event", "ballpark_space", { space: type }); } catch (e) {}
-      });
-    });
-    form.querySelectorAll('[data-bp="size"] button').forEach(function (b) {
-      b.addEventListener("click", function () {
-        b.parentNode.querySelectorAll("button").forEach(function (x) { x.classList.remove("on"); });
-        b.classList.add("on"); size = b.getAttribute("data-v"); update();
-      });
-    });
-  });
+  // The hero card is a plain lead form since 2026-11-11 (Michael: "shorten the
+  // form to generate more leads"): a name, a phone number and the space as an
+  // optional pick, like every other form; the email and address are asked on the
+  // step after the save. Its space taps, size step and email field are gone, and
+  // the shared data-lead handler above sends it. No price is shown anywhere on
+  // the site since 2026-11-08 (Michael: "remove pricing").
 
   document.addEventListener("click", function (e) {
     var a = e.target && e.target.closest && e.target.closest('a[href^="sms:"]');

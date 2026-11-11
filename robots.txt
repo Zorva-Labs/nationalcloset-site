@@ -6,6 +6,8 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /search-index.json
+Disallow: /assistant-index.json
 Disallow: /crm/
 Disallow: /invoice/
 Disallow: /proposal/
@@ -27,6 +29,8 @@ User-agent: Google-Extended
 User-agent: Applebot-Extended
 Allow: /
 Disallow: /api/
+Disallow: /search-index.json
+Disallow: /assistant-index.json
 Disallow: /crm/
 Disallow: /invoice/
 Disallow: /proposal/

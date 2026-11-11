@@ -59,9 +59,14 @@ export async function sendLeadAlert(env, lead, { update = false } = {}) {
   if (lead.interest) rows.push(["Space", lead.interest, esc(lead.interest)]);
   if (addr.length) rows.push(["Address", addr.join(", "),
     `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr.join(", "))}" style="color:#D2683F">${addr.map(esc).join("<br/>")}</a>`]);
-  if (src) rows.push(["Form", src, esc(src)]);
+  if (src && !via) rows.push(["Form", src, esc(src)]);
 
-  const intro = update
+  // lead.via names an outside program the lead came from ("GoHighLevel",
+  // functions/api/inbound/lead.js); without it the lead is the website's.
+  const via = lead.via || "";
+  const intro = via
+    ? `New lead from ${via}, posted straight into the CRM.`
+    : update
     ? `${name} added details on the website after sending the request. Everything we have now:`
     : email
       ? `New free consultation request from the website.`
@@ -79,7 +84,7 @@ ${lead.sourceText ? `\n${lead.sourceText}\n` : ""}`;
 
   const html = `
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#16140F;max-width:600px;line-height:1.55">
-  <h2 style="font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;font-weight:400;font-size:24px;margin:0 0 8px">${update ? "Details added" : "New consultation request"}</h2>
+  <h2 style="font-family:'Montserrat','Helvetica Neue',Arial,sans-serif;font-weight:400;font-size:24px;margin:0 0 8px">${via ? `New lead from ${esc(via)}` : update ? "Details added" : "New consultation request"}</h2>
   <p style="margin:0 0 18px;color:#3A362F">${esc(intro)}</p>
   <table style="border-collapse:collapse;width:100%;margin:0 0 20px">
     ${rows.map(([k, , h]) => `<tr><td style="padding:7px 12px 7px 0;color:#3A362F;width:110px;vertical-align:top">${k}</td><td style="padding:7px 0">${h}</td></tr>`).join("\n    ")}
@@ -95,9 +100,9 @@ ${lead.sourceText ? `\n${lead.sourceText}\n` : ""}`;
 
   const first = lead.id ? alertMessageId(lead.id) : undefined;
   return sendStaffAlert(env, {
-    label: "National Closet Co. Website",
+    label: via ? `National Closet Co. CRM` : "National Closet Co. Website",
     replyTo: /^\S+@\S+\.\S+$/.test(email) ? email : undefined,
-    subject: `New consultation request — ${name}${sourceTag(visit)}`,
+    subject: via ? `New lead from ${via} — ${name}` : `New consultation request — ${name}${sourceTag(visit)}`,
     text, html,
     ...(update ? { inReplyTo: first, references: first } : { messageId: first }),
   });

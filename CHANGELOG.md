@@ -2,6 +2,18 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-11 — API keys for outside programs to post leads (GoHighLevel)
+
+- **Asked:** Michael, 2026-11-11: "is there a way for another program to insert leads into our crm? Like an API Key from us?", then "leads would be from gohighlevel".
+- **Added:**
+  - `POST /api/inbound/lead` (`functions/api/inbound/lead.js`): takes our field names or GoHighLevel's Webhook payload (`full_name`, `address1`, `customData`, `attributionSource`), saves the contact and the lead (brand NCC, `source_page` = the key's source), then sends the staff alert "New lead from GoHighLevel — name". No customer acknowledgment, no spam checks (the key is the gate). A resend of the same GoHighLevel `contact_id` answers with the saved lead.
+  - Per-program API keys: table `api_keys` (migration 0085, applied to the live D1), only the SHA-256 stored; `functions/_lib/api-keys.js` reads the key from `Authorization: Bearer`, `X-API-Key` or `api_key` in the body/`customData`. `tools/crm/api-key.mjs create|list|revoke`.
+  - Key #1 "GoHighLevel" (source `gohighlevel`), in `~/.env` as `NCC_GOHIGHLEVEL_API_KEY`.
+  - `_lib/lead-alert.js` takes `lead.via` for the outside program's subject, heading and intro; website alerts are unchanged.
+- **Unchanged:** `/api/intake/lead` (the NLC site's shared secret) and the website forms.
+- **Checks:** against a local D1 loaded with the schema and every migration: no key 401, GoHighLevel payload with the key in `customData` saved with every field mapped, resend `duplicate: true`, Bearer + JSON and `X-API-Key` + form-encoded saved, no name 400, wrong key 401, GET 405. Live after deploy: a wrong key 401; the real key passed to validation (400 on an empty body), so no test lead or alert went out.
+- **Owed:** the GoHighLevel workflow (trigger → Webhook action to the URL above with Custom Data `api_key`, `interest`, `message`), set up by whoever runs that account, then one real lead watched into the CRM. `docs/crm.md` → Inbound leads has the steps.
+
 ## 2026-11-09 — Google Ads readied for a relaunch (still paused)
 
 - **Asked:** Michael, 2026-11-09: "go ahead and make all recommended changes to the ad", after the plan drafted for Terry (prices out, call number, broad match in fewer groups, a cabinets group).

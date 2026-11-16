@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-16 — Three jobs marked Completed with no mail to the client
+
+- **Asked:** Michael, 2026-11-16: "mark wanda askew, derek smith and tyler marlowe complete without sending the client an email."
+- **Done in D1, not through the CRM's Complete:** the CRM's status change sends the "Completed" stage email and runs `billOnCompletion`, and the review-request sweep mails a completed job 12 h later. So jobs 52 (Tyler Marlowe), 66 (Wonda Askew, "Wonda" in the CRM) and 69 (Derek Smith), all at Installing since their October installs, were set `status='completed'` with `review_requested_at` stamped, so no review request goes either. Every invoice on the three is paid, so nothing was owed. Each has an `activity_log` row `status-completed` saying it went without mail.
+- **Owed:** nothing. If Michael wants their reviews asked for later, clear `review_requested_at` on those jobs (the sweep only takes jobs completed within 45 days).
+
 ## 2026-11-16 — Stripe reconnected: invoices can be paid online again, or by check
 
 - **Asked:** Michael, 2026-11-16: "reconnect the stripe account and make the incloicing work again" (then "you have an api").

@@ -2,6 +2,15 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-16 — Lead check: Steve Reed was there; Kelly Jordan added
+
+- **Asked:** Michael, 2026-11-16: "check that all leads made it to the CRM. I don't see Steve Reed listed".
+- **Steve Reed** is lead 106 (website form, 2026-11-10, Home Office). Anthony set him to Lost on 11-11 with the note "customer cancelled appointment via email". The Leads page hides Lost, Booked and Installed unless the status filter asks for them, so he drops off the default list.
+- **Checked against the sources:** every website lead since 10-31 got its acknowledgment mail and is in `leads`. `lead_drops` is empty since 10-15. Every call CallRail logged on 488-3575 and 857-5668 since the webhook went in is in `calls`. Missing ids: 98 was the NLC test (deleted, logged 10-28); 101 and 103 have no acknowledgment mail, contact or activity, so they were not website leads.
+- **Added:** Kelly Jordan, lead 107 (`crm-manual`, status New): master closet, Lebanon. He called Michael's cell on 11-11 because the magazine number said disconnected; Michael emailed it to hello@ and Terry, and it never reached the CRM. No mail went to him.
+- **Found:** the magazine tracker that held (615) 392-1316 was disabled in CallRail on 2026-11-12 and holds no number. Nothing in our records did it. `CLAUDE.md` and `docs/crm.md` corrected.
+- **Owed:** Michael to find out from Terry whether 392-1316 was dropped on purpose; the magazine ad may still print it.
+
 ## 2026-11-11 — The phone agent goes live on 488-3575
 
 - **Asked:** Michael, 2026-11-11: "Only 488-3575".

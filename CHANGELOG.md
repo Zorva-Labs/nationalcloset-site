@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-16 — Terry's address is his Yahoo
+
+- **Asked:** Michael, 2026-11-16: "replace terry@nationalcloset with Terry McCarthy's yaho email."
+- **Done:** tmccarthy33@yahoo.com (his address in `~/fleet/docs/reference/billing.md` and `email.md`) replaces terry@nationalclosetco.com in three places: `CALL_ALERT_CC` in `wrangler.toml` (the copy on the voicemail and missed-call mail; deployed), his `team_members` row (#3, so assignment and consult-brief mail reach him) and his CRM sign-in (`admin_users` #2, admin). The two had to change together: `auth.js` matches a login to its roster row by email. His password is unchanged; he now signs in with the Yahoo address. Manuals updated (`CLAUDE.md`, `docs/crm.md`, fleet `callrail.md`).
+- **Owed:** tell Terry he signs in to `/crm` with his Yahoo address now (last sign-in was 2026-10-05).
+
 ## 2026-11-16 — Three jobs marked Completed with no mail to the client
 
 - **Asked:** Michael, 2026-11-16: "mark wanda askew, derek smith and tyler marlowe complete without sending the client an email."

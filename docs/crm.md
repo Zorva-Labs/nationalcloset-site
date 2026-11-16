@@ -83,7 +83,7 @@
     - It plays "This call may be recorded".
     - During open hours (weekdays 8–6, Saturday 9–4 Central) it rings Anthony's cell, 615-706-7701, for 20 s. "Prevent voicemails" is on, so Anthony hears a prompt and presses 1 to take the call; his voicemail can't take it.
     - With no answer, and at any time outside open hours, Voice Assist takes the caller's details.
-  - **Which numbers:** (615) 488-3575 runs it since 2026-11-11 (Michael: "Only 488-3575"). (615) 392-1316, the magazine number, ran the menu "NCC Phone Menu" until its tracker was disabled in CallRail on 2026-11-12 (not by us; no number on it since). The three menu tags are still read for the old calls. (615) 857-5668 is NCC's other active tracker.
+  - **Which numbers:** (615) 488-3575, the main number on the site, and (615) 857-5668, the old number still in print, both run "NCC Ring Anthony then Agent" since 2026-11-16 (Michael: "both the old number and new number from callrail should point to NCC"). (615) 392-1316 ran the menu "NCC Phone Menu" until its tracker was disabled on 2026-11-12 (not by us); the three menu tags are still read for its old calls.
   - **The fallback number:** on assignment CallRail added its own tracker "Voice Assist Fallback", (615) 469-2734, which runs only the agent.
   - **What the agent says and asks:** `callrail/voice-assist.json`, written into CallRail as Terry over the web app's own endpoints (`~/fleet/docs/reference/callrail.md`). Edit that file first.
   - **Its rules:** no prices, no visit times, no financing (only the 50/25/25 terms), a designer calls or texts to set the visit, it says it is a virtual assistant when asked, and a current customer's job goes to a callback.

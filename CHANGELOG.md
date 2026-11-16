@@ -8,6 +8,12 @@ Newest first. One entry per session that changed this repo: what changed, why, w
 - **Done in D1, not through the CRM's Complete:** the CRM's status change sends the "Completed" stage email and runs `billOnCompletion`, and the review-request sweep mails a completed job 12 h later. So jobs 52 (Tyler Marlowe), 66 (Wonda Askew, "Wonda" in the CRM) and 69 (Derek Smith), all at Installing since their October installs, were set `status='completed'` with `review_requested_at` stamped, so no review request goes either. Every invoice on the three is paid, so nothing was owed. Each has an `activity_log` row `status-completed` saying it went without mail.
 - **Owed:** nothing. If Michael wants their reviews asked for later, clear `review_requested_at` on those jobs (the sweep only takes jobs completed within 45 days).
 
+## 2026-11-16 — Scott Schroeder's deposit check recorded on his invoice
+
+- **Asked:** Michael, 2026-11-16: "Did Scott book?" then "He paid by check. Mark it".
+- **Found:** Scott Schroeder (job 77) signed C-2026-0035 on 10-23 and paid the deposit by check #1095 on 10-26, but the check was recorded on the contract only (`deposit_paid_method` "ck#1095"). His deposit invoice INV-2026-0042 ($1,539.50) stayed open and the job stayed Proposed. With Stripe back the same day, that invoice could have been paid online a second time.
+- **Done:** canceled the invoice's live PaymentIntent (made earlier today when the invoice API was checked; never paid). Recorded Check · #1095, dated 2026-10-26, through the CRM's own Record payment (`mark_paid`, `send_receipt: false`): the invoice is paid, the contract reads Check · #1095, and the job is booked (`contracted`). Scott got no email; the office got the usual "deposit received" alert at hello@. The 50¢ gap between the contract's deposit ($1,540.00) and the invoice ($1,539.50) is rounding; the invoice is settled in full.
+
 ## 2026-11-16 — Stripe reconnected: invoices can be paid online again, or by check
 
 - **Asked:** Michael, 2026-11-16: "reconnect the stripe account and make the incloicing work again" (then "you have an api").

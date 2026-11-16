@@ -449,7 +449,7 @@ function switchTab(tab) {
   else if (tab === "activity") body.innerHTML = `<div id="activity-feed" class="muted">Loading…</div>`, loadActivity();
 }
 
-// ───────── Invoices tab (deposit/balance/custom invoices, paid by check) ─────────
+// ───────── Invoices tab (deposit/balance/custom invoices, paid online through Stripe or by check) ─────────
 const INV_STATUS = {
   open:  { label: "Awaiting payment", cls: "" },
   processing: { label: "Processing", cls: "" },
@@ -683,7 +683,7 @@ function renderInvoices(host, invoices) {
       + section("Processing", procRows, processing.length)
       + section("Paid", paidRows, paid.length)
       + section("Voided", voidRows, voided.length)
-    : summary + `<div class="card"><div class="empty">No invoices yet. Create a deposit or balance invoice — the customer pays by check.</div></div>`;
+    : summary + `<div class="card"><div class="empty">No invoices yet. Create a deposit or balance invoice — the customer pays online or by check.</div></div>`;
 }
 
 async function createInvoiceUI(type) {

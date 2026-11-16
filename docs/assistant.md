@@ -14,7 +14,7 @@ Added 2026-11-11 (Michael: "add the ai chat bot to the site with the new instruc
 - `rules`: the site's standing calls, which she keeps:
   - no prices;
   - no online booking (a designer texts or calls);
-  - no financing, only the 50/25/25 payments by check;
+  - no financing, only the 50/25/25 payments, each online on the invoice page (card, bank transfer or digital wallet) or by check;
   - no Murphy or wall beds;
   - acknowledge the visitor's frustration first.
 

@@ -2,6 +2,13 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-18 — Anthony Potts removed from the CRM; hello@ is Michael Blair
+
+- **Asked (Michael):** "remove Anthony Potts from the crm. hello@nationalclosetco.com is now Michael Blair." and a new CRM password for that login.
+- **Done in the live D1:** Anthony's team row (#4) deactivated the way `/crm/team` does it, and taken off any future visit; his 4 jobs and past visits keep him as history. His row's email is now `anthony.potts.removed@nationalclosetco.invalid`, because `auth.js` ties a login to the team member with the same email and hello@ would otherwise still resolve to him. The hello@ login (`admin_users` #1, admin) is named Michael Blair, has the new password (`setup-admin.mjs`), and all 248 open sessions on it were signed out, so no device still signed in as Anthony stays in. `NCC_CRM_PASSWORD` in `~/.env` holds the new password.
+- **Checked:** the new password signs in on nationalclosetco.com (200), a wrong one gets 401, and `/api/team` lists Michael Blair, Mike Cornwell, Riley Woodhouse and Terry McCarthy. Docs (`CLAUDE.md`, `docs/crm.md`) and a comment in `functions/api/team/index.js` updated; nothing deployed (no page or behavior changed).
+- **Still owed:** CallRail's flow "NCC Ring Anthony then Agent" still rings Anthony's cell (615-706-7701) for 20 s in open hours. Change who it rings only on Michael's word.
+
 ## 2026-11-18 — Exempt from the page per city and per service
 
 - **Asked (Michael):** record the exemption for our agency sites and the apps.

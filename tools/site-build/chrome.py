@@ -3,7 +3,7 @@ head template, FAQ item, and the new site navigation. Everything is lifted from 
 live city page so new pages match the rest of the site exactly."""
 import re, html, json, os
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))   # the checkout this file is in (a worktree edits itself)
-PIN = 'ncc133'
+PIN = 'ncc134'
 SITE = 'https://nationalclosetco.com'
 PHONE = '615-488-3575'; TEL = 'tel:+16154883575'
 # Who built and hosts the site. The footer credit is the whole sentence as one nofollow link;
@@ -78,7 +78,10 @@ def head(slug, title, desc, og_image, schemas, robots='index, follow, max-image-
     assert 'ld+json' in h and 'G-EJEDXZZWJN' in h
     return h
 
+CRUMB_ROOT = 'Custom Closets in Nashville'   # the home page's keyword, never "Home" (Michael, 2026-11-18)
+
 def breadcrumb(items):
+    items = [(CRUMB_ROOT, items[0][1])] + list(items[1:])
     return {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
         {"@type": "ListItem", "position": i + 1, "name": n, "item": u} for i, (n, u) in enumerate(items)]}
 
@@ -93,10 +96,11 @@ def page(slug, title, desc, og_image, body_html, schemas, robots='index, follow,
     return out
 
 def phero(crumbs, eyebrow, h1, lead):
-    crumb = ' /&nbsp;'.join(f'<a href="{u}">{n}</a>' if u else n for n, u in crumbs)
+    crumbs = [(CRUMB_ROOT, '/')] + [c for c in crumbs[1:]]
+    crumb = ''.join(f'<li><a href="{u}">{n}</a></li>' if u else f'<li aria-current="page">{n}</li>' for n, u in crumbs)
     return f'''<section class="phero">
   <div class="wrap">
-    <p class="crumb">{crumb}</p>
+    <nav class="crumb" aria-label="Breadcrumb"><ol>{crumb}</ol></nav>
     <span class="eyebrow">{eyebrow}</span>
     <h1 style="margin-top:1rem">{h1}</h1>
     <p class="lead">{lead}</p>

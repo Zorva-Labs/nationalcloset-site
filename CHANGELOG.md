@@ -2,6 +2,13 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-18 — Breadcrumbs rooted at a keyword, not "Home" (source only, not deployed)
+
+- **Asked (Michael):** "all sites present and future should use bread crumbs and never use Home for the homepage it should be a keyword that makes sense."
+- **What:** the root crumb on all 69 indexable inner pages (about, reviews, faq, gallery, our-work, privacy, service-areas, the 21 city and cabinet/pantry pages, the 8 alternative pages, closet-cases, warranty, work-with-us and the posts) is **Custom Closets in Nashville**, in the visible crumb and in the BreadcrumbList. The visible crumb is now `<nav class="crumb" aria-label="Breadcrumb"><ol>` (was a `<p>` with "Home /"), styled in `css/styles.css` and `tools/site-build/sections/head.html` with the existing muted color, clay hover, a "/" separator, wrapping on a phone and a 44px tap row. `tools/site-build/chrome.py` (`phero`, `breadcrumb`, `CRUMB_ROOT`) now writes it for every page the factory builds, so a new page gets it. The stylesheet pin moved ncc133 → ncc134. Home page, 404, thank-you, calc, book, free-design and the CRM are untouched. `site-kit check` Breadcrumbs: green.
+- **Not deployed:** `site-kit check .` fails older, unrelated items (lead source in three CRM functions, the assistant widget and migration, CRM contrast, 19 images without alt, sameAs on the 19 city pages carrying a Maps search URL); none touched here. This goes live with the next deploy.
+- **Still owed:** those check items; then deploy.
+
 ## 2026-11-17 — The install date opens a calendar and saves only on Save
 
 - **Asked:** Michael, 2026-11-17: "when clicking the install date field it should bring up a calendar to choose a date. Also when scheduling the install date in the mobile version it just chooses today and books it."

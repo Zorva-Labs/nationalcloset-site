@@ -2,6 +2,14 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-18 — Terry's three bookings in the CRM
+
+- **Asked (Michael):** add the appointments in Terry's email ("Appointments from yesterday", to michael@leadgendigitalmarketing.com) to the CRM and calendar.
+- **In the CRM (live data, no code change):** lead #109 Kristi Kopriva (5436 Old 96, Franklin) and lead #110 Kyle and Scott Stevens (387 Arrow Court, Hendersonville; Kyle's wish list from her email to Terry is on the lead) made by hand; Bijan Jabbari's lead #108 (NLC) given his address, 519 Rochester Close, Franklin. Consultations: #65 Kopriva Mon Nov 23 10:00 (Terry moved it from 9:30 so Michael can make it), #66 Jabbari Mon Nov 23 12:00, both Terry + Michael; #67 Stevens Thu Dec 10 10:00, Terry (Scott meets him; Kyle won't be there). All three leads moved to consult.
+- **Sent, on Michael's yes:** the CRM's confirmation with the calendar invite to each customer (email_messages #2289–2291, all sent). The Stevens time, 10:00, is Michael's call: neither email from Terry gave one.
+- **Checked:** the three show in `/api/appointments` (the calendar page) and in the subscription feed.
+- Still owed: confirm the Dec 10 time with Terry and Scott; if it differs, move #67 (the customer gets a new confirmation from the appointment's page).
+
 ## 2026-11-18 — Answering the hello@ mailbox from this Mac
 
 - **Asked (Michael):** "connect to hello@ … gmail to be able to respond to clients."

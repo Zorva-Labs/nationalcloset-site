@@ -13,7 +13,8 @@ Newest first. One entry per session that changed this repo: what changed, why, w
 - **Cloe:** a new rule in `site.json → assistant.rules`: no wall repair or painting, one proposal, the customer clears the space first.
 - **Checked:** the home block at 375 and 1280 (no sideways scroll), the FAQ schema in `dist/`, and on a local CRM: a new proposal has one option and the new intro, the editor has no picker or copy button, and the customer page shows the one option with "Accept & sign". Deployed with `fleet deploy`; IndexNow took the 11 changed URLs.
 - **Assumed:** the customer takes out the old shelving (that was Option 1). The contract still allows a removal or haul-away line if one is quoted.
-- **Still owed:** decide whether Lesia Wood's and Helena Kirkendall's wall repair and paint go ahead as signed.
+- **Decided (Michael, same day: "Yes, honor them"):** Lesia Wood's and Helena Kirkendall's wall repair and paint go ahead as signed. Their "🎨 Book painter" flags stay until the painter is booked on each job.
+- **Still owed:** book the painter on those two jobs.
 
 ## 2026-11-18 — The phone rings Michael Blair, not Anthony
 

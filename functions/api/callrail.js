@@ -22,7 +22,8 @@
 import { json } from "../_lib/auth.js";
 import { sendStaffAlert } from "../_lib/email.js";
 import { signatureOk } from "../_lib/callrail-sign.js";
-import { CHOICE_LABEL, INTAKE_LABELS, callerNameOf, findCaller, intakeChoice, intakeOf, leadFromCall, menuChoiceOf, prettyPhone, realName, tagNames } from "../_lib/calls.js";
+import { sourceHtml, sourceTag, sourceText } from "../_lib/visit.js";
+import { CHOICE_LABEL, INTAKE_LABELS, callOf, callVisit, callerNameOf, findCaller, intakeChoice, intakeOf, leadFromCall, menuChoiceOf, prettyPhone, realName, tagNames } from "../_lib/calls.js";
 
 const str = (v, n = 500) => (v == null ? "" : String(v)).trim().slice(0, n);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -40,6 +41,9 @@ function alertFor(row, base) {
   const what = row.agent ? "Phone agent took a call" : row.voicemail ? "Voicemail" : "Missed call";
   const choice = row.menu_choice ? CHOICE_LABEL[row.menu_choice] : "No selection";
   const told = intake ? INTAKE_LABELS.filter(([k]) => intake[k] && k !== "name" && k !== "callback_phone") : [];
+  const v = callVisit(callOf(row));
+  // a call with no web session behind it is said plainly, not as a form's missing cookie
+  const visit = v.channel ? v : { ...v, channel: "Phone call, no website visit on record" };
   const leadUrl = row.lead_id > 0 ? `${base}/crm/lead.html?id=${row.lead_id}` : `${base}/crm/calls.html`;
   const lines = [
     `${what} from ${who}`,
@@ -59,9 +63,10 @@ ${row.agent ? told.map(([k, l]) => `<tr><td ${cell}>${esc(l)}</td><td>${esc(inta
 <tr><td ${cell}>When</td><td>${esc(whenCentral(row.started_at))} Central</td></tr>
 </table>
 <p style="margin:16px 0 0">${row.recording_url ? `<a href="${esc(row.recording_url)}" ${link}>Listen to the recording</a> &nbsp;·&nbsp; ` : ""}<a href="${esc(leadUrl)}" ${link}>Open in the CRM</a></p>
+${sourceHtml(visit)}
 </div>`;
   const subject = row.agent ? `${what}: ${who}${intake && intake.space ? `, ${intake.space}` : ""}${row.menu_choice === "service" ? " (existing job)" : ""}` : `${what}: ${who}, ${choice}`;
-  return { subject: subject.slice(0, 180), text: lines.join("\n"), html };
+  return { subject: (subject + sourceTag(visit)).slice(0, 180), text: `${lines.join("\n")}\n\n${sourceText(visit)}`, html };
 }
 
 export async function onRequestPost({ request, env }) {

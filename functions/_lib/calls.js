@@ -2,6 +2,7 @@
 // lead or client who made it, and making a lead from a call. Used by
 // /api/callrail (the webhook) and /api/calls/:id/lead (the CRM's button).
 import { recordActivity } from "./db.js";
+import { saveVisit } from "./visit.js";
 
 // The Tag step on each branch of "NCC Phone Menu" is how a call says which key
 // was pressed. A renamed tag has to change here too.
@@ -117,6 +118,37 @@ export function callerNameOf(row) {
   return row.caller_name || `Phone caller ${prettyPhone(row.caller_number)}`;
 }
 
+/* Where a call came from, in the visit's own shape (_lib/visit.js), read from
+   CallRail's call object: its source and medium mapped onto the channel names
+   /traffic prints, the campaign, the ad click id, the page they landed on, the
+   device. A tracking number not tied to a website session has little of this;
+   what is missing stays empty and the mail prints "Unknown" (2026-11-18, the
+   same mapping as charlotteslandscapers' /api/callrail). */
+const s80 = (v, n = 80) => (v == null ? "" : String(v)).trim().slice(0, n);
+export function callVisit(call) {
+  call = call || {};
+  const src = s80(call.source_name || call.source), med = s80(call.medium), gclid = s80(call.gclid, 200);
+  const hay = `${src} ${med}`.toLowerCase();
+  let channel = null;
+  if (gclid || /google ads|adwords|\bppc\b|\bcpc\b|paid/.test(hay)) channel = "Google Ads";
+  else if (/google/.test(hay) && /organic|search/.test(hay)) channel = "Google (organic)";
+  else if (/direct/.test(src.toLowerCase())) channel = "Direct";
+  else if (/facebook|instagram|meta/.test(hay)) channel = "Facebook/Instagram";
+  else if (/chatgpt|openai|perplexity|gemini|copilot|claude/.test(hay)) channel = "AI search";
+  else if (src) channel = src;
+  const landing = s80(call.landing_page_url, 300);
+  let path = landing; try { path = landing ? new URL(landing).pathname : null; } catch { /* keep as given */ }
+  const device = s80(call.device_type, 20).toLowerCase();
+  return {
+    channel, referrerHost: s80(call.referrer_domain, 120) || null, gclid: gclid ? 1 : 0, landing: path || null,
+    device: ["mobile", "tablet", "desktop"].includes(device) ? device : null, firstSeen: null,
+    utmSource: s80(call.utm_source, 120) || s80(call.campaign, 120) || null, utmMedium: s80(call.utm_medium, 120) || med || null,
+    browser: null, os: null, language: null, geoCity: s80(call.customer_city) || null, geoRegion: s80(call.customer_state, 60) || null,
+    geoPostal: s80(call.zip_code, 12) || null, metro: null, timezone: null, isp: null, asn: null, country: s80(call.customer_country, 4) || null,
+  };
+}
+export const callOf = (row) => { try { return row && row.raw ? JSON.parse(row.raw) : null; } catch { return null; } };
+
 // Make the lead for a call and tie the call to it. leads.phone and leads.email
 // are NOT NULL, so a caller with no email is an empty string, as on /api/intake/lead.
 export async function leadFromCall(db, row, actor = {}) {
@@ -140,6 +172,8 @@ export async function leadFromCall(db, row, actor = {}) {
     row.agent ? "phone agent" : "phone", row.contact_id || null
   ).first();
   await db.prepare("UPDATE calls SET lead_id = ?1, updated_at = datetime('now') WHERE id = ?2").bind(lead.id, row.id).run();
+  // the call's source on the lead row, as a form lead carries its visit (never fails the lead)
+  await saveVisit(db, lead.id, callVisit(callOf(row)));
   await recordActivity(db, {
     entityType: "lead", entityId: lead.id, action: "created",
     actorKind: actor.kind || "system", actorId: actor.id || null, actorName: actor.name || null,

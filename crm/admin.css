@@ -548,7 +548,7 @@ button { font: inherit; cursor: pointer; }
 .data-table th, .data-table td { padding: 14px 18px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--c-line-soft); }
 .data-table thead th {
   font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.22em; text-transform: uppercase;
-  color: var(--c-brass); font-weight: 500; background: var(--c-bg-2);
+  color: var(--c-brass-ink); font-weight: 500; background: var(--c-bg-2);
 }
 .data-table tbody tr { cursor: pointer; }
 .data-table tbody tr:hover { background: rgba(20,17,13,.025); }
@@ -636,12 +636,12 @@ button { font: inherit; cursor: pointer; }
 .cal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--c-line-soft); }
 .cal-head h2 { font-family: var(--font-display); font-weight: 400; font-size: 1.3rem; margin: 0; }
 .cal-grid { display: grid; grid-template-columns: 70px repeat(7, 1fr); border-top: 1px solid var(--c-line-soft); }
-.cal-grid .cal-day-head { padding: 10px 6px; text-align: center; border-right: 1px solid var(--c-line-soft); font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--c-brass); background: var(--c-bg-2); }
+.cal-grid .cal-day-head { padding: 10px 6px; text-align: center; border-right: 1px solid var(--c-line-soft); font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--c-brass-ink); background: var(--c-bg-2); }
 .cal-grid .cal-day-head strong { display: block; font-family: var(--font-display); font-size: 1.2rem; color: var(--c-ink); margin-top: 4px; }
 .cal-grid .cal-time { font-family: var(--font-mono); font-size: 0.65rem; color: var(--c-ink-soft); padding: 4px 6px; text-align: right; border-right: 1px solid var(--c-line-soft); border-bottom: 1px solid var(--c-line-soft); }
 .cal-grid .cal-cell { border-right: 1px solid var(--c-line-soft); border-bottom: 1px solid var(--c-line-soft); min-height: 36px; position: relative; }
 .cal-grid .cal-cell.is-blocked { background: repeating-linear-gradient(45deg, rgba(0,0,0,.02), rgba(0,0,0,.02) 6px, transparent 6px, transparent 12px); }
-.cal-event { position: absolute; left: 4px; right: 4px; background: var(--c-brass); color: #fff; padding: 6px 8px; border-radius: 2px; font-size: 0.74rem; cursor: pointer; overflow: hidden; }
+.cal-event { position: absolute; left: 4px; right: 4px; background: var(--c-brass-ink); color: #fff; padding: 6px 8px; border-radius: 2px; font-size: 0.74rem; cursor: pointer; overflow: hidden; }
 .cal-event[data-s="pending"] { background: #c9a158; }
 .cal-event[data-s="cancelled"] { background: #888; text-decoration: line-through; }
 .cal-event:hover { filter: brightness(1.05); }
@@ -732,7 +732,7 @@ button { font: inherit; cursor: pointer; }
 .data-table table { font-size: 0.95rem; }
 .data-table td, .data-table th { color: var(--color-ink); }
 .data-table thead th {
-  color: var(--color-brass);
+  color: var(--color-brass-ink);
   font-size: 0.7rem;
   letter-spacing: 0.18em;
 }
@@ -791,6 +791,7 @@ button { font: inherit; cursor: pointer; }
   --color-champagne: #F6E6DF;
   --color-brass: #D2683F;
   --color-brass-hot: #B9542F;
+  --color-brass-ink: #A34927; /* brass dark enough for small text on bg-2 and for white text on it (5.0:1, 5.9:1; 2026-11-18) */
   /* Same split as crm-app.css: #D2683F carries white at 3.63:1 and reads as
      text at 3.44:1, both under WCAG AA. The brand colour is unchanged; these
      two are what the login page uses where words are involved. */
@@ -802,7 +803,7 @@ button { font: inherit; cursor: pointer; }
   --c-bg: var(--color-bg); --c-bg-2: var(--color-bg-2); --c-bg-3: var(--color-bg-3);
   --c-ink: var(--color-ink); --c-ink-2: var(--color-ink-2); --c-ink-soft: var(--color-ink-soft);
   --c-muted: var(--color-muted); --c-line: var(--color-line); --c-line-soft: var(--color-line-soft);
-  --c-brass: var(--color-brass); --c-brass-hot: var(--color-brass-hot); --c-champagne: var(--color-champagne);
+  --c-brass: var(--color-brass); --c-brass-hot: var(--color-brass-hot); --c-brass-ink: var(--color-brass-ink); --c-champagne: var(--color-champagne);
   --font-display: "Montserrat", Georgia, sans-serif;
   --font-body: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }

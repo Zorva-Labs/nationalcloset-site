@@ -2,7 +2,19 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
-## 2026-11-18 — Breadcrumbs rooted at a keyword, not "Home" (source only, not deployed)
+## 2026-11-18 — The check failures cleared; breadcrumbs, call sources and CRM contrast live
+
+- **Asked:** Michael, 2026-11-18: "Yes, fix them". This clears the `site-kit check` failures that held back the breadcrumb deploy below.
+- **Call leads carry their source** (`functions/_lib/calls.js`, `functions/api/callrail.js`). `callVisit()` reads CallRail's call object (source and medium mapped onto the /traffic channel names, ad click, landing page, device, the caller's area). The mapping is the same one charlotteslandscapers' `/api/callrail` uses. `leadFromCall` puts it on the lead row through `saveVisit`, for the webhook and for the CRM's "make a lead" button. The phones alert gets the "Where this lead came from" block, with the channel on the subject. A call with no website session behind it reads "Phone call, no website visit on record" in the alert, not the form-cookie note.
+- **`/api/inbound/lead` and `/api/intake/lead` were already right.** They are server to server, with no browser behind them. GoHighLevel's source fields go on the row and into the mail, and the sister site's `visit` is saved from the payload. The check misread them as blind, so site-kit's check was fixed to recognize them (site-kit CHANGELOG, 2026-11-18).
+- **Assistant:** Cloe was complete, but the check looked for `public/assets/js/` and `migrations/`, and this repo keeps them in `assets/js/` and `crm/migrations/`. Also fixed in site-kit's check.
+- **CRM contrast** (`crm/admin.css`): a new `--color-brass-ink` (#A34927, Cloe's accent) for the table headers and the calendar day heads (5.0:1 on bg-2) and for the calendar events' background (white on it is 5.9:1). Before, they were 3.07:1 and 3.63:1. The pending event's gold (#c9a158) is unchanged. Not looked at in the signed-in CRM; the ratios are computed.
+- **Meta pixel `<noscript>` images:** `alt=""` on the 19 city pages that lacked it. They are tracking pixels, not content.
+- **sameAs:** the 19 city pages and `tools/site-build/sections/head.html` now name the Business Profile as `https://maps.google.com/?cid=4722376017013072809`, the URL the home page uses, instead of a `place_id` search URL.
+- **Deployed** with `fleet deploy nationalcloset`, and IndexNow accepted 69 URLs. The check passes with warnings only. The edge served the old Franklin page for a few minutes after the deploy; with a cache-buster it showed the keyword crumb at once.
+- **Still owed:** nothing from this change.
+
+## 2026-11-18 — Breadcrumbs rooted at a keyword, not "Home" (deployed later the same day)
 
 - **Asked (Michael):** "all sites present and future should use bread crumbs and never use Home for the homepage it should be a keyword that makes sense."
 - **What:** the root crumb on all 69 indexable inner pages (about, reviews, faq, gallery, our-work, privacy, service-areas, the 21 city and cabinet/pantry pages, the 8 alternative pages, closet-cases, warranty, work-with-us and the posts) is **Custom Closets in Nashville**, in the visible crumb and in the BreadcrumbList. The visible crumb is now `<nav class="crumb" aria-label="Breadcrumb"><ol>` (was a `<p>` with "Home /"), styled in `css/styles.css` and `tools/site-build/sections/head.html` with the existing muted color, clay hover, a "/" separator, wrapping on a phone and a 44px tap row. `tools/site-build/chrome.py` (`phero`, `breadcrumb`, `CRUMB_ROOT`) now writes it for every page the factory builds, so a new page gets it. The stylesheet pin moved ncc133 → ncc134. Home page, 404, thank-you, calc, book, free-design and the CRM are untouched. `site-kit check` Breadcrumbs: green.

@@ -2,6 +2,14 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-18 — Answering the hello@ mailbox from this Mac
+
+- **Asked (Michael):** "connect to hello@ … gmail to be able to respond to clients."
+- **Now:** `node tools/crm/mail.mjs` lists hello@'s inbox (answered or open, newsletters and notifications hidden), shows a message and its thread, and sends a reply or a new letter as hello@ through the CRM's own `POST /api/email-messages`: threaded under the original, in hello@'s Sent folder, logged on the lead or job. Nothing needs `--send` to preview. No new Google access was needed: it reads the D1 the inbound sync fills and signs in to the CRM with `NCC_CRM_PASSWORD`.
+- **Checked:** the inbox and `show` read live mail; a reply preview threads under #2268 with the right To and Cc; the CRM sign-in as hello@ (admin) and sign-out work. No test letter was sent.
+- **Not possible yet:** marking hello@ mail read in Gmail (the service account holds gmail.readonly and gmail.send; gmail.modify needs the Workspace admin's yes in Admin ▸ Security ▸ API controls first) and opening inbound attachments (the sync keeps none).
+- Still owed: nothing.
+
 ## 2026-11-18 — The proposal's option reads warmer
 
 - **Asked (Michael):** "in the proposal, make this sentence more pleasant", the option description written earlier today.

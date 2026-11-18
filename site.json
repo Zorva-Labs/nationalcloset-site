@@ -176,5 +176,7 @@
       "When someone mentions a cramped closet, a messy pantry or a garage they can't park in, acknowledge it in a few words of your own before you help."
     ],
     "notes": "Cloe (Michael, 2026-11-11): site-kit's assistant placed by hand in this repo's layout — assets/js/assistant.js, functions/api/ask.js, scripts/assistant-index.mjs, crm/migrations/0086_assistant_log.sql; build.mjs puts the script tag on every public page and runs the index step. Call-backs post to /api/contact (no email required). docs/assistant.md."
-  }
+  },
+  "serviceArea": false,
+  "serviceAreaWhy": "App. Exempt from the city-and-service page set (seo-standards §19) on Michael, 2026-11-18."
 }

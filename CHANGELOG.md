@@ -2,6 +2,12 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-18 — Exempt from the page per city and per service
+
+- **Asked (Michael):** record the exemption for our agency sites and the apps.
+- **What:** `site.json` → `"serviceArea": false` with `serviceAreaWhy` giving the reason. `fleet audit` now checks every live site for a page per city within 30 miles and a page per service (seo-standards §19, `~/fleet/bin/service-area.mjs`), and it no longer asks this site. Nothing on the site changed, so there was no deploy.
+- **Still owed:** nothing.
+
 ## 2026-11-18 — US federal holidays on the CRM calendar
 
 - **Asked:** Michael, 2026-11-18: "show US national holidays on the calendar."

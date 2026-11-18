@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Calendar · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
-<link rel="stylesheet" href="/crm/crm-app.css?v=ncc126"/></head>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc128"/></head>
 <body>
 <script src="/crm/crm-app.js?v=ncc120"></script>
 <script>
@@ -108,6 +108,7 @@ async function render() {
       </div>
       <div class="cal-legend">
         ${SSCrm.EVENT_TYPES.map((t) => `<span><i data-type="${t.value}"></i> ${SSCrm.esc(t.label)}</span>`).join("")}
+        <span class="cal-legend-holiday">★ US holiday</span>
       </div>
       <div class="cal-dow-row">${DOW_NAMES.map((d) => `<div class="cal-dow">${d}</div>`).join("")}</div>
       <div class="cal-month-grid">${cells.map((c) => renderCell(c, byDate, todayStr)).join("")}</div>
@@ -134,10 +135,13 @@ function renderCell(c, byDate, todayStr) {
   const classes = ["cal-day"];
   if (!c.current) classes.push("cal-day--other");
   if (iso === todayStr) classes.push("cal-day--today");
+  const hols = holidaysOn(iso);
+  if (hols.length) classes.push("cal-day--holiday");
   const shown = events.slice(0, 3);
   const more = events.length - shown.length;
   return `<div class="${classes.join(" ")}" data-date="${iso}">
-    <div class="cal-day-num">${c.date.getUTCDate()}</div>
+    <div class="cal-day-num"${hols.length ? ` title="${SSCrm.esc(hols.join(", "))}"` : ""}>${c.date.getUTCDate()}</div>
+    ${hols.map((h) => `<div class="cal-holiday" title="${SSCrm.esc(h)}">${SSCrm.esc(h)}</div>`).join("")}
     ${shown.map((a) => `<div class="cal-event" data-id="${a.id}" data-type="${SSCrm.esc(a.type || "consultation")}" data-s="${SSCrm.esc(a.status)}"${a.is_install ? ` data-project="${a.project_id}"` : ""} title="${SSCrm.esc(a.name)} — ${a.is_install ? (a.wall_paint ? "Install, wall repair and paint" + (a.painter_booked_at ? " (painter booked)" : " (book the painter)") : "Install") : SSCrm.esc(SSCrm.eventTypeLabel(a.type))}${crewTitle(a.assignees)}">${a.is_install ? "🔧 " : ""}${a.is_install && a.wall_paint ? "🎨 " : ""}${a.all_day ? "" : `<span class="cal-event-time">${prettyTime(a.start_at)}</span> `}${SSCrm.esc(chipName(a))}${crewDots(a.assignees)}</div>`).join("")}
     ${more > 0 ? `<div class="cal-more">+${more} more</div>` : ""}
   </div>`;
@@ -152,6 +156,54 @@ function eventDays(a, from, to) {
   const out = [];
   for (let d = first < from ? from : first; d <= last && d <= to; d = nextIso(d)) out.push(d);
   return out;
+}
+// US federal holidays (5 U.S.C. 6103), worked out in the page — no table to
+// keep up to date. A fixed-date holiday on a Saturday is observed the Friday
+// before, on a Sunday the Monday after; the calendar shows the day itself and
+// marks the weekday it is observed on. New Year's Day on a Saturday is observed
+// on December 31 of the year before, so each year also checks the next one.
+const holidayCache = {};
+function holidaysOn(iso) {
+  const y = parseInt(iso.slice(0, 4), 10);
+  return [...(holidaysOfYear(y)[iso] || []), ...(holidaysOfYear(y + 1)[iso] || [])];
+}
+function holidaysOfYear(y) {
+  if (holidayCache[y]) return holidayCache[y];
+  const out = {};
+  const put = (d, name) => { const k = d.toISOString().slice(0, 10); (out[k] ||= []).push(name); };
+  // The nth weekday (0 = Sunday) of a month; n = -1 for the last one.
+  const nth = (m, dow, n) => {
+    if (n < 0) {
+      const d = new Date(Date.UTC(y, m + 1, 0));
+      d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() - dow + 7) % 7));
+      return d;
+    }
+    const d = new Date(Date.UTC(y, m, 1));
+    d.setUTCDate(1 + ((dow - d.getUTCDay() + 7) % 7) + (n - 1) * 7);
+    return d;
+  };
+  const fixed = (m, day, name) => {
+    const d = new Date(Date.UTC(y, m, day));
+    put(d, name);
+    const dow = d.getUTCDay();
+    if (dow === 6 || dow === 0) {
+      const o = new Date(d);
+      o.setUTCDate(o.getUTCDate() + (dow === 6 ? -1 : 1));
+      put(o, `${name} (observed)`);
+    }
+  };
+  fixed(0, 1, "New Year's Day");
+  put(nth(0, 1, 3), "Martin Luther King Jr. Day");
+  put(nth(1, 1, 3), "Presidents Day");
+  put(nth(4, 1, -1), "Memorial Day");
+  fixed(5, 19, "Juneteenth");
+  fixed(6, 4, "Independence Day");
+  put(nth(8, 1, 1), "Labor Day");
+  put(nth(9, 1, 2), "Columbus Day");
+  fixed(10, 11, "Veterans Day");
+  put(nth(10, 4, 4), "Thanksgiving Day");
+  fixed(11, 25, "Christmas Day");
+  return (holidayCache[y] = out);
 }
 function nextIso(iso) {
   const d = new Date(iso + "T00:00:00Z");
@@ -230,6 +282,7 @@ async function openDay(iso) {
     <div class="modal" style="max-width:560px">
       <div class="modal-head">${prettyDate(iso)}</div>
       <div class="modal-body">
+        ${holidaysOn(iso).map((h) => `<div class="cal-day-holiday">★ ${SSCrm.esc(h)}, a US federal holiday</div>`).join("")}
         ${appointments.length ? `<div style="display:grid;gap:8px">${appointments.map((a) => a.is_install ? `
           <div class="cal-day-item cal-day-item--install" style="border:1px solid var(--line);border-radius:var(--r-sm);padding:12px;cursor:pointer" onclick="location.href='/crm/${readOnly() ? "my-job" : "project"}.html?id=${a.project_id}'">
             <div style="font-weight:600;color:#B45309;font-size:13px">🔧 Install day${a.start_at.slice(0,10) ? "" : ""}</div>

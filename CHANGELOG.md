@@ -2,6 +2,13 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-18 — US federal holidays on the CRM calendar
+
+- **Asked:** Michael, 2026-11-18: "show US national holidays on the calendar."
+- **Done (`crm/calendar.html`, `crm/crm-app.css`):** the eleven federal holidays (New Year's Day, Martin Luther King Jr. Day, Presidents Day, Memorial Day, Juneteenth, Independence Day, Labor Day, Columbus Day, Veterans Day, Thanksgiving, Christmas) are worked out in the page for any year (`holidaysOn` / `holidaysOfYear`), so there is no list to keep up. A fixed-date holiday on a weekend also marks the weekday it is observed ("Christmas Day (observed)"), including New Year's observed on December 31. On a desktop each holiday is a red ★ line under the day number, not an event: it takes none of the three event slots and blocks nothing. On a phone the day number turns red with a star. The day view names it ("★ Thanksgiving Day, a US federal holiday"), and the legend has "★ US holiday". Nothing is stored, nothing goes to the phone feed (`.ics`), and install slots are unchanged. The red is the existing `--danger-text`: 5.74:1 on a plain day, 5.46 on another month's day, 4.73 on today. Stylesheet pin on the calendar ncc126 → ncc128.
+- **Checked** on the local D1 at 1280 and 375 (November 2026 shows Veterans Day and Thanksgiving; no sideways scroll at 375), and the 2026–2028 dates against the federal schedule. Deployed.
+- **Still owed:** nothing.
+
 ## 2026-11-18 — The check failures cleared; breadcrumbs, call sources and CRM contrast live
 
 - **Asked:** Michael, 2026-11-18: "Yes, fix them". This clears the `site-kit check` failures that held back the breadcrumb deploy below.

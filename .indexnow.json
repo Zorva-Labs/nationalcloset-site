@@ -2,13 +2,13 @@
   "host": "nationalclosetco.com",
   "endpoint": "https://www.bing.com/indexnow",
   "version": 2,
-  "submitted": "2026-11-18T15:01:53.445Z",
+  "submitted": "2026-11-18T20:25:17.011Z",
   "google": {
     "property": "sc-domain:nationalclosetco.com",
     "sitemaps": [
       "https://nationalclosetco.com/sitemap.xml"
     ],
-    "submitted": "2026-11-18T15:01:54.633Z"
+    "submitted": "2026-11-18T20:25:18.112Z"
   },
   "bing": {
     "site": "https://nationalclosetco.com/",
@@ -19,8 +19,8 @@
   },
   "urls": {
     "https://nationalclosetco.com/": {
-      "hash": "e3c336242b2e6150",
-      "changed": "2026-11-16"
+      "hash": "c05de2737ee23b15",
+      "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/custom-cabinets-nashville": {
       "hash": "a9e8b45817e92cf4",
@@ -31,7 +31,7 @@
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/closetmaid-alternative": {
-      "hash": "f8571c62a8fadde5",
+      "hash": "d21dc0f7fcc44398",
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/custom-closet-cost-nashville": {
@@ -39,19 +39,19 @@
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/california-closets-alternative": {
-      "hash": "454b08c04a2871ce",
+      "hash": "ab0fd9545b113476",
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/closets-by-design-alternative": {
-      "hash": "4f824091ff68d3f0",
+      "hash": "6a8108a813691056",
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/tailored-closet-alternative": {
-      "hash": "4c4c55e9b9dacf91",
+      "hash": "f08130eb0ae0a074",
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/up-closets-alternative": {
-      "hash": "72931afb3fd222f1",
+      "hash": "50956906f1ad8afc",
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/the-closet-company-alternative": {
@@ -59,11 +59,11 @@
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/inspired-closets-alternative": {
-      "hash": "c06e401263b69284",
+      "hash": "2ccb014293c90b28",
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/closet-factory-alternative": {
-      "hash": "80b32e86379fc2fa",
+      "hash": "a281ec140a4c8a2d",
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/closet-cases": {
@@ -75,7 +75,7 @@
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/blog/fraley-pantry-master-closet-makeover": {
-      "hash": "4568995f2e0d8e96",
+      "hash": "5f479418e2f68d62",
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/blog/custom-closets-middle-tennessee": {
@@ -259,7 +259,7 @@
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/about": {
-      "hash": "1e42e28597125fc9",
+      "hash": "53604b6d15d4222f",
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/reviews": {
@@ -267,7 +267,7 @@
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/faq": {
-      "hash": "de12f546fab3de63",
+      "hash": "8f876aa46e3b1a89",
       "changed": "2026-11-18"
     },
     "https://nationalclosetco.com/blog/best-closet-company": {

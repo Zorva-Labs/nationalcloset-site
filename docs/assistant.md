@@ -16,6 +16,7 @@ Added 2026-11-11 (Michael: "add the ai chat bot to the site with the new instruc
   - no online booking (a designer texts or calls);
   - no financing, only the 50/25/25 payments, each online on the invoice page (card, bank transfer or digital wallet) or by check;
   - no Murphy or wall beds;
+  - no wall repair or painting, and one proposal with one price: the customer clears the space and old shelving first (2026-11-18);
   - acknowledge the visitor's frustration first.
 
   A new standing call in `CLAUDE.md` that touches what a customer is told goes here too.

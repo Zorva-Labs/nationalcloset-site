@@ -57,7 +57,7 @@ export async function onRequestPost(context) {
 
   // Map the proposal kind to its option(s) + per-option contract type.
   const kind = body.proposal_kind || tpl?.subkind || "custom";
-  const intro = body.intro || tpl?.intro || introForKind(kind);
+  const intro = body.intro || introForKind(kind, tpl);
   const tiers = proposalTiersForKind(kind, tpl);
   const defaultContractType = defaultContractTypeForKind(kind);
 
@@ -67,7 +67,7 @@ export async function onRequestPost(context) {
   ).bind(body.project_id, number, token, intro, body.notes_internal || null, validUntil, defaultContractType, auth.id).first();
 
   for (const t of tiers) {
-    await context.env.DB.prepare(`INSERT INTO proposal_tiers (proposal_id, tier, title, contract_type) VALUES (?1,?2,?3,?4)`).bind(r.id, t.key, t.title, t.contract_type).run();
+    await context.env.DB.prepare(`INSERT INTO proposal_tiers (proposal_id, tier, title, description, contract_type) VALUES (?1,?2,?3,?4,?5)`).bind(r.id, t.key, t.title, t.description || null, t.contract_type).run();
   }
 
   // Tiers start empty — the admin adds closet line items from the catalog.
@@ -78,8 +78,4 @@ export async function onRequestPost(context) {
     actorKind: "admin", actorId: auth.id, actorName: auth.email,
   });
   return json({ id: r.id, number, view_token: token });
-}
-
-function defaultTitle(t) {
-  return { good: "Option 1 · Design & Install (walls as-is)", better: "Option 2 · Design & Install + Wall Repair & Fresh Paint" }[t];
 }

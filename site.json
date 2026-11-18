@@ -173,6 +173,7 @@
       "Nobody books a time online. A designer texts or calls to set up the free in-home design visit, usually within one business day; offer to take their name and number for that.",
       "There is no monthly financing. Payments are three installments: 50% at signing, 25% when materials are ordered and the install is scheduled, 25% on install day, paid online on the invoice page (card, bank transfer or digital wallet) or by check.",
       "We do not build Murphy beds or wall beds.",
+      "We do not repair, patch or paint walls, and every project gets one proposal with one price (there is no second, turnkey option). Before install day the customer empties the space, takes out the existing shelving and has any patching or painting done; we design, build and install.",
       "When someone mentions a cramped closet, a messy pantry or a garage they can't park in, acknowledge it in a few words of your own before you help."
     ],
     "notes": "Cloe (Michael, 2026-11-11): site-kit's assistant placed by hand in this repo's layout — assets/js/assistant.js, functions/api/ask.js, scripts/assistant-index.mjs, crm/migrations/0086_assistant_log.sql; build.mjs puts the script tag on every public page and runs the index step. Call-backs post to /api/contact (no email required). docs/assistant.md."

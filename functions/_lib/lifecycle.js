@@ -11,15 +11,18 @@ const RENTAL_CLAUSE = `<h3>Rental or Leased Property</h3><p>If this property is 
 // The payment policy for any contract that carries a custom material order:
 // 50% up front,
 // 25% when the install is scheduled, 25% the day of install. Kept in one const
-// so custom_order and wallprep can't drift apart.
+// so the contract types can't drift apart.
 const PAYMENT_SCHEDULE = `<h3>Payment Schedule</h3><p>The total contract price is paid in three installments:</p><ul><li><strong>50% due at signing</strong> (the &ldquo;Deposit&rdquo;). Manufacturing and scheduling begin only after the Deposit is received.</li><li><strong>25% due when installation is scheduled</strong> — invoiced once all materials have arrived and the install date is set.</li><li><strong>25% due the day of installation.</strong></li></ul><p><strong>Paying in full.</strong> Instead of the schedule above, you may pay in full at signing or at any point afterward, and you may pay any individual installment early. There is no penalty or added fee for paying early. Payments are made online by card, bank transfer (ACH) or digital wallet, with no added processing fee, or by check payable to James Blair.</p><p>The Deposit is non-refundable once materials are released to the manufacturer.</p>`;
 
 // Used when the proposal was marked pay-in-full: a single payment replaces the
 // 50/25/25 schedule above.
 const PAY_IN_FULL = `<h3>Payment</h3><p>The total contract price is due <strong>in full at signing</strong>. Manufacturing and scheduling begin once payment is received. Payment is non-refundable once materials are released to the manufacturer.</p>`;
 
-const MATERIALS_LEADTIME = `<h3>Materials &amp; Manufacture</h3><p>Custom materials typically take 4 to 8 weeks to be manufactured and delivered after the Deposit, depending on holidays, shipping, supplier lead times and other unforeseen circumstances. Once all materials have arrived, any repairs and the installation are scheduled.</p>`;
+const MATERIALS_LEADTIME = `<h3>Materials &amp; Manufacture</h3><p>Custom materials typically take 4 to 8 weeks to be manufactured and delivered after the Deposit, depending on holidays, shipping, supplier lead times and other unforeseen circumstances. Once all materials have arrived, the installation is scheduled.</p>`;
 
+// `wallprep` (wall repair + paint) is no longer offered (Michael, 2026-11-18) and
+// no new proposal option attaches it; its entries stay only so a legacy row
+// still reads.
 const FALLBACK_TERMS = {
   custom_order: MATERIALS_LEADTIME + PAYMENT_SCHEDULE + `<h3>Warranty</h3><p>Lifetime warranty on the system (panels, cabinet boxes, doors, shelving, drawers, rods, brackets, hinges, slides and hardware) against defects in materials and manufacturing for as long as the original customer owns the home, plus a one-year workmanship guarantee from the date of installation. Warranty parts stay free after the first year; a standard service-call fee then covers the trip and labor to install them. Not transferable.</p>` + RENTAL_CLAUSE,
   wallprep: MATERIALS_LEADTIME + `<h3>Wall Repair &amp; Paint</h3><p>We remove the existing shelving, patch and repair the walls, and paint the immediate installation area before the new system goes in.</p>` + PAYMENT_SCHEDULE + `<h3>Warranty</h3><p>Lifetime warranty on the system (panels, cabinet boxes, doors, shelving, drawers, rods, brackets, hinges, slides and hardware) against defects in materials and manufacturing for as long as the original customer owns the home, plus a one-year workmanship guarantee from the date of installation. Warranty parts stay free after the first year; a standard service-call fee then covers the trip and labor to install them. Not transferable.</p>` + RENTAL_CLAUSE,
@@ -143,38 +146,6 @@ export async function createContractFromProposalTier(db, proposal, actor = { kin
   });
 
   return { contract_id: r.id, contract_number: number, view_token: token };
-}
-
-/**
- * Auto-mirror: Option 2 (the "better" tier) defaults to "everything in Option 1
- * (the "good" tier) + a Wall Finishing line." This only fires when Option 2 is
- * EMPTY and Option 1 has line items, so manual edits to Option 2 are preserved.
- * The admin can re-sync any time with the "Copy Option 1 + Wall Finishing"
- * button in the proposal editor.
- */
-export async function autoMirrorOption2(db, proposalId) {
-  const good = await db.prepare(`SELECT id FROM proposal_tiers WHERE proposal_id=?1 AND tier='good'`).bind(proposalId).first();
-  const better = await db.prepare(`SELECT id FROM proposal_tiers WHERE proposal_id=?1 AND tier='better'`).bind(proposalId).first();
-  if (!good || !better) return;
-  const betterCount = (await db.prepare(`SELECT COUNT(*) AS c FROM proposal_tier_lines WHERE tier_id=?1`).bind(better.id).first())?.c || 0;
-  if (betterCount > 0) return; // Option 2 has its own content — leave it alone
-  const goodLines = (await db.prepare(
-    `SELECT description, room, color, options, width_in, height_in, quantity, unit_price_cents, line_total_cents, product_id
-       FROM proposal_tier_lines WHERE tier_id=?1 ORDER BY position, id`
-  ).bind(good.id).all()).results || [];
-  if (!goodLines.length) return; // nothing to mirror yet
-  let pos = 0;
-  for (const l of goodLines) {
-    await db.prepare(
-      `INSERT INTO proposal_tier_lines (tier_id, description, room, color, options, width_in, height_in, quantity, unit_price_cents, line_total_cents, position, product_id)
-       VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12)`
-    ).bind(better.id, l.description, l.room, l.color, l.options, l.width_in, l.height_in, l.quantity, l.unit_price_cents, l.line_total_cents, pos++, l.product_id).run();
-  }
-  await db.prepare(
-    `INSERT INTO proposal_tier_lines (tier_id, description, room, quantity, unit_price_cents, line_total_cents, position)
-     VALUES (?1, 'Wall Finishing — wall repair & fresh paint', 'Whole project', 1, 0, 0, ?2)`
-  ).bind(better.id, pos).run();
-  await recomputeTierTotals(db, better.id);
 }
 
 /**

@@ -657,7 +657,7 @@ def build_about_page(C):
     faq_items = ''.join(C.faq_item(q, a) for q, a in faq)
     chips = ''.join(f'<a href="{u}">{n}</a>' for n, u in CITY_LINKS) + '<a href="/service-areas">All service areas →</a>'
     values = [
-      ('One honest price', 'No “40% off” games on a marked-up list. Two quotes — prep the space yourself or go fully turnkey — and the number your designer quotes is the number you pay.'),
+      ('One honest price', 'No “40% off” games on a marked-up list. One proposal, one price, and the number your designer quotes is the number you pay.'),
       ('Built to last', '3/4-inch furniture board, 14″ deep shelves as the standard, soft-close hardware, and a lifetime warranty on the system for as long as you own your home.'),
       ('One accountable crew', 'The person who measures your space designs it, and our own installers put it in — no subcontractors, and one number to call.'),
       ('A clean site', 'Most closets are installed in a single day. Floors covered, dust controlled, and the room left cleaner than we found it.'),
@@ -697,7 +697,7 @@ def build_about_page(C):
     <div class="about-how">
       <div class="prose">
         <h2>How we work</h2>
-        <p>Every project begins in your home, because the room is the brief. We measure in person — never virtually — look at how the space is used, and listen for the things that are not on the wish list: the rod that is always too high, the corner nothing fits in, the shoes with nowhere to go. From that we build the space in a photorealistic 3D design, price it once, honestly, and give you two quotes: prep the space yourself for the lowest price, or go fully turnkey and we remove the old shelving, patch, paint and install. Nothing is built until you have seen it and approved it.</p>
+        <p>Every project begins in your home, because the room is the brief. We measure in person — never virtually — look at how the space is used, and listen for the things that are not on the wish list: the rod that is always too high, the corner nothing fits in, the shoes with nowhere to go. From that we build the space in a photorealistic 3D design and price it once, honestly, in a single proposal. Before install day you clear the space and take out the old shelving; we don't patch or paint walls, so any of that is done ahead of us. Nothing is built until you have seen it and approved it.</p>
         <p>Once the design is approved, your system is manufactured to the half inch for your exact walls. Our own installers put it in — most closets in a single day — and we protect the floors, control the dust and leave the room cleaner than we found it. When the last drawer is adjusted we walk the space with you, and we do not call it finished until you do.</p>
         <h2>What we build with</h2>
         <p>Closet and pantry systems are built from 3/4-inch furniture board with soft-close hardware, in classic white, wood-grain and premium finishes with doors, glass fronts and lighting. Shelves are 14 inches deep as the standard, not an upgrade, because the 12-inch shelves the national brands install don't fit real hangers and real bins. Every system carries a lifetime warranty on the components for as long as you own your home, plus a one-year guarantee on our installation workmanship — <a class="inline" href="/warranty">read the warranty</a>.</p>

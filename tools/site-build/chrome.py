@@ -177,7 +177,6 @@ COMPARE_ROWS = [
   ('Shelf depth', '14″ deep shelves come standard', 'Typically 12″, with deeper shelves as an upgrade'),
   ('Pricing', 'One honest price, with starting prices published', '“40% off” style promotions on a marked-up list price'),
   ('Design', 'Free in-home design with a photorealistic 3D rendering', 'Varies; often a sketch, with 3D as a follow-up'),
-  ('Quotes', 'Two quotes: prep-it-yourself or fully turnkey', 'Usually one'),
   ('Installation', 'Our own team, most closets in a single day', 'Varies by location'),
   ('Warranty', 'Lifetime system warranty, one-year workmanship guarantee', 'Varies'),
 ]

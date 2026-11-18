@@ -1,4 +1,5 @@
-// POST /api/proposals/:id/retype  { proposal_kind: "custom" | "single" }
+// POST /api/proposals/:id/retype  { proposal_kind: "custom" | "install_only" | "repair" }
+// (one option for every kind since 2026-11-18; "single" is the old name for "custom")
 // Rebuilds a draft proposal's options to match the chosen type and links each
 // option to its corresponding contract. Replaces existing tiers (and their line
 // items), so it is intended for drafts before line items are finalized.
@@ -7,7 +8,7 @@ import { requireAuth, json } from "../../../_lib/auth.js";
 import { recordActivity } from "../../../_lib/db.js";
 import { proposalTiersForKind, defaultContractTypeForKind, introForKind } from "../../../_lib/proposal-tiers.js";
 
-const KINDS = ["custom", "single"];
+const KINDS = ["custom", "single", "install_only", "repair"];
 
 export async function onRequestPost(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
@@ -36,7 +37,7 @@ export async function onRequestPost(context) {
 
   await context.env.DB.prepare(
     `UPDATE proposals SET intro=?1, default_contract_type=?2, updated_at=datetime('now') WHERE id=?3`
-  ).bind(tpl?.intro || introForKind(kind), defaultContractTypeForKind(kind), id).run();
+  ).bind(introForKind(kind, tpl), defaultContractTypeForKind(kind), id).run();
 
   await recordActivity(context.env.DB, {
     entityType: "proposal", entityId: id, action: "retyped",

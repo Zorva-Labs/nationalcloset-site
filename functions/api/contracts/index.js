@@ -109,7 +109,8 @@ export async function onRequestPost(context) {
     }
   }
 
-  const contractType = ["custom_order", "wallprep", "install_only", "repair", "service_call"].includes(body.contract_type) ? body.contract_type : "custom_order";
+  // No new wallprep (wall repair + paint) contract: no longer offered (Michael, 2026-11-18).
+  const contractType = ["custom_order", "install_only", "repair", "service_call"].includes(body.contract_type) ? body.contract_type : "custom_order";
 
   // Deposit rules differ by type
   let depositCents;

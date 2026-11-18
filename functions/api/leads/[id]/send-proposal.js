@@ -73,7 +73,7 @@ export async function onRequestPost(context) {
 
   // Map the proposal kind to its option(s) + per-option contract type.
   const kind = body.proposal_kind || tpl?.subkind || "custom";
-  const intro = tpl?.intro || introForKind(kind);
+  const intro = introForKind(kind, tpl);
   const tiers = proposalTiersForKind(kind, tpl);
   const defaultContractType = defaultContractTypeForKind(kind);
 

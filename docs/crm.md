@@ -81,11 +81,11 @@
   2. Who called: a known number (digits compared, the last ten) links to its newest open lead and its client. A press-1 caller with no lead gets one in the New column (`source_page` `phone`, `utm_source` `phone`, `utm_medium` `call`, empty email). `lead_id = 0` marks the row while one webhook makes the lead, so the two webhooks can't both make one. Spam never makes a lead.
   3. Tell the office: a voicemail, or an unanswered call with a menu choice, goes to `STAFF_EMAIL` with a copy to `CALL_ALERT_CC` (Terry, Michael, 2026-11-04; tmccarthy33@yahoo.com since 2026-11-16), once (`notified`: 0 not sent, 2 sending, 1 sent; the reason in `notify_error`). An answered call and a hang-up at the menu send nothing.
 - **The phone agent (2026-11-11, Michael: "the number ring to anthony first, then the agent picks up if there's no answer"):**
-  - **The flow:** CallRail's flow "NCC Ring Anthony then Agent" (`8cc975a5-3ff5-4a96-a9b0-0ef43dfdb40f`) works like this:
+  - **The flow:** CallRail's flow "Nashville Home Pros Magazine Default Call Flow" (`8cc975a5-3ff5-4a96-a9b0-0ef43dfdb40f`; built as "NCC Ring Anthony then Agent", renamed in CallRail by someone else between 11-16 and 11-18) works like this:
     - It plays "This call may be recorded".
-    - During open hours (weekdays 8–6, Saturday 9–4 Central) it rings Anthony's cell, 615-706-7701, for 20 s. "Prevent voicemails" is on, so Anthony hears a prompt and presses 1 to take the call; his voicemail can't take it.
+    - During open hours (weekdays 8–6, Saturday 9–4 Central) it rings Michael Blair's cell, 629-298-8241 (CallRail saved contact "Michael Blair", `dest:29025`, since 2026-11-18, Michael: "change the phone to ring to 629-298-8241"), for 20 s. "Prevent voicemails" is on, so he hears a prompt and presses 1 to take the call; his voicemail can't take it. Before: Anthony's 615-706-7701 from 11-11, then the saved contact "Terry" (314-809-6297, `dest:26313`, set in CallRail by someone else by 11-18; it still serves both companies' "Default Call Flow"). Anthony's saved contact (`27162`) is unused.
     - With no answer, and at any time outside open hours, Voice Assist takes the caller's details.
-  - **Which numbers:** (615) 488-3575, the main number on the site, and (615) 857-5668, the old number still in print, both run "NCC Ring Anthony then Agent" since 2026-11-16 (Michael: "both the old number and new number from callrail should point to NCC"). (615) 392-1316 ran the menu "NCC Phone Menu" until its tracker was disabled on 2026-11-12 (not by us); the three menu tags are still read for its old calls.
+  - **Which numbers:** (615) 488-3575, the main number on the site, and (615) 857-5668, the old number still in print, both run this flow since 2026-11-16 (Michael: "both the old number and new number from callrail should point to NCC"). (615) 392-1316 ran the menu "NCC Phone Menu" until its tracker was disabled on 2026-11-12 (not by us); the three menu tags are still read for its old calls.
   - **The fallback number:** on assignment CallRail added its own tracker "Voice Assist Fallback", (615) 469-2734, which runs only the agent.
   - **What the agent says and asks:** `callrail/voice-assist.json`, written into CallRail as Terry over the web app's own endpoints (`~/fleet/docs/reference/callrail.md`). Edit that file first.
   - **Its rules:** no prices, no visit times, no financing (only the 50/25/25 terms), a designer calls or texts to set the visit, it says it is a virtual assistant when asked, and a current customer's job goes to a callback.
@@ -99,7 +99,7 @@
     - The message holds what they said.
   - **A known number links to its lead,** as before.
   - **The office hears about it once:** the mail "Phone agent took a call: name, space" (plus "(existing job)" when it is one), listing every answer, goes to `STAFF_EMAIL` and `CALL_ALERT_CC`.
-  - **A call Anthony answers** makes no lead and no mail.
+  - **A call answered on the ring** makes no lead and no mail.
   - **A caller who hangs up on the agent before giving anything** is only a row in `/crm/calls`.
   - **In the CRM:** `/crm/calls` and the lead page show "Phone agent" as the result and the caller's answers under it.
 - **Nothing goes to the caller:** no acknowledgment and no text.

@@ -11,9 +11,9 @@
 //    or a caller who chose an option and got no one, goes to STAFF_EMAIL,
 //    copied to CALL_ALERT_CC. An answered call has already been handled.
 //
-// Since 2026-11-11 the numbers ring Anthony for 20 s, then CallRail's Voice
+// Since 2026-11-11 the numbers ring one cell for 20 s (Michael Blair's since 2026-11-18), then CallRail's Voice
 // Assist takes the caller's details; after hours it answers at once
-// (flow "NCC Ring Anthony then Agent"; docs/crm.md → Phone calls). Its intake
+// (flow 8cc975a5-…, built as "NCC Ring Anthony then Agent"; docs/crm.md → Phone calls). Its intake
 // comes on the call as voice_assist_message, often on a later call-modified
 // webhook than the first post-call one, so the alert waits for it.
 //

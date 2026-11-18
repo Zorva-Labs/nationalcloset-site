@@ -2,6 +2,14 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-18 — The phone rings Michael Blair, not Anthony
+
+- **Asked (Michael):** "change the phone to ring to 629-298-8241 (Michael)".
+- **Found first:** the flow on (615) 488-3575 and (615) 857-5668 no longer rang Anthony. Someone had renamed it "Nashville Home Pros Magazine Default Call Flow" in CallRail and pointed its ring at the saved contact "Terry" (314-809-6297). Michael confirmed the change anyway ("Yes, ring me").
+- **Done** through CallRail's web-app endpoints, signed in as Terry in Chrome (v3 can't edit an advanced flow): a new saved contact "Michael Blair" +1 629-298-8241 (`29025`), and the flow's dial step (`186555732`) now points at it (`dest:29025`). Nothing else moved: recording notice, Open schedule, 20 s, screening on (press 1 to take the call), Voice Assist on no answer and after hours. Terry's contact still serves both companies' "Default Call Flow", untouched.
+- **Checked:** v3 reads both trackers back on the flow with `dest:29025`.
+- **Still owed:** one test call to 488-3575 in open hours (press 1 to answer; let one ring out to hear the agent).
+
 ## 2026-11-18 — Anthony Potts removed from the CRM; hello@ is Michael Blair
 
 - **Asked (Michael):** "remove Anthony Potts from the crm. hello@nationalclosetco.com is now Michael Blair." and a new CRM password for that login.

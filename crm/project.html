@@ -175,14 +175,17 @@ function renderJobPipeline(project) {
 }
 
 // Contextual action card under the pipeline — the single next step for the job.
-// Inline install-date picker — set or change the date right here; it saves the
-// moment a date is chosen (no modal), and moves the job forward automatically.
+// The install date reads as a field; tapping it opens the calendar in a small
+// dialog and nothing is saved until Save is pressed. (It used to be a bare date
+// input that saved on its first change event — on a phone, opening the picker
+// fills in today and fires that event, so the job booked itself for today.)
 function installDateField(project) {
-  return `<label style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:8px;max-width:100%;font-size:13px;color:var(--ink-soft);font-weight:600">
+  const d = project.install_date;
+  return `<button type="button" class="install-date-field" onclick="pickInstallDate()" aria-label="${d ? "Change the install date, now " + SSCrm.fmtDay(d) : "Pick an install date"}"
+      style="display:inline-flex;align-items:center;gap:8px;min-height:44px;max-width:100%;padding:7px 12px;border:2px solid var(--line);border-radius:8px;background:#fff;font:inherit;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;text-align:left">
     📅 Install date
-    <input type="date" value="${project.install_date || ""}" onchange="setInstallDate(this.value)"
-      style="padding:7px 10px;border:2px solid var(--line);border-radius:8px;font:inherit;color:var(--ink);max-width:100%;min-width:0"/>
-  </label>${project.install_date ? "" : billBalanceBox("bill-balance-inline")}`;
+    <span style="color:${d ? "var(--ink)" : "var(--ink-soft)"};font-weight:${d ? 700 : 600}">${d ? SSCrm.fmtDay(d) : "Pick a date"}</span>
+  </button>`;
 }
 
 // Ticked when the install is scheduled: one invoice for the whole remaining
@@ -318,11 +321,11 @@ function finalDiscountUI() {
 // (or scheduled) job moves it to Scheduled, or straight to Installing if the
 // date is today/past. On an already-installing/completed job it just corrects
 // the date without changing the status.
-async function setInstallDate(date) {
+async function setInstallDate(date, billAll) {
   if (!date) return;
   const s = state?.project?.status;
   const body = { install_date: date };
-  if (document.getElementById("bill-balance-inline")?.checked) body.bill_balance = true;
+  if (billAll) body.bill_balance = true;
   if (s === "contracted" || s === "scheduled_install") {
     body.status = (date <= localToday()) ? "installing" : "scheduled_install";
   }
@@ -331,6 +334,20 @@ async function setInstallDate(date) {
     SSCrm.toast("Install date saved", "success");
     await render();
   } catch (e) { SSCrm.toast(e.message || "Could not save the date", "error"); }
+}
+
+// The install date field: the calendar dialog, then save. Before a job is
+// installing the date can't be in the past; once it is (or done), the date can
+// be corrected to any day.
+async function pickInstallDate() {
+  const p = state?.project || {};
+  const scheduling = p.status === "contracted" || p.status === "scheduled_install";
+  const picked = await promptInstallDate(p.install_date || "", {
+    title: p.install_date ? "Change install date" : "Schedule installation",
+    save: p.install_date ? "Save date" : "Schedule",
+    min: scheduling,
+  });
+  if (picked) await setInstallDate(picked.date, picked.billAll);
 }
 
 async function quickStatus(key) {
@@ -348,29 +365,36 @@ function localToday() {
   return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
 }
 
-// Date-picker modal → set install_date + move the job to Scheduled.
-function promptInstallDate(current) {
+// Date-picker modal → set install_date + move the job to Scheduled. The calendar
+// opens as the dialog does (and on any click in the input — by default desktop
+// Chrome opens it only from the small icon); only the button saves.
+function promptInstallDate(current, opts = {}) {
+  const { title = "Schedule installation", save = "Schedule", min = true } = opts;
   return new Promise((resolve) => {
     const today = localToday();
     const bg = document.createElement("div");
     bg.className = "modal-bg";
     bg.innerHTML = `
       <div class="modal" style="max-width:380px">
-        <div class="modal-head">Schedule installation</div>
+        <div class="modal-head">${title}</div>
         <div class="modal-body">
-          <label style="display:block;font-size:13px;color:var(--ink-soft);margin-bottom:6px">Install date</label>
-          <input id="install-date-input" type="date" value="${current || ""}" min="${today}"
-            style="width:100%;padding:10px 12px;border:2px solid var(--line);border-radius:8px;font:inherit;box-sizing:border-box"/>
+          <label for="install-date-input" style="display:block;font-size:13px;color:var(--ink-soft);margin-bottom:6px">Install date</label>
+          <input id="install-date-input" type="date" value="${current || ""}"${min ? ` min="${today}"` : ""}
+            style="width:100%;min-height:44px;padding:10px 12px;border:2px solid var(--line);border-radius:8px;font:inherit;box-sizing:border-box;cursor:pointer"/>
           ${current ? "" : `<div style="margin-top:10px">${billBalanceBox("bill-balance-modal")}</div>`}
         </div>
         <div class="modal-foot">
           <button class="btn ghost" data-cancel>Cancel</button>
-          <button class="btn primary" data-save>Schedule</button>
+          <button class="btn primary" data-save>${save}</button>
         </div>
       </div>`;
     document.body.appendChild(bg);
     const input = bg.querySelector("#install-date-input");
-    setTimeout(() => input.focus(), 30);
+    const openCal = () => { try { input.showPicker(); } catch (_) { /* unsupported or no user gesture: the input still opens on tap */ } };
+    input.addEventListener("click", openCal);
+    // A phone opens its own picker when the input is tapped; on a desktop, open
+    // the calendar now, while the click that opened the dialog still counts.
+    if (!window.matchMedia("(pointer: coarse)").matches) { input.focus(); openCal(); }
     const close = (v) => {
       const billAll = !!bg.querySelector("#bill-balance-modal")?.checked;
       bg.remove(); resolve(v ? { date: v, billAll } : null);
@@ -378,9 +402,10 @@ function promptInstallDate(current) {
     bg.querySelector("[data-cancel]").onclick = () => close(null);
     bg.querySelector("[data-save]").onclick = () => {
       if (!input.value) { input.style.borderColor = "#D2683F"; input.focus(); return; }
+      if (min && input.value < today) { input.style.borderColor = "#D2683F"; SSCrm.toast("Pick today or a later date", "error"); return; }
       close(input.value);
     };
-    input.addEventListener("keydown", (e) => { if (e.key === "Enter" && input.value) close(input.value); });
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter" && input.value) bg.querySelector("[data-save]").click(); });
     bg.addEventListener("click", (e) => { if (e.target === bg) close(null); });
   });
 }

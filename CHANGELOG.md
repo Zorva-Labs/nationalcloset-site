@@ -2,6 +2,13 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-17 — The install date opens a calendar and saves only on Save
+
+- **Asked:** Michael, 2026-11-17: "when clicking the install date field it should bring up a calendar to choose a date. Also when scheduling the install date in the mobile version it just chooses today and books it."
+- **Why it happened:** the field on a job's action card was a bare date input that saved on its first `change` event. On a phone, opening the picker fills in today and fires that event, so the job was saved for today, moved to Installing, and could raise the 25% scheduling invoice before anyone had picked a date. On a desktop, Chrome opens the calendar only from the small icon, not the field.
+- **Done (`crm/project.html`):** the field is now a button showing the date (or "Pick a date"). Clicking it opens a dialog whose calendar opens at once on a desktop (`showPicker()`) and on tap on a phone; nothing saves until **Schedule** / **Save date**, and Cancel or tapping outside leaves the job as it was. The "Invoice the full remaining balance" checkbox moved into the dialog. Before a job is installing the earliest date is today; on an installing or completed job any date can be corrected. Checked on a local D1 at 1280 and 375: a change event alone saves nothing, Schedule saves and moves the job to Scheduled, Cancel saves nothing. Deployed. `docs/crm.md` updated.
+- **Owed:** nothing. Any job booked for the wrong day from a phone before today needs its date set again by hand.
+
 ## 2026-11-16 — Terry's address is his Yahoo
 
 - **Asked:** Michael, 2026-11-16: "replace terry@nationalcloset with Terry McCarthy's yaho email."

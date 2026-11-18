@@ -2,6 +2,13 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+## 2026-11-18 — The proposal's option reads warmer
+
+- **Asked (Michael):** "in the proposal, make this sentence more pleasant", the option description written earlier today.
+- **Now:** "We design, build and professionally install your new custom system. To get ready for install day, please clear out the space and remove the existing shelving. If you'd like any patching or fresh paint, it's best done beforehand, since wall repair and painting aren't part of our service." Same facts as before, in `functions/_lib/proposal-tiers.js` for every new closet proposal.
+- **Live data (migration 0089):** the three unsent drafts that carried the old sentence, PROP-2026-0057, -0058 and -0061, have the new one. No sent proposal had it.
+- **Deployed.** Still owed: nothing.
+
 ## 2026-11-18 — One proposal, one option: no more wall repair and painting
 
 - **Asked (Michael):** "remove the second option on proposals, we no longer offer wall repair and painting. set everything as one proposal, fix contracts and change wording on the site."

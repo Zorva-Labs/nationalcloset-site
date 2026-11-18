@@ -17,7 +17,7 @@
 const CLOSET = {
   key: "good", contract_type: "custom_order",
   title: "Custom Closet — Design, Build & Professional Install",
-  description: "We design, build and professionally install your new custom system. Before install day the space should be empty: you take out the existing shelving and handle any patching or painting you want done, because we do not repair or paint walls.",
+  description: "We design, build and professionally install your new custom system. To get ready for install day, please clear out the space and remove the existing shelving. If you'd like any patching or fresh paint, it's best done beforehand, since wall repair and painting aren't part of our service.",
 };
 
 const OTHER = {

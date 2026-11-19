@@ -3,6 +3,12 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-19 — Proposal check-in to Steve Studzinski
+
+- **Asked (Michael):** email Steve Studzinski from National Closet Company to see if he received the proposal and has any questions.
+- **Sent (live data, no code change):** a check-in from hello@ through the CRM (`tools/crm/mail.mjs new`, email_messages #2329, logged on job #82), with the link to PROP-2026-0061 (lead #95, sent 2026-11-18, $8,948.97). The proposal shows one view, 12 seconds after it was sent, which is most likely Yahoo's link scanner rather than Steve.
+- **Still owed:** PROP-2026-0061 expires 2026-11-20 (`valid_until`); extend it from the job page if Steve needs more time. Answer his reply when it arrives.
+
 ## 2026-11-19 — DMARC reports to hello@ stopped
 
 - **Asked (Michael):** "stop the dmarc emails to national closet."

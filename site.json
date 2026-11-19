@@ -70,7 +70,7 @@
   "mail": {
     "transport": "gmail-service-account",
     "from": "National Closet Company <hello@nationalclosetco.com>",
-    "notes": "SA ncc-mail@ncc-mail.iam.gserviceaccount.com (client id 113325869227023086119), DWD scopes gmail.send + gmail.readonly, impersonates hello@; inbound sync via /api/internal/email-sync (bearer NCC_CRON_SECRET) every 3 min from the cron Worker; DKIM valid since 2026-09-10, DMARC p=reject"
+    "notes": "SA ncc-mail@ncc-mail.iam.gserviceaccount.com (client id 113325869227023086119), DWD scopes gmail.send + gmail.readonly, impersonates hello@; inbound sync via /api/internal/email-sync (bearer NCC_CRON_SECRET) every 3 min from the cron Worker; DKIM valid since 2026-09-10, DMARC p=reject with no rua (reports to hello@ stopped 2026-11-19)"
   },
   "google": {
     "ga4Property": "539664920",

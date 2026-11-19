@@ -2,6 +2,13 @@
 
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
+
+## 2026-11-19 — DMARC reports to hello@ stopped
+
+- **Asked (Michael):** "stop the dmarc emails to national closet."
+- **What:** `_dmarc.nationalclosetco.com` (zone `1d51a379…`, record `b77041d0…`) changed from `v=DMARC1; p=reject; rua=mailto:hello@nationalclosetco.com; fo=1` to `v=DMARC1; p=reject`, over the API. The policy is unchanged (spoofed mail is still rejected). Only the daily aggregate reports from Google, Microsoft and others stop going to hello@ and into the CRM's `email_messages`. `fo=1` went too, since it only applies to forensic reports and none were requested. Checked at 1.1.1.1 right after. Receivers cache the record for up to an hour, and Google sends yesterday's report once a day, so one or two more may still come.
+- **Still owed:** nothing.
+
 ## 2026-11-18 — Terry's three bookings in the CRM
 
 - **Asked (Michael):** add the appointments in Terry's email ("Appointments from yesterday", to michael@leadgendigitalmarketing.com) to the CRM and calendar.

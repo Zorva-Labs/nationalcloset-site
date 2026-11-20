@@ -44,7 +44,6 @@ const RULES = {
       ["/api/email-messages", "*"],   // a lead's and a job's Messages tab
       ["/api/dashboard", ["GET"]],
       ["/api/search", ["GET"]],
-      ["/api/property", ["GET"]],     // county property records on a lead or job
       ["/api/activity", ["GET"]],     // the job's and the lead's history
       ["/api/crew", ["GET"]],         // the install worksheet
       ["/api/team", ["GET"]],         // the assignee pickers

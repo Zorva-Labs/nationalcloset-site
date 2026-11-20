@@ -3,6 +3,11 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-20 — Property records removed from the CRM
+
+- **Asked (Michael):** "remove property record, it doesn't work."
+- **Done:** the Property record card is off the lead and job pages; `/api/property`, `functions/_lib/property.js`, its sales permission and styles are deleted; migration 0093 dropped `property_records` (two cached lookups) from the live D1. Migration 0092 stays in the folder as the record of what was applied. Metricool and the Gusto work are unchanged.
+
 ## 2026-11-20 — The National Closet Company brand in Metricool
 
 - **Asked (Michael):** "Set up the National Closet Company brand in Metricool."

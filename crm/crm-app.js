@@ -1514,58 +1514,6 @@ function wireAssigneePicker(root) {
   });
 }
 
-// County property records card (Michael, 2026-11-20): /api/property reads the
-// county's open parcel data for the lead's or job's address and keeps it.
-// mountPropertyCard(host, { lead_id } | { project_id }) — admin and sales.
-const PROPERTY_SOURCE = {
-  davidson: "Metro Nashville Assessor",
-  sumner: "Sumner County via the TN Comptroller",
-  williamson: "Williamson County parcels",
-};
-async function mountPropertyCard(host, ids, refresh = false) {
-  if (!host) return;
-  const r = ME && ME.role;
-  if (r && r !== "admin" && r !== "sales") { host.innerHTML = ""; return; }
-  const qs = new URLSearchParams(ids); if (refresh) qs.set("refresh", "1");
-  host.innerHTML = `<div class="card property-card"><div class="card-head"><h3>Property record</h3></div><div class="muted" style="font-size:13px">${refresh ? "Looking it up again…" : "Looking up the county record…"}</div></div>`;
-  let d;
-  try { d = await fetchJSON("/api/property?" + qs.toString()); }
-  catch (e) { host.innerHTML = `<div class="card property-card"><div class="card-head"><h3>Property record</h3></div><div class="muted" style="font-size:13px">Couldn't reach the county record: ${esc(e.message || "")}</div></div>`; return; }
-  const rec = d.record;
-  const money = v => (v || v === 0) ? "$" + Number(v).toLocaleString("en-US") : null;
-  const row = (k, v) => (v === null || v === undefined || v === "") ? "" : `<div class="muted">${k}</div><div>${esc(String(v))}</div>`;
-  let bodyHtml;
-  if (!rec) {
-    bodyHtml = `<div class="muted" style="font-size:13px">Add a street address to look up the county record.</div>`;
-  } else if (rec.status === "found") {
-    const sale = rec.last_sale_date ? fmtDay(rec.last_sale_date) + (rec.last_sale_price ? " · " + money(rec.last_sale_price) : "") : null;
-    const rooms = [rec.beds ? rec.beds + " bed" : "", rec.baths ? rec.baths + " bath" : ""].filter(Boolean).join(" · ");
-    bodyHtml = `<div class="property-grid">
-        ${row("Owner of record", rec.owner)}
-        ${row("Property", rec.prop_address)}
-        ${row("County", rec.county ? rec.county + " County" : null)}
-        ${row("Parcel", rec.parcel_id)}
-        ${row("Use", rec.land_use ? rec.land_use.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : null)}
-        ${row("Year built", rec.year_built)}
-        ${row(rec.source === "williamson" ? "Assessed sq ft" : "Living area", rec.sqft ? Number(rec.sqft).toLocaleString("en-US") + " sq ft" : null)}
-        ${row("Rooms", rooms)}
-        ${row("Lot", rec.acres ? rec.acres + " acres" : null)}
-        ${row("Appraised", money(rec.total_value))}
-        ${row("Last recorded sale", sale)}
-      </div>
-      <p class="muted" style="font-size:12px;margin:10px 0 0">Public record from ${esc(PROPERTY_SOURCE[rec.source] || "the county")}${rec.data_as_of ? ", as of " + esc(rec.data_as_of) : ""}. Looked up ${fmtDay(String(rec.looked_up_at || "").slice(0, 10))}.</p>`;
-  } else {
-    bodyHtml = `<div class="muted" style="font-size:13px">${esc(rec.note || "No county record found.")}</div>`;
-  }
-  const links = rec ? [
-    rec.record_url ? `<a class="btn ghost sm" href="${esc(rec.record_url)}" target="_blank" rel="noopener">County record ↗</a>` : "",
-    rec.status !== "found" && rec.search_url ? `<a class="btn ghost sm" href="${esc(rec.search_url)}" target="_blank" rel="noopener">Search TPAD ↗</a>` : "",
-    `<button class="btn ghost sm" type="button" data-prop-refresh>Refresh</button>`,
-  ].join("") : "";
-  host.innerHTML = `<div class="card property-card"><div class="card-head"><h3>Property record</h3></div>${bodyHtml}${links ? `<div class="property-actions">${links}</div>` : ""}</div>`;
-  const b = host.querySelector("[data-prop-refresh]");
-  if (b) b.onclick = () => mountPropertyCard(host, ids, true);
-}
 
 window.SSCrm = {
   fetchJSON, mount, setCrumbs, jobCrumbs, painterBadge, fmtMoney, fmtMoneyShort, parseMoney, fmtDate, fmtDay, fmtDateTime, fmtTime, esc, pill, logout, toast, confirmDialog,
@@ -1575,6 +1523,5 @@ window.SSCrm = {
   composeEmail, renderEmailTimeline,
   team, assigneePicker, readAssigneePicker, wireAssigneePicker, assigneeChips, initialsOf, shortName,
   PROJECT_STATUSES, SERVICES, serviceDatalist, brandTag, fmtPhone, callChoice, callResult, callIntake,
-  mountPropertyCard,
   me: () => ME, role: () => (ME && ME.role) || null,
 };

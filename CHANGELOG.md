@@ -3,6 +3,12 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-20 — $450 to Nashville Paint Co for Lesia Wood's paint and repair, prepared in Gusto
+- **Asked (Michael):** "pay Johnny - Nashville Paint Co. - $450 for Lesia Wood 11/20/2026 Paint and Repair", soonest possible.
+- **CRM:** crew pay bill #6 on job #44 (Walk-In Closet — Lesia Wood), Nashville Paint Co, $450, note "Paint and repair 11/20/2026", through `/api/payouts`; marked prepared (`gusto.mjs mark-prepared 6`).
+- **Gusto:** Johnny finished onboarding (EIN, direct deposit). The open, empty ad-hoc draft (payday Mon 11/23, debit Fri 11/20, one-day ACH) now carries Nashville Paint Co $450.00 by direct deposit. It is **not submitted**: Michael approves it in Gusto (the panel couldn't open here). The daily sync closes bill #6 when Gusto shows it Funded.
+- **Still owed:** the submit in Gusto. If the draft is discarded, `node tools/crm/gusto.mjs unprepare 6`.
+
 ## 2026-11-20 — Nashville Paint Co added to Gusto as a contractor
 - **Asked (Michael):** "add Nashville Paint Co as a vendor to be paid to the gusto account", contact Johnny Bowling, nashpaintco@gmail.com, (615) 572-9350.
 - **Gusto:** a business contractor in National Closet Company (`af5d38c7-…`), uuid `3dc12f0a-b0b0-4ec7-8cc6-0551bf2aab76`, fixed pay, start 2026-11-20. Gusto's self-onboarding invite went to nashpaintco@gmail.com on Michael's yes. They enter the W-9 (legal name, EIN), address and bank there. Until they finish, Gusto shows them as invited and paid by check, and they can't be paid by direct deposit.

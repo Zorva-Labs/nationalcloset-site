@@ -3,6 +3,12 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-20 — The National Closet Company brand in Metricool
+
+- **Asked (Michael):** "Set up the National Closet Company brand in Metricool."
+- **Done:** brand "National Closet Company", blogId `8254615`, America/Chicago, made over the API. `site.json → social` added (Facebook, Instagram and Business Profile; drafts, 2 a week; feeds the blog and `/our-work`; the existing Facebook, Instagram and Pinterest profiles noted). `social status nationalcloset` reads it, and the CRM sync now reads the brand ("no networks connected"); `/crm/social` says the brand is set up with nothing connected yet.
+- **Still owed:** the connect link to the owner, so the Business Profile, Facebook and Instagram are connected (a new link voids the last, so it is made when it is sent). No posts go out until then, and then as drafts for Michael to approve.
+
 ## 2026-11-20 — County property records and Metricool in the CRM
 
 - **Asked (Michael):** "include County property records and metricool", alongside the Gusto link.

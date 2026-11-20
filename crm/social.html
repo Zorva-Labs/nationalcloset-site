@@ -63,6 +63,13 @@ const n = (v) => (v === null || v === undefined) ? "—" : Math.round(v).toLocal
     return;
   }
 
+  if (!Object.keys(NETWORKS).some((k) => d.brand.networks[k])) {
+    page.innerHTML = `<div class="so-empty">
+      <p style="margin:0 0 8px"><strong>The “${e(d.brand.label)}” brand is set up in Metricool, and nothing is connected to it yet.</strong></p>
+      <p style="margin:0 0 8px">The owner connects the Business Profile, Facebook and Instagram through Metricool's connect link. The next morning's sync fills this page.</p>
+      <p style="margin:0" class="muted">Last checked ${e(sync)}.</p></div>`;
+    return;
+  }
   const t = d.totals || {};
   let html = `<p class="muted" style="font-size:13px;margin:0 0 4px">Last 28 days against the 28 before · brand “${e(d.brand.label)}” · synced ${e(sync)}</p>`;
   for (const [net, cfg] of Object.entries(NETWORKS)) {

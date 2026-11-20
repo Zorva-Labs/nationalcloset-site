@@ -179,5 +179,36 @@
     "notes": "Cloe (Michael, 2026-11-11): site-kit's assistant placed by hand in this repo's layout — assets/js/assistant.js, functions/api/ask.js, scripts/assistant-index.mjs, crm/migrations/0086_assistant_log.sql; build.mjs puts the script tag on every public page and runs the index step. Call-backs post to /api/contact (no email required). docs/assistant.md."
   },
   "serviceArea": false,
-  "serviceAreaWhy": "App. Exempt from the city-and-service page set (seo-standards §19) on Michael, 2026-11-18."
+  "serviceAreaWhy": "App. Exempt from the city-and-service page set (seo-standards §19) on Michael, 2026-11-18.",
+  "social": {
+    "metricool": {
+      "blogId": 8254615,
+      "name": "National Closet Company",
+      "connected": false,
+      "createdOn": "2026-11-20"
+    },
+    "profiles": {
+      "facebook": "https://www.facebook.com/NationalClosetCompany",
+      "instagram": "https://www.instagram.com/nationalclosetcompany",
+      "pinterest": "https://www.pinterest.com/nationalclosetco"
+    },
+    "networks": [
+      "facebook",
+      "instagram",
+      "gmb"
+    ],
+    "mode": "draft",
+    "perWeek": 2,
+    "slots": [
+      "Tue 09:30",
+      "Thu 12:00"
+    ],
+    "timezone": "America/Chicago",
+    "repeatDays": 120,
+    "feeds": [
+      "^/blog/.+",
+      "^/our-work"
+    ],
+    "notes": "Brand made 2026-11-20 on Michael's word (\"Set up the National Closet Company brand in Metricool\"). Nothing is connected yet: the owner connects Facebook, Instagram and the Business Profile through `social connect nationalcloset` (a new link voids the last, so make it only when it is sent). The CRM's /crm/social reads this brand daily (tools/crm/metricool.mjs). Pinterest needs a boardId before it is added to networks. Drafts only until Michael moves it to auto."
+  }
 }

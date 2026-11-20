@@ -3,6 +3,12 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-20 — Nashville Paint Co added to Gusto as a contractor
+- **Asked (Michael):** "add Nashville Paint Co as a vendor to be paid to the gusto account", contact Johnny Bowling, nashpaintco@gmail.com, (615) 572-9350.
+- **Gusto:** a business contractor in National Closet Company (`af5d38c7-…`), uuid `3dc12f0a-b0b0-4ec7-8cc6-0551bf2aab76`, fixed pay, start 2026-11-20. Gusto's self-onboarding invite went to nashpaintco@gmail.com on Michael's yes. They enter the W-9 (legal name, EIN), address and bank there. Until they finish, Gusto shows them as invited and paid by check, and they can't be paid by direct deposit.
+- **CRM:** team member #7 "Nashville Paint Co" (role Painter, linked to the Gusto uuid), so crew pay can be put on a job for them and the daily sync matches what Gusto pays. Vendor #9 (Johnny Bowling, Nashville Paint Co, already in Vendors) got a note saying so. Gusto has no contact or phone field for a business contractor, so the contact and phone live in the CRM.
+- **Still owed:** the painter finishes Gusto onboarding.
+
 ## 2026-11-20 — 50/25/25 held on every job: the 25% scheduling invoice before the final one
 
 - **Asked (Michael):** "make sure the invoices are still set for 50/25/25, the most recent ones did not ask for 25% on schedule."

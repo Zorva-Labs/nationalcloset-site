@@ -25,6 +25,7 @@ const NAV = [
   { href: "/crm/activity.html", label: "Activity", icon: iconActivity() },
   { href: "/crm/reports.html", label: "Reports", icon: iconReports() },
   { href: "/crm/traffic.html", label: "Traffic", icon: iconTraffic() },
+  { href: "/crm/social.html", label: "Social & Google", icon: iconSocial() },
 ];
 
 // Lead status sub-items shown when the Leads nav row is expanded.
@@ -84,7 +85,7 @@ const NAV_GROUPS = [
   { label: "Leads & jobs", items: ["/crm/leads.html", "/crm/calls.html", "/crm/projects.html"] },
   { label: "Sales", items: ["/crm/estimates.html", "/crm/proposals.html", "/crm/contracts.html", "/crm/invoices.html", "/crm/expenses.html", "/crm/payouts.html"] },
   { label: "Operations", items: ["/crm/calendar.html"] },
-  { label: "Insights", items: ["/crm/reports.html", "/crm/traffic.html"] },
+  { label: "Insights", items: ["/crm/reports.html", "/crm/traffic.html", "/crm/social.html"] },
   { label: "Setup", items: ["/crm/team.html", "/crm/templates.html", "/crm/activity.html"] },
 ];
 
@@ -580,6 +581,7 @@ function iconMail() { return `<svg width="14" height="14" viewBox="0 0 24 24" fi
 function iconActivity() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`; }
 function iconReports() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`; }
 function iconPhone() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>`; }
+function iconSocial() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>`; }
 function iconTraffic() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`; }
 function iconSearch() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`; }
 function iconInvoice() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>`; }
@@ -1512,6 +1514,59 @@ function wireAssigneePicker(root) {
   });
 }
 
+// County property records card (Michael, 2026-11-20): /api/property reads the
+// county's open parcel data for the lead's or job's address and keeps it.
+// mountPropertyCard(host, { lead_id } | { project_id }) — admin and sales.
+const PROPERTY_SOURCE = {
+  davidson: "Metro Nashville Assessor",
+  sumner: "Sumner County via the TN Comptroller",
+  williamson: "Williamson County parcels",
+};
+async function mountPropertyCard(host, ids, refresh = false) {
+  if (!host) return;
+  const r = ME && ME.role;
+  if (r && r !== "admin" && r !== "sales") { host.innerHTML = ""; return; }
+  const qs = new URLSearchParams(ids); if (refresh) qs.set("refresh", "1");
+  host.innerHTML = `<div class="card property-card"><div class="card-head"><h3>Property record</h3></div><div class="muted" style="font-size:13px">${refresh ? "Looking it up again…" : "Looking up the county record…"}</div></div>`;
+  let d;
+  try { d = await fetchJSON("/api/property?" + qs.toString()); }
+  catch (e) { host.innerHTML = `<div class="card property-card"><div class="card-head"><h3>Property record</h3></div><div class="muted" style="font-size:13px">Couldn't reach the county record: ${esc(e.message || "")}</div></div>`; return; }
+  const rec = d.record;
+  const money = v => (v || v === 0) ? "$" + Number(v).toLocaleString("en-US") : null;
+  const row = (k, v) => (v === null || v === undefined || v === "") ? "" : `<div class="muted">${k}</div><div>${esc(String(v))}</div>`;
+  let bodyHtml;
+  if (!rec) {
+    bodyHtml = `<div class="muted" style="font-size:13px">Add a street address to look up the county record.</div>`;
+  } else if (rec.status === "found") {
+    const sale = rec.last_sale_date ? fmtDay(rec.last_sale_date) + (rec.last_sale_price ? " · " + money(rec.last_sale_price) : "") : null;
+    const rooms = [rec.beds ? rec.beds + " bed" : "", rec.baths ? rec.baths + " bath" : ""].filter(Boolean).join(" · ");
+    bodyHtml = `<div class="property-grid">
+        ${row("Owner of record", rec.owner)}
+        ${row("Property", rec.prop_address)}
+        ${row("County", rec.county ? rec.county + " County" : null)}
+        ${row("Parcel", rec.parcel_id)}
+        ${row("Use", rec.land_use ? rec.land_use.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : null)}
+        ${row("Year built", rec.year_built)}
+        ${row(rec.source === "williamson" ? "Assessed sq ft" : "Living area", rec.sqft ? Number(rec.sqft).toLocaleString("en-US") + " sq ft" : null)}
+        ${row("Rooms", rooms)}
+        ${row("Lot", rec.acres ? rec.acres + " acres" : null)}
+        ${row("Appraised", money(rec.total_value))}
+        ${row("Last recorded sale", sale)}
+      </div>
+      <p class="muted" style="font-size:12px;margin:10px 0 0">Public record from ${esc(PROPERTY_SOURCE[rec.source] || "the county")}${rec.data_as_of ? ", as of " + esc(rec.data_as_of) : ""}. Looked up ${fmtDay(String(rec.looked_up_at || "").slice(0, 10))}.</p>`;
+  } else {
+    bodyHtml = `<div class="muted" style="font-size:13px">${esc(rec.note || "No county record found.")}</div>`;
+  }
+  const links = rec ? [
+    rec.record_url ? `<a class="btn ghost sm" href="${esc(rec.record_url)}" target="_blank" rel="noopener">County record ↗</a>` : "",
+    rec.status !== "found" && rec.search_url ? `<a class="btn ghost sm" href="${esc(rec.search_url)}" target="_blank" rel="noopener">Search TPAD ↗</a>` : "",
+    `<button class="btn ghost sm" type="button" data-prop-refresh>Refresh</button>`,
+  ].join("") : "";
+  host.innerHTML = `<div class="card property-card"><div class="card-head"><h3>Property record</h3></div>${bodyHtml}${links ? `<div class="property-actions">${links}</div>` : ""}</div>`;
+  const b = host.querySelector("[data-prop-refresh]");
+  if (b) b.onclick = () => mountPropertyCard(host, ids, true);
+}
+
 window.SSCrm = {
   fetchJSON, mount, setCrumbs, jobCrumbs, painterBadge, fmtMoney, fmtMoneyShort, parseMoney, fmtDate, fmtDay, fmtDateTime, fmtTime, esc, pill, logout, toast, confirmDialog,
   pickContact, pickJob, openModal, recordPayment,
@@ -1520,5 +1575,6 @@ window.SSCrm = {
   composeEmail, renderEmailTimeline,
   team, assigneePicker, readAssigneePicker, wireAssigneePicker, assigneeChips, initialsOf, shortName,
   PROJECT_STATUSES, SERVICES, serviceDatalist, brandTag, fmtPhone, callChoice, callResult, callIntake,
+  mountPropertyCard,
   me: () => ME, role: () => (ME && ME.role) || null,
 };

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Social &amp; Google · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc129"/>
+<style>
+  .so-sec{margin:22px 0 10px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .so-sec h2{font-size:15px;margin:0;color:var(--ink)}
+  .so-sec .muted{font-size:12px}
+  .so-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .so-tile{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+  .so-tile .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft)}
+  .so-tile .v{font-size:22px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:4px}
+  .so-tile .s{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .so-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+  .so-empty{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;font-size:14px;line-height:1.6;color:var(--ink-soft);max-width:760px}
+  .so-empty strong{color:var(--ink)}
+  .so-text{max-width:460px;overflow-wrap:anywhere}
+  .tbl{overflow-x:auto}
+</style></head>
+<body>
+<script src="/crm/crm-app.js?v=ncc123"></script>
+<script>
+// Social & Google (Michael, 2026-11-20). Admin only — /api/social is not in
+// _lib/roles.js. The figures come from Metricool, written once a day by
+// tools/crm/metricool.mjs on Michael's Mac; this page only reads them.
+const NETWORKS = {
+  gmb: { label: "Google Business Profile", fields: [
+    ["call_clicks", "Calls"], ["website_clicks", "Website clicks"], ["business_direction_requests", "Directions"],
+    ["business_impressions_search", "Seen in Search"], ["business_impressions_maps", "Seen in Maps"], ["business_conversations", "Messages"]] },
+  facebook: { label: "Facebook", fields: [
+    ["pageFollows", "Followers"], ["pageViews", "Page views"], ["pageImpressions", "Impressions"],
+    ["postsCount", "Posts"], ["postsInteractions", "Interactions"]] },
+  instagram: { label: "Instagram", fields: [
+    ["delta_followers", "Net followers"], ["followers_gained", "Followers gained"], ["phone_call_clicks", "Call taps"],
+    ["postsCount", "Posts"], ["postsInteractions", "Interactions"]] },
+};
+const STATUS = {
+  PUBLISHED: ["Published", "#DCFCE7", "#166534"], PENDING: ["Scheduled", "#E0E7FF", "#3730A3"],
+  PUBLISHING: ["Publishing", "#E0E7FF", "#3730A3"], DRAFT: ["Draft", "#F1F5F9", "#334155"],
+  AWAITING_CONFIRMATION: ["Awaiting approval", "#FEF3C7", "#92400E"], ERROR: ["Failed", "#FEE2E2", "#991B1B"],
+};
+const NET_LABEL = { gmb: "Business Profile", facebook: "Facebook", instagram: "Instagram", pinterest: "Pinterest" };
+const e = (s) => SSCrm.esc(s);
+const n = (v) => (v === null || v === undefined) ? "—" : Math.round(v).toLocaleString("en-US");
+
+(async () => {
+  const user = await SSCrm.mount({ title: "Social & Google", subtitle: "Business Profile, Facebook and Instagram, from Metricool", wide: true,
+    actions: `<a class="btn secondary" href="https://app.metricool.com/" target="_blank" rel="noopener">Open Metricool ↗</a>` });
+  if (!user) return;
+  const page = document.getElementById("page");
+  let d;
+  try { d = await SSCrm.fetchJSON("/api/social"); }
+  catch (err) { page.innerHTML = `<div class="tbl"><div class="empty">Couldn't load: ${e(err.message)}</div></div>`; return; }
+  const sync = d.last_sync ? SSCrm.fmtDateTime(d.last_sync.ran_at.replace(" ", "T") + "Z") : "never";
+
+  if (!d.brand) {
+    page.innerHTML = `<div class="so-empty">
+      <p style="margin:0 0 8px"><strong>National Closet Company isn't in Metricool yet.</strong></p>
+      <p style="margin:0 0 8px">Once its brand is set up in Metricool and the Business Profile, Facebook and Instagram are connected to it,
+      the daily sync fills this page: calls, website clicks and direction requests from the Business Profile, followers and reach on
+      Facebook and Instagram, and every post scheduled or published.</p>
+      <p style="margin:0" class="muted">Last checked ${e(sync)}.</p></div>`;
+    return;
+  }
+
+  const t = d.totals || {};
+  let html = `<p class="muted" style="font-size:13px;margin:0 0 4px">Last 28 days against the 28 before · brand “${e(d.brand.label)}” · synced ${e(sync)}</p>`;
+  for (const [net, cfg] of Object.entries(NETWORKS)) {
+    if (!d.brand.networks[net]) continue;
+    html += `<div class="so-sec"><h2>${e(cfg.label)}</h2></div><div class="so-tiles">`;
+    for (const [m, label] of cfg.fields) {
+      const x = t[`${net}.${m}`];
+      if (!x) { html += `<div class="so-tile"><div class="k">${e(label)}</div><div class="v">—</div><div class="s">no data yet</div></div>`; continue; }
+      const cur = x.level ? x.latest : x.cur;
+      const diff = (x.prev === null || x.prev === undefined || cur === null) ? "" : (cur - x.prev);
+      const sub = diff === "" ? (x.level ? "now" : "last 28 days")
+        : `${diff > 0 ? "+" : ""}${n(diff)} vs ${x.level ? "28 days ago" : "the 28 before"}`;
+      html += `<div class="so-tile"><div class="k">${e(label)}</div><div class="v">${n(cur)}</div><div class="s">${e(sub)}</div></div>`;
+    }
+    html += `</div>`;
+  }
+  const off = Object.keys(NETWORKS).filter((k) => !d.brand.networks[k]).map((k) => NETWORKS[k].label);
+  if (off.length) html += `<p class="muted" style="font-size:13px;margin:12px 0 0">Not connected in Metricool: ${e(off.join(", "))}.</p>`;
+
+  html += `<div class="so-sec"><h2>Posts</h2><span class="muted">the last 60 days and what is scheduled</span></div>`;
+  if (!d.posts.length) html += `<div class="tbl"><div class="empty">No posts through Metricool yet.</div></div>`;
+  else {
+    html += `<div class="tbl"><table><thead><tr><th>When</th><th>Where</th><th>Status</th><th>Post</th><th></th></tr></thead><tbody>`;
+    for (const p of d.posts) {
+      const s = STATUS[p.status] || [p.status || "—", "#F1F5F9", "#334155"];
+      html += `<tr><td style="white-space:nowrap">${e(SSCrm.fmtDateTime((p.publish_at || "").replace(" ", "T")))}</td>
+        <td>${e(NET_LABEL[p.network] || p.network)}</td>
+        <td><span class="so-badge" style="background:${s[1]};color:${s[2]}">${e(s[0])}</span></td>
+        <td class="so-text">${e((p.text || "").slice(0, 160))}${(p.text || "").length > 160 ? "…" : ""}</td>
+        <td>${p.url ? `<a href="${e(p.url)}" target="_blank" rel="noopener">View ↗</a>` : ""}</td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+  page.innerHTML = html;
+})();
+</script>
+</body></html>

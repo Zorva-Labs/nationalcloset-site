@@ -1206,3 +1206,9 @@ tr.needs-painter > td:first-child { box-shadow: inset 4px 0 0 #F59E0B; }
 @media (max-width: 700px) {
   .crumbs a { display: inline-flex; align-items: center; min-height: 44px; padding: 0; }
 }
+
+/* County property record card (lead and job pages, 2026-11-20) */
+.property-grid { display: grid; grid-template-columns: minmax(110px, auto) 1fr; gap: 6px 14px; font-size: 13px; }
+.property-grid > div:nth-child(even) { overflow-wrap: anywhere; }
+.property-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.property-actions .btn { min-height: 44px; display: inline-flex; align-items: center; }

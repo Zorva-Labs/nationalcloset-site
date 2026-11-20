@@ -9,11 +9,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
 <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" /></noscript>
-  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc126" />
+  <link rel="stylesheet" href="/crm/crm-app.css?v=ncc129" />
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc121"></script>
+<script src="/crm/crm-app.js?v=ncc123"></script>
 <script>
 // Lead pipeline ends at "Proposal" or "Lost". Once the contract is signed
 // the lead is auto-bumped to "booked" by the contract-sign handler — at
@@ -134,7 +134,7 @@ function switchTab(tabName) {
   else if (tabName === "messages") { body.innerHTML = `<div class="card"><div class="card-head"><h2>Messages</h2><span class="muted" style="font-size:12px">${state.lead.email ? "" : "Add an email to enable"}</span></div><div id="email-timeline"></div></div>`; mountTimeline(); }
   else if (tabName === "calls") { body.innerHTML = `<div class="card"><div class="card-head"><h2>Calls</h2></div><div id="call-list" class="muted" style="font-size:13px">Loading…</div></div>`; mountCalls(); }
   else if (tabName === "notes") body.innerHTML = renderNotesTab();
-  else body.innerHTML = renderOverviewTab();
+  else { body.innerHTML = renderOverviewTab(); SSCrm.mountPropertyCard(document.getElementById("property-host"), { lead_id: state.lead.id }); }
 }
 
 // ───────── Overview tab: contact details + quick actions ─────────
@@ -210,6 +210,7 @@ function renderOverviewTab() {
           <div class="card-head"><h2>Linked contact</h2></div>
           <a class="btn secondary" href="/crm/contact.html?id=${l.contact_id}" style="width:100%;justify-content:center">Open contact →</a>
         </div>` : ""}
+      <div id="property-host" style="margin-top:14px"></div>
     </div>
   </div>`;
 }

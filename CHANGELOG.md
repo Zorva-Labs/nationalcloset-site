@@ -3,6 +3,14 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-20 — County property records and Metricool in the CRM
+
+- **Asked (Michael):** "include County property records and metricool", alongside the Gusto link.
+- **Property records:** a Property record card on every lead's and job's Overview (admin and sales): owner of record, parcel, year built, living area, rooms, lot, appraisal, last recorded sale, and the county's own page. `functions/_lib/property.js` (Census geocoder for the county, then Metro Nashville's parcel layer and Assessor record card, the state's Sumner copy dated Dec 2023, or the Williamson parcels Brentwood hosts), `/api/property`, migration 0092 `property_records` (applied live). The other counties in the area have no open parcel service, so the card links TPAD to look by hand.
+- **Metricool:** `/crm/social` (admin, Insights → Social & Google), `/api/social`, migration 0091 (`metricool_*`, applied live), `tools/crm/metricool.mjs sync|status`, launchd `com.zorvalabs.ncc-metricool-sync` daily 7:25 CT (recorded in `~/fleet/cron`, with the `ncc-gusto-sync` task). NCC has no Metricool brand, so the first live sync recorded "no brand" and the page says the company isn't in Metricool yet.
+- **Checked:** lookups for 617 Wedgewood Ave (Davidson: 1930, 1,522 sq ft, 3 bed, $627,000), 513 Red River Rd (Sumner) and 201 Century Ct (Williamson); Mt. Juliet answers "no open data, TPAD"; a street-name bug (Red River matched Redstone) fixed to whole words; a sales login gets the card, an installer 403. The Metricool sync dry-run against the Best Pros and NWD brands (nothing written). Both social page states and the property card at 375px with no overflow.
+- **Still owed:** Michael's yes to set up the National Closet Company brand in Metricool and send the owner the connect link (`/social`); then its blogId goes in `site.json → social.metricool.blogId`.
+
 ## 2026-11-20 — Crew pay and Gusto in the CRM
 
 - **Asked (Michael):** link Gusto's payments, contractors and the rest to the CRM ("build out everything you can"), after moving NCC to per-job contractor pay with no more W-2 payroll.

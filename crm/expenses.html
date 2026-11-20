@@ -13,9 +13,9 @@
   .exp-out strong{font-size:18px;color:#B91C1C}
 </style></head>
 <body>
-<script src="/crm/crm-app.js?v=ncc120"></script>
+<script src="/crm/crm-app.js?v=ncc121"></script>
 <script>
-const CATEGORIES = ["Materials", "Subcontractor", "Labor", "Tools & Equipment", "Vehicle / Fuel", "Rent / Overhead", "Marketing", "Software / Fees", "Other"];
+const CATEGORIES = ["Materials", "Subcontractor", "Labor", "Tools & Equipment", "Vehicle / Fuel", "Rent / Overhead", "Marketing", "Software / Fees", "Crew pay", "Commission", "Contractor pay", "Payroll", "Other"];
 const ST = { unpaid: "Unpaid", paid: "Paid", void: "Void" };
 
 let VENDORS = []; // address-book vendors, for the bill payee picker
@@ -50,7 +50,7 @@ function render() {
           const bal = (x.amount_cents || 0) - (x.amount_paid_cents || 0);
           const open = x.status !== "paid" && x.status !== "void" && bal > 0;
           return `<tr>
-            <td><strong>${SSCrm.esc(x.vendor || "—")}</strong>${x.description ? `<div class="muted" style="font-size:12px">${SSCrm.esc(x.description)}</div>` : ""}</td>
+            <td><strong>${SSCrm.esc(x.vendor || "—")}</strong>${x.source === "crew_pay" || x.source === "gusto" ? ` <a href="/crm/payouts.html" title="Paid through Gusto — see Crew pay &amp; Gusto" style="display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;background:#E0E7FF;color:#3730A3;text-decoration:none">Gusto</a>` : ""}${x.description ? `<div class="muted" style="font-size:12px">${SSCrm.esc(x.description)}</div>` : ""}</td>
             <td>${x.category ? SSCrm.esc(x.category) : `<span class="muted">—</span>`}</td>
             <td>${x.project_id ? `<a href="/crm/project.html?id=${x.project_id}" onclick="event.stopPropagation()">${SSCrm.esc(x.project_name || "Job #" + x.project_id)}</a>` : `<span class="muted">—</span>`}</td>
             <td class="muted">${x.bill_date ? SSCrm.fmtDay(x.bill_date) : SSCrm.fmtDate(x.created_at)}</td>

@@ -13,7 +13,7 @@
   <link rel="icon" href="/img/favicon-nc.png" />
 </head>
 <body>
-<script src="/crm/crm-app.js?v=ncc120"></script>
+<script src="/crm/crm-app.js?v=ncc121"></script>
 <script>
 (async () => {
   const user = await SSCrm.mount({
@@ -74,6 +74,11 @@
           ${renderLeadSources(d.lead_sources)}
         </div>
 
+        <div class="card" id="gusto-card" hidden>
+          <div class="card-head"><h2>Crew pay &amp; Gusto</h2><a class="more" href="/crm/payouts.html">Open →</a></div>
+          <div></div>
+        </div>
+
         <div class="card" id="traffic-card">
           <div class="card-head"><h2>Site traffic · last 7 days</h2><span class="more" style="cursor:default" title="Counted at Cloudflare's edge — immune to ad blockers, GA filters and reporting lag">via Cloudflare</span></div>
           <div style="padding:20px;text-align:center;color:var(--ink-soft);font-size:13px">Loading traffic…</div>
@@ -91,7 +96,29 @@
   `;
 
   loadTraffic();
+  loadGusto();
 })();
+
+// Crew pay owed and Gusto's to-dos (admin only; /api/payouts is refused to
+// other roles). Shown only when something needs doing.
+async function loadGusto() {
+  const card = document.getElementById("gusto-card");
+  if (!card) return;
+  if (SSCrm.role() !== "admin") { card.remove(); return; }
+  try {
+    const d = await SSCrm.fetchJSON("/api/payouts");
+    const soon = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+    const tasks = d.gusto.tasks.filter((t) => t.priority === "high" || (t.due_at && t.due_at <= soon));
+    if (!d.owed_cents && !d.prepared_cents && !tasks.length) { card.remove(); return; }
+    const e = SSCrm.esc;
+    const row = (label, val, href) => `<a href="${href}" style="display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line-soft);font-size:13px;color:var(--ink);text-decoration:none;min-height:44px;align-items:center">${label}<strong style="font-variant-numeric:tabular-nums;white-space:nowrap">${val}</strong></a>`;
+    card.querySelector("div:last-child").innerHTML =
+      (d.owed_cents ? row("Crew pay owed, not yet in Gusto", SSCrm.fmtMoney(d.owed_cents), "/crm/payouts.html") : "") +
+      (d.prepared_cents ? row("Ready to submit in Gusto", SSCrm.fmtMoney(d.prepared_cents), "https://app.gusto.com/pay") : "") +
+      tasks.map((t) => row(e(t.title.replace(/\s+/g, " ")), t.due_at ? "due " + SSCrm.fmtDay(t.due_at) : "to do", "/crm/payouts.html")).join("");
+    card.hidden = false;
+  } catch (_) { card.remove(); }
+}
 
 // True site traffic from Cloudflare's edge — loaded separately so a slow
 // external call never blocks the dashboard. Immune to blockers/GA filters.

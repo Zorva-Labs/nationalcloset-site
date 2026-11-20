@@ -19,6 +19,7 @@ const NAV = [
   { href: "/crm/contracts.html", label: "Contracts", icon: iconDoc() },
   { href: "/crm/invoices.html", label: "Invoices", icon: iconInvoice() },
   { href: "/crm/expenses.html", label: "Expenses / Bills", icon: iconExpense() },
+  { href: "/crm/payouts.html", label: "Crew pay & Gusto", icon: iconPay() },
   { href: "/crm/team.html", label: "Team", icon: iconUsers() },
   { href: "/crm/templates.html", label: "Templates", icon: iconMail() },
   { href: "/crm/activity.html", label: "Activity", icon: iconActivity() },
@@ -81,7 +82,7 @@ const NAV_GROUPS = [
   { label: null, items: ["/crm/", "/crm/pipeline.html", "/crm/inbox.html"] },
   { label: "Address book", items: ["/crm/contacts.html", "/crm/vendors.html"] },
   { label: "Leads & jobs", items: ["/crm/leads.html", "/crm/calls.html", "/crm/projects.html"] },
-  { label: "Sales", items: ["/crm/estimates.html", "/crm/proposals.html", "/crm/contracts.html", "/crm/invoices.html", "/crm/expenses.html"] },
+  { label: "Sales", items: ["/crm/estimates.html", "/crm/proposals.html", "/crm/contracts.html", "/crm/invoices.html", "/crm/expenses.html", "/crm/payouts.html"] },
   { label: "Operations", items: ["/crm/calendar.html"] },
   { label: "Insights", items: ["/crm/reports.html", "/crm/traffic.html"] },
   { label: "Setup", items: ["/crm/team.html", "/crm/templates.html", "/crm/activity.html"] },
@@ -583,6 +584,7 @@ function iconTraffic() { return `<svg width="14" height="14" viewBox="0 0 24 24"
 function iconSearch() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`; }
 function iconInvoice() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>`; }
 function iconExpense() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`; }
+function iconPay() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>`; }
 function iconTruck() { return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`; }
 
 // Export

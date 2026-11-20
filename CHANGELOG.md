@@ -3,6 +3,14 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-20 — Crew pay and Gusto in the CRM
+
+- **Asked (Michael):** link Gusto's payments, contractors and the rest to the CRM ("build out everything you can"), after moving NCC to per-job contractor pay with no more W-2 payroll.
+- **Built:** migration 0090 (crew pay columns on `expenses`, `team_members.gusto_contractor_uuid` with Mike, Riley and Michael linked, and the `gusto_*` tables; applied to the live D1). `/api/payouts` (admin only). A Crew pay card on each job's Overview, a new `/crm/payouts` page (Crew pay & Gusto, in the menu under Sales for admins), a dashboard card when something is owed or a Gusto to-do is due, Gusto tags and four new categories on Expenses. `tools/crm/gusto.mjs` (`status`, `owed`, `mark-prepared`, `unprepare`, `ingest`), and the scheduled task `ncc-gusto-sync`, daily at 7:10 CT.
+- **First sync (live):** the three contractors, Riley's $750 payment of Nov 13 (now a paid Contractor pay bill), the two W-2 payrolls ($1,536.24 on Nov 13 and $1,843.47 on Nov 27, paid Payroll bills, so Cash flow has them) and Gusto's seven to-dos. Ran twice to confirm it adds nothing twice.
+- **Checked:** at 375px in a local CRM with test data, no overflow and no text under 4.5:1; a sales login gets 403 from `/api/payouts`; the bill matching on a single bill, two prepared bills and no match. Deployed; `/crm/payouts` serves.
+- **Still owed:** Michael's standing pay-date rule for contractor payments; until then the daily task reports what is owed and prepares nothing. Gusto: the duplicate company to close, the bank descriptor "McCarthy Enterprises", the 1099 review due Dec 18, the workers' comp quote.
+
 ## 2026-11-19 — Proposal check-in to Steve Studzinski
 
 - **Asked (Michael):** email Steve Studzinski from National Closet Company to see if he received the proposal and has any questions.

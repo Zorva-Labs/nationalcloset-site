@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Crew pay &amp; Gusto · National Closet Company CRM</title><meta name="robots" content="noindex, nofollow"/>
+<link rel="stylesheet" href="/crm/crm-app.css?v=ncc126"/>
+<style>
+  .po-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+  .po-tile{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+  .po-tile .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft)}
+  .po-tile .v{font-size:22px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;margin-top:4px}
+  .po-tile .s{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .po-sec{margin:22px 0 10px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .po-sec h2{font-size:15px;margin:0;color:var(--ink)}
+  .po-sec .muted{font-size:12px}
+  .po-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+  .po-filters{display:inline-flex;gap:4px;background:var(--bg-soft);border:1px solid var(--line);border-radius:999px;padding:4px;flex-wrap:wrap}
+  .po-filter{border:0;background:transparent;font:inherit;font-size:13px;font-weight:600;color:var(--ink-soft);padding:7px 14px;border-radius:999px;cursor:pointer;min-height:36px}
+  .po-filter.is-active{background:var(--bg);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .po-task{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-top:1px solid var(--line-soft);font-size:13px}
+  .po-task:first-child{border-top:0}
+  .po-task strong{color:var(--ink)}
+  .po-how{font-size:13px;line-height:1.6;color:var(--ink-soft);max-width:760px}
+  .po-how ol{padding-left:20px;margin:6px 0}
+  .tbl{overflow-x:auto}
+</style></head>
+<body>
+<script src="/crm/crm-app.js?v=ncc121"></script>
+<script>
+// Crew pay & Gusto (Michael, 2026-11-20). Admin only — the server refuses
+// /api/payouts to every other role (_lib/roles.js). Gusto's side is written by
+// tools/crm/gusto.mjs, which runs on Michael's Mac once a day through the Gusto
+// connector; this page only reads it. Nothing here moves money.
+const PAY_STATE = {
+  owed:     { label: "Owed",                     bg: "#FEF3C7", fg: "#92400E" },
+  prepared: { label: "Ready to submit in Gusto", bg: "#E0E7FF", fg: "#3730A3" },
+  paid:     { label: "Paid",                     bg: "#DCFCE7", fg: "#166534" },
+};
+const GUSTO = "https://app.gusto.com";
+let data = null, filter = "open";
+const e = (s) => SSCrm.esc(s), money = (c) => SSCrm.fmtMoney(c);
+const badge = (label, bg, fg) => `<span class="po-badge" style="background:${bg};color:${fg}">${e(label)}</span>`;
+
+(async () => {
+  const user = await SSCrm.mount({ title: "Crew pay & Gusto", subtitle: "What each person is owed per job, and what Gusto has paid", wide: true,
+    actions: `<a class="btn secondary" href="${GUSTO}/pay" target="_blank" rel="noopener">Open Gusto ↗</a>` });
+  if (!user) return;
+  window._page = document.getElementById("page");
+  load();
+})();
+
+async function load() {
+  try { data = await SSCrm.fetchJSON("/api/payouts"); }
+  catch (err) { _page.innerHTML = `<div class="tbl"><div class="empty">Couldn't load: ${e(err.message)}</div></div>`; return; }
+  render();
+}
+
+function render() {
+  const g = data.gusto;
+  const ytd = g.payments.filter((p) => p.status === "Funded" && (p.pay_date || "").startsWith(data.year)).reduce((a, p) => a + p.total_cents, 0);
+  const sync = g.last_sync ? SSCrm.fmtDateTime(g.last_sync.ran_at.replace(" ", "T") + "Z") : "never";
+  const high = g.tasks.filter((t) => t.priority === "high");
+  _page.innerHTML = `
+    <div class="po-tiles">
+      <div class="po-tile"><div class="k">Owed, not yet in Gusto</div><div class="v" style="color:${data.owed_cents ? "#92400E" : "var(--ink)"}">${money(data.owed_cents)}</div><div class="s">waiting to go into Gusto</div></div>
+      <div class="po-tile"><div class="k">Ready to submit in Gusto</div><div class="v" style="color:${data.prepared_cents ? "#3730A3" : "var(--ink)"}">${money(data.prepared_cents)}</div><div class="s">${data.prepared_cents ? `<a href="${GUSTO}/pay" target="_blank" rel="noopener">review and submit ↗</a>` : "nothing waiting"}</div></div>
+      <div class="po-tile"><div class="k">Contractors paid ${e(data.year)}</div><div class="v">${money(ytd)}</div><div class="s">funded through Gusto</div></div>
+      <div class="po-tile"><div class="k">Gusto to-dos</div><div class="v" style="color:${high.length ? "#B91C1C" : "var(--ink)"}">${g.tasks.length}</div><div class="s">${high.length ? high.length + " high priority" : "none urgent"} · synced ${e(sync)}</div></div>
+    </div>
+
+    <div class="po-sec"><h2>Crew pay</h2><span class="muted">entered on each job's Overview, once the work is done</span>
+      <div class="po-filters" style="margin-left:auto">${[["open", "Not paid"], ["paid", "Paid"], ["all", "All"]].map(([k, l]) => `<button class="po-filter ${filter === k ? "is-active" : ""}" onclick="filter='${k}';render()">${l}</button>`).join("")}</div>
+    </div>
+    ${payoutTable()}
+
+    <div class="po-sec"><h2>Gusto to-dos</h2><span class="muted">deadlines and filings Gusto is asking for</span></div>
+    ${g.tasks.length ? `<div class="card" style="padding:0">${g.tasks.map((t) => `
+      <div class="po-task">
+        <div style="flex:none;margin-top:1px">${t.priority === "high" ? badge("High", "#FEE2E2", "#991B1B") : badge(t.priority || "—", "#F1F5F9", "#334155")}</div>
+        <div style="flex:1;min-width:0"><strong>${e(t.title.replace(/\s+/g, " "))}</strong>${t.due_at ? ` <span class="muted">· due ${SSCrm.fmtDay(t.due_at)}</span>` : ""}<div class="muted" style="font-size:12px;margin-top:2px">${e(t.message || "")}</div></div>
+        ${t.deep_link ? `<a class="btn ghost sm" style="min-height:44px;display:inline-flex;align-items:center" href="${e(t.deep_link)}" target="_blank" rel="noopener">Open ↗</a>` : ""}
+      </div>`).join("")}</div>` : `<div class="tbl"><div class="empty">No Gusto to-dos as of the last sync.</div></div>`}
+
+    <div class="po-sec"><h2>Contractors</h2><span class="muted">the 1099 figure is this year's funded payments</span></div>
+    ${g.contractors.length ? `<div class="tbl"><table>
+      <thead><tr><th>Contractor</th><th>Department</th><th>W-9 &amp; onboarding</th><th>Paid by</th><th>On the CRM roster</th><th class="num">Paid ${e(data.year)}</th></tr></thead>
+      <tbody>${g.contractors.map((c) => `<tr>
+        <td><strong>${e(c.name)}</strong>${c.kind === "Business" ? ` <span class="muted" style="font-size:12px">· business</span>` : ""}${c.is_active ? "" : ` ${badge("Inactive", "#F1F5F9", "#334155")}`}</td>
+        <td>${e(c.department || "—")}</td>
+        <td>${c.onboarded ? badge("Complete", "#DCFCE7", "#166534") : badge((c.onboarding_status || "not started").replace(/_/g, " "), "#FEF3C7", "#92400E")}</td>
+        <td class="muted">${e(c.payment_method || "—")}</td>
+        <td>${c.team_name ? e(c.team_name) : `<span class="muted">not linked</span>`}</td>
+        <td class="money">${money(c.ytd_paid_cents)}</td>
+      </tr>`).join("")}</tbody></table></div>` : `<div class="tbl"><div class="empty">No contractors yet — the first sync fills this in.</div></div>`}
+
+    <div class="po-sec"><h2>Gusto contractor payments</h2></div>
+    ${g.payments.length ? `<div class="tbl"><table>
+      <thead><tr><th>Date</th><th>Contractor</th><th>Job</th><th>Status</th><th class="num">Amount</th></tr></thead>
+      <tbody>${g.payments.map((p) => `<tr>
+        <td class="muted">${SSCrm.fmtDay(p.pay_date)}</td>
+        <td><strong>${e(p.contractor_name || "—")}</strong></td>
+        <td>${p.project_id ? `<a href="/crm/project.html?id=${p.project_id}">${e(p.project_name || "Job #" + p.project_id)}</a>` : `<span class="muted">—</span>`}</td>
+        <td>${p.status === "Funded" ? badge("Funded", "#DCFCE7", "#166534") : badge(p.status || "—", "#FEF3C7", "#92400E")}</td>
+        <td class="money">${money(p.total_cents)}</td>
+      </tr>`).join("")}</tbody></table></div>` : `<div class="tbl"><div class="empty">No contractor payments yet.</div></div>`}
+
+    ${g.payrolls.length ? `
+    <div class="po-sec"><h2>W-2 payroll</h2><span class="muted">ended Nov 27, 2026 — everyone since is a contractor paid per job</span></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Pay period</th><th>Check date</th><th>Status</th><th class="num">Gross</th><th class="num">Employer taxes</th><th class="num">Withdrawn</th></tr></thead>
+      <tbody>${g.payrolls.map((p) => `<tr>
+        <td>${SSCrm.fmtDay(p.period_start)} – ${SSCrm.fmtDay(p.period_end)}</td>
+        <td class="muted">${SSCrm.fmtDay(p.check_date)}</td>
+        <td>${p.processed ? badge("Submitted", "#DCFCE7", "#166534") : badge("Not run", "#FEF3C7", "#92400E")}</td>
+        <td class="money">${money(p.gross_cents)}</td>
+        <td class="money">${money(p.employer_tax_cents)}</td>
+        <td class="money">${money(p.company_debit_cents)}</td>
+      </tr>`).join("")}</tbody></table></div>` : ""}
+
+    <div class="po-sec"><h2>How it works</h2></div>
+    <div class="po-how card">
+      <ol>
+        <li>When a job is complete, open it and add each person's pay under <strong>Crew pay</strong> on the Overview. It is a bill right away, so Payables and Cash flow count it.</li>
+        <li>A contractor payment is prepared in Gusto for everything owed (from Michael's Mac, through the Gusto connector) and the crew pay shows <em>Ready to submit in Gusto</em>. Gusto pays no one until a person submits it there.</li>
+        <li>Submit it in Gusto. When Gusto funds it, the next sync marks the crew pay <em>Paid</em> and records the payment, so the bill closes on its own.</li>
+      </ol>
+      <p style="margin:6px 0 0">Payments made in Gusto without a crew pay entry (Michael's monthly, for one) come in as paid bills under <em>Contractor pay</em>. Last sync: ${e(sync)}${g.last_sync && g.last_sync.summary ? ` — ${e(g.last_sync.summary)}` : ""}.</p>
+    </div>`;
+}
+
+function payoutTable() {
+  const all = data.payouts;
+  const rows = filter === "all" ? all : filter === "paid" ? all.filter((p) => p.gusto_status === "paid") : all.filter((p) => p.gusto_status !== "paid");
+  if (!rows.length) return `<div class="tbl"><div class="empty">${filter === "paid" ? "Nothing paid through crew pay yet." : "Nobody is owed anything right now."}</div></div>`;
+  return `<div class="tbl"><table>
+    <thead><tr><th>Person</th><th>Job</th><th>Kind</th><th>Entered</th><th>Status</th><th class="num">Amount</th><th></th></tr></thead>
+    <tbody>${rows.map((p) => { const st = PAY_STATE[p.gusto_status] || PAY_STATE.owed; return `<tr>
+      <td><strong>${e(p.person || p.vendor || "—")}</strong>${p.gusto_contractor_uuid ? "" : `<div class="muted" style="font-size:12px">not in Gusto — pay outside it</div>`}${p.notes ? `<div class="muted" style="font-size:12px">${e(p.notes)}</div>` : ""}</td>
+      <td>${p.project_id ? `<a href="/crm/project.html?id=${p.project_id}">${e(p.project_name || "Job #" + p.project_id)}</a>` : "—"}</td>
+      <td>${e(p.category)}</td>
+      <td class="muted">${SSCrm.fmtDay(p.bill_date)}</td>
+      <td>${badge(st.label + (p.gusto_status === "paid" && p.paid_at ? " " + SSCrm.fmtDate(p.paid_at) : ""), st.bg, st.fg)}</td>
+      <td class="money">${money(p.amount_cents)}</td>
+      <td>${p.gusto_status === "owed" ? `<button class="btn ghost sm" style="min-width:44px;min-height:44px" aria-label="Remove" title="Remove" onclick="removePayout(${p.id})">✕</button>` : ""}</td>
+    </tr>`; }).join("")}</tbody></table></div>`;
+}
+
+async function removePayout(pid) {
+  if (!confirm("Remove this crew pay entry?")) return;
+  try { await SSCrm.fetchJSON("/api/payouts/" + pid, { method: "DELETE" }); load(); }
+  catch (err) { SSCrm.toast(err.message, "error"); }
+}
+</script>
+</body></html>

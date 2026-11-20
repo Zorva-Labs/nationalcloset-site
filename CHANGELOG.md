@@ -3,6 +3,14 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-20 — Checks payable to National Closet Company
+
+- **Asked (Michael):** "Checks should be made payable to National Closet Company," after the Stripe account itself was changed over to the new company under Terry McCarthy with payouts to the new bank (done by Michael in the Stripe Dashboard).
+- **Done:** "James Blair" → "National Closet Company" as the check payee everywhere it appeared: the invoice page's Pay by check panel, the invoice email and the part-payment receipt (`functions/_lib/invoices.js`), the CRM's printed invoice, the proposal's payment note, the contract's payment schedule (`_lib/lifecycle.js`, `api/contracts/index.js`) and the contract email (`api/contracts/[id]/send.js`), `calc.html`, `docs/content.md`, `docs/crm.md` and `CLAUDE.md`. No email or document template in the D1 and no stored contract carried the old name, so nothing in the database changed; contracts already signed keep their own text.
+- **Stripe, read-only check:** the account the CRM uses (`acct_1TdEjnFwmijYgch1`) reads National Closet Company, descriptor NATIONAL CLOSET CO, charges and payouts on, nothing due; webhook `we_1TdHFBFwmijYgch1BjjjYtxE` enabled; the 11-19 payment went through after the change. The keys and webhook secret are unchanged, so nothing to swap.
+- **Checked:** the check panel at 375px (fits, no overflow); deployed, and the live invoice page and `calc.html` carry the new payee.
+- **Still owed:** every payout so far went to SoFi …6141; Stripe's API can't show the new default bank until the next payout ($8,208.65 pending), so confirm in the Dashboard (Settings → Payouts) that the new account is the USD default. The payee's color on the check panel (clay on fog, about 4.1:1 at 18px bold) is under 4.5:1, unchanged by this edit.
+
 ## 2026-11-20 — Property records removed from the CRM
 
 - **Asked (Michael):** "remove property record, it doesn't work."

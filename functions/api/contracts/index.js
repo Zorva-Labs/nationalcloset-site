@@ -9,7 +9,7 @@ const TERMS_BY_TYPE = {
 <p>All custom closets, cabinetry and storage systems listed in this agreement are made-to-order. Manufacturer lead times typically run two to six weeks from order placement. We will keep you informed of any changes to the schedule.</p>
 
 <h3>Deposit &amp; Payment</h3>
-<p>The total contract price is paid in three installments: 50% at signing (the deposit), which releases the order to our manufacturing partners; 25% when all materials have arrived and the installation date is set; and 25% on the day of installation. You may pay in full at signing or at any point afterward, and you may pay any installment early, with no penalty or added fee. Payments are made online by card, bank transfer (ACH) or digital wallet, with no added processing fee, or by check payable to James Blair, handed to your Project Manager.</p>
+<p>The total contract price is paid in three installments: 50% at signing (the deposit), which releases the order to our manufacturing partners; 25% when all materials have arrived and the installation date is set; and 25% on the day of installation. You may pay in full at signing or at any point afterward, and you may pay any installment early, with no penalty or added fee. Payments are made online by card, bank transfer (ACH) or digital wallet, with no added processing fee, or by check payable to National Closet Company, handed to your Project Manager.</p>
 
 <h3>Measurement &amp; Fit</h3>
 <p>National Closet Company measures every space on-site and is responsible for the fit of any system we build from those measurements. Measurements are taken to the sixteenth of an inch and recorded in this agreement.</p>

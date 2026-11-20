@@ -431,14 +431,14 @@ export async function sendInvoiceEmail(env, invoice, project) {
       </table>
       <p>${invoice.description}.</p>
       ${note}
-      <p>You can pay securely online using the button below — by card, bank transfer (ACH) or digital wallet. Or make your check for <strong>${money(due)}</strong> payable to <strong>James Blair</strong> and hand it to your Project Manager.</p>
+      <p>You can pay securely online using the button below — by card, bank transfer (ACH) or digital wallet. Or make your check for <strong>${money(due)}</strong> payable to <strong>National Closet Company</strong> and hand it to your Project Manager.</p>
     `,
     ctaLabel: `Pay ${money(due)}`,
     ctaUrl: payUrl,
   });
   const text = `Invoice ${invoice.number}: ${money(due)} due.`
     + (disc > 0 ? `\nIncludes a ${money(disc)} discount${project.final_discount_note ? ` (${project.final_discount_note})` : ""}.` : "")
-    + (noteText ? `\n${noteText}` : "") + `\nPay securely online: ${payUrl}\nOr pay by check, payable to James Blair, handed to your Project Manager.`;
+    + (noteText ? `\n${noteText}` : "") + `\nPay securely online: ${payUrl}\nOr pay by check, payable to National Closet Company, handed to your Project Manager.`;
   const messageId = makeMessageId();
   const to = project.contact_name ? `${project.contact_name} <${project.contact_email}>` : project.contact_email;
 
@@ -483,14 +483,14 @@ export async function sendPaymentReceipt(env, invoice, { amountCents, method = "
         <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Paid to date</td><td style="padding:4px 0">${money(paid)}</td></tr>
         <tr><td style="padding:4px 16px 4px 0;color:#6B6457">Balance due</td><td style="padding:4px 0;font-weight:700;font-size:18px">${money(balance)}</td></tr>
       </table>
-      <p>Your remaining balance of <strong>${money(balance)}</strong> can be paid online anytime using the button below, or by check payable to <strong>James Blair</strong>, handed to your Project Manager.</p>
+      <p>Your remaining balance of <strong>${money(balance)}</strong> can be paid online anytime using the button below, or by check payable to <strong>National Closet Company</strong>, handed to your Project Manager.</p>
     `,
     ctaLabel: `Pay remaining ${money(balance)}`,
     ctaUrl: `${SITE_URL}/invoice/?t=${invoice.view_token}`,
   });
   const text = `Payment received: ${money(amountCents)} toward ${invoice.number}.\n`
     + `Paid to date: ${money(paid)} of ${money(total)}.\nBalance due: ${money(balance)}.\n`
-    + `Pay the remaining balance online: ${SITE_URL}/invoice/?t=${invoice.view_token}\nOr by check, payable to James Blair.`;
+    + `Pay the remaining balance online: ${SITE_URL}/invoice/?t=${invoice.view_token}\nOr by check, payable to National Closet Company.`;
   const messageId = makeMessageId();
   const to = project.contact_name ? `${project.contact_name} <${project.contact_email}>` : project.contact_email;
   const res = await sendEmail(env, { to, subject, html, text, messageId });

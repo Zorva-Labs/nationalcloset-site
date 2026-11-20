@@ -228,6 +228,24 @@ export async function createInvoice(env, opts) {
     if (dupe) return { invoice: dupe, deduped: true };
   }
 
+  /* 50/25/25 always (Michael, 2026-11-20: "make sure the invoices are still set
+     for 50/25/25"). The final payment never goes out without the 25% scheduling
+     payment before it. A job moved straight to Installing (the stage bar, "Start
+     install now", the cron on install day, completion) or booked for today used
+     to bill the whole remaining 50% as one "Final payment" (jobs 44 and 72 on
+     2026-11-16). Now the scheduling invoice is raised first, so the balance
+     bills the last 25%. Only the "Invoice the full remaining balance" box
+     (`early`) skips it, and a scheduling invoice someone voided stays voided. */
+  if (type === "balance" && !opts.early && opts.amountCents == null && billing.paymentPlan !== "full") {
+    const sched = await db.prepare(
+      `SELECT id FROM invoices WHERE project_id=?1 AND type='scheduling' LIMIT 1`
+    ).bind(projectId).first().catch(() => null);
+    if (!sched) {
+      await createInvoice(env, { projectId, type: "scheduling", actor: opts.actor, send: opts.send })
+        .catch((e) => console.error("[invoice/scheduling-before-balance]", String(e)));
+    }
+  }
+
   const project = await db.prepare(
     `SELECT p.*, c.name AS contact_name, c.email AS contact_email
        FROM projects p JOIN contacts c ON c.id=p.contact_id WHERE p.id=?1`

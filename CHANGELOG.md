@@ -3,6 +3,13 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-20 — 50/25/25 held on every job: the 25% scheduling invoice before the final one
+
+- **Asked (Michael):** "make sure the invoices are still set for 50/25/25, the most recent ones did not ask for 25% on schedule."
+- **Found:** jobs 44 (Lesia Wood) and 72 (Brad Lay) were moved straight to Installing on 2026-11-16 from the stage bar, without going through Scheduled. The scheduling invoice was only raised when an install date was first picked, so each got one "Final payment" invoice for the whole remaining half: INV-2026-0044 ($5,528.60, 50%, open; install 11-23) and INV-2026-0043 ($9,415.69, 48% after the $596.75 wall-mount discount, open; install 11-18). Job 79 (Kirkendall), scheduled the normal way on 11-17, got its 25% (INV-2026-0045). Jobs 52 and 69 in October billed 50% at scheduling because the "Invoice the full remaining balance" box was ticked, which is by design.
+- **Fixed:** `createInvoice` (`functions/_lib/invoices.js`) now raises the 25% scheduling invoice before any balance invoice on a job that has none, whatever moved the job (the stage button, "Start install now", the install-day cron, completion, an install date of today, which used to bill 50% in one invoice too). Only the full-balance box skips it; a scheduling invoice someone voided is not raised again. Tested on a copy of the local test D1: straight to Installing → 50% paid, 25% scheduling, 25% final; the normal path unchanged; the box → one 50% invoice; a second balance call adds nothing.
+- **Still owed:** the two open invoices above were left as they are; splitting each into 25% + 25% means voiding it and emailing the customer two new ones, on Michael's yes.
+
 ## 2026-11-20 — Checks payable to National Closet Company
 
 - **Asked (Michael):** "Checks should be made payable to National Closet Company," after the Stripe account itself was changed over to the new company under Terry McCarthy with payouts to the new bank (done by Michael in the Stripe Dashboard).

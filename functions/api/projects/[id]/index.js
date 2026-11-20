@@ -176,14 +176,12 @@ export async function onRequestPatch(context) {
   let billEarly = false;
   // Setting the install date for the first time = the install is scheduled.
   if (body.install_date !== undefined && body.install_date && !prevInstallDate) {
-    /* ...unless that date is today or already gone. The schedule bills 25% when
-       the install is booked and the final 25% on the day itself; when both land
-       on the same day there is no gap to bill across, so raise ONE invoice for
-       the whole remainder rather than sending a customer 25% in the morning and
-       the rest that afternoon. `balance` bills everything still uninvoiced and
-       dedups against the invoice the installing/completed hop below would
-       otherwise raise, so a same-day install that also starts in this PATCH
-       still produces exactly one. */
+    /* ...unless that date is today or already gone: then `balance`, which
+       (since 2026-11-20, Michael: 50/25/25 always) raises the 25% scheduling
+       invoice first and bills the last 25% itself, so the customer gets the two
+       payments as two invoices, never one for 50%. It dedups against the
+       invoice the installing/completed hop below would otherwise raise, so a
+       same-day install that also starts in this PATCH bills each once. */
     // slice(0,10): the column holds a plain YYYY-MM-DD, and a value that ever
     // arrived with a time on it would sort AFTER the bare date and read as
     // future — billing 25% on the morning of the install.

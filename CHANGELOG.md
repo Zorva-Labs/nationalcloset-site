@@ -3,6 +3,14 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-20 — Blair Custom Interiors added to Gusto; $1,000 install pay on Brad Lay's job
+- **Asked (Michael):** "Setup Blair Custom Interior as a vendor to pay", contact Noah Blair, (615) 982-0074; then "pay noah $1,000.00 for installation on Brad Lay Job. 11/20/2026".
+- **Name and email:** Michael wrote "Blair Custom Interior" and blaircustominterior@gmail.com. The CRM's vendor #11 (Noah Blair, since 2026-10-13) has "Blair Custom Interiors" and blaircustominteriors@gmail.com, and Michael confirmed the "s" spelling for both.
+- **Gusto:** a business contractor in National Closet Company (`af5d38c7-…`), uuid `a3f0b778-6d4a-4aed-a38d-3603cf1b5836`, fixed pay, start 2026-11-20. The self-onboarding invite went to blaircustominteriors@gmail.com on Michael's yes. Until Noah enters the W-9, EIN, address and bank, Gusto shows him as invited and can pay him only by check.
+- **CRM:** team member #8 "Blair Custom Interiors" (role Installer, linked to the Gusto uuid) and a note on vendor #11. Crew pay bill #7 on job #72 (Multiple Spaces — Brad Lay), $1,000, note "Installation 11/20/2026", through `/api/payouts`, status **owed**.
+- **Gusto, the painter's $450 (bill #6):** submitted, payday 11/23, by direct deposit (Unfunded on 11-20). The daily sync closes bill #6 once Gusto shows it Funded.
+- **Still owed:** Michael's choice on Noah's $1,000: a check now, or direct deposit once he has onboarded. Nothing is prepared in Gusto yet. After the draft exists, run `node tools/crm/gusto.mjs mark-prepared 7`.
+
 ## 2026-11-20 — $450 to Nashville Paint Co for Lesia Wood's paint and repair, prepared in Gusto
 - **Asked (Michael):** "pay Johnny - Nashville Paint Co. - $450 for Lesia Wood 11/20/2026 Paint and Repair", soonest possible.
 - **CRM:** crew pay bill #6 on job #44 (Walk-In Closet — Lesia Wood), Nashville Paint Co, $450, note "Paint and repair 11/20/2026", through `/api/payouts`; marked prepared (`gusto.mjs mark-prepared 6`).

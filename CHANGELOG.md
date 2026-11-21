@@ -9,7 +9,8 @@ Newest first. One entry per session that changed this repo: what changed, why, w
 - **Gusto:** a business contractor in National Closet Company (`af5d38c7-…`), uuid `a3f0b778-6d4a-4aed-a38d-3603cf1b5836`, fixed pay, start 2026-11-20. The self-onboarding invite went to blaircustominteriors@gmail.com on Michael's yes. Until Noah enters the W-9, EIN, address and bank, Gusto shows him as invited and can pay him only by check.
 - **CRM:** team member #8 "Blair Custom Interiors" (role Installer, linked to the Gusto uuid) and a note on vendor #11. Crew pay bill #7 on job #72 (Multiple Spaces — Brad Lay), $1,000, note "Installation 11/20/2026", through `/api/payouts`, status **owed**.
 - **Gusto, the painter's $450 (bill #6):** submitted, payday 11/23, by direct deposit (Unfunded on 11-20). The daily sync closes bill #6 once Gusto shows it Funded.
-- **Still owed:** Michael's choice on Noah's $1,000: a check now, or direct deposit once he has onboarded. Nothing is prepared in Gusto yet. After the draft exists, run `node tools/crm/gusto.mjs mark-prepared 7`.
+- **Noah onboarded** the same afternoon (EIN, direct deposit). Gusto turned down a payday of 11/20 (the earliest direct deposit was Tue 11/24), and Michael picked 11/24. The ad-hoc draft is Blair Custom Interiors, $1,000.00 by direct deposit, note "Installation - Brad Lay 11/20/2026", payday Tue 11/24, debit Mon 11/23, one-day ACH, $1,000.00 for Gusto to withdraw. Bill #7 marked prepared (`gusto.mjs mark-prepared 7`).
+- **Still owed:** Michael submits the draft in Gusto (the secure panel couldn't open here). If it's discarded, run `node tools/crm/gusto.mjs unprepare 7`. The daily sync closes bill #7 once Gusto shows it Funded.
 
 ## 2026-11-20 — $450 to Nashville Paint Co for Lesia Wood's paint and repair, prepared in Gusto
 - **Asked (Michael):** "pay Johnny - Nashville Paint Co. - $450 for Lesia Wood 11/20/2026 Paint and Repair", soonest possible.

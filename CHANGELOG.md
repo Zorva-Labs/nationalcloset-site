@@ -3,6 +3,12 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-24 — $810 install pay to Mike Cornwell on Lesia Wood's job, prepared in Gusto
+- **Asked (Michael):** "pay Mike Cornwell $810 for Leisa Wood Job 11/23/2026 and 11/24/2026. do this in crm and gusto." (The CRM spells her Lesia.)
+- **CRM:** crew pay bill #13 on job #44 (Walk-In Closet — Lesia Wood), Mike Cornwell (team member #5, Gusto `aebb6c6f-…`), $810.00, note "Installation 11/23/2026 and 11/24/2026", through `/api/payouts`; marked prepared (`gusto.mjs mark-prepared 13`).
+- **Gusto (gusto.com in Michael's Chrome):** Pay → Pay US contractors, Cornwell, Michael (Mike), flat amount $810.00, note "Installation - Lesia Wood 11/23/2026 and 11/24/2026", direct deposit, next-day speed, payday Wed 11/25, withdrawal Tue 11/24 from Firstbank checking …8451. Stopped at the review step, **not submitted**. Michael's $108 reimbursement (bill #8) had already been submitted (Gusto: confirmed for 11/25).
+- **Still owed:** Michael presses Submit payments in Gusto. If the draft is discarded, `node tools/crm/gusto.mjs unprepare 13`. The daily sync closes bill #13 once Gusto shows it Funded.
+
 ## 2026-11-24 — Brad Lay's job marked complete, no mail to him
 - **Asked (Michael):** "set Brad Lay job as complete without emailing him."
 - **CRM:** job #72 (Multiple Spaces — Brad Lay) set from installing to completed straight in the D1, not through the CRM's Complete, which sends the "completed" stage email, runs `billOnCompletion` and lets the review sweep send the Google review request 12 hours later. `review_requested_at` is stamped so that sweep skips him; an activity-log entry on the job records the change. Nothing was owed: the deposit INV-2026-0033 ($10,012.44) and final INV-2026-0043 ($9,415.69) are both paid.

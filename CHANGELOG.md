@@ -3,6 +3,12 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-24 — Jeremy Hale added to Gusto as an installer
+- **Asked (Michael):** "add Jeremy Hale as a 1099 sub contractor. +1 (931) 629-5988 Spiralhcustoms@gmail.com. send him the email to be onboarded", then "he is an installer".
+- **Gusto:** added on gusto.com in Michael's Chrome (the connector can't add people): Contractor (Individual), so his 1099 goes under his SSN, not a business EIN; start 2026-11-24, department Installation, job title Installer, no hourly rate (flat payments per job), no contractor agreement. uuid `bfb31c5d-2367-4016-bb44-6ec3d2873d17`. The self-onboarding invite went to spiralhcustoms@gmail.com. Until he enters his W-9, address and bank, Gusto can pay him only by check.
+- **CRM:** team member #9 "Jeremy Hale", role Installer, email and phone as given, linked to the Gusto uuid, so crew pay can go on a job for him. No CRM sign-in was made.
+- **Still owed:** Jeremy finishes onboarding in Gusto. If he works as a business (the email reads "Spiral H Customs") and wants the 1099 under an EIN, he would have to be re-added in Gusto as a business contractor.
+
 ## 2026-11-24 — $108 reimbursement to Michael Blair for two laser tape measures
 - **Asked (Michael):** "reimburse Michael Blair $108 for two digital laser tape measures purchased from Lowes."
 - **CRM:** bill #8, Michael Blair (team member #1, Gusto contractor `7c7de7a0-…`, direct deposit), category Reimbursement, no job, $108.00, dated 11-24, `gusto_status` owed. It shows on `/crm/payouts` and in Payables. `/api/payouts` requires a job, so the bill went into the D1 directly; `docs/crm.md` → Crew pay and Gusto now says how reimbursements are recorded. `gusto.mjs owed` printed "null" for a bill with no job; it now shows the bill's description.

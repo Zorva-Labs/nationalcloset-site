@@ -63,7 +63,7 @@ async function q(sql, params = []) {
 
 async function owedRows() {
   return q(`SELECT e.id, e.amount_cents - e.amount_paid_cents AS due_cents, e.category, e.bill_date, e.notes,
-                   e.project_id, p.name AS project, t.name AS person, t.gusto_contractor_uuid
+                   e.project_id, COALESCE(p.name, e.description, 'no job') AS project, t.name AS person, t.gusto_contractor_uuid
               FROM expenses e
               LEFT JOIN projects p ON p.id = e.project_id
               LEFT JOIN team_members t ON t.id = e.team_member_id

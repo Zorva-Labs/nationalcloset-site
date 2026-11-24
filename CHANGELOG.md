@@ -3,6 +3,12 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-24 — $108 reimbursement to Michael Blair for two laser tape measures
+- **Asked (Michael):** "reimburse Michael Blair $108 for two digital laser tape measures purchased from Lowes."
+- **CRM:** bill #8, Michael Blair (team member #1, Gusto contractor `7c7de7a0-…`, direct deposit), category Reimbursement, no job, $108.00, dated 11-24, `gusto_status` owed. It shows on `/crm/payouts` and in Payables. `/api/payouts` requires a job, so the bill went into the D1 directly; `docs/crm.md` → Crew pay and Gusto now says how reimbursements are recorded. `gusto.mjs owed` printed "null" for a bill with no job; it now shows the bill's description.
+- **Gusto:** not prepared. This session's Gusto connector has no `pay_contractors` tool, so no draft could be made here.
+- **Still owed:** Michael pays it in Gusto (Pay → Pay contractors → Michael Blair, $108.00 in the Reimbursement column, not wages), then runs `node tools/crm/gusto.mjs mark-prepared 8`, or leaves it: the daily sync closes bill #8 once Gusto shows a Funded $108 payment to him. The Lowe's receipt isn't on file; it belongs with the bill.
+
 ## 2026-11-20 — Blair Custom Interiors added to Gusto; $1,000 install pay on Brad Lay's job
 - **Asked (Michael):** "Setup Blair Custom Interior as a vendor to pay", contact Noah Blair, (615) 982-0074; then "pay noah $1,000.00 for installation on Brad Lay Job. 11/20/2026".
 - **Name and email:** Michael wrote "Blair Custom Interior" and blaircustominterior@gmail.com. The CRM's vendor #11 (Noah Blair, since 2026-10-13) has "Blair Custom Interiors" and blaircustominteriors@gmail.com, and Michael confirmed the "s" spelling for both.

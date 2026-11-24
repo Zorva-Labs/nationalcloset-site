@@ -3,6 +3,12 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-24 — $450 to Nashville Paint Co (Johnny Bowling) on Helena Kirkendall's job
+- **Asked (Michael):** "pay Johnny Bowling $450 for Helena Kirkendall job 11/24/2026 in crm and in gusto." Johnny Bowling is the contact for Nashville Paint Co (team member #7, Gusto business contractor `3dc12f0a-…`).
+- **CRM:** bill #15, Crew pay, Nashville Paint Co, $450, job #79 "Walk-In Closet — Helena Kirkendall" (install 11/25), note "Johnny Bowling, 11/24/2026", with its activity-log entry. Written straight into the D1 the way `POST /api/payouts` writes it, then marked prepared.
+- **Gusto:** checked first: the only payment to Nashville Paint Co this month is the $450 funded on 11/23 (bill #6, Lesia Wood's job), so this is not a duplicate. The $1,620 for Mike Cornwell and Jeremy Hale and the $108 reimbursement were already submitted (Unfunded, payday 11/25), so the draft was empty. Nashville Paint Co's $450 went into it on Gusto's page (Pay → Pay US contractors): flat amount $450, note "Helena Kirkendall job 11/24/2026 - Johnny Bowling". Review shows $450 from Firstbank checking (…8451), withdrawal Tue Nov 24, payday Wed Nov 25. Not submitted.
+- **Still owed:** Michael submits it on Gusto's review page (Submit payments). The daily sync closes bill #15 once Gusto funds it.
+
 ## 2026-11-24 — Jeremy Hale's $810 crew pay on Lesia Wood's job
 - **Asked (Michael):** "pay Jeremy Hale $810 for Leisa Wood Job 11/23/2026 and 11/24/2026. do this in crm and gusto." Asked whether Mike Cornwell's $810 on the same job (bill #13, entered from hello@ minutes earlier and already put in a Gusto draft) was meant to be Jeremy's: "No, both get $810".
 - **CRM:** bill #14, Crew pay, Jeremy Hale (team member #9), $810, job #44 "Walk-In Closet — Lesia Wood", note "Installation 11/23/2026 and 11/24/2026", `gusto_status` owed, with its activity-log entry. It was written straight into the D1 the way `POST /api/payouts` writes it. Bill #13 (Mike Cornwell, $810, prepared) is left as it was.

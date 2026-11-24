@@ -3,6 +3,11 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-24 — Brad Lay's job marked complete, no mail to him
+- **Asked (Michael):** "set Brad Lay job as complete without emailing him."
+- **CRM:** job #72 (Multiple Spaces — Brad Lay) set from installing to completed straight in the D1, not through the CRM's Complete, which sends the "completed" stage email, runs `billOnCompletion` and lets the review sweep send the Google review request 12 hours later. `review_requested_at` is stamped so that sweep skips him; an activity-log entry on the job records the change. Nothing was owed: the deposit INV-2026-0033 ($10,012.44) and final INV-2026-0043 ($9,415.69) are both paid.
+- **Still owed:** nothing. If Michael wants the review request after all, clear `review_requested_at` on job #72.
+
 ## 2026-11-24 — November P&L pieced together; four November bills added to Expenses
 - **Asked (Michael):** "can you give me a profit and loss for November so far?", then "yes search the email from closet parts", then "Yes, add them" (the expenses from Anthony's tracker). Terry asked for the November report on 2026-11-22 ("Monthly P&L Reports", to michael@leadgendigitalmarketing.com) and attached Anthony Potts's `Expense Tracker.xlsx`.
 - **Sources:** NCC keeps its books in Gusto, Stripe and the CRM (Michael: "we dont use quickbooks"). November 1–24, cash basis: $13,890.18 collected (INV-2026-0043 Brad Lay $9,415.69, INV-2026-0047 Steve Studzinski $4,474.49, both card); costs recorded in the CRM and Gusto $6,091.13 (crew pay $1,450, Riley Woodhouse/RAWDAWGS $750, two W-2 payrolls $3,379.71, Stripe fees $403.42, Michael's $108 reimbursement); the tracker's November rows $3,560.75. Net before materials $4,238.30. Reported in the session; no report was written to a file.

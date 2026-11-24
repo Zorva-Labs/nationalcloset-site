@@ -3,6 +3,12 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-24 — Mike Cornwell's pay on Lesia Wood's job raised from $810 to $850
+- **Asked (Michael):** "can we adjust the pay for Mike Cornwell from $810 to $850 on the Leisa Wood job?", then "in gusto too". His $810 (bill #13) was already submitted in Gusto (Unfunded, payday 11/25, cancellable). Michael picked a $40 top-up over cancelling and redoing it, so nothing was cancelled.
+- **CRM:** bill #16, Crew pay, Mike Cornwell (team member #5), $40, job #44, note "Adjustment: installation 11/23/2026 and 11/24/2026 raised from $810 to $850 (bill #13 is the $810)", with its activity-log entry (`adjusts: 13`); marked prepared. Bill #13 stays at $810, so the sync matches each Gusto payment to its own bill by amount.
+- **Gusto:** Nashville Paint Co's $450 (bill #15) had been submitted by Michael in the meantime. Mike's $40 is a new contractor-payment draft: flat amount $40, note "Lesia Wood install 11/23-11/24/2026 - adjustment $810 to $850". Review shows $40 from Firstbank checking (…8451), withdrawal Tue Nov 24, payday Wed Nov 25, next-day speed offered by default (an Instant option is on the page). Not submitted.
+- **Still owed:** Michael submits the $40 on Gusto's review page. The daily sync closes bills #13 and #16 once Gusto funds them.
+
 ## 2026-11-24 — $450 to Nashville Paint Co (Johnny Bowling) on Helena Kirkendall's job
 - **Asked (Michael):** "pay Johnny Bowling $450 for Helena Kirkendall job 11/24/2026 in crm and in gusto." Johnny Bowling is the contact for Nashville Paint Co (team member #7, Gusto business contractor `3dc12f0a-…`).
 - **CRM:** bill #15, Crew pay, Nashville Paint Co, $450, job #79 "Walk-In Closet — Helena Kirkendall" (install 11/25), note "Johnny Bowling, 11/24/2026", with its activity-log entry. Written straight into the D1 the way `POST /api/payouts` writes it, then marked prepared.

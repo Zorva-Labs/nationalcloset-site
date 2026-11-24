@@ -3,6 +3,12 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-24 — Jeremy Hale's $810 crew pay on Lesia Wood's job
+- **Asked (Michael):** "pay Jeremy Hale $810 for Leisa Wood Job 11/23/2026 and 11/24/2026. do this in crm and gusto." Asked whether Mike Cornwell's $810 on the same job (bill #13, entered from hello@ minutes earlier and already put in a Gusto draft) was meant to be Jeremy's: "No, both get $810".
+- **CRM:** bill #14, Crew pay, Jeremy Hale (team member #9), $810, job #44 "Walk-In Closet — Lesia Wood", note "Installation 11/23/2026 and 11/24/2026", `gusto_status` owed, with its activity-log entry. It was written straight into the D1 the way `POST /api/payouts` writes it. Bill #13 (Mike Cornwell, $810, prepared) is left as it was.
+- **Gusto:** Jeremy is onboarded (direct deposit). The connector in this session had no `pay_contractors`, so his payment is not in a Gusto draft yet. Gusto keeps one unsubmitted draft per company, and that draft already holds Michael Blair's $108 reimbursement (bill #8) and Mike Cornwell's $810 (bill #13).
+- **Still owed:** Jeremy's $810 added to that draft (in Gusto, or by `pay_contractors` preview in a session that has it), then `node tools/crm/gusto.mjs mark-prepared 14`; a person submits the draft in Gusto. The daily sync closes bill #14 once Gusto funds it.
+
 ## 2026-11-24 — $810 install pay to Mike Cornwell on Lesia Wood's job, prepared in Gusto
 - **Asked (Michael):** "pay Mike Cornwell $810 for Leisa Wood Job 11/23/2026 and 11/24/2026. do this in crm and gusto." (The CRM spells her Lesia.)
 - **CRM:** crew pay bill #13 on job #44 (Walk-In Closet — Lesia Wood), Mike Cornwell (team member #5, Gusto `aebb6c6f-…`), $810.00, note "Installation 11/23/2026 and 11/24/2026", through `/api/payouts`; marked prepared (`gusto.mjs mark-prepared 13`).

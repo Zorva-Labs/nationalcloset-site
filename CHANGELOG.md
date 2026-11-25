@@ -3,6 +3,12 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-25 — Crew pay on Helena Kirkendall's job: $600 to Mike Cornwell, $450 to Jeremy Hale
+- **Asked (Michael):** "pay Mike Cornwell $600 for Helena Kirkendall 11/25/2026 in the crm and in Gusto. Also pay Jeremy Hale $450 for Helena Kirkendall 11/25/2026 in the crm and in Gusto."
+- **CRM:** bill #17, Crew pay, Mike Cornwell (team member #5), $600, and bill #18, Crew pay, Jeremy Hale (team member #9), $450, both on job #79 "Walk-In Closet — Helena Kirkendall", dated 11/25/2026, note "Installation 11/25/2026", each with its activity-log entry. Written straight into the D1 the way `POST /api/payouts` writes it, then marked prepared.
+- **Gusto:** checked first: neither had a payment for this job (Mike's 11/25 payments are Lesia Wood's $810 and $40; Jeremy's is Lesia Wood's $810). The connector still has no `pay_contractors`, so the draft was made on gusto.com in Michael's Chrome (Pay → Pay US contractors): flat amounts $600 and $450, note "Installation - Helena Kirkendall 11/25/2026" on each. 11/25 is the work date, not the payday: Gusto's earliest payday is now Fri 11/27 (Thursday is the Thanksgiving bank holiday). Review shows $1,050 from Firstbank checking (…8451), withdrawal Wed Nov 25, payday Fri Nov 27, next-day speed (Instant offered). Not submitted.
+- **Still owed:** Michael submits the $1,050 on Gusto's review page (Submit payments). If the draft is discarded, `node tools/crm/gusto.mjs unprepare 17,18`. The daily sync closes bills #17 and #18 once Gusto funds them.
+
 ## 2026-11-24 — Mike Cornwell's pay on Lesia Wood's job raised from $810 to $850
 - **Asked (Michael):** "can we adjust the pay for Mike Cornwell from $810 to $850 on the Leisa Wood job?", then "in gusto too". His $810 (bill #13) was already submitted in Gusto (Unfunded, payday 11/25, cancellable). Michael picked a $40 top-up over cancelling and redoing it, so nothing was cancelled.
 - **CRM:** bill #16, Crew pay, Mike Cornwell (team member #5), $40, job #44, note "Adjustment: installation 11/23/2026 and 11/24/2026 raised from $810 to $850 (bill #13 is the $810)", with its activity-log entry (`adjusts: 13`); marked prepared. Bill #13 stays at $810, so the sync matches each Gusto payment to its own bill by amount.

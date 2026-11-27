@@ -7,7 +7,7 @@ Newest first. One entry per session that changed this repo: what changed, why, w
 - **Reported (Michael):** "HTTP 500 when trying to save address in crm".
 - **Cause:** `leads.email` (and `name`, `phone`) are NOT NULL, and the lead page sends `null` for an empty box. A lead from the two-field form has no email, so every save on it, address included, failed the constraint. Two leads were affected: #105 Victoria McMahon and #112 Jordan Delaney.
 - **Fix:** `PATCH /api/leads/:id` stores an empty email as `""`, refuses an empty name or phone with a 400 ("Phone is required.") instead of saving it, and returns the database's message if an update still fails. Checked live: a no-email save is 200, a blank phone is 400. Deployed.
-- **Still owed:** while testing, a save on #112 Jordan Delaney went out before the phone check and blanked that lead's phone. It is restored once the number is read back from the hello@ "new lead" alert (the CRM's mail sync does not keep that alert).
+- **Test slip, fixed:** while testing, a save on #112 Jordan Delaney went out before the phone check and blanked that lead's phone; Michael read it back from the hello@ new-lead alert and it is restored (3157083201).
 
 ## 2026-11-27 — Alexander Paul Baker added as an installer and sales rep; pay notes on the roster
 - **Asked (Michael):** "add Alexander Paul Baker - Alexbaker.tx@gmail.com - +1 (972) 898-1791 as an installer and as a sales rep. Make a note that his pay is $35 an hour for installs and only commission of 10% for sales in NCC and 20% of margin in NLCC. Add to CRM and to Gusto".

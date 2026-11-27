@@ -10,7 +10,8 @@ import { listTeam } from "../../_lib/team.js";
 export async function onRequestGet(context) {
   const auth = await requireAuth(context); if (auth instanceof Response) return auth;
   const includeInactive = new URL(context.request.url).searchParams.get("all") === "1";
-  return json({ team: await listTeam(context.env.DB, { includeInactive }) });
+  // pay_notes only to an admin: sales logins read the roster for the pickers.
+  return json({ team: await listTeam(context.env.DB, { includeInactive, withPay: auth.role === "admin" }) });
 }
 
 export async function onRequestPost(context) {
@@ -25,8 +26,8 @@ export async function onRequestPost(context) {
   if (existing) return json({ error: "Someone on the team already uses that email" }, 409);
 
   const r = await context.env.DB.prepare(
-    `INSERT INTO team_members (name, email, phone, role) VALUES (?1,?2,?3,?4) RETURNING id`
-  ).bind(name, email, body.phone || null, body.role || null).first();
+    `INSERT INTO team_members (name, email, phone, role, pay_notes) VALUES (?1,?2,?3,?4,?5) RETURNING id`
+  ).bind(name, email, body.phone || null, body.role || null, String(body.pay_notes || "").trim() || null).first();
 
   await recordActivity(context.env.DB, {
     entityType: "team_member", entityId: r.id, action: "created",

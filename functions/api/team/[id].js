@@ -1,4 +1,4 @@
-// PATCH  /api/team/[id]   — edit a team member (name, email, phone, role, active)
+// PATCH  /api/team/[id]   — edit a team member (name, email, phone, role, pay_notes, active)
 // DELETE /api/team/[id]   — deactivate. Never a hard delete: assignments cascade
 //                           on DELETE, and wiping a person would erase the record
 //                           of who went out on past jobs.
@@ -10,7 +10,7 @@ export async function onRequestPatch(context) {
   const id = parseInt(context.params.id, 10);
   const body = await context.request.json().catch(() => ({}));
   const fields = []; const binds = [];
-  for (const k of ["name", "email", "phone", "role"]) {
+  for (const k of ["name", "email", "phone", "role", "pay_notes"]) {
     if (body[k] !== undefined) {
       const v = k === "email" ? String(body[k]).trim().toLowerCase() : (String(body[k]).trim() || null);
       fields.push(`${k}=?${binds.length + 1}`); binds.push(v);

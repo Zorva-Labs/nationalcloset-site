@@ -13,8 +13,9 @@ export const ENTITY_TYPES = ["appointment", "project"];
 
 // The whole roster. `includeInactive` is for the Team screen; everything else
 // wants only people who can actually be assigned work today.
-export async function listTeam(db, { includeInactive = false } = {}) {
-  const sql = `SELECT id, name, email, phone, role, active FROM team_members
+// withPay adds pay_notes (admin-only: how the person is paid).
+export async function listTeam(db, { includeInactive = false, withPay = false } = {}) {
+  const sql = `SELECT id, name, email, phone, role, active${withPay ? ", pay_notes" : ""} FROM team_members
                 ${includeInactive ? "" : "WHERE active = 1"}
                 ORDER BY active DESC, name`;
   return (await db.prepare(sql).all().catch(() => ({ results: [] }))).results || [];

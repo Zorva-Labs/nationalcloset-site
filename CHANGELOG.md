@@ -3,6 +3,13 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-27 — Alexander Paul Baker added as an installer and sales rep; pay notes on the roster
+- **Asked (Michael):** "add Alexander Paul Baker - Alexbaker.tx@gmail.com - +1 (972) 898-1791 as an installer and as a sales rep. Make a note that his pay is $35 an hour for installs and only commission of 10% for sales in NCC and 20% of margin in NLCC. Add to CRM and to Gusto".
+- **CRM:** team member #10 "Alexander Paul Baker", title "Installer & Sales Rep", alexbaker.tx@gmail.com, 972-898-1791, with its activity-log entry, and a `sales` login (`crm/setup-admin.mjs --role sales`). One login holds one role; sales sees every lead and job, so it covers the installs he is assigned to as well. The password went to Michael to hand over and is not kept in `~/.env`.
+- **Pay note (new):** migration 0094 adds `team_members.pay_notes`, a Pay field on the team member's Edit dialog, shown under the title on `/crm/team`. `/api/team` returns it to admin logins only (sales logins read the roster for the pickers); checked live: an admin sees it, Alex's sales login does not. His reads: "Installs: $35 an hour. Sales: commission only. 10% on NCC sales; 20% of margin on NLC (Nashville Luxury Closets & Cabinets) sales." Nothing calculates pay from it. Deployed.
+- **Gusto:** not added yet. Checked first: no contractor named Baker. gusto.com asked for a sign-in in Michael's Chrome; it is added once he signs in, then linked on his roster row (`gusto_contractor_uuid`).
+- **Still owed:** the Gusto contractor and the link; Alex's CRM password handed to him.
+
 ## 2026-11-25 — Crew pay on Helena Kirkendall's job: $600 to Mike Cornwell, $450 to Jeremy Hale
 - **Asked (Michael):** "pay Mike Cornwell $600 for Helena Kirkendall 11/25/2026 in the crm and in Gusto. Also pay Jeremy Hale $450 for Helena Kirkendall 11/25/2026 in the crm and in Gusto."
 - **CRM:** bill #17, Crew pay, Mike Cornwell (team member #5), $600, and bill #18, Crew pay, Jeremy Hale (team member #9), $450, both on job #79 "Walk-In Closet — Helena Kirkendall", dated 11/25/2026, note "Installation 11/25/2026", each with its activity-log entry. Written straight into the D1 the way `POST /api/payouts` writes it, then marked prepared.

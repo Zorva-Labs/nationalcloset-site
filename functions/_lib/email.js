@@ -415,6 +415,20 @@ export function brandedEmail({ title, preheader, body, ctaLabel, ctaUrl, footer,
 </html>`;
 }
 
+// A template mail whose text was edited in Compose: the branded letter built
+// from the words that were actually written, so the HTML part (the one mail
+// apps show) says what the CRM logged. Blank lines make paragraphs, single
+// line breaks stay, bare URLs become links. The text carries its own sign-off,
+// so no default signature.
+export function letterFromText(text, title) {
+  const linkify = (s) => s.replace(/(https?:\/\/[^\s<]+)/g, `<a href="$1" style="color:${BRAND.brassDeep};text-decoration:underline">$1</a>`);
+  const paras = String(text || "").replace(/\r\n/g, "\n").trim().split(/\n\s*\n/).filter((p) => p.trim());
+  const body = paras.map((p) =>
+    `<p style="font-size:15px;line-height:1.62;color:${BRAND.inkSoft};margin:0 0 14px">${linkify(escapeHtml(p.trim())).replace(/\n/g, "<br/>")}</p>`
+  ).join("\n    ");
+  return brandedEmail({ title: escapeHtml(title || ""), preheader: paras[0] || "", body, signature: false });
+}
+
 export function escapeHtml(s) {
   if (s == null) return "";
   return String(s)

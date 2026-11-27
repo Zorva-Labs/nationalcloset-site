@@ -3,6 +3,12 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-27 — An edited template email now sends what was written
+- **Reported (Michael):** "I used an email template but made changes to it before sending. The crm reflect the changes, but the sent email was still the original template" (the proposal follow-up to Bijan, lead #108, message #2489).
+- **Cause:** Compose sends only the plain text. `POST /api/email-messages` paired that text with the template's stored HTML, and mail apps show the HTML part, so the customer saw the original wording while the CRM logged the edit.
+- **Fix:** Compose now sends `body_edited` (the text differs from what the template filled in). When it is set, the server builds the HTML from the text as written, in the branded letter (`letterFromText` in `_lib/email.js`, the subject as its heading, no added signature because the text has its own). An unedited template still goes out with its own HTML. A page loaded before this deploy doesn't send the flag, so the server compares the text with the template's, rendered the same way. `crm-app.js` is now `?v=ncc125`. Checked live with four sends to an address that can't receive mail (nothing went out; the CRM logs the HTML before the send): edited → the edited words, unedited → the template's HTML, both with and without the flag. The four test rows were deleted. Deployed.
+- **Noticed:** the proposal follow-up template's HTML heading still reads "A few options for your … — proposal inside", which no longer matches its text or the one-option rule.
+
 ## 2026-11-27 — Lead saves no longer 500 on a lead with no email
 - **Reported (Michael):** "HTTP 500 when trying to save address in crm".
 - **Cause:** `leads.email` (and `name`, `phone`) are NOT NULL, and the lead page sends `null` for an empty box. A lead from the two-field form has no email, so every save on it, address included, failed the constraint. Two leads were affected: #105 Victoria McMahon and #112 Jordan Delaney.

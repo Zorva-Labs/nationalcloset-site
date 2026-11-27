@@ -1195,11 +1195,16 @@ async function composeEmail({ contact, lead, project, defaultKind, parent } = {}
         r.readAsDataURL(file);
       });
     }
+    // The text as the template filled it in: anything else on Send means it was
+    // edited, and the server builds the mail from these words, not the
+    // template's HTML (functions/api/email-messages/index.js).
+    let loadedBody = null;
     function loadTemplate(tplId) {
       const t = allTemplates.find((x) => String(x.id) === String(tplId));
       if (!t) return;
       subjI.value = clientRender(t.subject, vars);
       bodyI.value = clientRender(t.body_text || "", vars);
+      loadedBody = bodyI.value;
     }
     if (initialTpl) loadTemplate(initialTpl.id);
     tplSel.addEventListener("change", () => loadTemplate(tplSel.value));
@@ -1242,6 +1247,7 @@ async function composeEmail({ contact, lead, project, defaultKind, parent } = {}
         bcc:     bg.querySelector("#cm-bcc").value.trim() || null,
         subject: subjI.value.trim(),
         body_text: bodyI.value,
+        body_edited: tplSel.value ? bodyI.value !== loadedBody : undefined,
         parent_message_id: parent?.id || null,
       };
       try {

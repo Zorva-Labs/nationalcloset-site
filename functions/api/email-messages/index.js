@@ -4,7 +4,7 @@
 //      — render template (if template_id passed), send via SMTP, log to D1
 import { requireAuth, json } from "../../_lib/auth.js";
 import { recordActivity } from "../../_lib/db.js";
-import { sendEmail, makeMessageId } from "../../_lib/email.js";
+import { sendEmail, makeMessageId, letterFromText } from "../../_lib/email.js";
 import { renderTemplate, buildEmailContext, deriveThreadKey } from "../../_lib/email-vars.js";
 import { bumpLeadStatusForward } from "../../_lib/lifecycle.js";
 
@@ -107,12 +107,16 @@ export async function onRequestPost(context) {
   let bodyHtml = body.body_html;
   let templateRow = null;
   let templateKind = null;
+  let htmlFromTemplate = false;
   if (body.template_id) {
     templateRow = await DB.prepare(`SELECT * FROM email_templates WHERE id=?1 AND is_active=1`).bind(body.template_id).first();
     if (!templateRow) return json({ error: "template not found" }, 404);
     templateKind = templateRow.kind;
     subject  = subject  ?? templateRow.subject;
     bodyText = bodyText ?? templateRow.body_text;
+    // Compose sends the text as the person left it and no HTML; whether the
+    // template's HTML still matches it is decided once both are rendered, below.
+    htmlFromTemplate = bodyHtml == null && body.body_text != null;
     bodyHtml = bodyHtml ?? templateRow.body_html;
   }
 
@@ -137,6 +141,20 @@ export async function onRequestPost(context) {
   subject  = stripTokens(subject);
   bodyText = stripTokens(bodyText);
   bodyHtml = bodyHtml == null ? bodyHtml : String(bodyHtml).replace(/\{\{\s*[a-z_][a-z0-9_]*\s*\}\}/gi, "");
+
+  // A template whose text was changed in Compose: its HTML is the words that were
+  // replaced, and the HTML part is what mail apps show, so the letter is built
+  // from the text as written (2026-11-27: an edited follow-up reached the
+  // customer as the original template). Compose says so with `body_edited`; an
+  // older cached page doesn't, so compare with the template's own text, rendered
+  // the same way, whitespace aside.
+  if (htmlFromTemplate) {
+    const norm = (s) => String(s || "").replace(/\s+/g, " ").trim();
+    const edited = body.body_edited != null
+      ? !!body.body_edited
+      : norm(bodyText) !== norm(stripTokens(renderTemplate(templateRow.body_text, vars)));
+    if (edited) bodyHtml = letterFromText(bodyText, subject);
+  }
 
   if (!subject)  return json({ error: "subject required" }, 400);
   if (!bodyText && !bodyHtml) return json({ error: "body required" }, 400);

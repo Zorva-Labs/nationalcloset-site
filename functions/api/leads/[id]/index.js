@@ -19,6 +19,7 @@ const PATCHABLE = new Set([
   "location",
   "address_street", "address_city", "address_state", "address_zip",
 ]);
+const NOT_NULL = new Set(["name", "phone", "email"]);
 
 export async function onRequestGet(context) {
   const guard = await requireAuth(context);
@@ -58,18 +59,30 @@ export async function onRequestPatch(context) {
     if (k === "status" && !ALLOWED_STATUSES.has(v)) {
       return json({ error: "Invalid status" }, 400);
     }
+    // name, phone and email are NOT NULL on leads. The lead page sends null for
+    // an empty box, and a lead from the two-field form has no email, so a null
+    // here failed the constraint and every save on that lead was a 500
+    // (2026-11-27, adding an address). Store an empty one as "".
+    const val = NOT_NULL.has(k) && (v === null || v === undefined) ? "" : v;
+    if (k === "name" && !String(val).trim()) return json({ error: "Name is required." }, 400);
+    if (k === "phone" && !String(val).trim()) return json({ error: "Phone is required." }, 400);
     sets.push(`${k} = ?${binds.length + 1}`);
-    binds.push(v);
+    binds.push(val);
   }
   if (!sets.length) return json({ error: "No valid fields to update." }, 400);
 
   sets.push(`updated_at = datetime('now')`);
   binds.push(id);
-  await context.env.DB.prepare(
-    `UPDATE leads SET ${sets.join(", ")} WHERE id = ?${binds.length}`
-  )
-    .bind(...binds)
-    .run();
+  try {
+    await context.env.DB.prepare(
+      `UPDATE leads SET ${sets.join(", ")} WHERE id = ?${binds.length}`
+    )
+      .bind(...binds)
+      .run();
+  } catch (e) {
+    console.error("[lead patch] update failed:", e?.message || e);
+    return json({ error: "Could not save the lead: " + (e?.message || "database error") }, 500);
+  }
 
   // A lead captured by the two-field form arrives without an email, so it has
   // no contact row yet. The moment staff add one, create and link the contact

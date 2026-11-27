@@ -3,6 +3,12 @@
 Newest first. One entry per session that changed this repo: what changed, why, what the client asked for, what is still owed. Infrastructure changes also go in `site.json` and `CLAUDE.md`. Entries dated before 2026-09-17 are reconstructed from git history; the reasoning behind them is in `CLAUDE.md`, `docs/` and `~/fleet/docs/archive`.
 
 
+## 2026-11-27 — Lead saves no longer 500 on a lead with no email
+- **Reported (Michael):** "HTTP 500 when trying to save address in crm".
+- **Cause:** `leads.email` (and `name`, `phone`) are NOT NULL, and the lead page sends `null` for an empty box. A lead from the two-field form has no email, so every save on it, address included, failed the constraint. Two leads were affected: #105 Victoria McMahon and #112 Jordan Delaney.
+- **Fix:** `PATCH /api/leads/:id` stores an empty email as `""`, refuses an empty name or phone with a 400 ("Phone is required.") instead of saving it, and returns the database's message if an update still fails. Checked live: a no-email save is 200, a blank phone is 400. Deployed.
+- **Still owed:** while testing, a save on #112 Jordan Delaney went out before the phone check and blanked that lead's phone. It is restored once the number is read back from the hello@ "new lead" alert (the CRM's mail sync does not keep that alert).
+
 ## 2026-11-27 — Alexander Paul Baker added as an installer and sales rep; pay notes on the roster
 - **Asked (Michael):** "add Alexander Paul Baker - Alexbaker.tx@gmail.com - +1 (972) 898-1791 as an installer and as a sales rep. Make a note that his pay is $35 an hour for installs and only commission of 10% for sales in NCC and 20% of margin in NLCC. Add to CRM and to Gusto".
 - **CRM:** team member #10 "Alexander Paul Baker", title "Installer & Sales Rep", alexbaker.tx@gmail.com, 972-898-1791, with its activity-log entry, and a `sales` login (`crm/setup-admin.mjs --role sales`). One login holds one role; sales sees every lead and job, so it covers the installs he is assigned to as well. The password went to Michael to hand over and is not kept in `~/.env`.

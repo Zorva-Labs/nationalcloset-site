@@ -27,10 +27,21 @@ END:STANDARD
 END:VTIMEZONE`;
 
 function fold(line) {
-  // RFC 5545 line-folding: lines >75 octets get a CRLF + space inserted
-  if (line.length <= 75) return line;
+  // RFC 5545 line-folding: a line over 75 octets continues on the next line
+  // after CRLF + space. Counted in UTF-8 bytes (an em dash is 3) and never
+  // splitting a character; a line already folded is left alone, because the
+  // feed folds once more on the way out.
+  if (line.includes("\r\n")) return line;
+  const enc = new TextEncoder();
+  if (enc.encode(line).length <= 75) return line;
   const parts = [];
-  for (let i = 0; i < line.length; i += 73) parts.push(line.slice(i, i + 73));
+  let cur = "", bytes = 0, limit = 75;
+  for (const ch of line) {
+    const n = enc.encode(ch).length;
+    if (bytes + n > limit) { parts.push(cur); cur = ""; bytes = 0; limit = 74; }
+    cur += ch; bytes += n;
+  }
+  parts.push(cur);
   return parts.join("\r\n ");
 }
 function fmtLocal(iso) {
@@ -60,7 +71,7 @@ function seqFrom(updatedAt) {
 }
 function esc(s) {
   if (s == null) return "";
-  return String(s).replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+  return String(s).replace(/\\/g, "\\\\").replace(/\r?\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
 }
 
 // Pretty-print appointment type for the SUMMARY field
@@ -77,7 +88,9 @@ const TYPE_LABEL = {
   unavailable:  "Unavailable",
 };
 
-export function buildAppointmentFeed(appointments) {
+// opts.name / opts.desc: the calendar's title and description on the phone
+// (a team member's own feed names them; the default is the whole company's).
+export function buildAppointmentFeed(appointments, opts = {}) {
   const dtstamp = fmtUtc();
   const out = [
     "BEGIN:VCALENDAR",
@@ -85,8 +98,8 @@ export function buildAppointmentFeed(appointments) {
     "PRODID:-//National Closet Company//CRM Calendar//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    "X-WR-CALNAME:National Closet Company — Appointments",
-    "X-WR-CALDESC:Live feed of consultations, measures, installs, and service calls",
+    `X-WR-CALNAME:${esc(opts.name || "National Closet Company — Appointments")}`,
+    `X-WR-CALDESC:${esc(opts.desc || "Live feed of consultations, measures, installs, and service calls")}`,
     "X-WR-TIMEZONE:America/Chicago",
     // Refresh hints (Apple-specific properties — iPhone reads these)
     "X-APPLE-CALENDAR-COLOR:#D2683F",
@@ -104,11 +117,14 @@ export function buildAppointmentFeed(appointments) {
     const typeLabel = TYPE_LABEL[a.type] || a.type || "Appointment";
     // A vacation titled "Vacation" reads as just that, not "Vacation — Vacation".
     const summary = !a.name || a.name === typeLabel ? typeLabel : `${typeLabel} — ${a.name}`;
+    // Each value escaped (a newline or comma in the notes would otherwise
+    // break the line), then joined with the escaped newline.
     const descLines = [
-      a.phone ? `Phone: ${a.phone}` : "",
-      a.email ? `Email: ${a.email}` : "",
-      a.rooms ? `Rooms: ${a.rooms}` : "",
-      a.notes ? `Notes: ${a.notes}` : "",
+      a.phone ? `Phone: ${esc(a.phone)}` : "",
+      a.email ? `Email: ${esc(a.email)}` : "",
+      a.site_address ? `Address: ${esc(a.site_address)}` : "",
+      a.rooms ? `Rooms: ${esc(a.rooms)}` : "",
+      a.notes ? `Notes: ${esc(a.notes)}` : "",
       a.lead_id    ? `Lead: https://nationalclosetco.com/crm/lead.html?id=${a.lead_id}` : "",
       a.project_id ? `Job: https://nationalclosetco.com/crm/project.html?id=${a.project_id}` : "",
     ].filter(Boolean).join("\\n");

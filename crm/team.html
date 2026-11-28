@@ -85,6 +85,7 @@ function memberTable(list) {
       <td class="muted">${SSCrm.esc(m.role || "—")}${m.pay_notes ? `<div style="font-size:12px;margin-top:2px;white-space:pre-line">Pay: ${SSCrm.esc(m.pay_notes)}</div>` : ""}</td>
       <td>${accessCell(m)}</td>
       <td style="text-align:right;white-space:nowrap">
+        ${m.active ? `<button class="btn ghost sm" data-cal="${m.id}">Calendar link</button>` : ""}
         <button class="btn ghost sm" data-edit="${m.id}">Edit</button>
         ${m.active
           ? `<button class="btn ghost sm" data-off="${m.id}">Deactivate</button>`
@@ -166,9 +167,53 @@ function wire() {
     try { await loginAction({ action: "remove", id: parseInt(b.dataset.unlog, 10) }); SSCrm.toast("Login removed", "success"); await load(); }
     catch (e) { SSCrm.toast(e.message || "Could not remove", "error"); }
   });
+  document.querySelectorAll("[data-cal]").forEach((b) => b.onclick = () => calendarLink(parseInt(b.dataset.cal, 10)));
   document.querySelectorAll("[data-edit]").forEach((b) => b.onclick = () => editMember(parseInt(b.dataset.edit, 10)));
   document.querySelectorAll("[data-off]").forEach((b) => b.onclick = () => setActive(parseInt(b.dataset.off, 10), false));
   document.querySelectorAll("[data-on]").forEach((b) => b.onclick = () => setActive(parseInt(b.dataset.on, 10), true));
+}
+
+// A person's own calendar subscription: only the consults they're assigned to,
+// with each client's details (Michael, 2026-11-27). Made on first open.
+async function calendarLink(id) {
+  const person = roster.find((m) => m.id === id) || {};
+  let link;
+  try { link = (await SSCrm.fetchJSON("/api/calendar-feed-url?member=" + id)).member; }
+  catch (e) { SSCrm.toast(e.message || "Could not make the link", "error"); return; }
+  const webcal = String(link.url).replace(/^https?:/, "webcal:");
+  const first = String(person.name || "").split(/\s+/)[0] || "";
+  const bg = document.createElement("div");
+  bg.className = "modal-bg";
+  bg.innerHTML = `<div class="modal" style="max-width:560px;width:96vw">
+    <div class="modal-head">${SSCrm.esc(person.name || "")}'s calendar link</div>
+    <div class="modal-body">
+      <p style="margin:0 0 10px;font-size:13px;line-height:1.55">A read-only calendar ${SSCrm.esc(first)} subscribes to on their phone. It shows only the consultations they're assigned to, each with the client's name, phone, email, address, rooms and notes, and keeps itself up to date.</p>
+      <input readonly value="${SSCrm.esc(webcal)}" id="cal-url" style="width:100%;font:12px ui-monospace,Menlo,monospace;padding:9px 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg-soft)"/>
+      <p class="muted" style="font-size:12px;margin:10px 0 0;line-height:1.55">On an iPhone: tap the link from an email and choose Subscribe. It's a password: anyone with it can read those clients' details. If it leaks, make a new link and the old one stops working. It stops on its own if they're deactivated.</p>
+    </div>
+    <div class="modal-foot" style="flex-wrap:wrap;gap:8px">
+      <button class="btn ghost" data-rot>New link</button>
+      <button class="btn ghost" data-mail>Email to ${SSCrm.esc(first || "them")}</button>
+      <button class="btn ghost" data-copy>Copy</button>
+      <button class="btn primary" data-done>Done</button>
+    </div>
+  </div>`;
+  document.body.appendChild(bg);
+  bg.querySelector("[data-done]").onclick = () => bg.remove();
+  bg.addEventListener("click", (e) => { if (e.target === bg) bg.remove(); });
+  bg.querySelector("[data-copy]").onclick = () => navigator.clipboard.writeText(webcal).then(() => SSCrm.toast("Copied", "success"), () => { const i = bg.querySelector("#cal-url"); i.select(); });
+  bg.querySelector("[data-mail]").onclick = () => {
+    const subject = encodeURIComponent("Your consults on your phone's calendar");
+    const body = encodeURIComponent(`Hi ${first},\n\nTap this link on your iPhone and choose Subscribe. Your National Closet Company consults will show in your calendar, with each client's details, and stay up to date:\n\n${webcal}\n\nIf tapping it does nothing, copy it and add it under Settings → Apps → Calendar → Calendar Accounts → Add Account → Other → Add Subscribed Calendar.\n\nPlease don't forward it: it carries the clients' details.`);
+    window.location.href = `mailto:${encodeURIComponent(person.email || "")}?subject=${subject}&body=${body}`;
+  };
+  bg.querySelector("[data-rot]").onclick = async () => {
+    if (!(await SSCrm.confirmDialog(`Make a new calendar link for ${person.name}? The old one stops working, so their phone has to subscribe again.`))) return;
+    try {
+      await SSCrm.fetchJSON("/api/calendar-feed-url", { method: "POST", body: JSON.stringify({ member: id, rotate: true }) });
+      bg.remove(); SSCrm.toast("New link made", "success"); calendarLink(id);
+    } catch (e) { SSCrm.toast(e.message || "Could not make a new link", "error"); }
+  };
 }
 
 function memberForm(m = {}) {

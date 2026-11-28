@@ -1,25 +1,38 @@
 // GET /api/public/calendar/[token].ics — iPhone / Google / Outlook subscription feed.
 //
-// Auth: token in the URL path matches env.CALENDAR_FEED_TOKEN. Treat this URL
-// like a password — anyone with it can read all appointments. Rotate by
-// changing the secret.
+// Auth: the token in the URL path is either env.CALENDAR_FEED_TOKEN (the
+// whole company's calendar, admin-only to hand out) or one team member's
+// `team_members.calendar_token` (only the consults they are assigned to, with
+// the client's details — _lib/rep-calendar.js, Michael 2026-11-27). Treat
+// either URL like a password. Rotate the company's by changing the secret, a
+// person's from Team → Calendar link → New link.
 //
 // Returns text/calendar (RFC 5545) with VEVENTs for every non-cancelled
 // appointment in the DB. iPhone subscribes once and refreshes hourly.
 
 import { buildAppointmentFeed } from "../../../_lib/ics-feed.js";
+import { memberForToken, buildMemberFeed } from "../../../_lib/rep-calendar.js";
+
+const icsResponse = (ics, filename) => new Response(ics, {
+  status: 200,
+  headers: {
+    "Content-Type": "text/calendar; charset=utf-8",
+    "Content-Disposition": `inline; filename="${filename}"`,
+    "Cache-Control": "private, max-age=300",
+    "X-Robots-Tag": "noindex, nofollow",
+  },
+});
 
 export async function onRequest(context) {
   // Strip a trailing ".ics" so the URL works with or without it
   const rawToken = context.params.token || "";
   const token = rawToken.replace(/\.ics$/i, "");
-  const expected = context.env.CALENDAR_FEED_TOKEN;
-  if (!expected) {
-    return new Response("Calendar feed not configured", { status: 503 });
-  }
-  // Constant-time-ish comparison
-  if (!token || token.length !== expected.length || token !== expected) {
-    return new Response("Invalid token", { status: 401 });
+  const expected = context.env.CALENDAR_FEED_TOKEN || "";
+  if (!token || !expected || token.length !== expected.length || token !== expected) {
+    // Not the company's feed: one person's, or nothing.
+    const member = await memberForToken(context.env.DB, token);
+    if (!member) return new Response("Invalid token", { status: 401 });
+    return icsResponse(await buildMemberFeed(context.env.DB, member), "nationalclosetco-consults.ics");
   }
 
   // Pull all upcoming + recently past appointments (window: 1 year back, 5 years forward)
@@ -63,13 +76,5 @@ export async function onRequest(context) {
   }));
 
   const ics = buildAppointmentFeed([...(results || []), ...installEvents]);
-  return new Response(ics, {
-    status: 200,
-    headers: {
-      "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": "inline; filename=\"nationalclosetco.ics\"",
-      // Apple Calendar respects this even though it has its own REFRESH-INTERVAL
-      "Cache-Control": "private, max-age=300", // edge caches 5min; clients refresh per X-PUBLISHED-TTL
-    },
-  });
+  return icsResponse(ics, "nationalclosetco.ics");
 }
